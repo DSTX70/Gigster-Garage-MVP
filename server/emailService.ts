@@ -7,7 +7,11 @@ if (!process.env.SENDGRID_API_KEY) {
 
 const mailService = new MailService();
 if (process.env.SENDGRID_API_KEY) {
-  mailService.setApiKey(process.env.SENDGRID_API_KEY);
+  if (process.env.SENDGRID_API_KEY.startsWith('SG.')) {
+    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+  } else {
+    console.warn("Invalid SendGrid API key format - must start with 'SG.' - email notifications disabled");
+  }
 }
 
 const APP_URL = process.env.REPLIT_DOMAINS 
@@ -23,8 +27,9 @@ interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
-  if (!process.env.SENDGRID_API_KEY) {
-    console.log("Email would be sent:", params.subject, "to", params.to);
+  if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_API_KEY.startsWith('SG.')) {
+    console.log("📧 Email notification would be sent:", params.subject, "to", params.to);
+    console.log("   (Email disabled: SendGrid API key not configured properly)");
     return false;
   }
 
@@ -187,7 +192,9 @@ export async function sendSMSNotification(
     return false;
   }
 
-  console.log(`SMS would be sent to ${assignedUser.phone}: High priority task "${task.description}" assigned to you. Check TaskFlow for details.`);
+  console.log(`📱 SMS notification would be sent to ${assignedUser.phone}:`);
+  console.log(`   "High priority task '${task.description}' assigned to you. Check VSuite HQ for details."`);
+  console.log(`   (SMS disabled: Twilio integration not configured)`);
   
   // TODO: Implement Twilio SMS sending
   // This would require TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER
