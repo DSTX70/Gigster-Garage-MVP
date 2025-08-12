@@ -47,6 +47,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Auth routes
+  app.post("/api/signup", async (req, res) => {
+    try {
+      const result = insertUserSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid user data", 
+          errors: result.error.errors 
+        });
+      }
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(result.data.username);
+      if (existingUser) {
+        return res.status(409).json({ message: "Username already exists" });
+      }
+
+      const user = await storage.createUser(result.data);
+      req.session.user = user;
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Error creating account:", error);
+      res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
   app.post("/api/login", async (req, res) => {
     try {
       const result = loginSchema.safeParse(req.body);
@@ -145,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const userId = req.session.userId as string;
+      const userId = req.session.user!.id;
       const user = await storage.updateUserOnboarding(userId, result.data);
       res.json(user);
     } catch (error) {
@@ -313,6 +338,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating task:", error);
       res.status(500).json({ message: "Failed to update task" });
+    }
+  });
+
+  // Add progress note to task
+  app.post("/api/tasks/:id/progress", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { date, comment } = req.body;
+      
+      if (!date || !comment?.trim()) {
+        return res.status(400).json({ message: "Date and comment are required" });
+      }
+
+      const task = await storage.getTask(id);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Check permissions
+      const user = req.session.user!;
+      if (user.role !== 'admin' && task.assignedToId !== user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Create new progress note
+      const progressNote = {
+        id: crypto.randomUUID(),
+        date,
+        comment: comment.trim(),
+        createdAt: new Date().toISOString(),
+      };
+
+      const currentProgress = task.progressNotes || [];
+      const updatedProgressNotes = [...currentProgress, progressNote];
+
+      const updatedTask = await storage.updateTask(id, {
+        progressNotes: updatedProgressNotes,
+      });
+
+      res.json(updatedTask);
+    } catch (error) {
+      console.error("Error adding progress note:", error);
+      res.status(500).json({ message: "Failed to add progress note" });
     }
   });
 

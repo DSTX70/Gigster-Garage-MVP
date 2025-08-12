@@ -199,6 +199,7 @@ export class DatabaseStorage implements IStorage {
         notes: insertTask.notes || null,
         attachments: insertTask.attachments || [],
         links: insertTask.links || [],
+        progressNotes: insertTask.progressNotes || [],
       })
       .returning();
 

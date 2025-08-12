@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 import Admin from "@/pages/admin";
 import Dashboard from "@/pages/dashboard";
 import Onboarding from "@/pages/onboarding";
@@ -26,7 +27,12 @@ function Router() {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    return (
+      <Switch>
+        <Route path="/signup" component={Signup} />
+        <Route component={Login} />
+      </Switch>
+    );
   }
 
   // Check if user needs to complete onboarding

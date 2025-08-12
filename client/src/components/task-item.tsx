@@ -9,6 +9,7 @@ import { queryClient } from "@/lib/queryClient";
 import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FileText, Link, Paperclip, User } from "lucide-react";
 import type { Task } from "@shared/schema";
 import { formatDistanceToNow, isAfter, isBefore, startOfDay } from "date-fns";
+import ProgressSection from "./ProgressSection";
 
 interface TaskItemProps {
   task: Task;
@@ -59,6 +60,27 @@ export function TaskItem({ task }: TaskItemProps) {
     },
   });
 
+  const addProgressMutation = useMutation({
+    mutationFn: async ({ id, progressData }: { id: string; progressData: { date: string; comment: string } }) => {
+      const response = await apiRequest("POST", `/api/tasks/${id}/progress`, progressData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Progress Added",
+        description: "Your progress note has been saved successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add progress note",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleToggleComplete = () => {
     updateTaskMutation.mutate({
       id: task.id,
@@ -68,6 +90,13 @@ export function TaskItem({ task }: TaskItemProps) {
 
   const handleDelete = () => {
     deleteTaskMutation.mutate(task.id);
+  };
+
+  const handleAddProgress = (progressData: { date: string; comment: string }) => {
+    addProgressMutation.mutate({
+      id: task.id,
+      progressData,
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -296,6 +325,15 @@ export function TaskItem({ task }: TaskItemProps) {
                     </div>
                   </div>
                 )}
+                
+                {/* Progress Section */}
+                <div className="mt-4">
+                  <ProgressSection 
+                    progressNotes={task.progressNotes || []}
+                    onAddProgress={handleAddProgress}
+                    isLoading={addProgressMutation.isPending}
+                  />
+                </div>
               </CollapsibleContent>
             </Collapsible>
           )}

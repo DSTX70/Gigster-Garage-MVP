@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { LogIn, Shield } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -106,10 +107,19 @@ export default function Login() {
             </Button>
           </form>
           
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>Admin Demo Account:</p>
-            <p>Username: <code className="bg-gray-100 px-1 rounded">admin</code></p>
-            <p>Password: <code className="bg-gray-100 px-1 rounded">admin123</code></p>
+          <div className="mt-6 text-center text-sm text-gray-600 space-y-3">
+            <p>
+              Don't have an account?{" "}
+              <Link href="/signup" className="text-blue-600 hover:underline">
+                Create one here
+              </Link>
+            </p>
+            
+            <div className="border-t pt-3">
+              <p>Admin Demo Account:</p>
+              <p>Username: <code className="bg-gray-100 px-1 rounded">admin</code></p>
+              <p>Password: <code className="bg-gray-100 px-1 rounded">admin123</code></p>
+            </div>
           </div>
         </CardContent>
       </Card>

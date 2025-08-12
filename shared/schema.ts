@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -40,6 +40,7 @@ export const tasks = pgTable("tasks", {
   notes: text("notes"),
   attachments: text("attachments").array(),
   links: text("links").array(),
+  progressNotes: jsonb("progress_notes").default([]),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -103,6 +104,12 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   projectId: z.string().optional(),
   attachments: z.array(z.string()).optional().default([]),
   links: z.array(z.string()).optional().default([]),
+  progressNotes: z.array(z.object({
+    id: z.string(),
+    date: z.string(),
+    comment: z.string(),
+    createdAt: z.string(),
+  })).optional().default([]),
 });
 
 export const updateTaskSchema = createInsertSchema(tasks).omit({
