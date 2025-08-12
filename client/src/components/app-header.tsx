@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users } from "lucide-react";
 import { ReminderModal } from "@/components/reminder-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -80,14 +80,24 @@ export function AppHeader() {
             </div>
             
             {isAdmin && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/admin")}
-              >
-                <Settings size={16} className="mr-2" />
-                Users
-              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  <Users size={16} className="mr-2" />
+                  Dashboard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/admin")}
+                >
+                  <Settings size={16} className="mr-2" />
+                  Users
+                </Button>
+              </div>
             )}
             
             <Button

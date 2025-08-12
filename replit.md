@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Admin Dashboard** (Added January 2025): Comprehensive admin view showing all users and their assigned tasks with full details
 - **Project Organization System** (Added January 2025): Tasks can now be organized by projects with dropdown selection and project creation
 - **Multi-User Authentication** (Added): Full user authentication system with login/logout, session management, and role-based access
 - **Database Migration** (Completed): Migrated from in-memory storage to PostgreSQL database with proper user and project relationships
