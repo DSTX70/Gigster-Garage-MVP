@@ -96,7 +96,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: user.username, 
           name: user.name, 
           email: user.email, 
-          role: user.role 
+          role: user.role,
+          hasCompletedOnboarding: user.hasCompletedOnboarding,
+          notificationEmail: user.notificationEmail,
+          phone: user.phone,
+          emailOptIn: user.emailOptIn,
+          smsOptIn: user.smsOptIn
         } 
       });
     } catch (error) {
@@ -122,7 +127,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: req.session.user.username, 
           name: req.session.user.name, 
           email: req.session.user.email, 
-          role: req.session.user.role 
+          role: req.session.user.role,
+          hasCompletedOnboarding: req.session.user.hasCompletedOnboarding,
+          notificationEmail: req.session.user.notificationEmail,
+          phone: req.session.user.phone,
+          emailOptIn: req.session.user.emailOptIn,
+          smsOptIn: req.session.user.smsOptIn
         } 
       });
     } else {
