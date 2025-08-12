@@ -8,10 +8,11 @@ import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Admin from "@/pages/admin";
 import Dashboard from "@/pages/dashboard";
+import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading, isAdmin } = useAuth();
+  const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
 
   if (isLoading) {
     return (
@@ -26,6 +27,11 @@ function Router() {
 
   if (!isAuthenticated) {
     return <Login />;
+  }
+
+  // Check if user needs to complete onboarding
+  if (user && !user.hasCompletedOnboarding) {
+    return <Onboarding onComplete={() => window.location.reload()} />;
   }
 
   return (

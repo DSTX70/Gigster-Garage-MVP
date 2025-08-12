@@ -10,6 +10,8 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Email Notifications** (Added January 2025): High priority tasks trigger email notifications with complete task details and hotlink to app
+- **User Onboarding** (Added January 2025): First-time login flow to collect notification preferences including email and SMS opt-in
 - **Admin Dashboard** (Added January 2025): Comprehensive admin view showing all users and their assigned tasks with full details
 - **Project Organization System** (Added January 2025): Tasks can now be organized by projects with dropdown selection and project creation
 - **Multi-User Authentication** (Added): Full user authentication system with login/logout, session management, and role-based access

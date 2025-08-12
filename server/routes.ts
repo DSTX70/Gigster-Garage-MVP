@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema, insertProjectSchema } from "@shared/schema";
+import { sendHighPriorityTaskNotification, sendSMSNotification } from "./emailService";
+import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema, insertProjectSchema, onboardingSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
 
 // Extend session type
@@ -133,6 +134,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User onboarding route
+  app.post("/api/user/onboarding", requireAuth, async (req, res) => {
+    try {
+      const result = onboardingSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid onboarding data", 
+          errors: result.error.errors 
+        });
+      }
+
+      const userId = req.session.userId as string;
+      const user = await storage.updateUserOnboarding(userId, result.data);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user onboarding:", error);
+      res.status(500).json({ message: "Failed to update onboarding preferences" });
+    }
+  });
+
   // User management routes (admin only)
   app.get("/api/users", requireAdmin, async (req, res) => {
     try {
@@ -239,6 +260,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = req.session.user!;
       const task = await storage.createTask(result.data, user.id);
+      
+      // Send notifications for high priority tasks
+      if (task.priority === 'high' && task.assignedToId && task.assignedTo) {
+        try {
+          // Send email notification
+          await sendHighPriorityTaskNotification(task, task.assignedTo);
+          
+          // Send SMS notification if enabled
+          if (task.assignedTo.smsOptIn) {
+            await sendSMSNotification(task, task.assignedTo);
+          }
+        } catch (error) {
+          console.error("Error sending notifications:", error);
+          // Don't fail the task creation if notifications fail
+        }
+      }
+      
       res.status(201).json(task);
     } catch (error) {
       console.error("Error creating task:", error);

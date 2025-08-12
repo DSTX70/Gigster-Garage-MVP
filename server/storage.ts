@@ -55,9 +55,29 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUserOnboarding(userId: string, onboardingData: {
+    notificationEmail: string;
+    phone?: string;
+    emailOptIn: boolean;
+    smsOptIn: boolean;
+  }): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        notificationEmail: onboardingData.notificationEmail,
+        phone: onboardingData.phone || null,
+        emailOptIn: onboardingData.emailOptIn,
+        smsOptIn: onboardingData.smsOptIn,
+        hasCompletedOnboarding: true,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   async deleteUser(id: string): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async verifyPassword(user: User, password: string): Promise<boolean> {
@@ -198,7 +218,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTask(id: string): Promise<boolean> {
     const result = await db.delete(tasks).where(eq(tasks.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

@@ -12,6 +12,11 @@ export const users = pgTable("users", {
   role: text("role", { enum: ["admin", "user"] }).notNull().default("user"),
   name: text("name").notNull(),
   email: varchar("email"),
+  notificationEmail: varchar("notification_email"),
+  phone: varchar("phone"),
+  smsOptIn: boolean("sms_opt_in").default(false),
+  emailOptIn: boolean("email_opt_in").default(true),
+  hasCompletedOnboarding: boolean("has_completed_onboarding").default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -76,6 +81,13 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const onboardingSchema = z.object({
+  notificationEmail: z.string().email("Please enter a valid email address"),
+  phone: z.string().optional(),
+  emailOptIn: z.boolean().default(true),
+  smsOptIn: z.boolean().default(false),
+});
+
 // Task schemas
 export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
@@ -109,8 +121,12 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
+export type OnboardingRequest = z.infer<typeof onboardingSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type Task = typeof tasks.$inferSelect;
+export type Task = typeof tasks.$inferSelect & {
+  assignedTo?: User;
+  project?: Project;
+};
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type UpdateTask = z.infer<typeof updateTaskSchema>;
