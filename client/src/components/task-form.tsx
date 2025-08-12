@@ -3,17 +3,22 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus } from "lucide-react";
+import { Plus, X, FileText, Link, Upload } from "lucide-react";
 import { insertTaskSchema, type InsertTask } from "@shared/schema";
 
 export function TaskForm() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [notes, setNotes] = useState("");
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [links, setLinks] = useState<string[]>([]);
+  const [newLink, setNewLink] = useState("");
   const { toast } = useToast();
 
   const createTaskMutation = useMutation({
@@ -26,6 +31,10 @@ export function TaskForm() {
       setDescription("");
       setDueDate("");
       setPriority("medium");
+      setNotes("");
+      setAttachments([]);
+      setLinks([]);
+      setNewLink("");
       toast({
         title: "Task created",
         description: "Your task has been added successfully.",
@@ -39,6 +48,29 @@ export function TaskForm() {
       });
     },
   });
+
+  const addLink = () => {
+    if (newLink.trim() && !links.includes(newLink.trim())) {
+      setLinks([...links, newLink.trim()]);
+      setNewLink("");
+    }
+  };
+
+  const removeLink = (index: number) => {
+    setLinks(links.filter((_, i) => i !== index));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const fileNames = Array.from(files).map(file => file.name);
+      setAttachments([...attachments, ...fileNames]);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +90,9 @@ export function TaskForm() {
         dueDate: dueDate ? new Date(dueDate) : null,
         priority,
         completed: false,
+        notes: notes.trim() || null,
+        attachments: attachments.length > 0 ? attachments : [],
+        links: links.length > 0 ? links : [],
       });
 
       createTaskMutation.mutate(taskData);
@@ -74,7 +109,7 @@ export function TaskForm() {
     <section className="mb-8">
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
         <h2 className="text-lg font-semibold text-neutral-800 mb-4">Add New Task</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-2">
@@ -102,6 +137,109 @@ export function TaskForm() {
               />
             </div>
           </div>
+
+          <div>
+            <Label htmlFor="notes" className="block text-sm font-medium text-neutral-700 mb-2 flex items-center">
+              <FileText size={16} className="mr-2" />
+              Notes
+            </Label>
+            <Textarea
+              id="notes"
+              placeholder="Add any additional notes or details..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full h-24"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label className="block text-sm font-medium text-neutral-700 mb-2 flex items-center">
+                <Upload size={16} className="mr-2" />
+                File Attachments
+              </Label>
+              <Input
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="w-full mb-2"
+              />
+              {attachments.length > 0 && (
+                <div className="space-y-1">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-neutral-50 p-2 rounded">
+                      <span className="text-sm text-neutral-700 flex items-center">
+                        <FileText size={14} className="mr-2" />
+                        {file}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeAttachment(index)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label className="block text-sm font-medium text-neutral-700 mb-2 flex items-center">
+                <Link size={16} className="mr-2" />
+                Links
+              </Label>
+              <div className="flex gap-2 mb-2">
+                <Input
+                  type="url"
+                  placeholder="https://example.com"
+                  value={newLink}
+                  onChange={(e) => setNewLink(e.target.value)}
+                  className="flex-1"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())}
+                />
+                <Button
+                  type="button"
+                  onClick={addLink}
+                  disabled={!newLink.trim()}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Plus size={14} />
+                </Button>
+              </div>
+              {links.length > 0 && (
+                <div className="space-y-1">
+                  {links.map((link, index) => (
+                    <div key={index} className="flex items-center justify-between bg-neutral-50 p-2 rounded">
+                      <a 
+                        href={link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline flex items-center truncate"
+                      >
+                        <Link size={14} className="mr-2 flex-shrink-0" />
+                        {link}
+                      </a>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLink(index)}
+                        className="h-6 w-6 p-0 flex-shrink-0"
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="priority" className="block text-sm font-medium text-neutral-700 mb-2">

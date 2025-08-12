@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle } from "lucide-react";
+import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FileText, Link, Paperclip } from "lucide-react";
 import type { Task } from "@shared/schema";
 import { formatDistanceToNow, isAfter, isBefore, startOfDay } from "date-fns";
 
@@ -13,6 +15,7 @@ interface TaskItemProps {
 }
 
 export function TaskItem({ task }: TaskItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
 
   const updateTaskMutation = useMutation({
@@ -141,6 +144,8 @@ export function TaskItem({ task }: TaskItemProps) {
 
   const statusInfo = getStatusInfo();
   const isOverdue = task.dueDate && !task.completed && isBefore(new Date(task.dueDate), startOfDay(new Date()));
+  
+  const hasExtendedContent = task.notes || (task.attachments && task.attachments.length > 0) || (task.links && task.links.length > 0);
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition-shadow duration-200 ${
@@ -178,6 +183,16 @@ export function TaskItem({ task }: TaskItemProps) {
                   {getPriorityLabel(task.priority)}
                 </Badge>
               )}
+              {hasExtendedContent && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-neutral-400 hover:text-neutral-600 p-1"
+                >
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -203,7 +218,75 @@ export function TaskItem({ task }: TaskItemProps) {
               <Clock className="text-neutral-400" size={16} />
               <span>Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
             </div>
+            {hasExtendedContent && (
+              <div className="flex items-center space-x-1 text-neutral-500">
+                {task.notes && <FileText size={14} />}
+                {task.attachments && task.attachments.length > 0 && <Paperclip size={14} />}
+                {task.links && task.links.length > 0 && <Link size={14} />}
+              </div>
+            )}
           </div>
+
+          {hasExtendedContent && (
+            <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+              <CollapsibleContent className="mt-4 space-y-3">
+                {task.notes && (
+                  <div className="bg-neutral-50 p-3 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <FileText size={16} className="text-neutral-600 mr-2" />
+                      <span className="text-sm font-medium text-neutral-700">Notes</span>
+                    </div>
+                    <p className="text-sm text-neutral-700 whitespace-pre-wrap">{task.notes}</p>
+                  </div>
+                )}
+
+                {task.attachments && task.attachments.length > 0 && (
+                  <div className="bg-neutral-50 p-3 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <Paperclip size={16} className="text-neutral-600 mr-2" />
+                      <span className="text-sm font-medium text-neutral-700">
+                        Attachments ({task.attachments.length})
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {task.attachments.map((file, index) => (
+                        <div key={index} className="flex items-center text-sm text-neutral-600">
+                          <FileText size={14} className="mr-2" />
+                          <span>{file}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {task.links && task.links.length > 0 && (
+                  <div className="bg-neutral-50 p-3 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <Link size={16} className="text-neutral-600 mr-2" />
+                      <span className="text-sm font-medium text-neutral-700">
+                        Links ({task.links.length})
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {task.links.map((link, index) => (
+                        <div key={index} className="flex items-center">
+                          <Link size={14} className="mr-2 text-blue-600" />
+                          <a 
+                            href={link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline truncate"
+                          >
+                            {link}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
       </div>
     </div>

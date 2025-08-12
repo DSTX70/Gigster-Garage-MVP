@@ -9,6 +9,9 @@ export const tasks = pgTable("tasks", {
   completed: boolean("completed").notNull().default(false),
   dueDate: timestamp("due_date"),
   priority: text("priority", { enum: ["low", "medium", "high"] }).notNull().default("medium"),
+  notes: text("notes"),
+  attachments: text("attachments").array(),
+  links: text("links").array(),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
