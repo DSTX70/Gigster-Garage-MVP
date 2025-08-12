@@ -370,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date().toISOString(),
       };
 
-      const currentProgress = task.progressNotes || [];
+      const currentProgress = Array.isArray(task.progressNotes) ? task.progressNotes : [];
       const updatedProgressNotes = [...currentProgress, progressNote];
 
       const updatedTask = await storage.updateTask(id, {
