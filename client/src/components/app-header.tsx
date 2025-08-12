@@ -60,7 +60,7 @@ export function AppHeader() {
       <div className="max-w-4xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 w-10 h-10 rounded-lg flex items-center justify-center">
+            <div className="bg-primary w-10 h-10 rounded-lg flex items-center justify-center">
               <img 
                 src="@assets/IMG_3649_1755004491378.jpeg" 
                 alt="VSuite HQ Logo"
@@ -74,7 +74,10 @@ export function AppHeader() {
               />
               <CheckCheck className="text-white hidden" size={20} />
             </div>
-            <h1 className="text-2xl font-bold text-neutral-800">VSuite HQ</h1>
+            <div>
+              <h1 className="text-2xl font-black text-black">VSuite HQ</h1>
+              <p className="text-xs text-black font-medium">Simplified Workflow Hub</p>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">

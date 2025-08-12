@@ -1,8 +1,8 @@
-# VSuite HQ Application
+# VSuite HQ - Simplified Workflow Hub
 
 ## Overview
 
-VSuite HQ is a comprehensive task management application built with a full-stack TypeScript architecture. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
+VSuite HQ is a comprehensive task management application built with a full-stack TypeScript architecture. The application follows the VSuite HQ brand guidelines with exact color specifications (Blue #007BFF, Black #000000, White #FFFFFF) and typography using Helvetica Neue Bold/Inter Bold for headings and Helvetica Neue Regular/Inter Regular for body text. The tagline "Simplified Workflow Hub" appears consistently throughout the application. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
 
 ## User Preferences
 

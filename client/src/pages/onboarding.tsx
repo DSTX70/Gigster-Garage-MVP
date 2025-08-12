@@ -69,13 +69,16 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <Bell className="w-6 h-6 text-blue-600" />
+          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <Bell className="w-6 h-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Welcome to VSuite HQ!</CardTitle>
-          <p className="text-gray-600">
-            Set up your notification preferences to stay on top of your tasks
-          </p>
+          <div className="space-y-2">
+            <CardTitle className="text-2xl font-black text-black">VSuite HQ</CardTitle>
+            <p className="text-xs text-black font-medium">Simplified Workflow Hub</p>
+            <p className="text-gray-600 pt-2">
+              Set up your notification preferences to stay on top of your tasks
+            </p>
+          </div>
         </CardHeader>
         
         <CardContent>

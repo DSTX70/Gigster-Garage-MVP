@@ -54,7 +54,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-full">
+            <div className="bg-primary p-3 rounded-full">
               <img 
                 src="@assets/IMG_3649_1755004491378.jpeg" 
                 alt="VSuite HQ Logo"
@@ -69,8 +69,11 @@ export default function Login() {
               <Shield className="text-white hidden" size={32} />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">VSuite HQ</CardTitle>
-          <p className="text-gray-600">Sign in to your account</p>
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-black text-black">VSuite HQ</CardTitle>
+            <p className="text-xs text-black font-medium">Simplified Workflow Hub</p>
+            <p className="text-gray-600 pt-2">Sign in to your account</p>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

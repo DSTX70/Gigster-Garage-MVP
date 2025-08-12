@@ -75,10 +75,13 @@ export default function Signup() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-          <CardDescription className="text-center">
-            Join VSuite HQ to start managing your tasks efficiently
-          </CardDescription>
+          <div className="text-center space-y-2">
+            <CardTitle className="text-2xl font-black text-black">VSuite HQ</CardTitle>
+            <p className="text-xs text-black font-medium">Simplified Workflow Hub</p>
+            <CardDescription className="pt-2">
+              Join VSuite HQ to start managing your tasks efficiently
+            </CardDescription>
+          </div>
         </CardHeader>
         
         <form onSubmit={handleSubmit}>
