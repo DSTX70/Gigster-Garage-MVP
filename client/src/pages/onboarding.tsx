@@ -30,7 +30,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
-        title: "Welcome to TaskFlow!",
+        title: "Welcome to VSuite HQ!",
         description: "Your notification preferences have been saved.",
       });
       onComplete();
@@ -72,7 +72,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
             <Bell className="w-6 h-6 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl">Welcome to TaskFlow!</CardTitle>
+          <CardTitle className="text-2xl">Welcome to VSuite HQ!</CardTitle>
           <p className="text-gray-600">
             Set up your notification preferences to stay on top of your tasks
           </p>

@@ -47,7 +47,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 export async function sendHighPriorityTaskNotification(
   task: Task, 
   assignedUser: User,
-  fromEmail: string = 'noreply@taskflow.com'
+  fromEmail: string = 'noreply@vsuitehq.com'
 ): Promise<boolean> {
   if (!assignedUser.emailOptIn || !assignedUser.notificationEmail) {
     console.log(`User ${assignedUser.username} has email notifications disabled or no notification email set`);

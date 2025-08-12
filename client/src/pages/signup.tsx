@@ -35,7 +35,7 @@ export default function Signup() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Account Created!",
-        description: "Welcome to TaskFlow. You'll now complete a quick setup.",
+        description: "Welcome to VSuite HQ. You'll now complete a quick setup.",
       });
       // Refresh the page to trigger the authentication check and onboarding
       window.location.href = "/";
@@ -77,7 +77,7 @@ export default function Signup() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
           <CardDescription className="text-center">
-            Join TaskFlow to start managing your tasks efficiently
+            Join VSuite HQ to start managing your tasks efficiently
           </CardDescription>
         </CardHeader>
         

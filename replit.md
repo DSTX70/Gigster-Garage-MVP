@@ -1,8 +1,8 @@
-# TaskFlow Application
+# VSuite HQ Application
 
 ## Overview
 
-TaskFlow is a comprehensive task management application built with a full-stack TypeScript architecture. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
+VSuite HQ is a comprehensive task management application built with a full-stack TypeScript architecture. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
 
 ## User Preferences
 

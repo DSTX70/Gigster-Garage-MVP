@@ -53,7 +53,7 @@ export function TaskList({ filter, assigneeFilter = 'all' }: TaskListProps) {
           {filter === 'all' ? 'No tasks yet' : filter === 'active' ? 'No active tasks' : 'No completed tasks'}
         </h3>
         <p className="text-neutral-600">
-          {filter === 'all' ? 'Create your first task to get started with TaskFlow' : 
+          {filter === 'all' ? 'Create your first task to get started with VSuite HQ' : 
            filter === 'active' ? 'All tasks are completed!' : 'No tasks have been completed yet'}
         </p>
       </section>

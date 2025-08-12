@@ -24,7 +24,7 @@ export default function Login() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Login successful",
-        description: "Welcome to TaskFlow",
+        description: "Welcome to VSuite HQ",
       });
     },
     onError: (error: Error) => {
@@ -55,10 +55,21 @@ export default function Login() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="bg-blue-600 p-3 rounded-full">
-              <Shield className="text-white" size={32} />
+              <img 
+                src="@assets/IMG_3649_1755004491378.jpeg" 
+                alt="VSuite HQ Logo"
+                className="w-8 h-8 object-contain"
+                onError={(e) => {
+                  // Fallback to icon if logo fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <Shield className="text-white hidden" size={32} />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">TaskFlow</CardTitle>
+          <CardTitle className="text-2xl font-bold text-gray-900">VSuite HQ</CardTitle>
           <p className="text-gray-600">Sign in to your account</p>
         </CardHeader>
         <CardContent>
