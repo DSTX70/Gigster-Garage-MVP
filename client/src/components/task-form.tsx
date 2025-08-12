@@ -38,7 +38,7 @@ function UserDropdown({ value, onValueChange, placeholder }: {
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">Unassigned</SelectItem>
+        <SelectItem value="unassigned">Unassigned</SelectItem>
         {users.map((user) => (
           <SelectItem key={user.id} value={user.id}>
             {user.name} ({user.username})
@@ -152,7 +152,7 @@ export function TaskForm() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
-  const [assignedToId, setAssignedToId] = useState("");
+  const [assignedToId, setAssignedToId] = useState("unassigned");
   const [projectId, setProjectId] = useState("");
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
@@ -170,7 +170,7 @@ export function TaskForm() {
       setDescription("");
       setDueDate("");
       setPriority("medium");
-      setAssignedToId("");
+      setAssignedToId("unassigned");
       setProjectId("");
       setNotes("");
       setAttachments([]);
@@ -230,7 +230,7 @@ export function TaskForm() {
         description: description.trim(),
         dueDate: dueDate || null,
         priority,
-        assignedToId: assignedToId || null,
+        assignedToId: (assignedToId && assignedToId !== "unassigned") ? assignedToId : null,
         projectId: projectId || null,
         completed: false,
         notes: notes.trim() || null,
