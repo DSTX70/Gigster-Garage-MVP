@@ -2,6 +2,7 @@ import { AppHeader } from "@/components/app-header";
 import { TaskForm } from "@/components/task-form";
 import { TaskFilters } from "@/components/task-filters";
 import { TaskList } from "@/components/task-list";
+import { ReminderSystem } from "@/components/reminder-system";
 import { useState } from "react";
 
 export default function Home() {
@@ -10,6 +11,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-neutral-50">
       <AppHeader />
+      <ReminderSystem />
       
       <main className="max-w-4xl mx-auto px-4 py-8">
         <TaskForm />
