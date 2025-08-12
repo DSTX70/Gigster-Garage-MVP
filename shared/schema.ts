@@ -9,6 +9,7 @@ export const tasks = pgTable("tasks", {
   completed: boolean("completed").notNull().default(false),
   dueDate: timestamp("due_date"),
   priority: text("priority", { enum: ["low", "medium", "high"] }).notNull().default("medium"),
+  assignedTo: text("assigned_to"),
   notes: text("notes"),
   attachments: text("attachments").array(),
   links: text("links").array(),
@@ -24,6 +25,7 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
     if (typeof val === 'string') return new Date(val);
     return val;
   }),
+  assignedTo: z.string().optional(),
   attachments: z.array(z.string()).optional().default([]),
   links: z.array(z.string()).optional().default([]),
 });

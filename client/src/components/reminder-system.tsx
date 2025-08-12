@@ -80,30 +80,34 @@ export function ReminderSystem() {
       }
     });
 
-    // Check for new notifications to show browser notifications
-    activeReminders.forEach(reminder => {
-      const existing = notifications.find(n => n.id === reminder.id);
-      if (!existing && hasPermission) {
-        const priority = reminder.type === 'overdue' ? 'high' : 
-                        reminder.type === 'due_today' ? 'medium' : 'low';
-        
-        new Notification('TaskFlow Reminder', {
-          body: reminder.message,
-          icon: '/favicon.ico',
-          tag: reminder.id,
-        });
+    // Only update if reminders have actually changed
+    const currentIds = notifications.map(n => n.id).sort();
+    const newIds = activeReminders.map(r => r.id).sort();
+    const hasChanged = JSON.stringify(currentIds) !== JSON.stringify(newIds);
 
-        // Also show toast notification
-        toast({
-          title: "Task Reminder",
-          description: reminder.message,
-          variant: reminder.type === 'overdue' ? 'destructive' : 'default',
-        });
-      }
-    });
+    if (hasChanged) {
+      // Check for new notifications to show browser notifications
+      activeReminders.forEach(reminder => {
+        const existing = notifications.find(n => n.id === reminder.id);
+        if (!existing && hasPermission) {
+          new Notification('TaskFlow Reminder', {
+            body: reminder.message,
+            icon: '/favicon.ico',
+            tag: reminder.id,
+          });
 
-    setNotifications(activeReminders);
-  }, [tasks, hasPermission, notifications, toast]);
+          // Also show toast notification
+          toast({
+            title: "Task Reminder",
+            description: reminder.message,
+            variant: reminder.type === 'overdue' ? 'destructive' : 'default',
+          });
+        }
+      });
+
+      setNotifications(activeReminders);
+    }
+  }, [tasks, hasPermission, toast]);
 
   const dismissNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));

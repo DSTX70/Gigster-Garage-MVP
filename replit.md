@@ -2,11 +2,20 @@
 
 ## Overview
 
-TaskFlow is a modern task management application built with a full-stack TypeScript architecture. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with features like priority levels, due dates, and completion status. It follows a monorepo structure with a React frontend, Express.js backend, and PostgreSQL database using Drizzle ORM for type-safe database operations.
+TaskFlow is a comprehensive task management application built with a full-stack TypeScript architecture. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+- **Task Assignment System** (Added): Tasks can now be assigned to specific people with "Assign To" field
+- **Enhanced Task Details**: Added support for notes, file attachments, and URL links
+- **Advanced Filtering**: Added assignment-based filtering alongside status filtering
+- **Expandable Task Cards**: Tasks with additional content show expand/collapse functionality
+- **Real-time Reminders**: Browser notifications and visual alerts for due and overdue tasks
+- **Rich Task Display**: Visual indicators for assignments, notes, attachments, and links
 
 ## System Architecture
 

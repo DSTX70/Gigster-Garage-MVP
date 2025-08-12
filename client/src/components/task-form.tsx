@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus, X, FileText, Link, Upload } from "lucide-react";
+import { Plus, X, FileText, Link, Upload, User } from "lucide-react";
 import { insertTaskSchema, type InsertTask } from "@shared/schema";
 
 export function TaskForm() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [assignedTo, setAssignedTo] = useState("");
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([]);
@@ -31,6 +32,7 @@ export function TaskForm() {
       setDescription("");
       setDueDate("");
       setPriority("medium");
+      setAssignedTo("");
       setNotes("");
       setAttachments([]);
       setLinks([]);
@@ -89,6 +91,7 @@ export function TaskForm() {
         description: description.trim(),
         dueDate: dueDate || null,
         priority,
+        assignedTo: assignedTo.trim() || null,
         completed: false,
         notes: notes.trim() || null,
         attachments: attachments,
@@ -150,6 +153,21 @@ export function TaskForm() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full h-24"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="assignedTo" className="block text-sm font-medium text-neutral-700 mb-2 flex items-center">
+              <User size={16} className="mr-2" />
+              Assign To
+            </Label>
+            <Input
+              id="assignedTo"
+              type="text"
+              placeholder="Enter person's name or email"
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="w-full"
             />
           </div>
 

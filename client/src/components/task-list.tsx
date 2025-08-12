@@ -5,16 +5,23 @@ import { ListTodo } from "lucide-react";
 
 interface TaskListProps {
   filter: 'all' | 'active' | 'completed';
+  assigneeFilter?: string;
 }
 
-export function TaskList({ filter }: TaskListProps) {
+export function TaskList({ filter, assigneeFilter = 'all' }: TaskListProps) {
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
   });
 
   const filteredTasks = tasks.filter(task => {
-    if (filter === 'active') return !task.completed;
-    if (filter === 'completed') return task.completed;
+    // Filter by completion status
+    if (filter === 'active' && task.completed) return false;
+    if (filter === 'completed' && !task.completed) return false;
+    
+    // Filter by assignee
+    if (assigneeFilter === 'unassigned' && task.assignedTo) return false;
+    if (assigneeFilter !== 'all' && assigneeFilter !== 'unassigned' && task.assignedTo !== assigneeFilter) return false;
+    
     return true;
   });
 

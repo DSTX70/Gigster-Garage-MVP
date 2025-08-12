@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FileText, Link, Paperclip } from "lucide-react";
+import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FileText, Link, Paperclip, User } from "lucide-react";
 import type { Task } from "@shared/schema";
 import { formatDistanceToNow, isAfter, isBefore, startOfDay } from "date-fns";
 
@@ -212,6 +212,12 @@ export function TaskItem({ task }: TaskItemProps) {
               <div className="flex items-center space-x-1">
                 {statusInfo?.icon || (isOverdue ? <AlertTriangle size={16} /> : <Calendar className="text-accent" size={16} />)}
                 <span>{getDueDateText()}</span>
+              </div>
+            )}
+            {task.assignedTo && (
+              <div className="flex items-center space-x-1 text-blue-600">
+                <User size={16} />
+                <span>Assigned to: {task.assignedTo}</span>
               </div>
             )}
             <div className="flex items-center space-x-1 text-neutral-600">

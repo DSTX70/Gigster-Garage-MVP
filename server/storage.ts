@@ -46,6 +46,7 @@ export class MemStorage implements IStorage {
       completed: insertTask.completed ?? false,
       priority: insertTask.priority ?? "medium",
       dueDate: insertTask.dueDate || null,
+      assignedTo: insertTask.assignedTo || null,
       notes: insertTask.notes || null,
       attachments: insertTask.attachments || [],
       links: insertTask.links || [],
