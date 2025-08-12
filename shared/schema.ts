@@ -18,6 +18,14 @@ export const tasks = pgTable("tasks", {
 export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
+}).extend({
+  dueDate: z.union([z.date(), z.string(), z.null()]).optional().transform(val => {
+    if (!val || val === '') return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+  attachments: z.array(z.string()).optional().default([]),
+  links: z.array(z.string()).optional().default([]),
 });
 
 export const updateTaskSchema = createInsertSchema(tasks).omit({

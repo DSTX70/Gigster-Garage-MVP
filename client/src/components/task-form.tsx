@@ -87,19 +87,20 @@ export function TaskForm() {
     try {
       const taskData = insertTaskSchema.parse({
         description: description.trim(),
-        dueDate: dueDate ? new Date(dueDate) : null,
+        dueDate: dueDate || null,
         priority,
         completed: false,
         notes: notes.trim() || null,
-        attachments: attachments.length > 0 ? attachments : [],
-        links: links.length > 0 ? links : [],
+        attachments: attachments,
+        links: links,
       });
 
       createTaskMutation.mutate(taskData);
     } catch (error) {
+      console.error('Validation error:', error);
       toast({
         title: "Error",
-        description: "Invalid task data",
+        description: error instanceof Error ? error.message : "Invalid task data",
         variant: "destructive",
       });
     }
