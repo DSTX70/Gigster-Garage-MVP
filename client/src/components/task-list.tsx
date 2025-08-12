@@ -19,8 +19,8 @@ export function TaskList({ filter, assigneeFilter = 'all' }: TaskListProps) {
     if (filter === 'completed' && !task.completed) return false;
     
     // Filter by assignee
-    if (assigneeFilter === 'unassigned' && task.assignedTo) return false;
-    if (assigneeFilter !== 'all' && assigneeFilter !== 'unassigned' && task.assignedTo !== assigneeFilter) return false;
+    if (assigneeFilter === 'unassigned' && task.assignedToId) return false;
+    if (assigneeFilter !== 'all' && assigneeFilter !== 'unassigned' && task.assignedToId !== assigneeFilter) return false;
     
     return true;
   });

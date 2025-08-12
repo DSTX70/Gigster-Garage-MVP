@@ -217,7 +217,7 @@ export function TaskItem({ task }: TaskItemProps) {
             {task.assignedTo && (
               <div className="flex items-center space-x-1 text-blue-600">
                 <User size={16} />
-                <span>Assigned to: {task.assignedTo}</span>
+                <span>Assigned to: {task.assignedTo.name}</span>
               </div>
             )}
             <div className="flex items-center space-x-1 text-neutral-600">

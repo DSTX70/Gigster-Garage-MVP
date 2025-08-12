@@ -21,7 +21,7 @@ export function AssignmentFilter({ selectedAssignee, onAssigneeChange }: Assignm
         .filter(task => task.assignedTo)
         .map(task => task.assignedTo!)
     )
-  ).sort();
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   if (assignees.length === 0) {
     return null;
@@ -41,8 +41,8 @@ export function AssignmentFilter({ selectedAssignee, onAssigneeChange }: Assignm
           <SelectItem value="all">All assignees</SelectItem>
           <SelectItem value="unassigned">Unassigned</SelectItem>
           {assignees.map((assignee) => (
-            <SelectItem key={assignee} value={assignee}>
-              {assignee}
+            <SelectItem key={assignee.id} value={assignee.id}>
+              {assignee.name}
             </SelectItem>
           ))}
         </SelectContent>

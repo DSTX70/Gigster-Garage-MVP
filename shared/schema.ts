@@ -2,30 +2,76 @@ import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
+// Users table
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username").unique().notNull(),
+  password: varchar("password").notNull(), // Will be hashed
+  role: text("role", { enum: ["admin", "user"] }).notNull().default("user"),
+  name: text("name").notNull(),
+  email: varchar("email"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// Tasks table
 export const tasks = pgTable("tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   description: text("description").notNull(),
   completed: boolean("completed").notNull().default(false),
   dueDate: timestamp("due_date"),
   priority: text("priority", { enum: ["low", "medium", "high"] }).notNull().default("medium"),
-  assignedTo: text("assigned_to"),
+  assignedToId: varchar("assigned_to_id").references(() => users.id),
+  createdById: varchar("created_by_id").references(() => users.id).notNull(),
   notes: text("notes"),
   attachments: text("attachments").array(),
   links: text("links").array(),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  assignedTasks: many(tasks, { relationName: "assignedTasks" }),
+  createdTasks: many(tasks, { relationName: "createdTasks" }),
+}));
+
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  assignedTo: one(users, {
+    fields: [tasks.assignedToId],
+    references: [users.id],
+    relationName: "assignedTasks",
+  }),
+  createdBy: one(users, {
+    fields: [tasks.createdById],
+    references: [users.id],
+    relationName: "createdTasks",
+  }),
+}));
+
+// User schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+// Task schemas
 export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
+  createdById: true,
 }).extend({
   dueDate: z.union([z.date(), z.string(), z.null()]).optional().transform(val => {
     if (!val || val === '') return null;
     if (typeof val === 'string') return new Date(val);
     return val;
   }),
-  assignedTo: z.string().optional(),
+  assignedToId: z.string().optional(),
   attachments: z.array(z.string()).optional().default([]),
   links: z.array(z.string()).optional().default([]),
 });
@@ -33,8 +79,13 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
 export const updateTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
+  createdById: true,
 }).partial();
 
+// Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type LoginRequest = z.infer<typeof loginSchema>;
+export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type UpdateTask = z.infer<typeof updateTaskSchema>;
-export type Task = typeof tasks.$inferSelect;

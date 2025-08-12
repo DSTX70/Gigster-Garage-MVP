@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,14 +8,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { Plus, X, FileText, Link, Upload, User } from "lucide-react";
-import { insertTaskSchema, type InsertTask } from "@shared/schema";
+import { insertTaskSchema, type InsertTask, type User as UserType } from "@shared/schema";
+
+// User dropdown component
+function UserDropdown({ value, onValueChange, placeholder }: {
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const { isAdmin } = useAuth();
+  const { data: users = [] } = useQuery<UserType[]>({
+    queryKey: ["/api/users"],
+    enabled: isAdmin, // Only load users if current user is admin
+  });
+
+  if (!isAdmin) {
+    return (
+      <div className="text-sm text-gray-500 p-2 bg-gray-50 rounded border">
+        Only administrators can assign tasks to users
+      </div>
+    );
+  }
+
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="">Unassigned</SelectItem>
+        {users.map((user) => (
+          <SelectItem key={user.id} value={user.id}>
+            {user.name} ({user.username})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 export function TaskForm() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
-  const [assignedTo, setAssignedTo] = useState("");
+  const [assignedToId, setAssignedToId] = useState("");
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([]);
@@ -32,7 +70,7 @@ export function TaskForm() {
       setDescription("");
       setDueDate("");
       setPriority("medium");
-      setAssignedTo("");
+      setAssignedToId("");
       setNotes("");
       setAttachments([]);
       setLinks([]);
@@ -91,7 +129,7 @@ export function TaskForm() {
         description: description.trim(),
         dueDate: dueDate || null,
         priority,
-        assignedTo: assignedTo.trim() || null,
+        assignedToId: assignedToId || null,
         completed: false,
         notes: notes.trim() || null,
         attachments: attachments,
@@ -157,17 +195,14 @@ export function TaskForm() {
           </div>
 
           <div>
-            <Label htmlFor="assignedTo" className="block text-sm font-medium text-neutral-700 mb-2 flex items-center">
+            <Label htmlFor="assignedToId" className="block text-sm font-medium text-neutral-700 mb-2 flex items-center">
               <User size={16} className="mr-2" />
               Assign To
             </Label>
-            <Input
-              id="assignedTo"
-              type="text"
-              placeholder="Enter person's name or email"
-              value={assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full"
+            <UserDropdown
+              value={assignedToId}
+              onValueChange={setAssignedToId}
+              placeholder="Select a user to assign..."
             />
           </div>
 
