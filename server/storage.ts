@@ -1,8 +1,8 @@
 import { eq, and, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, UpdateTask } from "@shared/schema";
+import { users, tasks, projects } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, UpdateTask, Project, InsertProject } from "@shared/schema";
 
 export interface IStorage {
   // User management
@@ -12,6 +12,12 @@ export interface IStorage {
   createUser(insertUser: InsertUser): Promise<User>;
   deleteUser(id: string): Promise<boolean>;
   verifyPassword(user: User, password: string): Promise<boolean>;
+
+  // Project management
+  getProjects(): Promise<Project[]>;
+  getProject(id: string): Promise<Project | undefined>;
+  createProject(insertProject: InsertProject): Promise<Project>;
+  getOrCreateProject(name: string): Promise<Project>;
 
   // Task management
   getTasks(userId?: string): Promise<Task[]>;
@@ -58,6 +64,35 @@ export class DatabaseStorage implements IStorage {
     return await bcrypt.compare(password, user.password);
   }
 
+  // Project operations
+  async getProjects(): Promise<Project[]> {
+    return await db.select().from(projects).orderBy(projects.name);
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [project] = await db
+      .insert(projects)
+      .values(insertProject)
+      .returning();
+    return project;
+  }
+
+  async getOrCreateProject(name: string): Promise<Project> {
+    // First try to find existing project
+    const [existing] = await db.select().from(projects).where(eq(projects.name, name));
+    if (existing) {
+      return existing;
+    }
+
+    // Create new project if not found
+    return await this.createProject({ name });
+  }
+
   // Task operations
   async getTasks(userId?: string): Promise<Task[]> {
     const query = db
@@ -69,14 +104,17 @@ export class DatabaseStorage implements IStorage {
         priority: tasks.priority,
         assignedToId: tasks.assignedToId,
         createdById: tasks.createdById,
+        projectId: tasks.projectId,
         notes: tasks.notes,
         attachments: tasks.attachments,
         links: tasks.links,
         createdAt: tasks.createdAt,
         assignedTo: users,
+        project: projects,
       })
       .from(tasks)
-      .leftJoin(users, eq(tasks.assignedToId, users.id));
+      .leftJoin(users, eq(tasks.assignedToId, users.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id));
 
     // If userId is provided, filter tasks to only those assigned to the user
     if (userId) {
@@ -84,6 +122,7 @@ export class DatabaseStorage implements IStorage {
       return results.map(row => ({
         ...row,
         assignedTo: row.assignedTo || undefined,
+        project: row.project || undefined,
       }));
     } else {
       // Admin can see all tasks
@@ -91,6 +130,7 @@ export class DatabaseStorage implements IStorage {
       return results.map(row => ({
         ...row,
         assignedTo: row.assignedTo || undefined,
+        project: row.project || undefined,
       }));
     }
   }
@@ -105,14 +145,17 @@ export class DatabaseStorage implements IStorage {
         priority: tasks.priority,
         assignedToId: tasks.assignedToId,
         createdById: tasks.createdById,
+        projectId: tasks.projectId,
         notes: tasks.notes,
         attachments: tasks.attachments,
         links: tasks.links,
         createdAt: tasks.createdAt,
         assignedTo: users,
+        project: projects,
       })
       .from(tasks)
       .leftJoin(users, eq(tasks.assignedToId, users.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
       .where(eq(tasks.id, id));
 
     if (!result) return undefined;
@@ -120,6 +163,7 @@ export class DatabaseStorage implements IStorage {
     return {
       ...result,
       assignedTo: result.assignedTo || undefined,
+      project: result.project || undefined,
     };
   }
 
@@ -130,6 +174,7 @@ export class DatabaseStorage implements IStorage {
         ...insertTask,
         createdById,
         assignedToId: insertTask.assignedToId || null,
+        projectId: insertTask.projectId || null,
         dueDate: insertTask.dueDate || null,
         notes: insertTask.notes || null,
         attachments: insertTask.attachments || [],

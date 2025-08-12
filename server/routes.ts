@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema } from "@shared/schema";
+import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema, insertProjectSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
 
 // Extend session type
@@ -101,6 +101,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } else {
       res.status(401).json({ message: "Not authenticated" });
+    }
+  });
+
+  // Project routes
+  app.get("/api/projects", requireAuth, async (req, res) => {
+    try {
+      const projects = await storage.getProjects();
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  app.post("/api/projects", requireAuth, async (req, res) => {
+    try {
+      const result = insertProjectSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid project data", 
+          errors: result.error.errors 
+        });
+      }
+
+      const project = await storage.getOrCreateProject(result.data.name);
+      res.json(project);
+    } catch (error) {
+      console.error("Error creating/finding project:", error);
+      res.status(500).json({ message: "Failed to create project" });
     }
   });
 

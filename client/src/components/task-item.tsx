@@ -214,6 +214,12 @@ export function TaskItem({ task }: TaskItemProps) {
                 <span>{getDueDateText()}</span>
               </div>
             )}
+            {task.project && (
+              <div className="flex items-center space-x-1 text-green-600">
+                <FileText size={16} />
+                <span>Project: {task.project.name}</span>
+              </div>
+            )}
             {task.assignedTo && (
               <div className="flex items-center space-x-1 text-blue-600">
                 <User size={16} />

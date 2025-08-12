@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, X, FileText, Link, Upload, User } from "lucide-react";
-import { insertTaskSchema, type InsertTask, type User as UserType } from "@shared/schema";
+import { insertTaskSchema, type InsertTask, type User as UserType, type Project } from "@shared/schema";
 
 // User dropdown component
 function UserDropdown({ value, onValueChange, placeholder }: {
@@ -49,11 +49,111 @@ function UserDropdown({ value, onValueChange, placeholder }: {
   );
 }
 
+// Project dropdown component
+function ProjectDropdown({ value, onValueChange, placeholder }: {
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const [customProject, setCustomProject] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+  });
+
+  const createProjectMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/projects", { name });
+      return response.json();
+    },
+    onSuccess: (project) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      onValueChange(project.id);
+      setCustomProject("");
+      setShowCustomInput(false);
+    },
+  });
+
+  const handleCreateProject = () => {
+    if (customProject.trim()) {
+      createProjectMutation.mutate(customProject.trim());
+    }
+  };
+
+  // Find default "Add a project" entry
+  const defaultProject = projects.find(p => p.name === "Add a project");
+
+  return (
+    <div className="space-y-2">
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {defaultProject && (
+            <SelectItem value={defaultProject.id}>
+              {defaultProject.name}
+            </SelectItem>
+          )}
+          {projects
+            .filter(p => p.name !== "Add a project")
+            .map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+      
+      {showCustomInput ? (
+        <div className="flex gap-2">
+          <Input
+            value={customProject}
+            onChange={(e) => setCustomProject(e.target.value)}
+            placeholder="Enter project name"
+            className="flex-1"
+          />
+          <Button
+            type="button"
+            onClick={handleCreateProject}
+            disabled={!customProject.trim() || createProjectMutation.isPending}
+            size="sm"
+          >
+            {createProjectMutation.isPending ? "..." : "Add"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setShowCustomInput(false);
+              setCustomProject("");
+            }}
+            size="sm"
+          >
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowCustomInput(true)}
+          className="w-full text-sm"
+        >
+          <Plus size={14} className="mr-1" />
+          Create New Project
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function TaskForm() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [assignedToId, setAssignedToId] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([]);
@@ -71,6 +171,7 @@ export function TaskForm() {
       setDueDate("");
       setPriority("medium");
       setAssignedToId("");
+      setProjectId("");
       setNotes("");
       setAttachments([]);
       setLinks([]);
@@ -130,6 +231,7 @@ export function TaskForm() {
         dueDate: dueDate || null,
         priority,
         assignedToId: assignedToId || null,
+        projectId: projectId || null,
         completed: false,
         notes: notes.trim() || null,
         attachments: attachments,
@@ -191,6 +293,18 @@ export function TaskForm() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full h-24"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="projectId" className="block text-sm font-medium text-neutral-700 mb-2 flex items-center">
+              <FileText size={16} className="mr-2" />
+              Project
+            </Label>
+            <ProjectDropdown
+              value={projectId}
+              onValueChange={setProjectId}
+              placeholder="Select or create a project..."
             />
           </div>
 

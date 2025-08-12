@@ -10,12 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **Task Assignment System** (Added): Tasks can now be assigned to specific people with "Assign To" field
+- **Project Organization System** (Added January 2025): Tasks can now be organized by projects with dropdown selection and project creation
+- **Multi-User Authentication** (Added): Full user authentication system with login/logout, session management, and role-based access
+- **Database Migration** (Completed): Migrated from in-memory storage to PostgreSQL database with proper user and project relationships
+- **Admin User Management** (Added): Admin users can create and manage user accounts with role assignments
+- **Task Assignment System** (Added): Tasks can now be assigned to specific people with "Assign To" field using database user IDs
 - **Enhanced Task Details**: Added support for notes, file attachments, and URL links
-- **Advanced Filtering**: Added assignment-based filtering alongside status filtering
-- **Expandable Task Cards**: Tasks with additional content show expand/collapse functionality
+- **User-Based Task Filtering**: Users only see tasks assigned to them, admins can see all tasks
 - **Real-time Reminders**: Browser notifications and visual alerts for due and overdue tasks
-- **Rich Task Display**: Visual indicators for assignments, notes, attachments, and links
+- **Rich Task Display**: Visual indicators for projects, assignments, notes, attachments, and links
 
 ## System Architecture
 
@@ -48,10 +51,13 @@ The backend implements a clean architecture with separated concerns for routes, 
 
 The application uses PostgreSQL with Drizzle ORM:
 
-- **Schema**: Single `tasks` table with fields for description, completion status, due date, priority, and timestamps
-- **Type Safety**: Drizzle generates TypeScript types from schema definitions
+- **Users Table**: Stores user accounts with authentication, roles (admin/user), and profile information
+- **Projects Table**: Organizes tasks by project with automatic project creation from dropdown
+- **Tasks Table**: Core task data with relationships to users (assignee/creator) and projects
+- **Type Safety**: Drizzle generates TypeScript types from schema definitions with proper relations
 - **Migrations**: Database schema changes managed through Drizzle migrations
 - **Validation**: Shared Zod schemas ensure consistent validation between frontend and backend
+- **Authentication**: Session-based authentication with bcrypt password hashing
 
 ### Build and Development
 

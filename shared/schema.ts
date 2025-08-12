@@ -15,6 +15,13 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Projects table
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Tasks table
 export const tasks = pgTable("tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -24,6 +31,7 @@ export const tasks = pgTable("tasks", {
   priority: text("priority", { enum: ["low", "medium", "high"] }).notNull().default("medium"),
   assignedToId: varchar("assigned_to_id").references(() => users.id),
   createdById: varchar("created_by_id").references(() => users.id).notNull(),
+  projectId: varchar("project_id").references(() => projects.id),
   notes: text("notes"),
   attachments: text("attachments").array(),
   links: text("links").array(),
@@ -36,6 +44,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdTasks: many(tasks, { relationName: "createdTasks" }),
 }));
 
+export const projectsRelations = relations(projects, ({ many }) => ({
+  tasks: many(tasks),
+}));
+
 export const tasksRelations = relations(tasks, ({ one }) => ({
   assignedTo: one(users, {
     fields: [tasks.assignedToId],
@@ -46,6 +58,10 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
     fields: [tasks.createdById],
     references: [users.id],
     relationName: "createdTasks",
+  }),
+  project: one(projects, {
+    fields: [tasks.projectId],
+    references: [projects.id],
   }),
 }));
 
@@ -72,6 +88,7 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
     return val;
   }),
   assignedToId: z.string().optional(),
+  projectId: z.string().optional(),
   attachments: z.array(z.string()).optional().default([]),
   links: z.array(z.string()).optional().default([]),
 });
@@ -82,10 +99,18 @@ export const updateTaskSchema = createInsertSchema(tasks).omit({
   createdById: true,
 }).partial();
 
+// Project schemas
+export const insertProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type UpdateTask = z.infer<typeof updateTaskSchema>;
