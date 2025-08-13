@@ -16,10 +16,12 @@ import {
   User,
   StickyNote,
   Paperclip,
-  ExternalLink
+  ExternalLink,
+  ArrowLeft
 } from "lucide-react";
 import { format, isAfter, startOfDay } from "date-fns";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import type { User as UserType, Task } from "@shared/schema";
 
 interface UserWithTasks extends UserType {
@@ -27,6 +29,7 @@ interface UserWithTasks extends UserType {
 }
 
 export default function Dashboard() {
+  const [, navigate] = useLocation();
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserType[]>({
@@ -263,12 +266,22 @@ export default function Dashboard() {
     <div className="min-h-screen bg-neutral-50">
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Users className="mr-3" size={32} />
-              Admin Dashboard
-            </h1>
-            <p className="text-gray-600 mt-1">Overview of all users and their assigned tasks</p>
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/")}
+              className="flex items-center"
+            >
+              <ArrowLeft size={16} className="mr-2" />
+              Back to Tasks
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <Users className="mr-3" size={32} />
+                Admin Dashboard
+              </h1>
+              <p className="text-gray-600 mt-1">Overview of all users and their assigned tasks</p>
+            </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <div className="text-sm text-gray-600">

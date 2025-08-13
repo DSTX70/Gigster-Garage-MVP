@@ -98,6 +98,14 @@ export function AppHeader() {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => navigate("/")}
+                >
+                  <CheckCheck size={16} className="mr-2" />
+                  Tasks
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => navigate("/dashboard")}
                 >
                   <Users size={16} className="mr-2" />

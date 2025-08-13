@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus, Trash2, Users, UserPlus } from "lucide-react";
+import { Plus, Trash2, Users, UserPlus, ArrowLeft, CheckCheck } from "lucide-react";
 import type { User } from "@shared/schema";
+import { useLocation } from "wouter";
 
 export default function Admin() {
+  const [, navigate] = useLocation();
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({
     username: "",
@@ -97,12 +99,22 @@ export default function Admin() {
     <div className="min-h-screen bg-neutral-50">
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Users className="mr-3" size={32} />
-              User Management
-            </h1>
-            <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/")}
+              className="flex items-center"
+            >
+              <ArrowLeft size={16} className="mr-2" />
+              Back to Tasks
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <Users className="mr-3" size={32} />
+                User Management
+              </h1>
+              <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
+            </div>
           </div>
           <Button
             onClick={() => setShowAddUser(!showAddUser)}
