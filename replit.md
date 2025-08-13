@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 
 - **Progress Section** (Added January 2025): Users can add progress notes with autofilled dates and comments for task tracking
 - **Email Notifications** (Completed January 2025): High priority tasks trigger email notifications with complete task details and hotlink to app - fully operational with verified SendGrid sender
-- **SMS Notifications** (Ready January 2025): Twilio integration implemented and ready, requires valid Twilio credentials to activate SMS functionality
+- **SMS Notifications** (Pending Validation January 2025): Twilio integration implemented with correct Account SID, awaiting phone number validation for trial account activation
 - **User Onboarding** (Added January 2025): First-time login flow to collect notification preferences including email and SMS opt-in
 - **Signup Functionality** (Added January 2025): New users can create accounts with username, password, name, and email
 - **Admin Dashboard** (Added January 2025): Comprehensive admin view showing all users and their assigned tasks with full details
