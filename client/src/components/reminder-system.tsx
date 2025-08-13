@@ -10,7 +10,7 @@ import { format, isToday, isTomorrow, isAfter, addDays, startOfDay } from 'date-
 interface ReminderNotification {
   id: string;
   task: Task;
-  type: 'due_today' | 'due_tomorrow' | 'overdue';
+  type: 'due_1hour' | 'due_24hour' | 'due_today' | 'due_tomorrow' | 'overdue';
   message: string;
 }
 
@@ -52,8 +52,10 @@ export function ReminderSystem() {
 
       const dueDate = new Date(task.dueDate);
       const dueDateStart = startOfDay(dueDate);
+      const timeDiff = dueDate.getTime() - now.getTime();
+      const hoursDiff = timeDiff / (1000 * 60 * 60);
 
-      if (dueDateStart.getTime() < today.getTime()) {
+      if (dueDate.getTime() < now.getTime()) {
         // Overdue
         activeReminders.push({
           id: `overdue-${task.id}`,
@@ -61,8 +63,26 @@ export function ReminderSystem() {
           type: 'overdue',
           message: `"${task.description}" is overdue!`
         });
+      } else if (hoursDiff <= 1 && hoursDiff > 0) {
+        // Due within 1 hour
+        const minutesLeft = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60));
+        activeReminders.push({
+          id: `1hour-${task.id}`,
+          task,
+          type: 'due_1hour',
+          message: `"${task.description}" is due in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}!`
+        });
+      } else if (hoursDiff <= 24 && hoursDiff > 1) {
+        // Due within 24 hours
+        const hoursLeft = Math.ceil(hoursDiff);
+        activeReminders.push({
+          id: `24hour-${task.id}`,
+          task,
+          type: 'due_24hour',
+          message: `"${task.description}" is due in ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}`
+        });
       } else if (dueDateStart.getTime() === today.getTime()) {
-        // Due today
+        // Due today (fallback for tasks without specific time)
         activeReminders.push({
           id: `today-${task.id}`,
           task,
@@ -117,6 +137,10 @@ export function ReminderSystem() {
     switch (type) {
       case 'overdue':
         return 'bg-red-50 border-red-200 text-red-800';
+      case 'due_1hour':
+        return 'bg-red-50 border-red-300 text-red-900';
+      case 'due_24hour':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
       case 'due_today':
         return 'bg-orange-50 border-orange-200 text-orange-800';
       case 'due_tomorrow':
@@ -130,6 +154,10 @@ export function ReminderSystem() {
     switch (type) {
       case 'overdue':
         return '🚨';
+      case 'due_1hour':
+        return '⚡';
+      case 'due_24hour':
+        return '⏳';
       case 'due_today':
         return '⏰';
       case 'due_tomorrow':
@@ -158,7 +186,7 @@ export function ReminderSystem() {
                   {notification.message}
                 </p>
                 <p className="text-xs mt-1 opacity-75">
-                  Due: {format(new Date(notification.task.dueDate!), 'MMM d, yyyy')}
+                  Due: {format(new Date(notification.task.dueDate!), 'MMM d, yyyy h:mm a')}
                 </p>
                 <Badge 
                   className="mt-2 text-xs"

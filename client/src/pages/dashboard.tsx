@@ -114,7 +114,7 @@ export default function Dashboard() {
           {task.dueDate && (
             <div className="flex items-center space-x-2">
               <Calendar size={16} />
-              <span>Due: {format(new Date(task.dueDate), 'MMM d, yyyy')}</span>
+              <span>Due: {format(new Date(task.dueDate), 'MMM d, yyyy h:mm a')}</span>
             </div>
           )}
           

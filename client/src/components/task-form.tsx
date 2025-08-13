@@ -151,6 +151,7 @@ export function TaskForm() {
   const { user: currentUser, isAdmin } = useAuth();
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [dueTime, setDueTime] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   // Default to current user for non-admins, unassigned for admins
   const [assignedToId, setAssignedToId] = useState(isAdmin ? "unassigned" : (currentUser?.id || "unassigned"));
@@ -170,6 +171,7 @@ export function TaskForm() {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setDescription("");
       setDueDate("");
+      setDueTime("");
       setPriority("medium");
       setAssignedToId(isAdmin ? "unassigned" : (currentUser?.id || "unassigned"));
       setProjectId("");
@@ -227,9 +229,20 @@ export function TaskForm() {
     }
 
     try {
+      // Combine date and time into a single datetime
+      let combinedDateTime = null;
+      if (dueDate) {
+        if (dueTime) {
+          combinedDateTime = new Date(`${dueDate}T${dueTime}`);
+        } else {
+          // Default to end of day if no time specified
+          combinedDateTime = new Date(`${dueDate}T23:59`);
+        }
+      }
+
       const taskData = insertTaskSchema.parse({
         description: description.trim(),
-        dueDate: dueDate || null,
+        dueDate: combinedDateTime,
         priority,
         assignedToId: (assignedToId && assignedToId !== "unassigned") ? assignedToId : null,
         projectId: projectId || null,
@@ -255,7 +268,7 @@ export function TaskForm() {
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
         <h2 className="text-lg font-semibold text-neutral-800 mb-4">Add New Task</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-2">
                 Task Description
@@ -279,6 +292,19 @@ export function TaskForm() {
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full"
+              />
+            </div>
+            <div>
+              <Label htmlFor="dueTime" className="block text-sm font-medium text-neutral-700 mb-2">
+                Due Time
+              </Label>
+              <Input
+                id="dueTime"
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className="w-full"
+                placeholder="Optional"
               />
             </div>
           </div>

@@ -173,7 +173,7 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                   <Calendar size={16} />
                   <span>
                     {task.dueDate 
-                      ? `Due: ${format(new Date(task.dueDate), 'PPPP')}`
+                      ? `Due: ${format(new Date(task.dueDate), 'PPPP \'at\' h:mm a')}`
                       : 'No due date set'
                     }
                   </span>
