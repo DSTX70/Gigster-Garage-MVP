@@ -29,7 +29,7 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
     try {
       twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
       console.log("✅ Twilio SMS integration configured successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Twilio initialization failed:", error.message);
       console.log("⚠️  SMS notifications disabled due to invalid credentials");
     }
@@ -233,8 +233,11 @@ export async function sendSMSNotification(
     });
     console.log(`📱 SMS sent successfully to ${assignedUser.phone}`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Twilio SMS error:', error);
+    if (error.code === 20003) {
+      console.log('💡 Tip: Check that your Auth Token is correct and phone number is verified for trial accounts');
+    }
     return false;
   }
 }
