@@ -1,14 +1,17 @@
 import { MailService } from '@sendgrid/mail';
 import type { Task, User } from '@shared/schema';
 
-if (!process.env.SENDGRID_API_KEY) {
+const SENDGRID_KEY = process.env.SENDGRID_API_KEY_2 || process.env.SENDGRID_API_KEY;
+
+if (!SENDGRID_KEY) {
   console.warn("SENDGRID_API_KEY environment variable not set - email notifications disabled");
 }
 
 const mailService = new MailService();
-if (process.env.SENDGRID_API_KEY) {
-  if (process.env.SENDGRID_API_KEY.startsWith('SG.')) {
-    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+if (SENDGRID_KEY) {
+  if (SENDGRID_KEY.startsWith('SG.')) {
+    mailService.setApiKey(SENDGRID_KEY);
+    console.log("✅ SendGrid API key configured successfully");
   } else {
     console.warn("Invalid SendGrid API key format - must start with 'SG.' - email notifications disabled");
   }
@@ -27,7 +30,9 @@ interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
-  if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_API_KEY.startsWith('SG.')) {
+  const SENDGRID_KEY = process.env.SENDGRID_API_KEY_2 || process.env.SENDGRID_API_KEY;
+  
+  if (!SENDGRID_KEY || !SENDGRID_KEY.startsWith('SG.')) {
     console.log("📧 Email notification would be sent:", params.subject, "to", params.to);
     console.log("   (Email disabled: SendGrid API key not configured properly)");
     return false;
