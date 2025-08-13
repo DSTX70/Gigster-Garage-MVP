@@ -38,9 +38,9 @@ function UserDropdown({ value, onValueChange, placeholder }: {
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="unassigned">Unassigned</SelectItem>
-        {users.map((user) => (
-          <SelectItem key={user.id} value={user.id}>
+        <SelectItem key="unassigned" value="unassigned">Unassigned</SelectItem>
+        {users.map((user, index) => (
+          <SelectItem key={`${user.id}-${index}`} value={user.id}>
             {user.name} ({user.username})
           </SelectItem>
         ))}
