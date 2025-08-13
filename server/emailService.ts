@@ -25,8 +25,18 @@ const APP_URL = process.env.REPLIT_DOMAINS
 // Initialize Twilio client if credentials are available
 let twilioClient: twilio.Twilio | null = null;
 if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-  console.log("✅ Twilio SMS integration configured successfully");
+  if (process.env.TWILIO_ACCOUNT_SID.startsWith('AC')) {
+    try {
+      twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+      console.log("✅ Twilio SMS integration configured successfully");
+    } catch (error) {
+      console.error("❌ Twilio initialization failed:", error.message);
+      console.log("⚠️  SMS notifications disabled due to invalid credentials");
+    }
+  } else {
+    console.error("❌ Invalid Twilio Account SID - must start with 'AC', got:", process.env.TWILIO_ACCOUNT_SID.substring(0, 2));
+    console.log("⚠️  SMS notifications disabled - need valid Account SID starting with 'AC'");
+  }
 } else {
   console.log("⚠️  Twilio credentials not found - SMS notifications disabled");
 }
