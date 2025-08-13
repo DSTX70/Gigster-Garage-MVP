@@ -298,18 +298,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send notifications for high priority tasks
       if (task.priority === 'high' && task.assignedToId && task.assignedTo) {
+        console.log(`📬 Sending notifications for high priority task: ${task.description}`);
+        console.log(`📧 Email: ${task.assignedTo.notificationEmail}, Opt-in: ${task.assignedTo.emailOptIn}`);
+        console.log(`📱 Phone: ${task.assignedTo.phone}, SMS Opt-in: ${task.assignedTo.smsOptIn}`);
+        
         try {
           // Send email notification
-          await sendHighPriorityTaskNotification(task, task.assignedTo);
+          const emailSent = await sendHighPriorityTaskNotification(task, task.assignedTo);
+          console.log(`📧 Email notification result: ${emailSent ? 'SUCCESS' : 'FAILED'}`);
           
           // Send SMS notification if enabled
           if (task.assignedTo.smsOptIn) {
-            await sendSMSNotification(task, task.assignedTo);
+            const smsSent = await sendSMSNotification(task, task.assignedTo);
+            console.log(`📱 SMS notification result: ${smsSent ? 'SUCCESS' : 'FAILED'}`);
           }
         } catch (error) {
-          console.error("Error sending notifications:", error);
+          console.error("❌ Error sending notifications:", error);
           // Don't fail the task creation if notifications fail
         }
+      } else {
+        console.log(`⚠️ No notifications sent - Priority: ${task.priority}, AssignedToId: ${task.assignedToId}, AssignedTo: ${task.assignedTo ? 'YES' : 'NO'}`);
       }
       
       res.status(201).json(task);
