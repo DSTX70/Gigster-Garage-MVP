@@ -57,7 +57,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 export async function sendHighPriorityTaskNotification(
   task: Task, 
   assignedUser: User,
-  fromEmail: string = 'noreply@vsuitehq.com'
+  fromEmail: string = 'dustinsparks@mac.com'
 ): Promise<boolean> {
   if (!assignedUser.emailOptIn || !assignedUser.notificationEmail) {
     console.log(`User ${assignedUser.username} has email notifications disabled or no notification email set`);
@@ -96,10 +96,10 @@ ${task.attachments && task.attachments.length > 0 ? `Attachments: ${task.attachm
 
 ${task.links && task.links.length > 0 ? `Links:\n${task.links.map(link => `- ${link}`).join('\n')}` : ''}
 
-Click here to view your tasks in TaskFlow: ${taskUrl}
+Click here to view your tasks in VSuite HQ: ${taskUrl}
 
 Best regards,
-TaskFlow Team
+VSuite HQ Team
   `.trim();
 
   const htmlContent = `
@@ -124,7 +124,7 @@ TaskFlow Team
         <div class="container">
             <div class="header">
                 <h1>🚨 High Priority Task Assigned</h1>
-                <p>You've received a new high priority task in TaskFlow</p>
+                <p>You've received a new high priority task in VSuite HQ</p>
             </div>
             
             <div class="content">
@@ -158,18 +158,18 @@ TaskFlow Team
                 </div>
                 
                 <div style="text-align: center;">
-                    <a href="${taskUrl}" class="cta-button">📋 View in TaskFlow</a>
+                    <a href="${taskUrl}" class="cta-button">📋 View in VSuite HQ</a>
                 </div>
                 
                 <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                    This is an automated notification from TaskFlow. You're receiving this because you have email notifications enabled for high priority tasks.
+                    This is an automated notification from VSuite HQ. You're receiving this because you have email notifications enabled for high priority tasks.
                 </p>
             </div>
             
             <div class="footer">
-                <p>TaskFlow - Keeping you on track, one task at a time</p>
+                <p>VSuite HQ - Simplified Workflow Hub</p>
                 <p style="font-size: 12px; opacity: 0.8;">
-                    To manage your notification preferences, log in to TaskFlow and visit your account settings.
+                    To manage your notification preferences, log in to VSuite HQ and visit your account settings.
                 </p>
             </div>
         </div>
