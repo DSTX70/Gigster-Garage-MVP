@@ -1,4 +1,5 @@
 import { MailService } from '@sendgrid/mail';
+import twilio from 'twilio';
 import type { Task, User } from '@shared/schema';
 
 const SENDGRID_KEY = process.env.SENDGRID_API_KEY_2 || process.env.SENDGRID_API_KEY;
@@ -20,6 +21,15 @@ if (SENDGRID_KEY) {
 const APP_URL = process.env.REPLIT_DOMAINS 
   ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
   : 'http://localhost:5000';
+
+// Initialize Twilio client if credentials are available
+let twilioClient: twilio.Twilio | null = null;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  console.log("✅ Twilio SMS integration configured successfully");
+} else {
+  console.log("⚠️  Twilio credentials not found - SMS notifications disabled");
+}
 
 interface EmailParams {
   to: string;
@@ -188,21 +198,33 @@ VSuite HQ Team
 
 export async function sendSMSNotification(
   task: Task, 
-  assignedUser: User
+  assignedUser: User,
+  fromPhoneNumber: string = process.env.TWILIO_PHONE_NUMBER || ''
 ): Promise<boolean> {
-  // SMS functionality would require Twilio integration
-  // For now, we'll just log that an SMS would be sent
   if (!assignedUser.smsOptIn || !assignedUser.phone) {
     console.log(`User ${assignedUser.username} has SMS notifications disabled or no phone number set`);
     return false;
   }
 
-  console.log(`📱 SMS notification would be sent to ${assignedUser.phone}:`);
-  console.log(`   "High priority task '${task.description}' assigned to you. Check VSuite HQ for details."`);
-  console.log(`   (SMS disabled: Twilio integration not configured)`);
+  const message = `High priority task '${task.description}' assigned to you. Check VSuite HQ for details.`;
   
-  // TODO: Implement Twilio SMS sending
-  // This would require TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER
-  
-  return true;
+  if (!twilioClient || !fromPhoneNumber) {
+    console.log(`📱 SMS notification would be sent to ${assignedUser.phone}:`);
+    console.log(`   "${message}"`);
+    console.log(`   (SMS disabled: Twilio integration not configured)`);
+    return true; // Return true for logging purposes
+  }
+
+  try {
+    await twilioClient.messages.create({
+      body: message,
+      from: fromPhoneNumber,
+      to: assignedUser.phone
+    });
+    console.log(`📱 SMS sent successfully to ${assignedUser.phone}`);
+    return true;
+  } catch (error) {
+    console.error('Twilio SMS error:', error);
+    return false;
+  }
 }
