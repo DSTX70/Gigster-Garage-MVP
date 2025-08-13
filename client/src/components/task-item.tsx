@@ -6,10 +6,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FileText, Link, Paperclip, User } from "lucide-react";
+import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FileText, Link, Paperclip, User, Eye } from "lucide-react";
 import type { Task } from "@shared/schema";
 import { formatDistanceToNow, isAfter, isBefore, startOfDay } from "date-fns";
 import ProgressSection from "./ProgressSection";
+import { TaskDetailModal } from "./task-detail-modal";
 
 interface TaskItemProps {
   task: Task;
@@ -17,6 +18,7 @@ interface TaskItemProps {
 
 export function TaskItem({ task }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const { toast } = useToast();
 
   const updateTaskMutation = useMutation({
@@ -177,6 +179,7 @@ export function TaskItem({ task }: TaskItemProps) {
   const hasExtendedContent = task.notes || (task.attachments && task.attachments.length > 0) || (task.links && task.links.length > 0);
 
   return (
+    <>
     <div className={`bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition-shadow duration-200 ${
       task.completed ? 'opacity-75' : ''
     } ${isOverdue ? 'border-red-200' : 'border-neutral-200'}`}>
@@ -212,6 +215,15 @@ export function TaskItem({ task }: TaskItemProps) {
                   {getPriorityLabel(task.priority)}
                 </Badge>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDetailModalOpen(true)}
+                className="text-neutral-400 hover:text-neutral-600 p-1"
+                title="View Details"
+              >
+                <Eye size={16} />
+              </Button>
               {hasExtendedContent && (
                 <Button
                   variant="ghost"
@@ -329,7 +341,7 @@ export function TaskItem({ task }: TaskItemProps) {
                 {/* Progress Section */}
                 <div className="mt-4">
                   <ProgressSection 
-                    progressNotes={task.progressNotes || []}
+                    progressNotes={Array.isArray(task.progressNotes) ? task.progressNotes : []}
                     onAddProgress={handleAddProgress}
                     isLoading={addProgressMutation.isPending}
                   />
@@ -340,5 +352,12 @@ export function TaskItem({ task }: TaskItemProps) {
         </div>
       </div>
     </div>
+
+    <TaskDetailModal
+      task={task}
+      isOpen={isDetailModalOpen}
+      onOpenChange={setIsDetailModalOpen}
+    />
+    </>
   );
 }
