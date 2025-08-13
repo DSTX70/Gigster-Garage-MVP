@@ -18,19 +18,11 @@ function UserDropdown({ value, onValueChange, placeholder }: {
   onValueChange: (value: string) => void;
   placeholder: string;
 }) {
-  const { isAdmin } = useAuth();
+  const { user: currentUser, isAdmin } = useAuth();
   const { data: users = [] } = useQuery<UserType[]>({
     queryKey: ["/api/users"],
     enabled: isAdmin, // Only load users if current user is admin
   });
-
-  if (!isAdmin) {
-    return (
-      <div className="text-sm text-gray-500 p-2 bg-gray-50 rounded border">
-        Only administrators can assign tasks to users
-      </div>
-    );
-  }
 
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -39,11 +31,18 @@ function UserDropdown({ value, onValueChange, placeholder }: {
       </SelectTrigger>
       <SelectContent>
         <SelectItem key="unassigned" value="unassigned">Unassigned</SelectItem>
-        {users.map((user, index) => (
-          <SelectItem key={`${user.id}-${index}`} value={user.id}>
-            {user.name} ({user.username})
+        {currentUser && (
+          <SelectItem key={`${currentUser.id}-self`} value={currentUser.id}>
+            {currentUser.name} ({currentUser.username}) - Me
           </SelectItem>
-        ))}
+        )}
+        {isAdmin && users
+          .filter(user => user.id !== currentUser?.id) // Don't duplicate current user
+          .map((user, index) => (
+            <SelectItem key={`${user.id}-${index}`} value={user.id}>
+              {user.name} ({user.username})
+            </SelectItem>
+          ))}
       </SelectContent>
     </Select>
   );
@@ -149,10 +148,12 @@ function ProjectDropdown({ value, onValueChange, placeholder }: {
 }
 
 export function TaskForm() {
+  const { user: currentUser, isAdmin } = useAuth();
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
-  const [assignedToId, setAssignedToId] = useState("unassigned");
+  // Default to current user for non-admins, unassigned for admins
+  const [assignedToId, setAssignedToId] = useState(isAdmin ? "unassigned" : (currentUser?.id || "unassigned"));
   const [projectId, setProjectId] = useState("");
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
@@ -170,7 +171,7 @@ export function TaskForm() {
       setDescription("");
       setDueDate("");
       setPriority("medium");
-      setAssignedToId("unassigned");
+      setAssignedToId(isAdmin ? "unassigned" : (currentUser?.id || "unassigned"));
       setProjectId("");
       setNotes("");
       setAttachments([]);
