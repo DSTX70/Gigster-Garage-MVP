@@ -10,6 +10,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Marketing Landing Page** (Added January 2025): Professional welcome page showcasing VSuite HQ features, demo access, and clear call-to-action for new visitors
+- **Enhanced Due Date Functionality** (Added January 2025): Time input added to task form with 24-hour and 1-hour advance reminder notifications
+- **Advanced Reminder System** (Enhanced January 2025): Precise time-based triggers with yellow notifications for 24-hour advance and urgent red notifications for 1-hour advance
+- **Improved Navigation** (Added January 2025): "Back to Tasks" buttons on all admin pages and consistent navigation between admin functions and main task management
 - **Progress Section** (Added January 2025): Users can add progress notes with autofilled dates and comments for task tracking
 - **Email Notifications** (Completed January 2025): High priority tasks trigger email notifications with complete task details and hotlink to app - fully operational with verified SendGrid sender
 - **SMS Notifications** (Pending Validation January 2025): Twilio integration implemented with correct Account SID, awaiting phone number validation for trial account activation

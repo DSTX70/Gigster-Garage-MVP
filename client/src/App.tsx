@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Home from "@/pages/home";
+import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Admin from "@/pages/admin";
@@ -29,8 +30,9 @@ function Router() {
   if (!isAuthenticated) {
     return (
       <Switch>
+        <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
-        <Route component={Login} />
+        <Route component={Landing} />
       </Switch>
     );
   }
