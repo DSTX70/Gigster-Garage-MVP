@@ -16,6 +16,7 @@ import {
   Clock,
   Target
 } from "lucide-react";
+import { VSuiteLogo } from "@/components/vsuite-logo";
 import { Link } from "wouter";
 
 export default function Landing() {
@@ -66,27 +67,15 @@ export default function Landing() {
       <section className="bg-gradient-to-br from-blue-50 to-white py-20">
         <div className="max-w-6xl mx-auto px-4 text-center">
           {/* Logo and Branding */}
-          <div className="flex justify-center mb-6">
-            <div className="bg-blue-600 p-4 rounded-2xl shadow-lg">
-              <img 
-                src="@assets/IMG_3649_1755004491378.jpeg" 
-                alt="VSuite HQ Logo"
-                className="w-12 h-12 object-contain"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <Shield className="text-white hidden" size={48} />
-            </div>
+          <div className="flex justify-center mb-8">
+            <VSuiteLogo size="large" showText={false} />
           </div>
           
-          <h1 className="text-5xl font-black text-black mb-4">
+          <h1 className="text-5xl brand-heading mb-4">
             VSuite HQ
           </h1>
           
-          <p className="text-xl font-medium text-black mb-8">
+          <p className="text-xl brand-tagline mb-8">
             Simplified Workflow Hub
           </p>
           
@@ -97,7 +86,7 @@ export default function Landing() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
+              <Button size="lg" className="vsuite-button-primary px-8 py-3">
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -146,11 +135,11 @@ export default function Landing() {
             {features.map((feature, index) => (
               <Card 
                 key={index}
-                className="border-2 border-gray-200 hover:border-blue-300 transition-colors cursor-pointer"
+                className="vsuite-feature-card group"
                 onClick={() => setActiveFeature(index)}
               >
                 <CardHeader>
-                  <div className={`${feature.color} mb-4`}>
+                  <div className={`${feature.color} mb-4 feature-icon transition-all duration-300`}>
                     {feature.icon}
                   </div>
                   <CardTitle className="text-lg font-semibold">

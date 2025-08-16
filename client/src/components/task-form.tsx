@@ -264,9 +264,14 @@ export function TaskForm() {
   };
 
   return (
-    <section className="mb-8">
-      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-        <h2 className="text-lg font-semibold text-neutral-800 mb-4">Add New Task</h2>
+    <section className="mb-8 fade-in-up">
+      <div className="vsuite-form-card">
+        <h2 className="text-lg font-semibold text-neutral-800 mb-4 flex items-center">
+          <div className="vsuite-logo-mini mr-3">
+            <Plus size={14} />
+          </div>
+          Add New Task
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
@@ -455,7 +460,7 @@ export function TaskForm() {
               <Button
                 type="submit"
                 disabled={createTaskMutation.isPending}
-                className="px-6 py-3 bg-primary hover:bg-blue-600 text-white font-medium"
+                className="vsuite-button-primary px-6 py-3"
               >
                 <Plus className="mr-2" size={16} />
                 {createTaskMutation.isPending ? "Adding..." : "Add Task"}

@@ -103,9 +103,9 @@ export function TaskItem({ task }: TaskItemProps) {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-700';
-      case 'medium': return 'bg-blue-100 text-blue-700';
-      case 'low': return 'bg-yellow-100 text-yellow-700';
+      case 'high': return 'priority-high';
+      case 'medium': return 'priority-medium';
+      case 'low': return 'priority-low';
       default: return 'bg-neutral-100 text-neutral-700';
     }
   };
@@ -123,8 +123,8 @@ export function TaskItem({ task }: TaskItemProps) {
     if (task.completed) {
       return {
         label: 'Completed',
-        color: 'bg-green-100 text-green-700',
-        icon: <CheckCircle className="text-secondary" size={16} />
+        color: 'status-completed',
+        icon: <CheckCircle className="text-green-600" size={16} />
       };
     }
 
@@ -132,12 +132,21 @@ export function TaskItem({ task }: TaskItemProps) {
       const dueDate = new Date(task.dueDate);
       const today = startOfDay(new Date());
       const isOverdue = isBefore(dueDate, today);
+      const isDueToday = dueDate.getTime() === today.getTime();
 
       if (isOverdue) {
         return {
           label: 'Overdue',
-          color: 'bg-red-100 text-red-700',
+          color: 'status-overdue',
           icon: <AlertTriangle className="text-red-500" size={16} />
+        };
+      }
+
+      if (isDueToday) {
+        return {
+          label: 'Due Today',
+          color: 'status-due-today',
+          icon: <Clock className="text-orange-500" size={16} />
         };
       }
     }
@@ -180,9 +189,9 @@ export function TaskItem({ task }: TaskItemProps) {
 
   return (
     <>
-    <div className={`bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition-shadow duration-200 ${
+    <div className={`task-card fade-in-up group ${
       task.completed ? 'opacity-75' : ''
-    } ${isOverdue ? 'border-red-200' : 'border-neutral-200'}`}>
+    } ${isOverdue ? 'border-red-200' : ''}`}>
       <div className="flex items-start space-x-4">
         <button
           onClick={handleToggleComplete}

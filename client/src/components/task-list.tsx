@@ -29,7 +29,7 @@ export function TaskList({ filter, assigneeFilter = 'all' }: TaskListProps) {
     return (
       <section className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5 animate-pulse">
+          <div key={i} className="task-card animate-pulse">
             <div className="flex items-start space-x-4">
               <div className="w-5 h-5 bg-neutral-200 rounded"></div>
               <div className="flex-1">
@@ -45,11 +45,11 @@ export function TaskList({ filter, assigneeFilter = 'all' }: TaskListProps) {
 
   if (filteredTasks.length === 0) {
     return (
-      <section className="text-center py-12">
-        <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <ListTodo className="text-2xl text-neutral-400" size={32} />
+      <section className="text-center py-12 fade-in-up">
+        <div className="vsuite-logo-large mx-auto mb-6">
+          <ListTodo size={32} />
         </div>
-        <h3 className="text-lg font-medium text-neutral-800 mb-2">
+        <h3 className="text-lg font-medium text-neutral-800 mb-2 brand-heading">
           {filter === 'all' ? 'No tasks yet' : filter === 'active' ? 'No active tasks' : 'No completed tasks'}
         </h3>
         <p className="text-neutral-600">
