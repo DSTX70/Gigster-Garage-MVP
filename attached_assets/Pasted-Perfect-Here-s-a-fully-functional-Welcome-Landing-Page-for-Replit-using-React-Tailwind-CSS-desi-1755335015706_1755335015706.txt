@@ -1,0 +1,107 @@
+Perfect. Here’s a fully functional Welcome Landing Page for Replit using React + Tailwind CSS — designed for Vsuite HQ. It includes:
+	•	✅ Logo + Branding
+	•	✅ Tagline
+	•	✅ Hero CTA: “Log In”, “Explore as Guest”, “See Features”
+	•	✅ Clean layout for unauthenticated users
+	•	✅ Ready to drop into your Replit app
+
+⸻
+
+🧩 FILE: src/pages/LandingPage.jsx
+
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+export default function LandingPage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center text-center px-6">
+      <header className="mb-10">
+        <div className="flex items-center justify-center space-x-3">
+          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
+            ✓
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900">
+            VSuite <span className="text-blue-600">HQ</span>
+          </h1>
+        </div>
+        <p className="mt-2 text-gray-500 text-sm">
+          Simplified Workflow Hub
+        </p>
+      </header>
+
+      <main className="space-y-4">
+        <h2 className="text-2xl font-semibold text-gray-800">
+          Welcome to VSuite HQ
+        </h2>
+        <p className="text-gray-600 max-w-md mx-auto">
+          Your personal AI-powered productivity platform — orchestrate agents, streamline tasks, and flow like never before.
+        </p>
+
+        <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+          <button
+            onClick={() => navigate('/login')}
+            className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+          >
+            Log In
+          </button>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="border border-gray-300 text-gray-700 px-6 py-3 rounded hover:bg-gray-100 transition"
+          >
+            Explore as Guest
+          </button>
+          <button
+            onClick={() => navigate('/features')}
+            className="text-blue-600 underline text-sm hover:text-blue-800"
+          >
+            See Features
+          </button>
+        </div>
+      </main>
+
+      <footer className="mt-16 text-xs text-gray-400">
+        © {new Date().getFullYear()} VSuite HQ. All rights reserved.
+      </footer>
+    </div>
+  );
+}
+
+
+⸻
+
+🛠️ Add to Routes
+
+If using React Router (react-router-dom), add this to your App.js or route handler:
+
+import LandingPage from './pages/LandingPage';
+
+// inside your <Routes>
+<Route path="/" element={<LandingPage />} />
+
+
+⸻
+
+🌐 Optional: Redirect if Logged In
+
+In the LandingPage.jsx, wrap the component logic like this:
+
+import { useEffect } from 'react';
+
+useEffect(() => {
+  if (userIsAuthenticated()) {
+    navigate('/dashboard');
+  }
+}, []);
+
+Replace userIsAuthenticated() with your real auth check.
+
+⸻
+
+Would you like me to:
+	•	🔁 Add a dynamic login state check?
+	•	🎨 Convert this into a visual layout preview (Figma-style)?
+	•	📦 Package this as a reusable component (<WelcomeLayout>)?
+
+Let me know and I’ll build the next piece.
