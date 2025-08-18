@@ -64,53 +64,55 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-white py-20">
-        <div className="max-w-6xl mx-auto px-4 text-center">
+      <section className="vsuite-hero-section py-20">
+        <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
           {/* Logo and Branding */}
-          <div className="flex justify-center mb-8">
-            <VSuiteLogo size="large" showText={false} />
+          <div className="flex justify-center mb-8 fade-in-up">
+            <div className="vsuite-logo-large pulse-vsuite">
+              V
+            </div>
           </div>
           
-          <h1 className="text-5xl brand-heading mb-4">
+          <h1 className="text-5xl font-bold text-white mb-4 fade-in-up">
             VSuite HQ
           </h1>
           
-          <p className="text-xl brand-tagline mb-8">
+          <p className="text-xl font-medium text-blue-100 mb-8">
             Simplified Workflow Hub
           </p>
           
-          <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
+          <p className="text-lg text-blue-100 mb-10 max-w-2xl mx-auto">
             Transform your productivity with intelligent task management, 
             smart notifications, and seamless team collaboration.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/signup">
-              <Button size="lg" className="vsuite-button-primary px-8 py-3">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-8 py-3 shadow-lg">
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             
             <Link href="/login">
-              <Button variant="outline" size="lg" className="px-8 py-3">
+              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 px-8 py-3">
                 Sign In
               </Button>
             </Link>
           </div>
           
-          <div className="mt-8 text-sm text-gray-500">
+          <div className="mt-8 text-sm text-blue-200">
             <div className="flex items-center justify-center gap-4">
               <div className="flex items-center">
-                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                <CheckCircle className="h-4 w-4 text-white mr-1" />
                 <span>Free to start</span>
               </div>
               <div className="flex items-center">
-                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                <CheckCircle className="h-4 w-4 text-white mr-1" />
                 <span>No credit card required</span>
               </div>
               <div className="flex items-center">
-                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                <CheckCircle className="h-4 w-4 text-white mr-1" />
                 <span>Team collaboration</span>
               </div>
             </div>
@@ -119,8 +121,8 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4">
+      <section className="py-20 bg-gradient-to-br from-blue-50 via-white to-blue-50">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-black mb-4">
               Everything you need to stay organized
@@ -162,35 +164,35 @@ export default function Landing() {
             Try it now with our demo account
           </h2>
           
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="vsuite-accent-section">
             <CardContent className="p-8">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div className="text-left">
-                  <h3 className="text-xl font-semibold mb-4">Admin Demo Access</h3>
-                  <p className="text-gray-600 mb-6">
+                  <h3 className="text-xl font-semibold mb-4 text-blue-900">Admin Demo Access</h3>
+                  <p className="text-blue-700 mb-6">
                     Experience the full power of VSuite HQ with admin privileges. 
                     Create tasks, manage users, and explore all features.
                   </p>
                   
                   <div className="space-y-2 mb-6">
                     <div className="flex items-center">
-                      <Badge variant="secondary" className="mr-2">Username</Badge>
-                      <code className="bg-white px-2 py-1 rounded">admin</code>
+                      <Badge className="bg-blue-600 text-white mr-2">Username</Badge>
+                      <code className="bg-white px-3 py-2 rounded shadow-sm border">admin</code>
                     </div>
                     <div className="flex items-center">
-                      <Badge variant="secondary" className="mr-2">Password</Badge>
-                      <code className="bg-white px-2 py-1 rounded">admin123</code>
+                      <Badge className="bg-blue-600 text-white mr-2">Password</Badge>
+                      <code className="bg-white px-3 py-2 rounded shadow-sm border">admin123</code>
                     </div>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <div className="flex items-center text-sm text-blue-700">
+                    <CheckCircle className="h-4 w-4 text-blue-600 mr-2" />
                     <span>Full admin dashboard access</span>
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <div className="flex items-center text-sm text-blue-700">
+                    <CheckCircle className="h-4 w-4 text-blue-600 mr-2" />
                     <span>User management capabilities</span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">

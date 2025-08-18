@@ -22,29 +22,50 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
           <Button
             variant={activeFilter === 'all' ? 'default' : 'outline'}
             onClick={() => onFilterChange('all')}
-            className={activeFilter === 'all' ? 'bg-primary text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}
+            className={`flex items-center gap-2 ${
+              activeFilter === 'all' 
+                ? 'vsuite-button-primary' 
+                : 'vsuite-button-secondary'
+            }`}
           >
             All Tasks
+            <span className="bg-white/20 text-current px-2 py-1 rounded-full text-xs">
+              {tasks.length}
+            </span>
           </Button>
           <Button
             variant={activeFilter === 'active' ? 'default' : 'outline'}
             onClick={() => onFilterChange('active')}
-            className={activeFilter === 'active' ? 'bg-primary text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}
+            className={`flex items-center gap-2 ${
+              activeFilter === 'active' 
+                ? 'vsuite-button-primary' 
+                : 'vsuite-button-secondary'
+            }`}
           >
             Active
+            <span className="bg-white/20 text-current px-2 py-1 rounded-full text-xs">
+              {activeCount}
+            </span>
           </Button>
           <Button
             variant={activeFilter === 'completed' ? 'default' : 'outline'}
             onClick={() => onFilterChange('completed')}
-            className={activeFilter === 'completed' ? 'bg-primary text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}
+            className={`flex items-center gap-2 ${
+              activeFilter === 'completed' 
+                ? 'vsuite-button-primary' 
+                : 'vsuite-button-secondary'
+            }`}
           >
             Completed
+            <span className="bg-white/20 text-current px-2 py-1 rounded-full text-xs">
+              {completedCount}
+            </span>
           </Button>
         </div>
-        <div className="flex items-center space-x-3 text-sm text-neutral-600">
-          <span>{activeCount} active</span>
-          <span className="text-neutral-300">•</span>
-          <span>{completedCount} completed</span>
+        <div className="flex items-center space-x-3 text-sm text-blue-700">
+          <span className="font-medium">{activeCount} active</span>
+          <span className="text-blue-300">•</span>
+          <span className="font-medium">{completedCount} completed</span>
         </div>
       </div>
     </section>

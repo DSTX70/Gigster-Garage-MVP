@@ -266,12 +266,15 @@ export function TaskForm() {
   return (
     <section className="mb-8 fade-in-up">
       <div className="vsuite-form-card">
-        <h2 className="text-lg font-semibold text-neutral-800 mb-4 flex items-center">
-          <div className="vsuite-logo-mini mr-3">
-            <Plus size={14} />
-          </div>
-          Add New Task
-        </h2>
+        <div className="vsuite-section-header rounded-t-xl mb-6 -mx-8 -mt-8 px-8 pt-6 pb-4">
+          <h2 className="text-xl font-semibold text-white flex items-center">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center mr-3">
+              <Plus size={16} className="text-white" />
+            </div>
+            Add New Task
+          </h2>
+          <p className="text-blue-100 text-sm">Create and organize your tasks efficiently</p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">

@@ -57,21 +57,27 @@ export function AppHeader() {
   const reminderCount = getReminderCount();
 
   return (
-    <header className="vsuite-header">
-      <div className="max-w-4xl mx-auto px-4 py-4">
+    <header className="vsuite-header-gradient border-b border-blue-600 sticky top-0 z-50 shadow-lg">
+      <div className="max-w-6xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="fade-in-up">
-            <VSuiteLogo size="small" />
+          <div className="flex items-center space-x-4 fade-in-up">
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <VSuiteLogo size="small" showText={false} />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">VSuite HQ</h1>
+              <p className="text-xs font-medium text-blue-100">Simplified Workflow Hub</p>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">
             <ReminderModal reminderCount={reminderCount} />
             
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="flex items-center space-x-2 text-sm text-blue-100">
               <User size={16} />
-              <span>{user?.name}</span>
+              <span className="text-white font-medium">{user?.name}</span>
               {user?.role === 'admin' && (
-                <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-200">
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-medium border border-white/30">
                   Admin
                 </span>
               )}
@@ -83,7 +89,7 @@ export function AppHeader() {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate("/")}
-                  className="vsuite-interactive hover:border-blue-300"
+                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50"
                 >
                   <CheckCheck size={16} className="mr-2" />
                   Tasks
@@ -92,7 +98,7 @@ export function AppHeader() {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate("/dashboard")}
-                  className="vsuite-interactive hover:border-blue-300"
+                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50"
                 >
                   <Users size={16} className="mr-2" />
                   Dashboard
@@ -101,7 +107,7 @@ export function AppHeader() {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate("/admin")}
-                  className="vsuite-interactive hover:border-blue-300"
+                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50"
                 >
                   <Settings size={16} className="mr-2" />
                   Users
@@ -114,6 +120,7 @@ export function AppHeader() {
               size="sm"
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
+              className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300"
             >
               <LogOut size={16} className="mr-2" />
               {logoutMutation.isPending ? "..." : "Logout"}
