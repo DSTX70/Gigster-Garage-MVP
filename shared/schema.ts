@@ -100,8 +100,8 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
     if (typeof val === 'string') return new Date(val);
     return val;
   }),
-  assignedToId: z.string().optional(),
-  projectId: z.string().optional(),
+  assignedToId: z.string().optional().nullable(),
+  projectId: z.string().optional().nullable(),
   attachments: z.array(z.string()).optional().default([]),
   links: z.array(z.string()).optional().default([]),
   progressNotes: z.array(z.object({

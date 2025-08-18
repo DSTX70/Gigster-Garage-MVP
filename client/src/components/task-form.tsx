@@ -244,10 +244,10 @@ export function TaskForm() {
         description: description.trim(),
         dueDate: combinedDateTime,
         priority,
-        assignedToId: (assignedToId && assignedToId !== "unassigned") ? assignedToId : null,
-        projectId: projectId || null,
+        assignedToId: (assignedToId && assignedToId !== "unassigned") ? assignedToId : undefined,
+        projectId: projectId || undefined,
         completed: false,
-        notes: notes.trim() || null,
+        notes: notes.trim() || undefined,
         attachments: attachments,
         links: links,
       });
