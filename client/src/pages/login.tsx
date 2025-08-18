@@ -8,12 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { LogIn, Shield } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { VSuiteLogo } from "@/components/vsuite-logo";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const loginMutation = useMutation({
@@ -27,6 +28,10 @@ export default function Login() {
         title: "Login successful",
         description: "Welcome to VSuite HQ",
       });
+      // Force navigation to home page after successful login
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({

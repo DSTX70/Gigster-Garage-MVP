@@ -1,9 +1,10 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 import Home from "@/pages/home";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
@@ -16,6 +17,14 @@ import Test404 from "@/pages/test-404";
 
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
+  const [location, setLocation] = useLocation();
+
+  // Redirect authenticated users away from login/signup pages
+  useEffect(() => {
+    if (isAuthenticated && (location === '/login' || location === '/signup')) {
+      setLocation('/');
+    }
+  }, [isAuthenticated, location, setLocation]);
 
   if (isLoading) {
     return (
