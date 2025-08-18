@@ -12,6 +12,7 @@ import Admin from "@/pages/admin";
 import Dashboard from "@/pages/dashboard";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
+import Test404 from "@/pages/test-404";
 
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
@@ -32,6 +33,7 @@ function Router() {
       <Switch>
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
+        <Route path="/test-404" component={Test404} />
         <Route component={Landing} />
       </Switch>
     );
