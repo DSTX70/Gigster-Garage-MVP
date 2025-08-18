@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { LogIn, Shield } from "lucide-react";
 import { Link } from "wouter";
+import { VSuiteLogo } from "@/components/vsuite-logo";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -51,27 +52,14 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="vsuite-card w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-primary p-3 rounded-full">
-              <img 
-                src="@assets/IMG_3649_1755004491378.jpeg" 
-                alt="VSuite HQ Logo"
-                className="w-8 h-8 object-contain"
-                onError={(e) => {
-                  // Fallback to icon if logo fails to load
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <Shield className="text-white hidden" size={32} />
-            </div>
+          <div className="flex justify-center mb-6">
+            <VSuiteLogo size="medium" showText={false} />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-black text-black">VSuite HQ</CardTitle>
-            <p className="text-xs text-black font-medium">Simplified Workflow Hub</p>
+            <CardTitle className="text-2xl brand-heading">VSuite HQ</CardTitle>
+            <p className="text-xs brand-tagline">Simplified Workflow Hub</p>
             <p className="text-gray-600 pt-2">Sign in to your account</p>
           </div>
         </CardHeader>
@@ -107,7 +95,7 @@ export default function Login() {
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="vsuite-button-primary w-full"
               disabled={loginMutation.isPending}
             >
               {loginMutation.isPending ? (
