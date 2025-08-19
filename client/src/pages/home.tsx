@@ -67,55 +67,55 @@ export default function Home() {
         </div>
 
         {/* Urgent & Overview Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {/* Overdue Tasks */}
           <Card className="border-l-4 border-l-red-500">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-red-600">Overdue</p>
-                  <p className="text-3xl font-bold text-red-700">{overdueTasks.length}</p>
+                  <p className="text-xs font-medium text-red-600">Overdue</p>
+                  <p className="text-2xl font-bold text-red-700">{overdueTasks.length}</p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-red-500" />
+                <AlertTriangle className="h-6 w-6 text-red-500" />
               </div>
             </CardContent>
           </Card>
 
           {/* Due Soon */}
           <Card className="border-l-4 border-l-yellow-500">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-yellow-600">Due Soon</p>
-                  <p className="text-3xl font-bold text-yellow-700">{urgentTasks.length}</p>
+                  <p className="text-xs font-medium text-yellow-600">Due Soon</p>
+                  <p className="text-2xl font-bold text-yellow-700">{urgentTasks.length}</p>
                 </div>
-                <Clock className="h-8 w-8 text-yellow-500" />
+                <Clock className="h-6 w-6 text-yellow-500" />
               </div>
             </CardContent>
           </Card>
 
           {/* High Priority */}
           <Card className="border-l-4 border-l-orange-500">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-orange-600">High Priority</p>
-                  <p className="text-3xl font-bold text-orange-700">{highPriorityTasks.length}</p>
+                  <p className="text-xs font-medium text-orange-600">High Priority</p>
+                  <p className="text-2xl font-bold text-orange-700">{highPriorityTasks.length}</p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-orange-500" />
+                <AlertTriangle className="h-6 w-6 text-orange-500" />
               </div>
             </CardContent>
           </Card>
 
           {/* Completed Today */}
           <Card className="border-l-4 border-l-green-500">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600">Completed Today</p>
-                  <p className="text-3xl font-bold text-green-700">{completedToday.length}</p>
+                  <p className="text-xs font-medium text-green-600">Completed Today</p>
+                  <p className="text-2xl font-bold text-green-700">{completedToday.length}</p>
                 </div>
-                <CheckCircle2 className="h-8 w-8 text-green-500" />
+                <CheckCircle2 className="h-6 w-6 text-green-500" />
               </div>
             </CardContent>
           </Card>
