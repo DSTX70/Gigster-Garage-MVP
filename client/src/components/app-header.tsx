@@ -62,7 +62,7 @@ export function AppHeader() {
       <div className="max-w-6xl mx-auto px-6 py-3">
         <div className="flex flex-col space-y-3">
           {/* Top line: Shield + Logo + Tagline */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                 <Shield size={18} className="text-white" />
@@ -74,59 +74,54 @@ export function AppHeader() {
               <span className="text-blue-100 font-medium">•</span>
               <p className="text-sm font-medium text-blue-100">Simplified Workflow Hub</p>
             </div>
-            
-            {isAdmin && (
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/")}
-                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 text-xs px-3 py-1"
-                >
-                  <CheckCheck size={14} className="mr-1" />
-                  Tasks
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/dashboard")}
-                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 text-xs px-3 py-1"
-                >
-                  <Users size={14} className="mr-1" />
-                  Dashboard
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/admin")}
-                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 text-xs px-3 py-1"
-                >
-                  <Settings size={14} className="mr-1" />
-                  Users
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => logoutMutation.mutate()}
-                  disabled={logoutMutation.isPending}
-                  className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300 text-xs px-3 py-1"
-                >
-                  <LogOut size={14} className="mr-1" />
-                  {logoutMutation.isPending ? "..." : "Logout"}
-                </Button>
-              </div>
-            )}
           </div>
           
           {/* Bottom line: User + Messages */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-sm text-blue-100">
+            <div className="flex items-center space-x-3 text-sm text-blue-100">
               <User size={16} />
-              <span className="text-white font-medium">{user?.name}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                className="text-white hover:bg-white/10 font-medium p-1 h-auto"
+              >
+                {user?.name}
+              </Button>
               {user?.role === 'admin' && (
                 <span className="bg-white/20 text-white px-2 py-0.5 rounded-full text-xs font-medium border border-white/30">
                   Admin
                 </span>
+              )}
+              {isAdmin && (
+                <div className="flex items-center space-x-1 text-xs">
+                  <span className="text-blue-100">|</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/")}
+                    className="text-blue-100 hover:text-white hover:bg-white/10 p-1 h-auto text-xs"
+                  >
+                    Tasks
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/dashboard")}
+                    className="text-blue-100 hover:text-white hover:bg-white/10 p-1 h-auto text-xs"
+                  >
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/admin")}
+                    className="text-blue-100 hover:text-white hover:bg-white/10 p-1 h-auto text-xs"
+                  >
+                    Users
+                  </Button>
+                </div>
               )}
             </div>
             
@@ -144,19 +139,6 @@ export function AppHeader() {
                   0
                 </span>
               </Button>
-              
-              {!isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => logoutMutation.mutate()}
-                  disabled={logoutMutation.isPending}
-                  className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300 text-xs px-3 py-1"
-                >
-                  <LogOut size={14} className="mr-1" />
-                  {logoutMutation.isPending ? "..." : "Logout"}
-                </Button>
-              )}
             </div>
           </div>
         </div>
