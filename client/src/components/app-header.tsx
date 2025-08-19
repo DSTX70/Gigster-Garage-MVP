@@ -59,30 +59,32 @@ export function AppHeader() {
 
   return (
     <header className="vsuite-header-gradient border-b border-blue-600 sticky top-0 z-50 shadow-lg">
-      <div className="max-w-6xl mx-auto px-6 py-4">
+      <div className="max-w-6xl mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4 fade-in-up">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <VSuiteLogo size="small" showText={false} />
+          <div className="flex flex-col space-y-2 fade-in-up">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <VSuiteLogo size="small" showText={false} />
+              </div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-bold text-white">VSuite HQ</h1>
+                <span className="text-blue-100 font-medium">•</span>
+                <p className="text-sm font-medium text-blue-100">Simplified Workflow Hub</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">VSuite HQ</h1>
-              <p className="text-xs font-medium text-blue-100">Simplified Workflow Hub</p>
+            <div className="flex items-center space-x-2 text-sm text-blue-100 pl-14">
+              <User size={16} />
+              <span className="text-white font-medium">{user?.name}</span>
+              {user?.role === 'admin' && (
+                <span className="bg-white/20 text-white px-2 py-0.5 rounded-full text-xs font-medium border border-white/30">
+                  Admin
+                </span>
+              )}
             </div>
           </div>
           
           <div className="flex items-center space-x-4">
             <ReminderModal reminderCount={reminderCount} />
-            
-            <div className="flex items-center space-x-2 text-sm text-blue-100">
-              <User size={16} />
-              <span className="text-white font-medium">{user?.name}</span>
-              {user?.role === 'admin' && (
-                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-medium border border-white/30">
-                  Admin
-                </span>
-              )}
-            </div>
             
             {isAdmin && (
               <div className="flex space-x-2">
