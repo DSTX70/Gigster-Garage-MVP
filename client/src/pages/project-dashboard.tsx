@@ -15,6 +15,7 @@ export default function ProjectDashboard() {
   const { projectId } = useParams();
   const { user, isAdmin } = useAuth();
   const [activeView, setActiveView] = useState<"list" | "kanban" | "gantt">("list");
+  const [taskFilter, setTaskFilter] = useState<"all" | "completed" | "high-priority" | "overdue">("all");
 
   const { data: project } = useQuery<Project>({
     queryKey: ["/api/projects", projectId],
@@ -57,6 +58,19 @@ export default function ProjectDashboard() {
       case "on-hold": return "bg-yellow-100 text-yellow-800";
       case "cancelled": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getFilteredTasks = () => {
+    switch (taskFilter) {
+      case "completed":
+        return completedTasks;
+      case "high-priority":
+        return highPriorityTasks;
+      case "overdue":
+        return overdueTasks;
+      default:
+        return tasks;
     }
   };
 
@@ -130,75 +144,82 @@ export default function ProjectDashboard() {
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Project Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${taskFilter === 'all' ? 'ring-2 ring-blue-500' : ''}`}
+            onClick={() => setTaskFilter('all')}
+          >
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Tasks</p>
+                  <p className="text-xs font-medium text-gray-600">Total Tasks</p>
                   <p className="text-2xl font-bold text-gray-900">{tasks.length}</p>
                 </div>
-                <BarChart3 className="h-8 w-8 text-blue-500" />
+                <BarChart3 className="h-6 w-6 text-blue-500" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${taskFilter === 'completed' ? 'ring-2 ring-green-500' : ''}`}
+            onClick={() => setTaskFilter('completed')}
+          >
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
+                  <p className="text-xs font-medium text-green-600">Completed</p>
                   <p className="text-2xl font-bold text-green-600">{completedTasks.length}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-500" />
+                <CheckCircle className="h-6 w-6 text-green-500" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${taskFilter === 'high-priority' ? 'ring-2 ring-red-500' : ''}`}
+            onClick={() => setTaskFilter('high-priority')}
+          >
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">High Priority</p>
+                  <p className="text-xs font-medium text-red-600">High Priority</p>
                   <p className="text-2xl font-bold text-red-600">{highPriorityTasks.length}</p>
                 </div>
-                <AlertCircle className="h-8 w-8 text-red-500" />
+                <AlertCircle className="h-6 w-6 text-red-500" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${taskFilter === 'overdue' ? 'ring-2 ring-orange-500' : ''}`}
+            onClick={() => setTaskFilter('overdue')}
+          >
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Overdue</p>
+                  <p className="text-xs font-medium text-orange-600">Overdue</p>
                   <p className="text-2xl font-bold text-orange-600">{overdueTasks.length}</p>
                 </div>
-                <Clock className="h-8 w-8 text-orange-500" />
+                <Clock className="h-6 w-6 text-orange-500" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Progress Bar */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2" />
-              Project Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Progress</span>
-                <span>{Math.round(progressPercentage)}%</span>
-              </div>
-              <Progress value={progressPercentage} className="h-3" />
-              <p className="text-sm text-gray-600">
-                {completedTasks.length} of {tasks.length} tasks completed
-              </p>
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium flex items-center">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Project Progress
+              </span>
+              <span className="text-sm font-bold">{Math.round(progressPercentage)}%</span>
             </div>
+            <Progress value={progressPercentage} className="h-2" />
+            <p className="text-xs text-gray-600 mt-1">
+              {completedTasks.length} of {tasks.length} tasks completed
+            </p>
           </CardContent>
         </Card>
 
@@ -221,7 +242,7 @@ export default function ProjectDashboard() {
 
           <TabsContent value="list">
             <div className="space-y-4">
-              {tasks.map((task) => (
+              {getFilteredTasks().map((task) => (
                 <Card key={task.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
