@@ -1,8 +1,8 @@
 import { eq, and, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, UpdateTask, Project, InsertProject } from "@shared/schema";
+import { users, tasks, projects, taskDependencies } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, UpdateTask, Project, InsertProject, TaskDependency, InsertTaskDependency } from "@shared/schema";
 
 export interface IStorage {
   // User management
@@ -22,9 +22,15 @@ export interface IStorage {
   // Task management
   getTasks(userId?: string): Promise<Task[]>;
   getTask(id: string): Promise<Task | undefined>;
+  getTasksByProject(projectId: string, userId?: string | null): Promise<Task[]>;
   createTask(insertTask: InsertTask, createdById: string): Promise<Task>;
   updateTask(id: string, updateTask: UpdateTask): Promise<Task | undefined>;
   deleteTask(id: string): Promise<boolean>;
+
+  // Task dependency management
+  createTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency>;
+  deleteTaskDependency(id: string): Promise<boolean>;
+  wouldCreateCircularDependency(taskId: string, dependsOnTaskId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -125,6 +131,7 @@ export class DatabaseStorage implements IStorage {
         assignedToId: tasks.assignedToId,
         createdById: tasks.createdById,
         projectId: tasks.projectId,
+        parentTaskId: tasks.parentTaskId,
         notes: tasks.notes,
         attachments: tasks.attachments,
         links: tasks.links,
@@ -167,6 +174,7 @@ export class DatabaseStorage implements IStorage {
         assignedToId: tasks.assignedToId,
         createdById: tasks.createdById,
         projectId: tasks.projectId,
+        parentTaskId: tasks.parentTaskId,
         notes: tasks.notes,
         attachments: tasks.attachments,
         links: tasks.links,
@@ -222,6 +230,92 @@ export class DatabaseStorage implements IStorage {
   async deleteTask(id: string): Promise<boolean> {
     const result = await db.delete(tasks).where(eq(tasks.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getTasksByProject(projectId: string, userId?: string | null): Promise<Task[]> {
+    const query = db
+      .select({
+        id: tasks.id,
+        description: tasks.description,
+        completed: tasks.completed,
+        dueDate: tasks.dueDate,
+        priority: tasks.priority,
+        assignedToId: tasks.assignedToId,
+        createdById: tasks.createdById,
+        projectId: tasks.projectId,
+        parentTaskId: tasks.parentTaskId,
+        notes: tasks.notes,
+        attachments: tasks.attachments,
+        links: tasks.links,
+        progressNotes: tasks.progressNotes,
+        createdAt: tasks.createdAt,
+        assignedTo: users,
+        project: projects,
+      })
+      .from(tasks)
+      .leftJoin(users, eq(tasks.assignedToId, users.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(eq(tasks.projectId, projectId));
+
+    if (userId) {
+      const results = await query.where(and(eq(tasks.projectId, projectId), eq(tasks.assignedToId, userId)));
+      return results.map(row => ({
+        ...row,
+        assignedTo: row.assignedTo || undefined,
+        project: row.project || undefined,
+      }));
+    } else {
+      const results = await query;
+      return results.map(row => ({
+        ...row,
+        assignedTo: row.assignedTo || undefined,
+        project: row.project || undefined,
+      }));
+    }
+  }
+
+  // Task dependency operations
+  async createTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency> {
+    const [taskDependency] = await db
+      .insert(taskDependencies)
+      .values(dependency)
+      .returning();
+    return taskDependency;
+  }
+
+  async deleteTaskDependency(id: string): Promise<boolean> {
+    const result = await db.delete(taskDependencies).where(eq(taskDependencies.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async wouldCreateCircularDependency(taskId: string, dependsOnTaskId: string): Promise<boolean> {
+    // Simple check: if dependsOnTaskId already depends on taskId (directly or indirectly)
+    const visited = new Set<string>();
+    const toCheck = [dependsOnTaskId];
+
+    while (toCheck.length > 0) {
+      const current = toCheck.pop()!;
+      if (current === taskId) {
+        return true; // Found circular dependency
+      }
+      
+      if (visited.has(current)) {
+        continue;
+      }
+      visited.add(current);
+
+      // Get all tasks that this task depends on
+      const dependencies = await db
+        .select({ dependsOnTaskId: taskDependencies.dependsOnTaskId })
+        .from(taskDependencies)
+        .where(eq(taskDependencies.taskId, current));
+
+      for (const dep of dependencies) {
+        toCheck.push(dep.dependsOnTaskId);
+      }
+    }
+
+    return false;
   }
 }
 

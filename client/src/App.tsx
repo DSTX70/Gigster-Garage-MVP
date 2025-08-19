@@ -11,6 +11,7 @@ import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Admin from "@/pages/admin";
 import Dashboard from "@/pages/dashboard";
+import ProjectDashboard from "@/pages/project-dashboard";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 import Test404 from "@/pages/test-404";
@@ -56,6 +57,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/project/:projectId" component={ProjectDashboard} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

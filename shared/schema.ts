@@ -24,6 +24,10 @@ export const users = pgTable("users", {
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name").notNull(),
+  description: text("description"),
+  status: text("status", { enum: ["active", "completed", "on-hold", "cancelled"] }).notNull().default("active"),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -37,10 +41,19 @@ export const tasks = pgTable("tasks", {
   assignedToId: varchar("assigned_to_id").references(() => users.id),
   createdById: varchar("created_by_id").references(() => users.id).notNull(),
   projectId: varchar("project_id").references(() => projects.id),
+  parentTaskId: varchar("parent_task_id"), // For subtasks - will be self-referenced
   notes: text("notes"),
   attachments: text("attachments").array(),
   links: text("links").array(),
   progressNotes: jsonb("progress_notes").default([]),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// Task Dependencies table - for task relationships
+export const taskDependencies = pgTable("task_dependencies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  taskId: varchar("task_id").notNull(), // The dependent task
+  dependsOnTaskId: varchar("depends_on_task_id").notNull(), // The task it depends on
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -54,7 +67,7 @@ export const projectsRelations = relations(projects, ({ many }) => ({
   tasks: many(tasks),
 }));
 
-export const tasksRelations = relations(tasks, ({ one }) => ({
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
   assignedTo: one(users, {
     fields: [tasks.assignedToId],
     references: [users.id],
@@ -68,6 +81,27 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   project: one(projects, {
     fields: [tasks.projectId],
     references: [projects.id],
+  }),
+  parentTask: one(tasks, {
+    fields: [tasks.parentTaskId],
+    references: [tasks.id],
+    relationName: "parentTask",
+  }),
+  subtasks: many(tasks, { relationName: "parentTask" }),
+  dependencies: many(taskDependencies, { relationName: "taskDependencies" }),
+  dependents: many(taskDependencies, { relationName: "dependentTasks" }),
+}));
+
+export const taskDependenciesRelations = relations(taskDependencies, ({ one }) => ({
+  task: one(tasks, {
+    fields: [taskDependencies.taskId],
+    references: [tasks.id],
+    relationName: "taskDependencies",
+  }),
+  dependsOnTask: one(tasks, {
+    fields: [taskDependencies.dependsOnTaskId],
+    references: [tasks.id],
+    relationName: "dependentTasks",
   }),
 }));
 
@@ -131,9 +165,16 @@ export type LoginRequest = z.infer<typeof loginSchema>;
 export type OnboardingRequest = z.infer<typeof onboardingSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type TaskDependency = typeof taskDependencies.$inferSelect;
+export type InsertTaskDependency = typeof taskDependencies.$inferInsert;
+
 export type Task = typeof tasks.$inferSelect & {
   assignedTo?: User;
   project?: Project;
+  parentTask?: Task;
+  subtasks?: Task[];
+  dependencies?: (TaskDependency & { dependsOnTask: Task })[];
+  dependents?: (TaskDependency & { task: Task })[];
 };
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type UpdateTask = z.infer<typeof updateTaskSchema>;

@@ -426,6 +426,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Project routes
+  app.get("/api/projects", requireAuth, async (req, res) => {
+    try {
+      const projects = await storage.getProjects();
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  app.get("/api/projects/:id", requireAuth, async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Error fetching project:", error);
+      res.status(500).json({ message: "Failed to fetch project" });
+    }
+  });
+
+  app.post("/api/projects", requireAuth, async (req, res) => {
+    try {
+      const result = insertProjectSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid project data", 
+          errors: result.error.errors 
+        });
+      }
+
+      const project = await storage.createProject(result.data);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      res.status(500).json({ message: "Failed to create project" });
+    }
+  });
+
+  // Task dependency routes
+  app.post("/api/task-dependencies", requireAuth, async (req, res) => {
+    try {
+      const { taskId, dependsOnTaskId } = req.body;
+      
+      if (!taskId || !dependsOnTaskId) {
+        return res.status(400).json({ message: "Task ID and depends on task ID are required" });
+      }
+
+      // Check for circular dependencies
+      const wouldCreateCircle = await storage.wouldCreateCircularDependency(taskId, dependsOnTaskId);
+      if (wouldCreateCircle) {
+        return res.status(400).json({ message: "Cannot create circular dependency" });
+      }
+
+      const dependency = await storage.createTaskDependency({ taskId, dependsOnTaskId });
+      res.status(201).json(dependency);
+    } catch (error) {
+      console.error("Error creating task dependency:", error);
+      res.status(500).json({ message: "Failed to create task dependency" });
+    }
+  });
+
+  app.delete("/api/task-dependencies/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteTaskDependency(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting task dependency:", error);
+      res.status(500).json({ message: "Failed to delete task dependency" });
+    }
+  });
+
+  // Special route for project tasks
+  app.get("/api/tasks/project/:projectId", requireAuth, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      const projectId = req.params.projectId;
+      const tasks = await storage.getTasksByProject(projectId, user.role === 'admin' ? null : user.id);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching project tasks:", error);
+      res.status(500).json({ message: "Failed to fetch project tasks" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

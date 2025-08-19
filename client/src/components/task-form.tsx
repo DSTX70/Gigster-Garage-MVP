@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, X, FileText, Link, Upload, User } from "lucide-react";
-import { insertTaskSchema, type InsertTask, type User as UserType, type Project } from "@shared/schema";
+import { insertTaskSchema, type InsertTask, type User as UserType, type Project, type Task } from "@shared/schema";
 
 // User dropdown component
 function UserDropdown({ value, onValueChange, placeholder }: {
