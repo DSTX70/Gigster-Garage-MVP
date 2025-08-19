@@ -125,7 +125,7 @@ export default function ProjectDashboard() {
               <Link href="/">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Tasks
+                  Back to My Dashboard
                 </Button>
               </Link>
               <div>

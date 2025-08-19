@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus } from "lucide-react";
+import { Link } from "wouter";
 import { VSuiteLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
 import { useAuth } from "@/hooks/useAuth";
@@ -71,6 +72,16 @@ export function AppHeader() {
           </div>
           
           <div className="flex items-center space-x-4">
+            <Link href="/">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-white border-white/30 hover:bg-white hover:text-blue-600 backdrop-blur-sm"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Task
+              </Button>
+            </Link>
             <ReminderModal reminderCount={reminderCount} />
             
             <div className="flex items-center space-x-2 text-sm text-blue-100">
