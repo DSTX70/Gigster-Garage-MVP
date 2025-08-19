@@ -10,6 +10,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Task Relationships & Dependencies** (Completed August 2025): Full subtask and parent-child task hierarchy with circular dependency prevention algorithms
+- **Enhanced Project Dashboards** (Added August 2025): Rich project views with Kanban boards, progress tracking, timeline planning, and comprehensive project stats
+- **Cross-Device Optimization** (Added August 2025): Desktop expanded views with column layout, Kanban board, and Gantt chart timeline views that automatically adapt to screen size
+- **Project Cards on Home Page** (Added August 2025): Interactive project cards showing progress indicators, task counts, and direct dashboard access with visual status badges
+- **Database Schema Enhancement** (Completed August 2025): Added parentTaskId field to tasks table and taskDependencies relationship table with proper foreign key constraints
 - **Marketing Landing Page** (Added January 2025): Professional welcome page showcasing VSuite HQ features, demo access, and clear call-to-action for new visitors
 - **Enhanced Due Date Functionality** (Added January 2025): Time input added to task form with 24-hour and 1-hour advance reminder notifications
 - **Advanced Reminder System** (Enhanced January 2025): Precise time-based triggers with yellow notifications for 24-hour advance and urgent red notifications for 1-hour advance

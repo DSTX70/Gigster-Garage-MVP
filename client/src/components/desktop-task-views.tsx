@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -212,14 +212,14 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
   // Only show desktop views on larger screens
   const [isDesktop, setIsDesktop] = useState(false);
   
-  useState(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
       checkDesktop();
       window.addEventListener('resize', checkDesktop);
       return () => window.removeEventListener('resize', checkDesktop);
     }
-  });
+  }, []);
 
   if (!isDesktop) {
     return <div className="space-y-4">{sortedTasks.map(task => <TaskCard key={task.id} task={task} />)}</div>;
