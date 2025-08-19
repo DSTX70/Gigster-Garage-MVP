@@ -10,6 +10,7 @@ import { Calendar, Clock, Users, CheckCircle, AlertCircle, ArrowLeft, Plus, BarC
 import { useAuth } from "@/hooks/useAuth";
 import type { Task, Project } from "@shared/schema";
 import { format } from "date-fns";
+import { AppHeader } from "@/components/app-header";
 
 export default function ProjectDashboard() {
   const { projectId } = useParams();
@@ -117,32 +118,37 @@ export default function ProjectDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to My Dashboard
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-                {project.description && (
-                  <p className="text-gray-600 mt-1">{project.description}</p>
-                )}
-              </div>
-            </div>
-            <Badge className={getStatusColor(project.status)}>
-              {project.status}
-            </Badge>
-          </div>
-        </div>
-      </div>
-
+      <AppHeader />
+      
       <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="mb-4">
+          <Link href="/">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to My Dashboard
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+            {project.description && (
+              <p className="text-gray-600 mt-1">{project.description}</p>
+            )}
+          </div>
+          <Link href="/">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New Task
+            </Button>
+          </Link>
+        </div>
+        
         {/* Project Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card 

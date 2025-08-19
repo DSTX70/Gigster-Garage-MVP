@@ -64,7 +64,19 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Dashboard Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Dashboard</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
+            <Link href="/">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New Task
+              </Button>
+            </Link>
+          </div>
           <p className="text-gray-600">Welcome back! Here's what's happening with your tasks and projects.</p>
         </div>
 
