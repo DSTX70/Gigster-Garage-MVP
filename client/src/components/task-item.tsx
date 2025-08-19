@@ -189,6 +189,21 @@ export function TaskItem({ task }: TaskItemProps) {
   
   const hasExtendedContent = task.notes || (task.attachments && task.attachments.length > 0) || (task.links && task.links.length > 0);
 
+  // Map old priority values and current status to StatusKey
+  const mapToStatusKey = (value: string): StatusKey => {
+    // If it's already a valid status, use it
+    if (['critical', 'high', 'medium', 'low', 'complete', 'pending', 'overdue'].includes(value)) {
+      return value as StatusKey;
+    }
+    // Map old priority values to new status values
+    switch (value) {
+      case 'high': return 'high';
+      case 'medium': return 'medium'; 
+      case 'low': return 'low';
+      default: return 'pending';
+    }
+  };
+
   return (
     <>
     <div className={`task-card fade-in-up group ${
@@ -222,7 +237,7 @@ export function TaskItem({ task }: TaskItemProps) {
                   {statusInfo.label}
                 </Badge>
               ) : (
-                <StatusBadge status={task.status as StatusKey} size={16} />
+                <StatusBadge status={mapToStatusKey(task.status || task.priority)} size={16} />
               )}
               <Button
                 variant="ghost"

@@ -16,6 +16,16 @@ export const StatusBadge: React.FC<Props> = ({
   size = 18,
 }) => {
   const spec = STATUS_MAP[status];
+  
+  if (!spec) {
+    // Fallback for unknown status
+    return (
+      <span className="text-gray-500 text-xs">
+        {status}
+      </span>
+    );
+  }
+  
   const Icon = spec.Icon;
 
   // Specialized 'overdue' rendering: striped octagon background using CSS mask
