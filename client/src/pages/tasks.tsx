@@ -12,9 +12,9 @@ import type { Task } from "@shared/schema";
 export default function Tasks() {
   const [location, navigate] = useLocation();
   
-  // Extract filter from URL params
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
-  const filter = urlParams.get('filter') || 'all';
+  // Extract filter from URL params - more robust parsing
+  const searchParams = new URLSearchParams(window.location.search);
+  const filter = searchParams.get('filter') || 'all';
   
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
@@ -46,8 +46,9 @@ export default function Tasks() {
       
       case 'completed-today':
         return tasks.filter(task => {
-          if (!task.completed || !task.createdAt) return false;
-          const completedDate = new Date(task.createdAt);
+          if (!task.completed) return false;
+          // Use createdAt since updatedAt may not exist in schema
+          const completedDate = task.createdAt ? new Date(task.createdAt) : new Date();
           return startOfDay(completedDate).getTime() === startOfDay(now).getTime();
         });
       

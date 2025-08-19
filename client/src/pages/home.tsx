@@ -48,6 +48,7 @@ export default function Home() {
 
   const criticalTasks = tasks.filter(task => !task.completed && task.status === 'critical');
   const highStatusTasks = tasks.filter(task => !task.completed && task.status === 'high');
+  const highPriorityTasks = tasks.filter(task => !task.completed && task.priority === 'high');
   
   const completedToday = tasks.filter(task => {
     if (!task.completed || !task.createdAt) return false;
@@ -119,7 +120,7 @@ export default function Home() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-orange-600">High Priority</p>
-                    <p className="text-2xl font-bold text-orange-700">{criticalTasks.length + highStatusTasks.length}</p>
+                    <p className="text-2xl font-bold text-orange-700">{highPriorityTasks.length}</p>
                   </div>
                   <AlertTriangle className="h-6 w-6 text-orange-500" />
                 </div>
