@@ -8,15 +8,18 @@ import { AssignmentFilter } from "@/components/assignment-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Folder, BarChart3, Calendar, Users } from "lucide-react";
+import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown } from "lucide-react";
+import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
+  const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -26,102 +29,234 @@ export default function Home() {
     queryKey: ["/api/tasks"],
   });
 
+  // Calculate urgent and overview stats
+  const now = new Date();
+  const urgentTasks = tasks.filter(task => {
+    if (task.completed) return false;
+    if (!task.dueDate) return false;
+    const dueDate = new Date(task.dueDate);
+    const timeDiff = dueDate.getTime() - now.getTime();
+    return timeDiff <= 24 * 60 * 60 * 1000; // Due within 24 hours
+  });
+
+  const overdueTasks = tasks.filter(task => {
+    if (task.completed) return false;
+    if (!task.dueDate) return false;
+    return new Date(task.dueDate) < now;
+  });
+
+  const highPriorityTasks = tasks.filter(task => !task.completed && task.priority === 'high');
+  
+  const completedToday = tasks.filter(task => {
+    if (!task.completed || !task.createdAt) return false;
+    const taskDate = new Date(task.createdAt);
+    const today = new Date();
+    return taskDate.toDateString() === today.toDateString();
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gray-50">
       <AppHeader />
       <ReminderSystem />
       
-      {/* Hero Section */}
-      <div className="vsuite-hero-section py-8 mb-8">
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-white mb-2">Task Management Hub</h1>
-            <p className="text-blue-100 text-lg">Streamline your workflow with VSuite HQ</p>
-          </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Dashboard Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Dashboard</h1>
+          <p className="text-gray-600">Welcome back! Here's what's happening with your tasks and projects.</p>
         </div>
-      </div>
-      
-      <main className="max-w-6xl mx-auto px-6 pb-8">
-        <TaskForm />
-        
-        {/* Projects Section */}
-        {projects.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Active Projects</h3>
-              <Badge variant="secondary">{projects.length}</Badge>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map((project) => {
-                const projectTasks = tasks.filter(task => task.projectId === project.id);
-                const completedTasks = projectTasks.filter(task => task.completed);
-                const progress = projectTasks.length > 0 ? (completedTasks.length / projectTasks.length) * 100 : 0;
-                
-                return (
-                  <Link key={project.id} href={`/project/${project.id}`}>
-                    <Card className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-blue-500">
-                      <CardHeader className="pb-3">
+
+        {/* Urgent & Overview Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Overdue Tasks */}
+          <Card className="border-l-4 border-l-red-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-600">Overdue</p>
+                  <p className="text-3xl font-bold text-red-700">{overdueTasks.length}</p>
+                </div>
+                <AlertTriangle className="h-8 w-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Due Soon */}
+          <Card className="border-l-4 border-l-yellow-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-600">Due Soon</p>
+                  <p className="text-3xl font-bold text-yellow-700">{urgentTasks.length}</p>
+                </div>
+                <Clock className="h-8 w-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* High Priority */}
+          <Card className="border-l-4 border-l-orange-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600">High Priority</p>
+                  <p className="text-3xl font-bold text-orange-700">{highPriorityTasks.length}</p>
+                </div>
+                <AlertTriangle className="h-8 w-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Completed Today */}
+          <Card className="border-l-4 border-l-green-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600">Completed Today</p>
+                  <p className="text-3xl font-bold text-green-700">{completedToday.length}</p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Project Folders Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+            <Badge variant="secondary" className="text-sm">{projects.length} active</Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project) => {
+              const projectTasks = tasks.filter(task => task.projectId === project.id);
+              const outstandingTasks = projectTasks.filter(task => !task.completed);
+              const criticalTasks = outstandingTasks.filter(task => task.priority === 'high');
+              const projectOverdue = outstandingTasks.filter(task => {
+                if (!task.dueDate) return false;
+                return new Date(task.dueDate) < now;
+              });
+              
+              return (
+                <Link key={project.id} href={`/project/${project.id}`}>
+                  <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-blue-500 group">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center">
+                          <Folder className="h-6 w-6 mr-3 text-blue-600 group-hover:text-blue-700" />
+                          <div>
+                            <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700">
+                              {project.name}
+                            </CardTitle>
+                            {project.description && (
+                              <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge className={
+                          project.status === "active" ? "bg-green-100 text-green-800" :
+                          project.status === "completed" ? "bg-blue-100 text-blue-800" :
+                          project.status === "on-hold" ? "bg-yellow-100 text-yellow-800" :
+                          "bg-red-100 text-red-800"
+                        }>
+                          {project.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="pt-0">
+                      <div className="space-y-3">
+                        {/* Outstanding Tasks */}
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg flex items-center">
-                            <Folder className="h-5 w-5 mr-2 text-blue-600" />
-                            {project.name}
-                          </CardTitle>
-                          <Badge className={
-                            project.status === "active" ? "bg-green-100 text-green-800" :
-                            project.status === "completed" ? "bg-blue-100 text-blue-800" :
-                            project.status === "on-hold" ? "bg-yellow-100 text-yellow-800" :
-                            "bg-red-100 text-red-800"
-                          }>
-                            {project.status}
-                          </Badge>
+                          <span className="text-sm font-medium text-gray-600">Outstanding Tasks</span>
+                          <Badge variant="secondary">{outstandingTasks.length}</Badge>
                         </div>
-                        {project.description && (
-                          <p className="text-sm text-gray-600 mt-2">{project.description}</p>
+                        
+                        {/* Critical Tasks */}
+                        {criticalTasks.length > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-orange-600">Critical Priority</span>
+                            <Badge className="bg-orange-100 text-orange-800">{criticalTasks.length}</Badge>
+                          </div>
                         )}
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="flex items-center text-gray-600">
-                              <BarChart3 className="h-4 w-4 mr-1" />
-                              Progress
-                            </span>
-                            <span className="font-medium">{Math.round(progress)}%</span>
+                        
+                        {/* Overdue Tasks */}
+                        {projectOverdue.length > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-red-600">Overdue</span>
+                            <Badge className="bg-red-100 text-red-800">{projectOverdue.length}</Badge>
                           </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="flex items-center text-gray-600">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              Tasks
+                        )}
+                        
+                        {/* Progress Bar */}
+                        <div className="pt-2">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-gray-600">Progress</span>
+                            <span className="font-medium">
+                              {projectTasks.length > 0 
+                                ? Math.round(((projectTasks.length - outstandingTasks.length) / projectTasks.length) * 100)
+                                : 0}%
                             </span>
-                            <span>{completedTasks.length} / {projectTasks.length}</span>
                           </div>
-                          <Button variant="outline" size="sm" className="w-full">
-                            View Dashboard
-                          </Button>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${projectTasks.length > 0 
+                                  ? ((projectTasks.length - outstandingTasks.length) / projectTasks.length) * 100 
+                                  : 0}%` 
+                              }}
+                            />
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        
-        {/* Enhanced Filter Section */}
-        <div className="vsuite-accent-section mb-8">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">Filter & Organize Tasks</h3>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <TaskFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
-            <AssignmentFilter selectedAssignee={selectedAssignee} onAssigneeChange={setSelectedAssignee} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         </div>
-        
-        {/* Desktop-optimized task views */}
+
+        {/* Collapsible New Task Section */}
+        <div className="mb-8">
+          <Collapsible open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="w-full justify-between py-6 text-left hover:bg-blue-50 border-2 border-dashed border-gray-300 hover:border-blue-300"
+              >
+                <div className="flex items-center">
+                  <Plus className="h-5 w-5 mr-3 text-blue-600" />
+                  <span className="text-lg font-medium">New Task</span>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${isNewTaskOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4">
+              <Card className="border-2 border-blue-200">
+                <CardContent className="p-6">
+                  <TaskForm onSuccess={() => setIsNewTaskOpen(false)} />
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+
+        {/* Tasks Overview - Desktop optimized views */}
         <div className="hidden lg:block">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Tasks Overview</h2>
+            <div className="flex items-center space-x-4">
+              <TaskFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+              <AssignmentFilter selectedAssignee={selectedAssignee} onAssigneeChange={setSelectedAssignee} />
+            </div>
+          </div>
+          
           <DesktopTaskViews 
             tasks={tasks.filter(task => {
-              // Apply filters
               const matchesFilter = 
                 activeFilter === 'all' || 
                 (activeFilter === 'active' && !task.completed) ||
@@ -135,9 +270,16 @@ export default function Home() {
             })}
           />
         </div>
-        
+
         {/* Mobile task list */}
         <div className="block lg:hidden">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Tasks</h2>
+            <div className="flex flex-wrap items-center gap-4">
+              <TaskFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+              <AssignmentFilter selectedAssignee={selectedAssignee} onAssigneeChange={setSelectedAssignee} />
+            </div>
+          </div>
           <TaskList filter={activeFilter} assigneeFilter={selectedAssignee} />
         </div>
       </main>

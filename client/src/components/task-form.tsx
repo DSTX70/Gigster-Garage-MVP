@@ -32,14 +32,14 @@ function UserDropdown({ value, onValueChange, placeholder }: {
       <SelectContent>
         <SelectItem key="unassigned" value="unassigned">Unassigned</SelectItem>
         {currentUser && (
-          <SelectItem key={`${currentUser.id}-self`} value={currentUser.id}>
+          <SelectItem key={`current-${currentUser.id}`} value={currentUser.id}>
             {currentUser.name} ({currentUser.username}) - Me
           </SelectItem>
         )}
         {isAdmin && users
           .filter(user => user.id !== currentUser?.id) // Don't duplicate current user
-          .map((user, index) => (
-            <SelectItem key={`${user.id}-${index}`} value={user.id}>
+          .map((user) => (
+            <SelectItem key={`user-${user.id}`} value={user.id}>
               {user.name} ({user.username})
             </SelectItem>
           ))}
@@ -147,7 +147,13 @@ function ProjectDropdown({ value, onValueChange, placeholder }: {
   );
 }
 
-export function TaskForm() {
+interface TaskFormProps {
+  onSuccess?: () => void;
+  parentTaskId?: string;
+  existingTask?: Task;
+}
+
+export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProps = {}) {
   const { user: currentUser, isAdmin } = useAuth();
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -183,6 +189,7 @@ export function TaskForm() {
         title: "Task created",
         description: "Your task has been added successfully.",
       });
+      onSuccess?.();
     },
     onError: (error: Error) => {
       toast({
