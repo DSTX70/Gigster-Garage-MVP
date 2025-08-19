@@ -65,13 +65,13 @@ export function AppHeader() {
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                <Shield size={18} className="text-white" />
-              </div>
-              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                 <VSuiteLogo size="small" showText={false} />
               </div>
-              <h1 className="text-xl font-bold text-white">VSuite HQ</h1>
-              <span className="text-blue-100 font-medium">•</span>
+              <h1 className="text-xl font-bold">
+                <span className="text-white">VSuite</span>
+                <span className="text-black"> HQ</span>
+              </h1>
+              <span className="text-blue-100 font-medium">|</span>
               <p className="text-sm font-medium text-blue-100">Simplified Workflow Hub</p>
             </div>
           </div>
@@ -94,35 +94,7 @@ export function AppHeader() {
                   Admin
                 </span>
               )}
-              {isAdmin && (
-                <div className="flex items-center space-x-1 text-xs">
-                  <span className="text-blue-100">|</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate("/")}
-                    className="text-blue-100 hover:text-white hover:bg-white/10 p-1 h-auto text-xs"
-                  >
-                    Tasks
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate("/dashboard")}
-                    className="text-blue-100 hover:text-white hover:bg-white/10 p-1 h-auto text-xs"
-                  >
-                    Dashboard
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate("/admin")}
-                    className="text-blue-100 hover:text-white hover:bg-white/10 p-1 h-auto text-xs"
-                  >
-                    Users
-                  </Button>
-                </div>
-              )}
+
             </div>
             
             <div className="flex items-center space-x-3">
