@@ -83,56 +83,64 @@ export default function Home() {
         {/* Urgent & Overview Section */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {/* Overdue Tasks */}
-          <Card className="border-l-4 border-l-red-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-red-600">Overdue</p>
-                  <p className="text-2xl font-bold text-red-700">{overdueTasks.length}</p>
+          <Link href="/tasks?filter=overdue">
+            <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-red-600">Overdue</p>
+                    <p className="text-2xl font-bold text-red-700">{overdueTasks.length}</p>
+                  </div>
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
                 </div>
-                <AlertTriangle className="h-6 w-6 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Due Soon */}
-          <Card className="border-l-4 border-l-yellow-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-yellow-600">Due Soon</p>
-                  <p className="text-2xl font-bold text-yellow-700">{urgentTasks.length}</p>
+          <Link href="/tasks?filter=due-soon">
+            <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-yellow-600">Due Soon</p>
+                    <p className="text-2xl font-bold text-yellow-700">{urgentTasks.length}</p>
+                  </div>
+                  <Clock className="h-6 w-6 text-yellow-500" />
                 </div>
-                <Clock className="h-6 w-6 text-yellow-500" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* High Priority */}
-          <Card className="border-l-4 border-l-orange-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-orange-600">High Priority</p>
-                  <p className="text-2xl font-bold text-orange-700">{criticalTasks.length + highStatusTasks.length}</p>
+          <Link href="/tasks?filter=high-priority">
+            <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-orange-600">High Priority</p>
+                    <p className="text-2xl font-bold text-orange-700">{criticalTasks.length + highStatusTasks.length}</p>
+                  </div>
+                  <AlertTriangle className="h-6 w-6 text-orange-500" />
                 </div>
-                <AlertTriangle className="h-6 w-6 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Completed Today */}
-          <Card className="border-l-4 border-l-green-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-green-600">Completed Today</p>
-                  <p className="text-2xl font-bold text-green-700">{completedToday.length}</p>
+          <Link href="/tasks?filter=completed-today">
+            <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-green-600">Completed Today</p>
+                    <p className="text-2xl font-bold text-green-700">{completedToday.length}</p>
+                  </div>
+                  <CheckCircle2 className="h-6 w-6 text-green-500" />
                 </div>
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Project Folders Section */}

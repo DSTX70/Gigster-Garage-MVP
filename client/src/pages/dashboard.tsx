@@ -89,7 +89,7 @@ export default function Dashboard() {
 
   const TaskCard = ({ task }: { task: Task }) => {
     const statusInfo = getStatusInfo(task);
-    const hasExtras = task.notes || task.attachments?.length > 0 || task.links?.length > 0;
+    const hasExtras = task.notes || (task.attachments && task.attachments.length > 0) || (task.links && task.links.length > 0);
 
     return (
       <div className="border rounded-lg p-4 space-y-3 bg-white">
