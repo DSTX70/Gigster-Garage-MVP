@@ -38,6 +38,7 @@ export const tasks = pgTable("tasks", {
   completed: boolean("completed").notNull().default(false),
   dueDate: timestamp("due_date"),
   priority: text("priority", { enum: ["low", "medium", "high"] }).notNull().default("medium"),
+  status: text("status", { enum: ["critical", "high", "medium", "low", "complete", "pending", "overdue"] }).notNull().default("pending"),
   assignedToId: varchar("assigned_to_id").references(() => users.id),
   createdById: varchar("created_by_id").references(() => users.id).notNull(),
   projectId: varchar("project_id").references(() => projects.id),

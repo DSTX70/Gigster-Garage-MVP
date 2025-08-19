@@ -8,6 +8,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FileText, Link, Paperclip, User, Eye } from "lucide-react";
 import type { Task } from "@shared/schema";
+import { StatusBadge } from "@/components/status/StatusBadge";
+import { type StatusKey } from "@/components/status/statusMap";
 import { formatDistanceToNow, isAfter, isBefore, startOfDay } from "date-fns";
 import ProgressSection from "./ProgressSection";
 import { TaskDetailModal } from "./task-detail-modal";
@@ -220,9 +222,7 @@ export function TaskItem({ task }: TaskItemProps) {
                   {statusInfo.label}
                 </Badge>
               ) : (
-                <Badge className={`px-2 py-1 text-xs font-medium rounded ${getPriorityColor(task.priority)}`}>
-                  {getPriorityLabel(task.priority)}
-                </Badge>
+                <StatusBadge status={task.status as StatusKey} size={16} />
               )}
               <Button
                 variant="ghost"

@@ -11,6 +11,8 @@ import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, X, FileText, Link, Upload, User } from "lucide-react";
 import { insertTaskSchema, type InsertTask, type User as UserType, type Project, type Task } from "@shared/schema";
+import { StatusBadge } from "@/components/status/StatusBadge";
+import { type StatusKey } from "@/components/status/statusMap";
 
 // User dropdown component
 function UserDropdown({ value, onValueChange, placeholder }: {
@@ -159,6 +161,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [status, setStatus] = useState<StatusKey>("pending");
   // Default to current user for non-admins, unassigned for admins
   const [assignedToId, setAssignedToId] = useState(isAdmin ? "unassigned" : (currentUser?.id || "unassigned"));
   const [projectId, setProjectId] = useState("");
@@ -179,6 +182,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
       setDueDate("");
       setDueTime("");
       setPriority("medium");
+      setStatus("pending");
       setAssignedToId(isAdmin ? "unassigned" : (currentUser?.id || "unassigned"));
       setProjectId("");
       setNotes("");
@@ -251,6 +255,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
         description: description.trim(),
         dueDate: combinedDateTime,
         priority,
+        status,
         assignedToId: (assignedToId && assignedToId !== "unassigned") ? assignedToId : undefined,
         projectId: projectId || undefined,
         completed: false,
@@ -362,6 +367,71 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
             />
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label className="block text-sm font-medium text-neutral-700 mb-2">
+                Priority
+              </Label>
+              <Select value={priority} onValueChange={(value: "low" | "medium" | "high") => setPriority(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select priority..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="block text-sm font-medium text-neutral-700 mb-2">
+                Status
+              </Label>
+              <Select value={status} onValueChange={(value: StatusKey) => setStatus(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">
+                    <div className="flex items-center">
+                      <StatusBadge status="pending" size={16} />
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="critical">
+                    <div className="flex items-center">
+                      <StatusBadge status="critical" size={16} />
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="high">
+                    <div className="flex items-center">
+                      <StatusBadge status="high" size={16} />
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="medium">
+                    <div className="flex items-center">
+                      <StatusBadge status="medium" size={16} />
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="low">
+                    <div className="flex items-center">
+                      <StatusBadge status="low" size={16} />
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="complete">
+                    <div className="flex items-center">
+                      <StatusBadge status="complete" size={16} />
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="overdue">
+                    <div className="flex items-center">
+                      <StatusBadge status="overdue" size={16} />
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label className="block text-sm font-medium text-neutral-700 mb-2 flex items-center">
@@ -450,32 +520,15 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="priority" className="block text-sm font-medium text-neutral-700 mb-2">
-                Priority
-              </Label>
-              <Select value={priority} onValueChange={(value: "low" | "medium" | "high") => setPriority(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low Priority</SelectItem>
-                  <SelectItem value="medium">Medium Priority</SelectItem>
-                  <SelectItem value="high">High Priority</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2 flex justify-end items-end">
-              <Button
-                type="submit"
-                disabled={createTaskMutation.isPending}
-                className="vsuite-button-primary px-6 py-3"
-              >
-                <Plus className="mr-2" size={16} />
-                {createTaskMutation.isPending ? "Adding..." : "Add Task"}
-              </Button>
-            </div>
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={createTaskMutation.isPending}
+              className="vsuite-button-primary px-6 py-3"
+            >
+              <Plus className="mr-2" size={16} />
+              {createTaskMutation.isPending ? "Adding..." : "Add Task"}
+            </Button>
           </div>
         </form>
       </div>

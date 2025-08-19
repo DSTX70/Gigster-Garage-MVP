@@ -15,6 +15,7 @@ import { Link } from "wouter";
 import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
+import { StatusBadge } from "@/components/status/StatusBadge";
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed'>('all');
@@ -45,7 +46,8 @@ export default function Home() {
     return new Date(task.dueDate) < now;
   });
 
-  const highPriorityTasks = tasks.filter(task => !task.completed && task.priority === 'high');
+  const criticalTasks = tasks.filter(task => !task.completed && task.status === 'critical');
+  const highStatusTasks = tasks.filter(task => !task.completed && task.status === 'high');
   
   const completedToday = tasks.filter(task => {
     if (!task.completed || !task.createdAt) return false;
@@ -100,7 +102,7 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-orange-600">High Priority</p>
-                  <p className="text-2xl font-bold text-orange-700">{highPriorityTasks.length}</p>
+                  <p className="text-2xl font-bold text-orange-700">{criticalTasks.length + highStatusTasks.length}</p>
                 </div>
                 <AlertTriangle className="h-6 w-6 text-orange-500" />
               </div>

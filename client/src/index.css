@@ -264,6 +264,46 @@
     @apply bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-1 text-xs font-medium;
   }
   
+  /* VSuite Status Badge System */
+  :root {
+    --badge-radius: 999px;
+    --badge-gap: 6px;
+    --badge-padding: 4px 8px;
+    --badge-bg: #F6F7F9;
+    --badge-fg: #0F172A;
+  }
+
+  .vs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--badge-gap);
+    padding: var(--badge-padding);
+    border-radius: var(--badge-radius);
+    border: 1px solid var(--badge-color);
+    color: var(--badge-fg);
+    background: color-mix(in oklab, var(--badge-color) 12%, white);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vs-badge__icon {
+    stroke: var(--badge-color);
+  }
+
+  .vs-badge__text {
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 600;
+  }
+
+  /* Overdue diagonal stripe overlay */
+  .vs-badge__stripe {
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
   /* Status Indicators */
   .status-completed {
     @apply bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-1 text-xs font-medium;
