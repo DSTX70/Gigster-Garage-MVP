@@ -17,6 +17,7 @@ import {
   Target
 } from "lucide-react";
 import { VSuiteLogo } from "@/components/vsuite-logo";
+import { ScreenshotCarousel } from "@/components/screenshot-carousel";
 import { Link } from "wouter";
 
 export default function Landing() {
@@ -116,6 +117,35 @@ export default function Landing() {
                 <span>Team collaboration</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Screenshot Carousel Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-black mb-4">
+              See VSuite HQ in action
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Take a visual tour of our intuitive interface and discover how VSuite HQ 
+              makes task management effortless and efficient.
+            </p>
+          </div>
+          
+          <ScreenshotCarousel />
+          
+          <div className="text-center mt-12">
+            <p className="text-sm text-gray-500 mb-4">
+              Free to start • No credit card required
+            </p>
+            <Link href="/login">
+              <Button size="lg" className="px-8">
+                Try VSuite HQ Now
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

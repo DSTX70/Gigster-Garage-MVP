@@ -10,7 +10,7 @@ import { Calendar, Clock, MoreVertical, AlertTriangle, CheckCircle, ChevronDown,
 import type { Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { type StatusKey } from "@/components/status/statusMap";
-import { formatDistanceToNow, isAfter, isBefore, startOfDay } from "date-fns";
+import { formatDistanceToNow, isAfter, isBefore, startOfDay, format } from "date-fns";
 import ProgressSection from "./ProgressSection";
 import { TaskDetailModal } from "./task-detail-modal";
 
@@ -308,12 +308,19 @@ export function TaskItem({ task }: TaskItemProps) {
             <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
               <CollapsibleContent className="mt-4 space-y-3">
                 {task.notes && (
-                  <div className="bg-neutral-50 p-3 rounded-lg">
-                    <div className="flex items-center mb-2">
-                      <FileText size={16} className="text-neutral-600 mr-2" />
-                      <span className="text-sm font-medium text-neutral-700">Notes</span>
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+                      <FileText size={14} className="text-white" />
                     </div>
-                    <p className="text-sm text-neutral-700 whitespace-pre-wrap">{task.notes}</p>
+                    <div className="flex-1 bg-gray-50 rounded-2xl rounded-tl-sm p-4 border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm text-gray-900">Notes</span>
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(task.createdAt || new Date()), 'MMM dd, h:mm a')}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{task.notes}</p>
+                    </div>
                   </div>
                 )}
 

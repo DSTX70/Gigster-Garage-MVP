@@ -69,18 +69,28 @@ export default function ProgressSection({
               .map((note) => (
                 <div
                   key={note.id}
-                  className="p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500"
+                  className="flex items-start space-x-3 mb-4"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium text-sm text-gray-700">
-                      {format(new Date(note.date), 'MMMM dd, yyyy')}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-auto">
-                      Added {format(new Date(note.createdAt), 'MMM dd, h:mm a')}
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">
+                      {note.comment.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-gray-800 whitespace-pre-wrap">{note.comment}</p>
+                  <div className="flex-1 bg-blue-50 rounded-2xl rounded-tl-sm p-4 border border-blue-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-sm text-blue-900">
+                        Progress Update
+                      </span>
+                      <span className="text-xs text-blue-600">
+                        {format(new Date(note.createdAt), 'MMM dd, h:mm a')}
+                      </span>
+                    </div>
+                    <p className="text-gray-800 whitespace-pre-wrap text-sm leading-relaxed">{note.comment}</p>
+                    <div className="flex items-center mt-2 text-xs text-blue-600">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {format(new Date(note.date), 'MMMM dd, yyyy')}
+                    </div>
+                  </div>
                 </div>
               ))}
           </div>
