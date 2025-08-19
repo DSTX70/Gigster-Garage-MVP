@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield } from "lucide-react";
 import { Link } from "wouter";
 import { VSuiteLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
@@ -60,19 +60,67 @@ export function AppHeader() {
   return (
     <header className="vsuite-header-gradient border-b border-blue-600 sticky top-0 z-50 shadow-lg">
       <div className="max-w-6xl mx-auto px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col space-y-2 fade-in-up">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+        <div className="flex flex-col space-y-3">
+          {/* Top line: Shield + Logo + Tagline */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                <Shield size={18} className="text-white" />
+              </div>
+              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                 <VSuiteLogo size="small" showText={false} />
               </div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-xl font-bold text-white">VSuite HQ</h1>
-                <span className="text-blue-100 font-medium">•</span>
-                <p className="text-sm font-medium text-blue-100">Simplified Workflow Hub</p>
-              </div>
+              <h1 className="text-xl font-bold text-white">VSuite HQ</h1>
+              <span className="text-blue-100 font-medium">•</span>
+              <p className="text-sm font-medium text-blue-100">Simplified Workflow Hub</p>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-blue-100 pl-14">
+            
+            {isAdmin && (
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/")}
+                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 text-xs px-3 py-1"
+                >
+                  <CheckCheck size={14} className="mr-1" />
+                  Tasks
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/dashboard")}
+                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 text-xs px-3 py-1"
+                >
+                  <Users size={14} className="mr-1" />
+                  Dashboard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/admin")}
+                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 text-xs px-3 py-1"
+                >
+                  <Settings size={14} className="mr-1" />
+                  Users
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
+                  className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300 text-xs px-3 py-1"
+                >
+                  <LogOut size={14} className="mr-1" />
+                  {logoutMutation.isPending ? "..." : "Logout"}
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          {/* Bottom line: User + Messages */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm text-blue-100">
               <User size={16} />
               <span className="text-white font-medium">{user?.name}</span>
               {user?.role === 'admin' && (
@@ -81,53 +129,35 @@ export function AppHeader() {
                 </span>
               )}
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <ReminderModal reminderCount={reminderCount} />
             
-            {isAdmin && (
-              <div className="flex space-x-2">
+            <div className="flex items-center space-x-3">
+              {/* Message System */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/messages")}
+                className="text-white hover:bg-white/10 relative p-2"
+              >
+                <Mail size={18} />
+                {/* Show badge if there are unread messages */}
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  0
+                </span>
+              </Button>
+              
+              {!isAdmin && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => navigate("/")}
-                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50"
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
+                  className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300 text-xs px-3 py-1"
                 >
-                  <CheckCheck size={16} className="mr-2" />
-                  Tasks
+                  <LogOut size={14} className="mr-1" />
+                  {logoutMutation.isPending ? "..." : "Logout"}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/dashboard")}
-                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50"
-                >
-                  <Users size={16} className="mr-2" />
-                  Dashboard
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/admin")}
-                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50"
-                >
-                  <Settings size={16} className="mr-2" />
-                  Users
-                </Button>
-              </div>
-            )}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300"
-            >
-              <LogOut size={16} className="mr-2" />
-              {logoutMutation.isPending ? "..." : "Logout"}
-            </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
