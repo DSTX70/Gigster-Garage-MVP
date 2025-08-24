@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { FileText, Plus, Search, Edit, Trash2, Copy, Calendar } from "lucide-react";
+import { FileText, Plus, Search, Edit, Trash2, Copy, Calendar, Zap } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -105,12 +105,24 @@ export default function Templates() {
             Create and manage reusable document templates
           </p>
         </div>
-        <Link href="/templates/new">
-          <Button data-testid="button-new-template">
-            <Plus className="h-4 w-4 mr-2" />
-            New Template
-          </Button>
-        </Link>
+        <div className="flex items-center space-x-2">
+          <Link href="/instant-proposal">
+            <Button 
+              variant="outline" 
+              data-testid="button-instant-proposal"
+              className="bg-green-600 text-white border-green-600 hover:bg-green-700 hover:border-green-700"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Instant Proposal Builder
+            </Button>
+          </Link>
+          <Link href="/templates/new">
+            <Button data-testid="button-new-template">
+              <Plus className="h-4 w-4 mr-2" />
+              New Template
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search */}
