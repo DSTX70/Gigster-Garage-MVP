@@ -129,10 +129,10 @@ export default function InstantProposal() {
       ...prev,
       templateId: template.id,
       title: `${template.name} - ${new Date().toLocaleDateString()}`,
-      variables: template.variables?.reduce((acc, variable) => {
+      variables: Array.isArray(template.variables) ? template.variables.reduce((acc: Record<string, any>, variable: any) => {
         acc[variable.name] = variable.defaultValue || "";
         return acc;
-      }, {} as Record<string, any>) || {},
+      }, {} as Record<string, any>) : {},
     }));
     setStep("customize");
   };
@@ -383,10 +383,12 @@ export default function InstantProposal() {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="text-sm text-muted-foreground">
-                        {template.variables && Array.isArray(template.variables) && (
+                        {Array.isArray(template.variables) && template.variables.length > 0 ? (
                           <div>
                             {template.variables.length} variable{template.variables.length !== 1 ? 's' : ''}
                           </div>
+                        ) : (
+                          <div>0 variables</div>
                         )}
                       </div>
                     </CardContent>
