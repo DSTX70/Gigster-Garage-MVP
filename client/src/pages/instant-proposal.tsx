@@ -151,71 +151,113 @@ export default function InstantProposal() {
 
   // Render appropriate input component based on variable type
   const renderVariableInput = (variable: any) => {
+    const value = formData.variables[variable.name] || variable.defaultValue || "";
+    
     const commonProps = {
       id: variable.name,
       "data-testid": `input-variable-${variable.name}`,
-      value: formData.variables[variable.name] || variable.defaultValue || "",
+      value: value,
       onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => 
         updateVariable(variable.name, e.target.value),
-      placeholder: variable.placeholder || variable.label,
       required: variable.required,
     };
 
     switch (variable.type) {
       case "textarea":
         return (
-          <Textarea
-            {...commonProps}
-            rows={4}
-            className="resize-none"
-          />
+          <div className="space-y-2">
+            <Textarea
+              {...commonProps}
+              placeholder={variable.placeholder || `Enter detailed ${variable.label.toLowerCase()}...`}
+              rows={6}
+              className="min-h-[120px] resize-y"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>For detailed descriptions and multi-line content</span>
+              <span>{value.length} characters</span>
+            </div>
+          </div>
         );
       
       case "number":
         return (
-          <Input
-            {...commonProps}
-            type="number"
-            step="any"
-            min="0"
-          />
+          <div className="space-y-2">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+              <Input
+                {...commonProps}
+                type="number"
+                placeholder={variable.placeholder || "0.00"}
+                className="pl-8 text-right"
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              💰 Enter amount in USD (numbers only)
+            </p>
+          </div>
         );
       
       case "date":
         return (
-          <Input
-            {...commonProps}
-            type="date"
-          />
+          <div className="space-y-2">
+            <Input
+              {...commonProps}
+              type="date"
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              📅 Select a date from the calendar picker
+            </p>
+          </div>
         );
       
       case "email":
         return (
-          <Input
-            {...commonProps}
-            type="email"
-            autoComplete="email"
-          />
+          <div className="space-y-2">
+            <Input
+              {...commonProps}
+              type="email"
+              placeholder={variable.placeholder || "name@company.com"}
+              autoComplete="email"
+            />
+            <p className="text-xs text-muted-foreground">
+              📧 Valid email format required (will be validated)
+            </p>
+          </div>
         );
       
       case "phone":
         return (
-          <Input
-            {...commonProps}
-            type="tel"
-            autoComplete="tel"
-            pattern="[0-9\-\+\s\(\)]*"
-          />
+          <div className="space-y-2">
+            <Input
+              {...commonProps}
+              type="tel"
+              placeholder={variable.placeholder || "+1 (555) 123-4567"}
+              autoComplete="tel"
+              pattern="[0-9\-\+\s\(\)]*"
+            />
+            <p className="text-xs text-muted-foreground">
+              📞 Include country code for international numbers
+            </p>
+          </div>
         );
       
       case "text":
       default:
         return (
-          <Input
-            {...commonProps}
-            type="text"
-            autoComplete="off"
-          />
+          <div className="space-y-2">
+            <Input
+              {...commonProps}
+              type="text"
+              placeholder={variable.placeholder || `Enter ${variable.label.toLowerCase()}`}
+              autoComplete="off"
+            />
+            <p className="text-xs text-muted-foreground">
+              ✏️ Short text input field
+            </p>
+          </div>
         );
     }
   };
