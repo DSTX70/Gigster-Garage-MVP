@@ -1,0 +1,75 @@
+Perfect ✅ — let’s run the **Test Data Set** through each of the templates and generate full **sample previews**. This way you’ll see exactly what a client would receive after the variables are substituted.
+
+---
+
+# 📄 Sample Previews (with Test Data)
+
+---
+
+## **1. Proposal Preview (Website Redesign)**
+
+**To:** Acme Corp
+**From:** Gigster Garage
+
+---
+
+Dear **Acme Corp**,
+
+Thank you for considering us for your **Website Redesign**.
+
+📌 **Project Scope**:
+Redesign of homepage, 3 service pages, and blog.
+Includes responsive mobile design, SEO optimization, and CMS integration.
+
+💰 **Proposed Budget**: \$7,500
+📅 **Timeline**: Completion by September 30, 2025
+
+If you have any questions, feel free to reach us at **[jane.doe@acmecorp.com](mailto:jane.doe@acmecorp.com)**.
+
+We look forward to collaborating with you!
+
+---
+
+## **2. Contract Preview (Service Agreement)**
+
+**Service Agreement**
+
+This Service Agreement (“Agreement”) is entered into between **Acme Corp** (“Client”) and **Gigster Garage** (“Provider”).
+
+📌 **Services Provided**:
+Full-stack website redesign and implementation.
+Services include UX design, frontend development, backend integration, and QA testing.
+
+📅 **Term**: From September 1, 2025 to December 15, 2025
+
+💰 **Payment Terms**:
+50% upfront, 50% upon project completion.
+Late payments accrue a 2% monthly fee.
+
+Both parties agree to the above terms.
+
+**Client Contact Phone**: +1 (555) 987-6543
+
+---
+
+## **3. Invoice Preview (Standard Invoice)**
+
+**Invoice #:** INV-2025-001
+**Date:** September 1, 2025
+**Due:** September 15, 2025
+
+**Billed To:** Acme Corp
+
+📌 **Services Rendered**:
+Website redesign: UX/UI design, frontend coding, CMS setup, project management, and quality assurance.
+
+💰 **Amount Due**: **\$7,500**
+
+Please send payment or inquiries to **[billing@acmecorp.com](mailto:billing@acmecorp.com)**.
+Thank you for your business!
+
+---
+
+✨ With these previews, your users (and clients) will see **polished, professional outputs** generated instantly from templates.
+
+👉 Do you want me to now package these **sample previews into a styled PDF one-pager** (so you can demo the Proposal → Contract → Invoice flow to investors or testers)?

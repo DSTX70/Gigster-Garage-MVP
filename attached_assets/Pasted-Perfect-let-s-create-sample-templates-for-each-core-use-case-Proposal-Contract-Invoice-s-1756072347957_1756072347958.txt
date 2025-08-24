@@ -1,0 +1,110 @@
+Perfect ✅ — let’s create **sample templates** for each core use case (Proposal, Contract, Invoice) so you can test the flow inside your app. I’ll structure them using the **variable system** (`{{variable_name}}`) that matches your Template Builder.
+
+---
+
+# 📄 Sample Templates
+
+---
+
+## **1. Proposal Template**
+
+**Template Name:** Website Redesign Proposal
+**Type:** Proposal
+**Variables:**
+
+* `client_name` → Client Name (Text)
+* `project_name` → Project Title (Text)
+* `project_scope` → Project Scope (Textarea)
+* `project_budget` → Budget (Number)
+* `project_deadline` → Deadline (Date)
+* `contact_email` → Client Email (Email)
+
+**Template Content:**
+
+```
+Dear {{client_name}},
+
+Thank you for considering us for your {{project_name}}.  
+
+📌 Project Scope:  
+{{project_scope}}
+
+💰 Proposed Budget: ${{project_budget}}  
+📅 Timeline: Completion by {{project_deadline}}  
+
+If you have any questions, feel free to reach us at {{contact_email}}.  
+
+We look forward to collaborating with you!  
+```
+
+---
+
+## **2. Contract Template**
+
+**Template Name:** Service Agreement
+**Type:** Contract
+**Variables:**
+
+* `client_name` → Client Name (Text)
+* `service_description` → Services Provided (Textarea)
+* `start_date` → Start Date (Date)
+* `end_date` → End Date (Date)
+* `payment_terms` → Payment Terms (Textarea)
+* `contact_phone` → Client Phone (Phone)
+
+**Template Content:**
+
+```
+This Service Agreement (“Agreement”) is entered into between {{client_name}} (“Client”) and Gigster Garage (“Provider”).
+
+📌 Services Provided:  
+{{service_description}}
+
+📅 Term: From {{start_date}} to {{end_date}}  
+
+💰 Payment Terms:  
+{{payment_terms}}
+
+Both parties agree to the above terms.  
+For urgent communication, Client can be reached at {{contact_phone}}.  
+```
+
+---
+
+## **3. Invoice Template**
+
+**Template Name:** Standard Invoice
+**Type:** Invoice
+**Variables:**
+
+* `client_name` → Client Name (Text)
+* `invoice_number` → Invoice Number (Text)
+* `invoice_date` → Invoice Date (Date)
+* `due_date` → Due Date (Date)
+* `service_description` → Description of Service (Textarea)
+* `amount_due` → Total Amount (Number)
+* `contact_email` → Billing Contact Email (Email)
+
+**Template Content:**
+
+```
+Invoice #: {{invoice_number}}  
+Date: {{invoice_date}}  
+Due: {{due_date}}  
+
+Billed To: {{client_name}}  
+
+📌 Services:  
+{{service_description}}
+
+💰 Amount Due: ${{amount_due}}  
+
+Please send payment or inquiries to {{contact_email}}.  
+Thank you for your business!  
+```
+
+---
+
+✨ These templates are **plug-and-play** — once you set up the variables in your Template Builder, users just fill them in and generate polished proposals, contracts, or invoices in seconds.
+
+👉 Do you want me to also create a **“Test Data Set”** (sample values for each variable) so Forge and Navi can run these templates through your builder and preview the outputs right away?
