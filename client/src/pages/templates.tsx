@@ -25,7 +25,10 @@ export default function Templates() {
 
   const { data: templates = [], isLoading } = useQuery<Template[]>({
     queryKey: ["/api/templates", activeTab],
-    queryFn: () => apiRequest("GET", `/api/templates?type=${activeTab}`),
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/templates?type=${activeTab}`);
+      return Array.isArray(response) ? response : [];
+    },
   });
 
   const deleteTemplateMutation = useMutation({

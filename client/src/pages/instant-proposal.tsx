@@ -64,13 +64,19 @@ export default function InstantProposal() {
   // Fetch templates
   const { data: templates = [], isLoading: templatesLoading } = useQuery<Template[]>({
     queryKey: ["/api/templates", "proposal"],
-    queryFn: () => apiRequest("GET", "/api/templates?type=proposal"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/templates?type=proposal");
+      return Array.isArray(response) ? response : [];
+    },
   });
 
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
-    queryFn: () => apiRequest("GET", "/api/projects"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/projects");
+      return Array.isArray(response) ? response : [];
+    },
   });
 
   // Generate proposal mutation
