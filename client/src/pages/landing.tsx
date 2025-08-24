@@ -209,7 +209,21 @@ export default function Landing() {
                     </div>
                     <div className="flex items-center">
                       <Badge className="bg-blue-600 text-white mr-2">Password</Badge>
-                      <code className="bg-white px-3 py-2 rounded shadow-sm border">admin123</code>
+                      <code className="bg-white px-3 py-2 rounded shadow-sm border">password</code>
+                    </div>
+                  </div>
+                  
+                  <div className="text-left mt-4">
+                    <h4 className="text-lg font-semibold mb-2 text-blue-900">Regular User Demo</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <Badge className="bg-green-600 text-white mr-2">Username</Badge>
+                        <code className="bg-white px-3 py-2 rounded shadow-sm border">demo</code>
+                      </div>
+                      <div className="flex items-center">
+                        <Badge className="bg-green-600 text-white mr-2">Password</Badge>
+                        <code className="bg-white px-3 py-2 rounded shadow-sm border">password</code>
+                      </div>
                     </div>
                   </div>
                 </div>
