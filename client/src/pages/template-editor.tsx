@@ -251,23 +251,31 @@ export default function TemplateEditor() {
   };
 
   const generatePreview = () => {
-    let content = formData.content || "";
-    
-    // If no content, show a message
-    if (!content.trim()) {
-      setPreviewContent("No template content to preview. Please add content to your template first.");
+    // Generate a preview based on form fields instead of template content
+    if (!formData.variables || formData.variables.length === 0) {
+      setPreviewContent("No form fields to preview. Please add fields using the Variables panel first.");
       setShowPreview(true);
       return;
     }
     
-    // Replace variables with sample data
-    if (formData.variables && Array.isArray(formData.variables)) {
-      formData.variables.forEach(variable => {
-        const sampleValue = variable.defaultValue || getSampleValueForType(variable.type, variable.label);
-        const regex = new RegExp(`\\{\\{${variable.name}\\}\\}`, 'g');
-        content = content.replace(regex, sampleValue);
-      });
+    // Create a formatted document from the form fields
+    let content = `# ${formData.name || 'Template Preview'}\n\n`;
+    content += `**Type:** ${formData.type}\n\n`;
+    
+    if (formData.description) {
+      content += `${formData.description}\n\n`;
     }
+    
+    content += `---\n\n`;
+    
+    // Add each field with sample data
+    formData.variables.forEach(variable => {
+      const sampleValue = variable.defaultValue || getSampleValueForType(variable.type, variable.label);
+      content += `**${variable.label}${variable.required ? ' *' : ''}:**\n`;
+      content += `${sampleValue}\n\n`;
+    });
+    
+    content += `---\n\n*This preview shows how your form data will be formatted into a document.*`;
     
     setPreviewContent(content);
     setShowPreview(true);
@@ -482,29 +490,113 @@ export default function TemplateEditor() {
             </CardContent>
           </Card>
 
-          {/* Content Editor */}
+          {/* Form Builder Preview */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Code className="h-5 w-5" />
-                Template Content
+                <FileText className="h-5 w-5" />
+                Form Builder Preview
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This shows how your form will appear when users create proposals. Add fields using the Variables panel →
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="content-editor">Content *</Label>
-                <Textarea
-                  id="content-editor"
-                  data-testid="textarea-template-content"
-                  value={formData.content || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Enter your template content. Use {{variable_name}} for dynamic content."
-                  rows={20}
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Use double curly braces to insert variables, e.g., {`{{client.name}}`} or {`{{project.scope}}`}
-                </p>
+              <div className="space-y-4">
+                {/* Form field count info */}
+                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">📝 Form Status:</span>
+                    <span>{(formData.variables || []).length} field{(formData.variables || []).length !== 1 ? 's' : ''} defined</span>
+                  </div>
+                  {(formData.variables || []).length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Use the Variables panel to add data entry fields
+                    </p>
+                  )}
+                </div>
+                
+                {/* Preview of form fields */}
+                {(formData.variables || []).length > 0 ? (
+                  <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                    <h4 className="font-medium mb-4">Form Preview (how users will see it):</h4>
+                    <div className="space-y-4">
+                      {(formData.variables || []).map((variable: any, index: number) => (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm font-medium">{variable.label}</Label>
+                            {variable.required && <span className="text-red-500 text-xs">*</span>}
+                            <Badge variant="outline" className="text-xs">{variable.type}</Badge>
+                          </div>
+                          
+                          {/* Show different input types */}
+                          {variable.type === 'textarea' && (
+                            <div className="space-y-1">
+                              <div className="w-full h-20 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground">
+                                📄 Large text area for detailed content...
+                              </div>
+                              <p className="text-xs text-muted-foreground">For detailed descriptions and multi-line content</p>
+                            </div>
+                          )}
+                          {variable.type === 'number' && (
+                            <div className="space-y-1">
+                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
+                                <span className="font-medium mr-2">$</span>
+                                <span>0.00</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">💰 Currency input with $ symbol</p>
+                            </div>
+                          )}
+                          {variable.type === 'date' && (
+                            <div className="space-y-1">
+                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
+                                mm/dd/yyyy
+                              </div>
+                              <p className="text-xs text-muted-foreground">📅 Date picker with calendar</p>
+                            </div>
+                          )}
+                          {variable.type === 'email' && (
+                            <div className="space-y-1">
+                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
+                                name@company.com
+                              </div>
+                              <p className="text-xs text-muted-foreground">📧 Email validation required</p>
+                            </div>
+                          )}
+                          {variable.type === 'phone' && (
+                            <div className="space-y-1">
+                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
+                                +1 (555) 123-4567
+                              </div>
+                              <p className="text-xs text-muted-foreground">📞 Phone number with international format</p>
+                            </div>
+                          )}
+                          {variable.type === 'text' && (
+                            <div className="space-y-1">
+                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
+                                Short text input...
+                              </div>
+                              <p className="text-xs text-muted-foreground">✏️ Single line text field</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <h4 className="font-medium mb-1">No Form Fields Yet</h4>
+                    <p className="text-sm mb-4">Your template will be built from data entry fields</p>
+                    <div className="text-xs text-left max-w-md mx-auto space-y-1">
+                      <p>• <strong>Text:</strong> Short inputs (names, titles)</p>
+                      <p>• <strong>Textarea:</strong> Long content (descriptions, notes)</p>
+                      <p>• <strong>Number:</strong> Currency amounts with $ symbol</p>
+                      <p>• <strong>Date:</strong> Calendar picker for dates</p>
+                      <p>• <strong>Email/Phone:</strong> Validated contact fields</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

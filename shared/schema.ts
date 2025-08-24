@@ -81,7 +81,7 @@ export const templates = pgTable("templates", {
   name: varchar("name").notNull(),
   type: text("type", { enum: ["proposal", "contract", "invoice", "deck"] }).notNull(),
   description: text("description"),
-  content: text("content").notNull(), // Template content with variables like {{client.name}}
+  content: text("content"), // Optional - form builder approach uses fields instead of content
   variables: jsonb("variables").default([]), // Array of variable definitions
   isSystem: boolean("is_system").default(false), // System templates vs user-created
   isPublic: boolean("is_public").default(false), // Can be used by other users
@@ -303,12 +303,13 @@ export const stopTimerSchema = z.object({
   timeLogId: z.string(),
 });
 
-// Template schemas
+// Template schemas - Form builder approach (content is optional since template is built from form fields)
 export const insertTemplateSchema = createInsertSchema(templates).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
+  content: z.string().optional(), // Optional since template is built from form fields
   variables: z.array(z.object({
     name: z.string(),
     label: z.string(),

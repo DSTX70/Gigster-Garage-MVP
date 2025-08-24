@@ -954,14 +954,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Variable substitution helper function
-  const substituteVariables = (content: string, variables: Record<string, any>): string => {
-    let result = content;
-    for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`{{${key}}}`, 'g');
-      result = result.replace(regex, String(value || ''));
+  // Variable substitution helper function - updated for form-builder approach
+  const generateFormattedContent = (template: any, variables: Record<string, any>, title: string): string => {
+    // If template has content (legacy), use substitution
+    if (template.content && template.content.trim()) {
+      let result = template.content;
+      for (const [key, value] of Object.entries(variables)) {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        result = result.replace(regex, String(value || ''));
+      }
+      return result;
     }
-    return result;
+    
+    // Otherwise, generate content from form fields (form-builder approach)
+    let content = `# ${title}\n\n`;
+    content += `**Template:** ${template.name}\n`;
+    content += `**Type:** ${template.type.charAt(0).toUpperCase() + template.type.slice(1)}\n`;
+    content += `**Generated:** ${new Date().toLocaleDateString()}\n\n`;
+    
+    if (template.description) {
+      content += `${template.description}\n\n`;
+    }
+    
+    content += `---\n\n`;
+
+    // Format each field nicely based on its type
+    if (template.variables && Array.isArray(template.variables)) {
+      template.variables.forEach((variable: any) => {
+        const value = variables[variable.name] || variable.defaultValue || "";
+        
+        content += `## ${variable.label}\n`;
+        
+        if (variable.type === 'number') {
+          content += `💰 **Amount:** $${parseFloat(value || '0').toLocaleString('en-US', { minimumFractionDigits: 2 })}\n\n`;
+        } else if (variable.type === 'date') {
+          const dateValue = value ? new Date(value).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          }) : 'Not specified';
+          content += `📅 **Date:** ${dateValue}\n\n`;
+        } else if (variable.type === 'email') {
+          content += `📧 **Email:** ${value}\n\n`;
+        } else if (variable.type === 'phone') {
+          content += `📞 **Phone:** ${value}\n\n`;
+        } else if (variable.type === 'textarea') {
+          content += `${value}\n\n`;
+        } else {
+          content += `${value}\n\n`;
+        }
+      });
+    }
+
+    content += `---\n\n*Generated from ${template.name} template on ${new Date().toLocaleDateString()}*`;
+    return content;
   };
 
   app.post("/api/proposals", requireAuth, async (req, res) => {
@@ -982,8 +1028,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Template not found" });
       }
 
-      // Substitute variables in template content
-      const content = substituteVariables(template.content, variables);
+      // Generate formatted content from form fields or substitute variables
+      const content = generateFormattedContent(template, variables, title);
 
       // Calculate expiry date
       const expiresAt = new Date();
