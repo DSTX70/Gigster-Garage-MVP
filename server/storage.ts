@@ -18,14 +18,17 @@ export interface IStorage {
   getProject(id: string): Promise<Project | undefined>;
   createProject(insertProject: InsertProject): Promise<Project>;
   getOrCreateProject(name: string): Promise<Project>;
+  updateProject(id: string, updateData: Partial<InsertProject>): Promise<Project | undefined>;
 
   // Task management
   getTasks(userId?: string): Promise<Task[]>;
   getTask(id: string): Promise<Task | undefined>;
   getTasksByProject(projectId: string, userId?: string | null): Promise<Task[]>;
+  getSubtasks(parentTaskId: string): Promise<Task[]>;
   createTask(insertTask: InsertTask, createdById: string): Promise<Task>;
   updateTask(id: string, updateTask: UpdateTask): Promise<Task | undefined>;
   deleteTask(id: string): Promise<boolean>;
+  getTasksWithSubtasks(userId?: string): Promise<Task[]>;
 
   // Task dependency management
   createTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency>;
@@ -119,6 +122,15 @@ export class DatabaseStorage implements IStorage {
     return await this.createProject({ name });
   }
 
+  async updateProject(id: string, updateData: Partial<InsertProject>): Promise<Project | undefined> {
+    const [project] = await db
+      .update(projects)
+      .set(updateData)
+      .where(eq(projects.id, id))
+      .returning();
+    return project;
+  }
+
   // Task operations
   async getTasks(userId?: string): Promise<Task[]> {
     const query = db
@@ -128,6 +140,7 @@ export class DatabaseStorage implements IStorage {
         completed: tasks.completed,
         dueDate: tasks.dueDate,
         priority: tasks.priority,
+        status: tasks.status,
         assignedToId: tasks.assignedToId,
         createdById: tasks.createdById,
         projectId: tasks.projectId,
@@ -171,6 +184,7 @@ export class DatabaseStorage implements IStorage {
         completed: tasks.completed,
         dueDate: tasks.dueDate,
         priority: tasks.priority,
+        status: tasks.status,
         assignedToId: tasks.assignedToId,
         createdById: tasks.createdById,
         projectId: tasks.projectId,
@@ -233,13 +247,56 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTasksByProject(projectId: string, userId?: string | null): Promise<Task[]> {
-    const query = db
+    let query = db
       .select({
         id: tasks.id,
         description: tasks.description,
         completed: tasks.completed,
         dueDate: tasks.dueDate,
         priority: tasks.priority,
+        status: tasks.status,
+        assignedToId: tasks.assignedToId,
+        createdById: tasks.createdById,
+        projectId: tasks.projectId,
+        parentTaskId: tasks.parentTaskId,
+        notes: tasks.notes,
+        attachments: tasks.attachments,
+        links: tasks.links,
+        progressNotes: tasks.progressNotes,
+        createdAt: tasks.createdAt,
+        assignedTo: users,
+        project: projects,
+      })
+      .from(tasks)
+      .leftJoin(users, eq(tasks.assignedToId, users.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id));
+
+    if (userId) {
+      const results = await query.where(and(eq(tasks.projectId, projectId), eq(tasks.assignedToId, userId)));
+      return results.map((row: any) => ({
+        ...row,
+        assignedTo: row.assignedTo || undefined,
+        project: row.project || undefined,
+      }));
+    } else {
+      const results = await query.where(eq(tasks.projectId, projectId));
+      return results.map((row: any) => ({
+        ...row,
+        assignedTo: row.assignedTo || undefined,
+        project: row.project || undefined,
+      }));
+    }
+  }
+
+  async getSubtasks(parentTaskId: string): Promise<Task[]> {
+    const results = await db
+      .select({
+        id: tasks.id,
+        description: tasks.description,
+        completed: tasks.completed,
+        dueDate: tasks.dueDate,
+        priority: tasks.priority,
+        status: tasks.status,
         assignedToId: tasks.assignedToId,
         createdById: tasks.createdById,
         projectId: tasks.projectId,
@@ -255,23 +312,42 @@ export class DatabaseStorage implements IStorage {
       .from(tasks)
       .leftJoin(users, eq(tasks.assignedToId, users.id))
       .leftJoin(projects, eq(tasks.projectId, projects.id))
-      .where(eq(tasks.projectId, projectId));
+      .where(eq(tasks.parentTaskId, parentTaskId));
 
-    if (userId) {
-      const results = await query.where(and(eq(tasks.projectId, projectId), eq(tasks.assignedToId, userId)));
-      return results.map(row => ({
-        ...row,
-        assignedTo: row.assignedTo || undefined,
-        project: row.project || undefined,
-      }));
-    } else {
-      const results = await query;
-      return results.map(row => ({
-        ...row,
-        assignedTo: row.assignedTo || undefined,
-        project: row.project || undefined,
-      }));
+    return results.map((row: any) => ({
+      ...row,
+      assignedTo: row.assignedTo || undefined,
+      project: row.project || undefined,
+    }));
+  }
+
+  async getTasksWithSubtasks(userId?: string): Promise<Task[]> {
+    // Get all tasks for the user
+    const allTasks = await this.getTasks(userId);
+    
+    // Group tasks by parent-child relationships
+    const taskMap = new Map<string, Task>();
+    const parentTasks: Task[] = [];
+    
+    // First pass: create task map and identify parent tasks
+    for (const task of allTasks) {
+      taskMap.set(task.id, { ...task, subtasks: [] });
+      if (!task.parentTaskId) {
+        parentTasks.push(taskMap.get(task.id)!);
+      }
     }
+    
+    // Second pass: attach subtasks to their parents
+    for (const task of allTasks) {
+      if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
+        const parent = taskMap.get(task.parentTaskId)!;
+        const child = taskMap.get(task.id)!;
+        parent.subtasks = parent.subtasks || [];
+        parent.subtasks.push(child);
+      }
+    }
+    
+    return parentTasks;
   }
 
   // Task dependency operations

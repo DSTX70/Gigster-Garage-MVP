@@ -11,12 +11,18 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Task, Project } from "@shared/schema";
 import { format } from "date-fns";
 import { AppHeader } from "@/components/app-header";
+import { ProjectBoard } from "@/components/project-board";
+import { TaskDrawer } from "@/components/task-drawer";
+import { CalendarView } from "@/components/calendar-view";
 
 export default function ProjectDashboard() {
   const { projectId } = useParams();
   const { user, isAdmin } = useAuth();
-  const [activeView, setActiveView] = useState<"list" | "kanban" | "gantt">("list");
+  const [activeView, setActiveView] = useState<"list" | "kanban" | "calendar">("list");
   const [taskFilter, setTaskFilter] = useState<"all" | "completed" | "high-priority" | "overdue">("all");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showTaskDrawer, setShowTaskDrawer] = useState(false);
+  const [taskDrawerStatus, setTaskDrawerStatus] = useState<string>("");
 
   const { data: project } = useQuery<Project>({
     queryKey: ["/api/projects", projectId],
@@ -25,6 +31,29 @@ export default function ProjectDashboard() {
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ["/api/tasks", "project", projectId],
   });
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setShowTaskDrawer(true);
+  };
+
+  const handleCreateTask = (status?: string) => {
+    setSelectedTask(null);
+    setTaskDrawerStatus(status || "pending");
+    setShowTaskDrawer(true);
+  };
+
+  const handleSlotSelect = (slotInfo: { start: Date; end: Date }) => {
+    setSelectedTask(null);
+    setTaskDrawerStatus("pending");
+    setShowTaskDrawer(true);
+  };
+
+  const closeTaskDrawer = () => {
+    setShowTaskDrawer(false);
+    setSelectedTask(null);
+    setTaskDrawerStatus("");
+  };
 
   if (!project) {
     return (
@@ -75,46 +104,6 @@ export default function ProjectDashboard() {
     }
   };
 
-  const KanbanColumn = ({ title, tasks, className }: { title: string; tasks: Task[]; className?: string }) => (
-    <div className={`bg-gray-50 rounded-lg p-4 min-h-96 ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        <Badge variant="secondary">{tasks.length}</Badge>
-      </div>
-      <div className="space-y-3">
-        {tasks.map((task) => (
-          <Card key={task.id} className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <h4 className="font-medium text-sm mb-2">{task.description}</h4>
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <div className="flex items-center space-x-2">
-                  <Badge className={`text-xs ${
-                    task.priority === "high" ? "bg-red-100 text-red-800" :
-                    task.priority === "medium" ? "bg-yellow-100 text-yellow-800" :
-                    "bg-green-100 text-green-800"
-                  }`}>
-                    {task.priority}
-                  </Badge>
-                  {task.assignedTo && (
-                    <span className="flex items-center">
-                      <Users className="h-3 w-3 mr-1" />
-                      {task.assignedTo.name}
-                    </span>
-                  )}
-                </div>
-                {task.dueDate && (
-                  <span className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {format(new Date(task.dueDate), "MMM d")}
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,16 +126,14 @@ export default function ProjectDashboard() {
               <p className="text-gray-600 mt-1">{project.description}</p>
             )}
           </div>
-          <Link href="/">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              New Task
-            </Button>
-          </Link>
+          <Button 
+            onClick={() => handleCreateTask()}
+            className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+            data-testid="new-task-button"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            New Task
+          </Button>
         </div>
         
         {/* Project Stats */}
@@ -235,21 +222,24 @@ export default function ProjectDashboard() {
             <TabsList>
               <TabsTrigger value="list">List View</TabsTrigger>
               <TabsTrigger value="kanban">Kanban Board</TabsTrigger>
-              <TabsTrigger value="gantt">Timeline</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
             </TabsList>
             
-            <Link href="/">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Task
-              </Button>
-            </Link>
+            <Button onClick={() => handleCreateTask()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
           </div>
 
           <TabsContent value="list">
             <div className="space-y-4">
               {getFilteredTasks().map((task) => (
-                <Card key={task.id} className="hover:shadow-md transition-shadow">
+                <Card 
+                  key={task.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleTaskClick(task)}
+                  data-testid={`task-list-item-${task.id}`}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -289,30 +279,34 @@ export default function ProjectDashboard() {
           </TabsContent>
 
           <TabsContent value="kanban">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <KanbanColumn title="To Do" tasks={tasksByStatus.todo} />
-              <KanbanColumn title="In Progress" tasks={tasksByStatus.inProgress} />
-              <KanbanColumn title="Completed" tasks={tasksByStatus.completed} />
-            </div>
+            <ProjectBoard
+              tasks={getFilteredTasks()}
+              projectId={projectId!}
+              onTaskClick={handleTaskClick}
+              onCreateTask={handleCreateTask}
+            />
           </TabsContent>
 
-          <TabsContent value="gantt">
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-12">
-                  <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Timeline View</h3>
-                  <p className="text-gray-600">
-                    Advanced timeline view for project planning and tracking dependencies.
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Coming soon with task dependencies and Gantt chart visualization.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="calendar">
+            <CalendarView
+              tasks={getFilteredTasks()}
+              onTaskClick={handleTaskClick}
+              onSlotSelect={handleSlotSelect}
+            />
           </TabsContent>
         </Tabs>
+
+        {/* Task Drawer */}
+        <TaskDrawer
+          isOpen={showTaskDrawer}
+          onClose={closeTaskDrawer}
+          task={selectedTask}
+          projectId={projectId}
+          initialStatus={taskDrawerStatus}
+          onTaskUpdated={() => {
+            // Refresh the tasks data
+          }}
+        />
       </div>
     </div>
   );

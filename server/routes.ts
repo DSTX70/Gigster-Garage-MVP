@@ -450,6 +450,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/projects/:id/status", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status || !["active", "completed", "on-hold", "cancelled"].includes(status)) {
+        return res.status(400).json({ message: "Valid status is required" });
+      }
+
+      const project = await storage.updateProject(id, { status });
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      res.json(project);
+    } catch (error) {
+      console.error("Error updating project status:", error);
+      res.status(500).json({ message: "Failed to update project status" });
+    }
+  });
+
   app.post("/api/projects", requireAuth, async (req, res) => {
     try {
       const result = insertProjectSchema.safeParse(req.body);
@@ -511,6 +532,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching project tasks:", error);
       res.status(500).json({ message: "Failed to fetch project tasks" });
+    }
+  });
+
+  // Subtask routes
+  app.get("/api/tasks/:id/subtasks", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const subtasks = await storage.getSubtasks(id);
+      res.json(subtasks);
+    } catch (error) {
+      console.error("Error fetching subtasks:", error);
+      res.status(500).json({ message: "Failed to fetch subtasks" });
+    }
+  });
+
+  app.post("/api/tasks/:id/subtasks", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = insertTaskSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid task data", 
+          errors: result.error.errors 
+        });
+      }
+
+      // Verify parent task exists
+      const parentTask = await storage.getTask(id);
+      if (!parentTask) {
+        return res.status(404).json({ message: "Parent task not found" });
+      }
+
+      const user = req.session.user!;
+      const subtask = await storage.createTask({
+        ...result.data,
+        parentTaskId: id,
+        projectId: parentTask.projectId, // Inherit project from parent
+      }, user.id);
+      
+      res.status(201).json(subtask);
+    } catch (error) {
+      console.error("Error creating subtask:", error);
+      res.status(500).json({ message: "Failed to create subtask" });
+    }
+  });
+
+  // Get tasks with subtasks
+  app.get("/api/tasks-with-subtasks", requireAuth, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      const tasks = await storage.getTasksWithSubtasks(user.role === 'admin' ? undefined : user.id);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching tasks with subtasks:", error);
+      res.status(500).json({ message: "Failed to fetch tasks with subtasks" });
     }
   });
 
