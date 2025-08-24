@@ -1,0 +1,98 @@
+Got it ✅ — let’s outline exactly **how the Create Template Tool should work** so it’s **super easy and intuitive** for freelancers using Gigster Garage.
+
+---
+
+# 🛠 Create Template Tool — Detailed Overview
+
+### 1. **Template Information Section**
+
+**Purpose:** Gives users a clear starting point for creating a reusable template.
+
+* **Name** (Text, required) → *Enter template name (e.g., “Website Proposal”, “Social Media Contract”)*
+* **Type** (Dropdown, required) → *Choose Proposal, Contract, Invoice, Presentation, or Custom*
+* **Description** (Textarea, optional) → *Explain what this template is for, e.g., “Proposal template for website redesign projects”*
+* **Tags** (Text, optional) → *Add keywords to organize/search templates (e.g., “design, proposal, client work”)*
+
+---
+
+### 2. **Variables Section**
+
+**Purpose:** Allow users to define reusable placeholders inside their template content.
+
+* **Name** (System variable name, required) → *e.g., `client_name`, `project_budget`*
+* **Label** (Friendly name shown in UI, required) → *e.g., “Client Name”, “Budget Amount”*
+* **Type** (Dropdown, required) → Choose input type (Text, Textarea, Number, Date, Email, Phone).
+* **Placeholder** (Optional) → *Guide text inside input field (e.g., “Enter client name”)*
+* **Default Value** (Optional) → *Pre-filled value users can overwrite (e.g., “\$1000”)*
+
+---
+
+### 3. **Supported Input Types**
+
+#### **Text (short fields)**
+
+* **Use Case:** Names, titles, short descriptions.
+* **Description:** A single-line input. Example: `Client Name = Acme Corp`.
+
+#### **Textarea (long fields)**
+
+* **Use Case:** Long descriptions, project scope, terms & conditions.
+* **Description:** Multi-line input box (4 rows by default, expandable). Example: `Project Scope = Redesign of website including homepage, 3 subpages, and blog`.
+
+#### **Number (numeric fields)**
+
+* **Use Case:** Budgets, quantities, hours.
+* **Description:** Number input with stepper controls and validation. Example: `Budget = 5000`.
+
+#### **Date (calendar picker)**
+
+* **Use Case:** Deadlines, start dates.
+* **Description:** Simple date picker with calendar interface. Example: `Project Deadline = 2025-09-01`.
+
+#### **Email (contact fields)**
+
+* **Use Case:** Client emails, CC contacts.
+* **Description:** Validated email input with autocomplete. Example: `client_email@example.com`.
+
+#### **Phone (contact fields)**
+
+* **Use Case:** Client phone numbers, support hotlines.
+* **Description:** Input with pattern validation (format e.g., +1 (555) 123-4567). Example: `+1 (555) 123-4567`.
+
+---
+
+### 4. **Template Content Section**
+
+**Purpose:** Where the user writes or pastes their template.
+
+* Rich text editor (bold, italics, lists, links).
+* Support for **variables** using `{{variable_name}}`.
+
+  * Example: `Dear {{client_name}}, here is the proposal for {{project_scope}}.`
+* Preview mode shows **real data substitution** for clarity.
+
+---
+
+### 5. **Preview & Save**
+
+* **Preview Button** → Renders the template with placeholder values.
+* **Save Template Button** → Saves it into the **Template Library**.
+* **Library Integration** → Templates are stored, categorized, and searchable (by name, tag, or type).
+
+---
+
+### 6. **User Experience Flow**
+
+1. Click **“Create Template”** → Fill in template information.
+2. Add variables (easy + button for each).
+3. Write template content using variables.
+4. Preview template with sample values.
+5. Save to Template Library for reuse in Proposals, Contracts, Invoices.
+
+---
+
+⚡ The goal: **1–2 minutes to build a reusable template.** No clutter, no coding needed.
+
+---
+
+👉 Do you want me to now **mock up sample templates** (Proposal, Contract, Invoice) using this system so you can test the flow inside your app?

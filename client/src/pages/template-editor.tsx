@@ -99,7 +99,10 @@ export default function TemplateEditor() {
   // Load template data if editing
   const { data: template, isLoading } = useQuery<Template>({
     queryKey: ["/api/templates", id],
-    queryFn: () => apiRequest("GET", `/api/templates/${id}`),
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/templates/${id}`);
+      return response as Template;
+    },
     enabled: isEditing,
   });
 
@@ -108,11 +111,11 @@ export default function TemplateEditor() {
     if (template) {
       setFormData({
         name: template.name,
-        type: template.type as "proposal" | "contract" | "invoice" | "deck",
+        type: template.type,
         description: template.description || "",
         content: template.content,
-        variables: template.variables || [],
-        tags: template.tags || [],
+        variables: Array.isArray(template.variables) ? template.variables : [],
+        tags: Array.isArray(template.tags) ? template.tags : [],
         isSystem: template.isSystem,
         isPublic: template.isPublic,
         metadata: template.metadata || {},
@@ -172,10 +175,12 @@ export default function TemplateEditor() {
   };
 
   const addVariable = () => {
+    console.log("Adding variable:", newVariable); // Debug log
+    
     if (!newVariable.name.trim() || !newVariable.label.trim()) {
       toast({
         title: "Validation Error",
-        description: "Variable name and label are required.",
+        description: `Variable name and label are required. Name: "${newVariable.name}", Label: "${newVariable.label}"`,
         variant: "destructive",
       });
       return;
@@ -196,13 +201,19 @@ export default function TemplateEditor() {
       variables: [...(prev.variables || []), { ...newVariable }]
     }));
 
+    // Reset the form
     setNewVariable({
       name: "",
       label: "",
-      type: "text",
+      type: "text" as const,
       required: false,
       defaultValue: "",
       placeholder: "",
+    });
+
+    toast({
+      title: "Success",
+      description: "Variable added successfully.",
     });
   };
 
@@ -242,15 +253,42 @@ export default function TemplateEditor() {
   const generatePreview = () => {
     let content = formData.content || "";
     
+    // If no content, show a message
+    if (!content.trim()) {
+      setPreviewContent("No template content to preview. Please add content to your template first.");
+      setShowPreview(true);
+      return;
+    }
+    
     // Replace variables with sample data
-    formData.variables?.forEach(variable => {
-      const sampleValue = variable.defaultValue || `[Sample ${variable.label}]`;
-      const regex = new RegExp(`{{${variable.name}}}`, 'g');
-      content = content.replace(regex, sampleValue);
-    });
+    if (formData.variables && Array.isArray(formData.variables)) {
+      formData.variables.forEach(variable => {
+        const sampleValue = variable.defaultValue || getSampleValueForType(variable.type, variable.label);
+        const regex = new RegExp(`\\{\\{${variable.name}\\}\\}`, 'g');
+        content = content.replace(regex, sampleValue);
+      });
+    }
     
     setPreviewContent(content);
     setShowPreview(true);
+  };
+
+  // Helper function to generate sample values based on variable type
+  const getSampleValueForType = (type: string, label: string) => {
+    switch (type) {
+      case "email":
+        return "example@company.com";
+      case "phone":
+        return "(555) 123-4567";
+      case "date":
+        return new Date().toLocaleDateString();
+      case "number":
+        return "1000";
+      case "textarea":
+        return `Sample ${label} content that demonstrates how this longer text field will appear in the final document.`;
+      default:
+        return `Sample ${label}`;
+    }
   };
 
   const insertVariable = (variableName: string) => {
