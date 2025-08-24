@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { FileText, Plus, Search, Edit, Trash2, Copy, Calendar } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 import type { Template } from "@shared/schema";
 
 const TEMPLATE_TYPES = [
@@ -104,10 +105,12 @@ export default function Templates() {
             Create and manage reusable document templates
           </p>
         </div>
-        <Button data-testid="button-new-template">
-          <Plus className="h-4 w-4 mr-2" />
-          New Template
-        </Button>
+        <Link href="/templates/new">
+          <Button data-testid="button-new-template">
+            <Plus className="h-4 w-4 mr-2" />
+            New Template
+          </Button>
+        </Link>
       </div>
 
       {/* Search */}
@@ -171,10 +174,12 @@ export default function Templates() {
                       : `Create your first ${type.label.toLowerCase().slice(0, -1)} template to get started.`}
                   </p>
                   {!searchQuery && (
-                    <Button data-testid={`button-create-${type.value}`}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create {type.label.slice(0, -1)} Template
-                    </Button>
+                    <Link href={`/templates/new?type=${type.value}`}>
+                      <Button data-testid={`button-create-${type.value}`}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create {type.label.slice(0, -1)} Template
+                      </Button>
+                    </Link>
                   )}
                 </CardContent>
               </Card>
@@ -195,17 +200,18 @@ export default function Templates() {
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Navigate to edit template
-                            }}
-                            data-testid={`button-edit-${template.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <Link href={`/templates/${template.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                              data-testid={`button-edit-${template.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="ghost"
                             size="sm"

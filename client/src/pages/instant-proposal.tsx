@@ -32,6 +32,7 @@ import {
   Link as LinkIcon,
   CheckCircle
 } from "lucide-react";
+import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Template, Project, GenerateProposalRequest } from "@shared/schema";
@@ -288,9 +289,11 @@ export default function InstantProposal() {
                 <p className="text-muted-foreground mb-4">
                   You need to create a proposal template first.
                 </p>
-                <Button data-testid="button-create-template">
-                  Create Template
-                </Button>
+                <Link href="/templates/new?type=proposal">
+                  <Button data-testid="button-create-template">
+                    Create Template
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
