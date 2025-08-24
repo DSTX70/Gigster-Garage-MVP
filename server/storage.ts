@@ -1,8 +1,8 @@
 import { eq, and, or, desc, gte, lte, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, timeLogs } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, UpdateTask, Project, InsertProject, TaskDependency, InsertTaskDependency, TimeLog, InsertTimeLog, UpdateTimeLog } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, timeLogs, templates, proposals } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, UpdateTask, Project, InsertProject, TaskDependency, InsertTaskDependency, TimeLog, InsertTimeLog, UpdateTimeLog, Template, InsertTemplate, UpdateTemplate, Proposal, InsertProposal, UpdateProposal } from "@shared/schema";
 
 export interface IStorage {
   // User management
@@ -50,6 +50,22 @@ export interface IStorage {
     utilizationPercent: number;
   }>;
   getDailyTimeLogs(userId: string, date: Date): Promise<TimeLog[]>;
+
+  // Template management
+  getTemplates(type?: string, userId?: string): Promise<Template[]>;
+  getTemplate(id: string): Promise<Template | undefined>;
+  createTemplate(insertTemplate: InsertTemplate): Promise<Template>;
+  updateTemplate(id: string, updateTemplate: UpdateTemplate): Promise<Template | undefined>;
+  deleteTemplate(id: string): Promise<boolean>;
+
+  // Proposal management
+  getProposals(userId?: string): Promise<Proposal[]>;
+  getProposal(id: string): Promise<Proposal | undefined>;
+  getProposalByShareableLink(shareableLink: string): Promise<Proposal | undefined>;
+  createProposal(insertProposal: InsertProposal): Promise<Proposal>;
+  updateProposal(id: string, updateProposal: UpdateProposal): Promise<Proposal | undefined>;
+  deleteProposal(id: string): Promise<boolean>;
+  generateShareableLink(proposalId: string): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -621,6 +637,278 @@ export class DatabaseStorage implements IStorage {
       task: row.tasks || undefined,
       project: row.projects || undefined,
     }));
+  }
+
+  // Template operations
+  async getTemplates(type?: string, userId?: string): Promise<Template[]> {
+    let query = db
+      .select({
+        id: templates.id,
+        name: templates.name,
+        type: templates.type,
+        description: templates.description,
+        content: templates.content,
+        variables: templates.variables,
+        isSystem: templates.isSystem,
+        isPublic: templates.isPublic,
+        createdById: templates.createdById,
+        tags: templates.tags,
+        metadata: templates.metadata,
+        createdAt: templates.createdAt,
+        updatedAt: templates.updatedAt,
+        createdBy: users,
+      })
+      .from(templates)
+      .leftJoin(users, eq(templates.createdById, users.id));
+
+    const conditions = [];
+    
+    if (type) {
+      conditions.push(eq(templates.type, type));
+    }
+    
+    if (userId) {
+      // Show user's own templates + public templates + system templates
+      conditions.push(or(
+        eq(templates.createdById, userId),
+        eq(templates.isPublic, true),
+        eq(templates.isSystem, true)
+      ));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const results = await query.orderBy(desc(templates.createdAt));
+    return results.map(row => ({
+      ...row,
+      createdBy: row.createdBy || undefined,
+    }));
+  }
+
+  async getTemplate(id: string): Promise<Template | undefined> {
+    const [result] = await db
+      .select({
+        id: templates.id,
+        name: templates.name,
+        type: templates.type,
+        description: templates.description,
+        content: templates.content,
+        variables: templates.variables,
+        isSystem: templates.isSystem,
+        isPublic: templates.isPublic,
+        createdById: templates.createdById,
+        tags: templates.tags,
+        metadata: templates.metadata,
+        createdAt: templates.createdAt,
+        updatedAt: templates.updatedAt,
+        createdBy: users,
+      })
+      .from(templates)
+      .leftJoin(users, eq(templates.createdById, users.id))
+      .where(eq(templates.id, id));
+
+    if (!result) return undefined;
+
+    return {
+      ...result,
+      createdBy: result.createdBy || undefined,
+    };
+  }
+
+  async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
+    const [template] = await db
+      .insert(templates)
+      .values(insertTemplate)
+      .returning();
+    return template;
+  }
+
+  async updateTemplate(id: string, updateTemplate: UpdateTemplate): Promise<Template | undefined> {
+    const [template] = await db
+      .update(templates)
+      .set({
+        ...updateTemplate,
+        updatedAt: new Date(),
+      })
+      .where(eq(templates.id, id))
+      .returning();
+    return template;
+  }
+
+  async deleteTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(templates).where(eq(templates.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Proposal operations
+  async getProposals(userId?: string): Promise<Proposal[]> {
+    let query = db
+      .select({
+        id: proposals.id,
+        title: proposals.title,
+        templateId: proposals.templateId,
+        projectId: proposals.projectId,
+        clientName: proposals.clientName,
+        clientEmail: proposals.clientEmail,
+        status: proposals.status,
+        content: proposals.content,
+        variables: proposals.variables,
+        sentAt: proposals.sentAt,
+        viewedAt: proposals.viewedAt,
+        respondedAt: proposals.respondedAt,
+        expiresAt: proposals.expiresAt,
+        responseMessage: proposals.responseMessage,
+        shareableLink: proposals.shareableLink,
+        version: proposals.version,
+        parentProposalId: proposals.parentProposalId,
+        createdById: proposals.createdById,
+        metadata: proposals.metadata,
+        createdAt: proposals.createdAt,
+        updatedAt: proposals.updatedAt,
+        template: templates,
+        project: projects,
+        createdBy: users,
+      })
+      .from(proposals)
+      .leftJoin(templates, eq(proposals.templateId, templates.id))
+      .leftJoin(projects, eq(proposals.projectId, projects.id))
+      .leftJoin(users, eq(proposals.createdById, users.id));
+
+    if (userId) {
+      query = query.where(eq(proposals.createdById, userId));
+    }
+
+    const results = await query.orderBy(desc(proposals.createdAt));
+    return results.map(row => ({
+      ...row,
+      template: row.template || undefined,
+      project: row.project || undefined,
+      createdBy: row.createdBy || undefined,
+    }));
+  }
+
+  async getProposal(id: string): Promise<Proposal | undefined> {
+    const [result] = await db
+      .select({
+        id: proposals.id,
+        title: proposals.title,
+        templateId: proposals.templateId,
+        projectId: proposals.projectId,
+        clientName: proposals.clientName,
+        clientEmail: proposals.clientEmail,
+        status: proposals.status,
+        content: proposals.content,
+        variables: proposals.variables,
+        sentAt: proposals.sentAt,
+        viewedAt: proposals.viewedAt,
+        respondedAt: proposals.respondedAt,
+        expiresAt: proposals.expiresAt,
+        responseMessage: proposals.responseMessage,
+        shareableLink: proposals.shareableLink,
+        version: proposals.version,
+        parentProposalId: proposals.parentProposalId,
+        createdById: proposals.createdById,
+        metadata: proposals.metadata,
+        createdAt: proposals.createdAt,
+        updatedAt: proposals.updatedAt,
+        template: templates,
+        project: projects,
+        createdBy: users,
+      })
+      .from(proposals)
+      .leftJoin(templates, eq(proposals.templateId, templates.id))
+      .leftJoin(projects, eq(proposals.projectId, projects.id))
+      .leftJoin(users, eq(proposals.createdById, users.id))
+      .where(eq(proposals.id, id));
+
+    if (!result) return undefined;
+
+    return {
+      ...result,
+      template: result.template || undefined,
+      project: result.project || undefined,
+      createdBy: result.createdBy || undefined,
+    };
+  }
+
+  async getProposalByShareableLink(shareableLink: string): Promise<Proposal | undefined> {
+    const [result] = await db
+      .select({
+        id: proposals.id,
+        title: proposals.title,
+        templateId: proposals.templateId,
+        projectId: proposals.projectId,
+        clientName: proposals.clientName,
+        clientEmail: proposals.clientEmail,
+        status: proposals.status,
+        content: proposals.content,
+        variables: proposals.variables,
+        sentAt: proposals.sentAt,
+        viewedAt: proposals.viewedAt,
+        respondedAt: proposals.respondedAt,
+        expiresAt: proposals.expiresAt,
+        responseMessage: proposals.responseMessage,
+        shareableLink: proposals.shareableLink,
+        version: proposals.version,
+        parentProposalId: proposals.parentProposalId,
+        createdById: proposals.createdById,
+        metadata: proposals.metadata,
+        createdAt: proposals.createdAt,
+        updatedAt: proposals.updatedAt,
+        template: templates,
+        project: projects,
+        createdBy: users,
+      })
+      .from(proposals)
+      .leftJoin(templates, eq(proposals.templateId, templates.id))
+      .leftJoin(projects, eq(proposals.projectId, projects.id))
+      .leftJoin(users, eq(proposals.createdById, users.id))
+      .where(eq(proposals.shareableLink, shareableLink));
+
+    if (!result) return undefined;
+
+    return {
+      ...result,
+      template: result.template || undefined,
+      project: result.project || undefined,
+      createdBy: result.createdBy || undefined,
+    };
+  }
+
+  async createProposal(insertProposal: InsertProposal): Promise<Proposal> {
+    const [proposal] = await db
+      .insert(proposals)
+      .values(insertProposal)
+      .returning();
+    return proposal;
+  }
+
+  async updateProposal(id: string, updateProposal: UpdateProposal): Promise<Proposal | undefined> {
+    const [proposal] = await db
+      .update(proposals)
+      .set({
+        ...updateProposal,
+        updatedAt: new Date(),
+      })
+      .where(eq(proposals.id, id))
+      .returning();
+    return proposal;
+  }
+
+  async deleteProposal(id: string): Promise<boolean> {
+    const result = await db.delete(proposals).where(eq(proposals.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async generateShareableLink(proposalId: string): Promise<string> {
+    const shareableLink = `proposal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    await db
+      .update(proposals)
+      .set({ shareableLink, updatedAt: new Date() })
+      .where(eq(proposals.id, proposalId));
+    return shareableLink;
   }
 }
 

@@ -14,6 +14,9 @@ import Dashboard from "@/pages/dashboard";
 import ProjectDashboard from "@/pages/project-dashboard";
 import Tasks from "@/pages/tasks";
 import Productivity from "@/pages/productivity";
+import Templates from "@/pages/templates";
+import TemplateEditor from "@/pages/template-editor";
+import InstantProposal from "@/pages/instant-proposal";
 import { MessagesPage } from "@/pages/messages";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
@@ -64,6 +67,9 @@ function Router() {
       <Route path="/productivity" component={Productivity} />
       <Route path="/project/:projectId" component={ProjectDashboard} />
       <Route path="/messages" component={MessagesPage} />
+      <Route path="/templates" component={Templates} />
+      <Route path="/templates/:id" component={TemplateEditor} />
+      <Route path="/instant-proposal" component={InstantProposal} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

@@ -4,7 +4,7 @@ import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification } from "./emailService";
-import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema, insertProjectSchema, onboardingSchema, startTimerSchema, stopTimerSchema, insertTimeLogSchema, updateTimeLogSchema } from "@shared/schema";
+import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema, insertProjectSchema, onboardingSchema, startTimerSchema, stopTimerSchema, insertTimeLogSchema, updateTimeLogSchema, insertTemplateSchema, updateTemplateSchema, insertProposalSchema, updateProposalSchema, generateProposalSchema, sendProposalSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
 
 // Extend session type
@@ -820,6 +820,309 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting time log:", error);
       res.status(500).json({ message: "Failed to delete time log" });
+    }
+  });
+
+  // Template routes
+  app.get("/api/templates", requireAuth, async (req, res) => {
+    try {
+      const { type } = req.query;
+      const userId = req.session.user?.id;
+      const templates = await storage.getTemplates(type as string, userId);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching templates:", error);
+      res.status(500).json({ message: "Failed to fetch templates" });
+    }
+  });
+
+  app.get("/api/templates/:id", requireAuth, async (req, res) => {
+    try {
+      const template = await storage.getTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching template:", error);
+      res.status(500).json({ message: "Failed to fetch template" });
+    }
+  });
+
+  app.post("/api/templates", requireAuth, async (req, res) => {
+    try {
+      const result = insertTemplateSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Invalid template data",
+          errors: result.error.errors
+        });
+      }
+
+      const templateData = {
+        ...result.data,
+        createdById: req.session.user!.id
+      };
+
+      const template = await storage.createTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error("Error creating template:", error);
+      res.status(500).json({ message: "Failed to create template" });
+    }
+  });
+
+  app.patch("/api/templates/:id", requireAuth, async (req, res) => {
+    try {
+      const result = updateTemplateSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Invalid template data",
+          errors: result.error.errors
+        });
+      }
+
+      const template = await storage.updateTemplate(req.params.id, result.data);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error updating template:", error);
+      res.status(500).json({ message: "Failed to update template" });
+    }
+  });
+
+  app.delete("/api/templates/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteTemplate(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      res.status(500).json({ message: "Failed to delete template" });
+    }
+  });
+
+  // Proposal routes
+  app.get("/api/proposals", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user?.id;
+      const proposals = await storage.getProposals(userId);
+      res.json(proposals);
+    } catch (error) {
+      console.error("Error fetching proposals:", error);
+      res.status(500).json({ message: "Failed to fetch proposals" });
+    }
+  });
+
+  app.get("/api/proposals/:id", requireAuth, async (req, res) => {
+    try {
+      const proposal = await storage.getProposal(req.params.id);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      res.json(proposal);
+    } catch (error) {
+      console.error("Error fetching proposal:", error);
+      res.status(500).json({ message: "Failed to fetch proposal" });
+    }
+  });
+
+  // Public route for viewing shared proposals
+  app.get("/api/shared/proposals/:shareableLink", async (req, res) => {
+    try {
+      const proposal = await storage.getProposalByShareableLink(req.params.shareableLink);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+
+      // Mark as viewed if not already
+      if (!proposal.viewedAt) {
+        await storage.updateProposal(proposal.id, {
+          viewedAt: new Date(),
+          status: proposal.status === 'sent' ? 'viewed' : proposal.status
+        });
+      }
+
+      res.json(proposal);
+    } catch (error) {
+      console.error("Error fetching shared proposal:", error);
+      res.status(500).json({ message: "Failed to fetch proposal" });
+    }
+  });
+
+  // Variable substitution helper function
+  const substituteVariables = (content: string, variables: Record<string, any>): string => {
+    let result = content;
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      result = result.replace(regex, String(value || ''));
+    }
+    return result;
+  };
+
+  app.post("/api/proposals", requireAuth, async (req, res) => {
+    try {
+      const result = generateProposalSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Invalid proposal data",
+          errors: result.error.errors
+        });
+      }
+
+      const { templateId, title, projectId, clientName, clientEmail, variables, expiresInDays } = result.data;
+
+      // Get template
+      const template = await storage.getTemplate(templateId);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+
+      // Substitute variables in template content
+      const content = substituteVariables(template.content, variables);
+
+      // Calculate expiry date
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+      const proposalData = {
+        title,
+        templateId,
+        projectId,
+        clientName,
+        clientEmail,
+        content,
+        variables,
+        expiresAt,
+        createdById: req.session.user!.id,
+        metadata: {}
+      };
+
+      const proposal = await storage.createProposal(proposalData);
+      res.status(201).json(proposal);
+    } catch (error) {
+      console.error("Error creating proposal:", error);
+      res.status(500).json({ message: "Failed to create proposal" });
+    }
+  });
+
+  app.patch("/api/proposals/:id", requireAuth, async (req, res) => {
+    try {
+      const result = updateProposalSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Invalid proposal data",
+          errors: result.error.errors
+        });
+      }
+
+      const proposal = await storage.updateProposal(req.params.id, result.data);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      res.json(proposal);
+    } catch (error) {
+      console.error("Error updating proposal:", error);
+      res.status(500).json({ message: "Failed to update proposal" });
+    }
+  });
+
+  app.delete("/api/proposals/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteProposal(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting proposal:", error);
+      res.status(500).json({ message: "Failed to delete proposal" });
+    }
+  });
+
+  app.post("/api/proposals/:id/send", requireAuth, async (req, res) => {
+    try {
+      const result = sendProposalSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Invalid send data",
+          errors: result.error.errors
+        });
+      }
+
+      const proposal = await storage.getProposal(req.params.id);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+
+      // Generate shareable link
+      const shareableLink = await storage.generateShareableLink(proposal.id);
+
+      // Update proposal status and sent timestamp
+      const updatedProposal = await storage.updateProposal(proposal.id, {
+        status: 'sent',
+        sentAt: new Date()
+      });
+
+      // Send email if recipient email is provided
+      const { recipientEmail, subject, message } = result.data;
+      const emailTo = recipientEmail || proposal.clientEmail;
+      
+      if (emailTo) {
+        try {
+          const proposalUrl = `${req.protocol}://${req.get('host')}/shared/proposals/${shareableLink}`;
+          const emailSubject = subject || `Proposal: ${proposal.title}`;
+          const emailMessage = message || `Please review the proposal: ${proposalUrl}`;
+          
+          await sendHighPriorityTaskNotification(
+            emailTo,
+            emailSubject,
+            emailMessage
+          );
+        } catch (emailError) {
+          console.error("Failed to send proposal email:", emailError);
+          // Don't fail the request if email sending fails
+        }
+      }
+
+      res.json({
+        ...updatedProposal,
+        shareableUrl: `${req.protocol}://${req.get('host')}/shared/proposals/${shareableLink}`
+      });
+    } catch (error) {
+      console.error("Error sending proposal:", error);
+      res.status(500).json({ message: "Failed to send proposal" });
+    }
+  });
+
+  // Proposal response endpoint (for clients)
+  app.post("/api/shared/proposals/:shareableLink/respond", async (req, res) => {
+    try {
+      const { response, message } = req.body;
+      
+      if (!response || !['accepted', 'rejected'].includes(response)) {
+        return res.status(400).json({ message: "Valid response (accepted/rejected) is required" });
+      }
+
+      const proposal = await storage.getProposalByShareableLink(req.params.shareableLink);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+
+      const updatedProposal = await storage.updateProposal(proposal.id, {
+        status: response,
+        respondedAt: new Date(),
+        responseMessage: message
+      });
+
+      res.json({ message: `Proposal ${response} successfully`, proposal: updatedProposal });
+    } catch (error) {
+      console.error("Error responding to proposal:", error);
+      res.status(500).json({ message: "Failed to respond to proposal" });
     }
   });
 

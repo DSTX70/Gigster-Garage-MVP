@@ -75,16 +75,61 @@ export const timeLogs = pgTable("time_logs", {
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
+// Templates table - for reusable document templates
+export const templates = pgTable("templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  type: text("type", { enum: ["proposal", "contract", "invoice", "deck"] }).notNull(),
+  description: text("description"),
+  content: text("content").notNull(), // Template content with variables like {{client.name}}
+  variables: jsonb("variables").default([]), // Array of variable definitions
+  isSystem: boolean("is_system").default(false), // System templates vs user-created
+  isPublic: boolean("is_public").default(false), // Can be used by other users
+  createdById: varchar("created_by_id").references(() => users.id).notNull(),
+  tags: text("tags").array().default([]),
+  metadata: jsonb("metadata").default({}), // Additional template metadata
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+// Proposals table - for generated proposals from templates
+export const proposals = pgTable("proposals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  templateId: varchar("template_id").references(() => templates.id),
+  projectId: varchar("project_id").references(() => projects.id),
+  clientName: varchar("client_name"),
+  clientEmail: varchar("client_email"),
+  status: text("status", { enum: ["draft", "sent", "viewed", "accepted", "rejected", "expired"] }).notNull().default("draft"),
+  content: text("content").notNull(), // Final content with variables resolved
+  variables: jsonb("variables").default({}), // Key-value pairs for template variables
+  sentAt: timestamp("sent_at"),
+  viewedAt: timestamp("viewed_at"),
+  respondedAt: timestamp("responded_at"),
+  expiresAt: timestamp("expires_at"),
+  responseMessage: text("response_message"),
+  shareableLink: varchar("shareable_link"),
+  version: varchar("version").notNull().default("1.0"),
+  parentProposalId: varchar("parent_proposal_id"), // For versioning - self-reference
+  createdById: varchar("created_by_id").references(() => users.id).notNull(),
+  metadata: jsonb("metadata").default({}), // Tracking data, metrics, etc.
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   assignedTasks: many(tasks, { relationName: "assignedTasks" }),
   createdTasks: many(tasks, { relationName: "createdTasks" }),
   timeLogs: many(timeLogs),
+  templates: many(templates),
+  proposals: many(proposals),
 }));
 
 export const projectsRelations = relations(projects, ({ many }) => ({
   tasks: many(tasks),
   timeLogs: many(timeLogs),
+  proposals: many(proposals),
 }));
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
@@ -138,6 +183,34 @@ export const timeLogsRelations = relations(timeLogs, ({ one }) => ({
   project: one(projects, {
     fields: [timeLogs.projectId],
     references: [projects.id],
+  }),
+}));
+
+export const templatesRelations = relations(templates, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [templates.createdById],
+    references: [users.id],
+  }),
+  proposals: many(proposals),
+}));
+
+export const proposalsRelations = relations(proposals, ({ one }) => ({
+  template: one(templates, {
+    fields: [proposals.templateId],
+    references: [templates.id],
+  }),
+  project: one(projects, {
+    fields: [proposals.projectId],
+    references: [projects.id],
+  }),
+  createdBy: one(users, {
+    fields: [proposals.createdById],
+    references: [users.id],
+  }),
+  parentProposal: one(proposals, {
+    fields: [proposals.parentProposalId],
+    references: [proposals.id],
+    relationName: "proposalVersions",
   }),
 }));
 
@@ -230,6 +303,61 @@ export const stopTimerSchema = z.object({
   timeLogId: z.string(),
 });
 
+// Template schemas
+export const insertTemplateSchema = createInsertSchema(templates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  variables: z.array(z.object({
+    name: z.string(),
+    label: z.string(),
+    type: z.enum(["text", "number", "date", "email", "phone", "textarea"]),
+    required: z.boolean().default(false),
+    defaultValue: z.string().optional(),
+    placeholder: z.string().optional(),
+  })).optional().default([]),
+  tags: z.array(z.string()).optional().default([]),
+  metadata: z.record(z.any()).optional().default({}),
+});
+
+export const updateTemplateSchema = insertTemplateSchema.partial();
+
+// Proposal schemas  
+export const insertProposalSchema = createInsertSchema(proposals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  shareableLink: true,
+}).extend({
+  variables: z.record(z.any()).optional().default({}),
+  metadata: z.record(z.any()).optional().default({}),
+  expiresAt: z.union([z.date(), z.string()]).optional().transform(val => {
+    if (!val) return undefined;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+});
+
+export const updateProposalSchema = insertProposalSchema.partial();
+
+export const generateProposalSchema = z.object({
+  templateId: z.string(),
+  title: z.string(),
+  projectId: z.string().optional(),
+  clientName: z.string().optional(),
+  clientEmail: z.string().email().optional(),
+  variables: z.record(z.any()).default({}),
+  expiresInDays: z.number().min(1).max(365).default(30),
+});
+
+export const sendProposalSchema = z.object({
+  proposalId: z.string(),
+  recipientEmail: z.string().email().optional(),
+  subject: z.string().optional(),
+  message: z.string().optional(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -261,3 +389,21 @@ export type InsertTimeLog = z.infer<typeof insertTimeLogSchema>;
 export type UpdateTimeLog = z.infer<typeof updateTimeLogSchema>;
 export type StartTimerRequest = z.infer<typeof startTimerSchema>;
 export type StopTimerRequest = z.infer<typeof stopTimerSchema>;
+
+export type Template = typeof templates.$inferSelect & {
+  createdBy?: User;
+  proposals?: Proposal[];
+};
+export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
+export type UpdateTemplate = z.infer<typeof updateTemplateSchema>;
+
+export type Proposal = typeof proposals.$inferSelect & {
+  template?: Template;
+  project?: Project;
+  createdBy?: User;
+  parentProposal?: Proposal;
+};
+export type InsertProposal = z.infer<typeof insertProposalSchema>;
+export type UpdateProposal = z.infer<typeof updateProposalSchema>;
+export type GenerateProposalRequest = z.infer<typeof generateProposalSchema>;
+export type SendProposalRequest = z.infer<typeof sendProposalSchema>;

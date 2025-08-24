@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown } from "lucide-react";
+import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Zap, Mail } from "lucide-react";
 import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -153,6 +153,57 @@ export default function Home() {
                     <p className="text-lg font-bold text-amber-800">Tools</p>
                   </div>
                   <BarChart3 className="h-6 w-6 text-amber-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Link href="/templates">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-blue-100 p-3 rounded-lg">
+                    <FileText className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Template Library</h3>
+                    <p className="text-sm text-gray-600">Manage document templates</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/instant-proposal">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-yellow-100 p-3 rounded-lg">
+                    <Zap className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Instant Proposal</h3>
+                    <p className="text-sm text-gray-600">Generate proposals quickly</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/productivity">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-green-100 p-3 rounded-lg">
+                    <BarChart3 className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Productivity</h3>
+                    <p className="text-sm text-gray-600">Time tracking & insights</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
