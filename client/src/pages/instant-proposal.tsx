@@ -149,6 +149,77 @@ export default function InstantProposal() {
     }));
   };
 
+  // Render appropriate input component based on variable type
+  const renderVariableInput = (variable: any) => {
+    const commonProps = {
+      id: variable.name,
+      "data-testid": `input-variable-${variable.name}`,
+      value: formData.variables[variable.name] || variable.defaultValue || "",
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => 
+        updateVariable(variable.name, e.target.value),
+      placeholder: variable.placeholder || variable.label,
+      required: variable.required,
+    };
+
+    switch (variable.type) {
+      case "textarea":
+        return (
+          <Textarea
+            {...commonProps}
+            rows={4}
+            className="resize-none"
+          />
+        );
+      
+      case "number":
+        return (
+          <Input
+            {...commonProps}
+            type="number"
+            step="any"
+            min="0"
+          />
+        );
+      
+      case "date":
+        return (
+          <Input
+            {...commonProps}
+            type="date"
+          />
+        );
+      
+      case "email":
+        return (
+          <Input
+            {...commonProps}
+            type="email"
+            autoComplete="email"
+          />
+        );
+      
+      case "phone":
+        return (
+          <Input
+            {...commonProps}
+            type="tel"
+            autoComplete="tel"
+            pattern="[0-9\-\+\s\(\)]*"
+          />
+        );
+      
+      case "text":
+      default:
+        return (
+          <Input
+            {...commonProps}
+            type="text"
+            autoComplete="off"
+          />
+        );
+    }
+  };
+
   // Generate the proposal
   const handleGenerate = () => {
     if (!formData.title.trim()) {
@@ -425,25 +496,7 @@ export default function InstantProposal() {
                       {variable.label}
                       {variable.required && <span className="text-destructive ml-1">*</span>}
                     </Label>
-                    {variable.type === "textarea" ? (
-                      <Textarea
-                        id={variable.name}
-                        data-testid={`input-variable-${variable.name}`}
-                        value={formData.variables[variable.name] || ""}
-                        onChange={(e) => updateVariable(variable.name, e.target.value)}
-                        placeholder={variable.placeholder || variable.label}
-                        rows={3}
-                      />
-                    ) : (
-                      <Input
-                        id={variable.name}
-                        type={variable.type === "email" ? "email" : variable.type === "number" ? "number" : "text"}
-                        data-testid={`input-variable-${variable.name}`}
-                        value={formData.variables[variable.name] || ""}
-                        onChange={(e) => updateVariable(variable.name, e.target.value)}
-                        placeholder={variable.placeholder || variable.label}
-                      />
-                    )}
+                    {renderVariableInput(variable)}
                   </div>
                 ))}
               </CardContent>

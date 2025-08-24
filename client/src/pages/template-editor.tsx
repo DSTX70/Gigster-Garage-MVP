@@ -529,6 +529,29 @@ export default function TemplateEditor() {
                   </Select>
                 </div>
 
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Placeholder</Label>
+                    <Input
+                      data-testid="input-variable-placeholder"
+                      value={newVariable.placeholder || ""}
+                      onChange={(e) => setNewVariable(prev => ({ ...prev, placeholder: e.target.value }))}
+                      placeholder="Enter placeholder text"
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Default Value</Label>
+                    <Input
+                      data-testid="input-variable-default"
+                      value={newVariable.defaultValue || ""}
+                      onChange={(e) => setNewVariable(prev => ({ ...prev, defaultValue: e.target.value }))}
+                      placeholder="Enter default value"
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
+
                 <Button 
                   type="button" 
                   size="sm" 
