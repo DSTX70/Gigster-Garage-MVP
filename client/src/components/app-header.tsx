@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield } from "lucide-react";
 import { Link } from "wouter";
-import { VSuiteLogo } from "./vsuite-logo";
+import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -58,21 +58,21 @@ export function AppHeader() {
   const reminderCount = getReminderCount();
 
   return (
-    <header className="vsuite-header-gradient border-b border-blue-600 sticky top-0 z-50 shadow-lg">
+    <header className="gigster-header-gradient border-b sticky top-0 z-50 shadow-lg" style={{ borderColor: 'var(--ignition-teal)' }}>
       <div className="max-w-6xl mx-auto px-6 py-3">
         <div className="flex flex-col space-y-3">
           {/* Top line: Shield + Logo + Tagline */}
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                <VSuiteLogo size="small" showText={false} />
+                <GigsterLogo size="small" showText={false} />
               </div>
-              <h1 className="text-xl font-bold">
-                <span className="text-white">VSuite</span>
-                <span className="text-black"> HQ</span>
+              <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
+                <span className="text-white">Gigster</span>
+                <span style={{ color: 'var(--workshop-amber)' }}> Garage</span>
               </h1>
-              <span className="text-blue-100 font-medium">|</span>
-              <p className="text-sm font-medium text-blue-100">Simplified Workflow Hub</p>
+              <span style={{ color: 'rgba(255, 181, 46, 0.6)' }} className="font-medium">|</span>
+              <p className="text-sm font-medium" style={{ color: 'rgba(255, 181, 46, 0.8)' }}>Smarter tools for bolder dreams</p>
             </div>
           </div>
           

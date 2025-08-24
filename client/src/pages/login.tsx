@@ -9,7 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { LogIn, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { VSuiteLogo } from "@/components/vsuite-logo";
+import { GigsterLogo } from "@/components/vsuite-logo";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -26,7 +26,7 @@ export default function Login() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Login successful",
-        description: "Welcome to VSuite HQ",
+        description: "Welcome to Gigster Garage",
       });
       // Force navigation to home page after successful login
       setTimeout(() => {
@@ -56,15 +56,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="vsuite-card w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, rgba(11, 29, 58, 0.05) 0%, rgba(46, 197, 194, 0.05) 100%)' }}>
+      <Card className="gigster-card w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-6">
-            <VSuiteLogo size="medium" showText={false} />
+            <GigsterLogo size="medium" showText={false} />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl brand-heading">VSuite HQ</CardTitle>
-            <p className="text-xs brand-tagline">Simplified Workflow Hub</p>
+            <CardTitle className="text-2xl brand-heading">Gigster Garage</CardTitle>
+            <p className="text-xs brand-tagline">Smarter tools for bolder dreams</p>
             <p className="text-gray-600 pt-2">Sign in to your account</p>
           </div>
         </CardHeader>
@@ -100,7 +100,7 @@ export default function Login() {
             </div>
             <Button
               type="submit"
-              className="vsuite-button-primary w-full"
+              className="gigster-button-primary w-full"
               disabled={loginMutation.isPending}
             >
               {loginMutation.isPending ? (

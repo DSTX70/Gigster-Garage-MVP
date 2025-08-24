@@ -1,14 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* VSuite HQ Brand Colors - Exact Match */
-  --vsuite-blue: hsl(217 100% 50%); /* #007BFF */
-  --vsuite-black: hsl(0 0% 0%); /* #000000 */
-  --vsuite-white: hsl(0 0% 100%); /* #FFFFFF */
+  /* Gigster Garage Brand Colors */
+  --garage-navy: hsl(214 67% 14%); /* #0B1D3A */
+  --ignition-teal: hsl(179 63% 47%); /* #2EC5C2 */
+  --workshop-amber: hsl(40 100% 58%); /* #FFB52E */
+  --steel-gray: hsl(0 0% 24%); /* #3C3C3C */
+  --concrete-light: hsl(0 0% 90%); /* #E5E5E5 */
+  --gigster-white: hsl(0 0% 100%); /* #FFFFFF */
   
   /* Theme Variables */
   --background: hsl(0 0% 100%);
@@ -17,19 +20,19 @@
   --card-foreground: hsl(0 0% 0%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(0 0% 0%);
-  --primary: hsl(217 100% 50%); /* VSuite Blue */
+  --primary: hsl(214 67% 14%); /* Garage Navy */
   --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(142 71% 45%);
+  --secondary: hsl(179 63% 47%); /* Ignition Teal */
   --secondary-foreground: hsl(0 0% 100%);
   --muted: hsl(220 14.3% 95.9%);
   --muted-foreground: hsl(220 8.9% 46.1%);
-  --accent: hsl(217 100% 50%); /* VSuite Blue for accents */
+  --accent: hsl(40 100% 58%); /* Workshop Amber for accents */
   --accent-foreground: hsl(0 0% 100%);
   --destructive: hsl(0 84% 60%);
   --destructive-foreground: hsl(0 0% 100%);
   --border: hsl(220 13% 91%);
   --input: hsl(220 13% 91%);
-  --ring: hsl(217 100% 50%); /* VSuite Blue */
+  --ring: hsl(214 67% 14%); /* Garage Navy */
   --radius: 0.75rem;
   
   /* Neutral colors matching design */
@@ -44,16 +47,17 @@
   --neutral-800: hsl(217 33% 17%);
   --neutral-900: hsl(222 47% 11%);
 
-  --font-sans: 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Open Sans', 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+  --font-display: 'Montserrat', 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
   
-  /* VSuite HQ Brand Gradients */
-  --vsuite-gradient: linear-gradient(135deg, #007BFF 0%, #0056b3 100%);
-  --vsuite-gradient-subtle: linear-gradient(135deg, rgba(0,123,255,0.1) 0%, rgba(0,123,255,0.05) 100%);
-  --vsuite-gradient-light: linear-gradient(135deg, #E3F2FD 0%, #CCE7FF 100%);
-  --vsuite-shadow-blue: 0 4px 12px rgba(0, 123, 255, 0.15);
-  --vsuite-blue-50: #E3F2FD;
-  --vsuite-blue-100: #BBDEFB;
-  --vsuite-blue-200: #90CAF9;
+  /* Gigster Garage Brand Gradients */
+  --gigster-gradient: linear-gradient(135deg, #0B1D3A 0%, #2EC5C2 100%);
+  --gigster-gradient-navy: linear-gradient(135deg, #0B1D3A 0%, #1a2e4a 100%);
+  --gigster-gradient-teal: linear-gradient(135deg, #2EC5C2 0%, #25a8a5 100%);
+  --gigster-gradient-amber: linear-gradient(135deg, #FFB52E 0%, #e69d1a 100%);
+  --gigster-shadow-navy: 0 4px 12px rgba(11, 29, 58, 0.15);
+  --gigster-shadow-teal: 0 4px 12px rgba(46, 197, 194, 0.15);
+  --gigster-shadow-amber: 0 4px 12px rgba(255, 181, 46, 0.15);
 }
 
 .dark {
@@ -124,61 +128,79 @@
 }
 
 @layer components {
-  /* VSuite HQ Enhanced Brand Components */
-  .vsuite-card {
+  /* Gigster Garage Enhanced Brand Components */
+  .gigster-card {
     @apply bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
     background: linear-gradient(145deg, #ffffff 0%, #fafbfc 100%);
   }
   
-  .vsuite-button-primary {
+  .gigster-button-primary {
     @apply text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
-    background: var(--vsuite-gradient);
+    background: var(--gigster-gradient-navy);
+    font-family: var(--font-display);
   }
   
-  .vsuite-button-primary:hover {
-    background: linear-gradient(135deg, #0056b3 0%, #004494 100%);
+  .gigster-button-primary:hover {
+    background: var(--gigster-gradient);
     transform: translateY(-1px);
-    box-shadow: var(--vsuite-shadow-blue);
+    box-shadow: var(--gigster-shadow-navy);
   }
   
-  .vsuite-button-secondary {
-    @apply bg-blue-50 text-blue-700 border border-blue-200 font-medium px-6 py-3 rounded-lg transition-all duration-200 hover:bg-blue-100 hover:border-blue-300;
+  .gigster-button-secondary {
+    @apply font-medium px-6 py-3 rounded-lg transition-all duration-200;
+    background-color: var(--ignition-teal);
+    color: white;
+    border: 1px solid var(--ignition-teal);
+    font-family: var(--font-display);
   }
   
-  .vsuite-button-outline {
-    @apply bg-transparent text-blue-600 border-2 border-blue-600 font-medium px-6 py-3 rounded-lg transition-all duration-200 hover:bg-blue-50;
+  .gigster-button-secondary:hover {
+    background: var(--gigster-gradient-teal);
   }
   
-  .vsuite-section-header {
+  .gigster-button-outline {
+    @apply bg-transparent font-medium px-6 py-3 rounded-lg transition-all duration-200;
+    color: var(--garage-navy);
+    border: 2px solid var(--garage-navy);
+    font-family: var(--font-display);
+  }
+  
+  .gigster-button-outline:hover {
+    background-color: rgba(11, 29, 58, 0.05);
+  }
+  
+  .gigster-section-header {
     @apply p-6 rounded-t-xl text-white;
-    background: var(--vsuite-gradient);
+    background: var(--gigster-gradient);
   }
   
-  .vsuite-section-blue {
+  .gigster-section-navy {
     @apply p-8 rounded-xl text-white mb-8;
-    background: var(--vsuite-gradient);
+    background: var(--gigster-gradient-navy);
   }
   
-  .vsuite-accent-section {
-    @apply p-6 rounded-xl border-l-4 border-blue-500 bg-blue-50;
+  .gigster-accent-section {
+    @apply p-6 rounded-xl border-l-4;
+    border-left-color: var(--workshop-amber);
+    background-color: rgba(255, 181, 46, 0.1);
   }
   
-  .vsuite-header-gradient {
-    background: var(--vsuite-gradient);
+  .gigster-header-gradient {
+    background: var(--gigster-gradient);
   }
   
-  .vsuite-bg-pattern {
+  .gigster-bg-pattern {
     background-image: 
-      radial-gradient(circle at 1px 1px, rgba(0,123,255,0.05) 1px, transparent 0);
+      radial-gradient(circle at 1px 1px, rgba(46, 197, 194, 0.05) 1px, transparent 0);
     background-size: 20px 20px;
   }
   
-  .vsuite-hero-section {
+  .gigster-hero-section {
     @apply relative overflow-hidden;
-    background: var(--vsuite-gradient);
+    background: var(--gigster-gradient);
   }
   
-  .vsuite-hero-section::before {
+  .gigster-hero-section::before {
     content: '';
     position: absolute;
     top: 0;
@@ -190,48 +212,54 @@
       radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
   }
   
-  .vsuite-form-card {
-    @apply vsuite-card p-8 border-blue-100;
-    box-shadow: 0 4px 20px rgba(0, 123, 255, 0.08);
+  .gigster-form-card {
+    @apply gigster-card p-8;
+    border-color: var(--ignition-teal);
+    box-shadow: 0 4px 20px rgba(11, 29, 58, 0.08);
   }
   
-  /* VSuite HQ Logo Components */
-  .vsuite-logo {
+  /* Gigster Garage Logo Components */
+  .gigster-logo {
     @apply w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg;
-    background: var(--vsuite-gradient);
+    background: var(--gigster-gradient);
   }
   
-  .vsuite-logo-mini {
+  .gigster-logo-mini {
     @apply w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md;
-    background: var(--vsuite-gradient);
+    background: var(--gigster-gradient);
   }
   
-  .vsuite-logo-large {
+  .gigster-logo-large {
     @apply w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-xl;
-    background: var(--vsuite-gradient);
+    background: var(--gigster-gradient);
   }
   
   /* Brand Typography */
   .brand-heading {
     @apply font-bold;
-    color: var(--vsuite-black);
-    font-family: var(--font-sans);
+    color: var(--garage-navy);
+    font-family: var(--font-display);
   }
   
   .brand-tagline {
     @apply font-medium;
-    color: var(--vsuite-black);
+    color: var(--steel-gray);
     font-family: var(--font-sans);
   }
   
   /* Enhanced Task Cards */
   .task-card {
-    @apply vsuite-card p-5 hover:border-blue-200 relative overflow-hidden;
-    box-shadow: 0 2px 12px rgba(0, 123, 255, 0.06);
+    @apply gigster-card p-5 relative overflow-hidden;
+    box-shadow: 0 2px 12px rgba(11, 29, 58, 0.06);
+    border-color: var(--concrete-light);
   }
   
   .task-card:hover {
-    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.12);
+    border-color: var(--ignition-teal);
+  }
+  
+  .task-card:hover {
+    box-shadow: 0 8px 25px rgba(11, 29, 58, 0.12);
     transform: translateY(-2px);
   }
   
@@ -242,7 +270,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: var(--vsuite-gradient);
+    background: var(--gigster-gradient);
     opacity: 0;
     transition: opacity 0.2s ease;
   }
@@ -251,7 +279,7 @@
     opacity: 1;
   }
   
-  /* Priority Indicators with VSuite Brand Colors */
+  /* Priority Indicators with Gigster Garage Brand Colors */
   .priority-high {
     @apply bg-red-50 text-red-700 border border-red-200 rounded-full px-3 py-1 text-xs font-medium;
   }
@@ -264,7 +292,7 @@
     @apply bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-1 text-xs font-medium;
   }
   
-  /* VSuite Status Badge System */
+  /* Gigster Garage Status Badge System */
   :root {
     --badge-radius: 999px;
     --badge-gap: 6px;
@@ -317,24 +345,26 @@
     @apply bg-orange-50 text-orange-700 border border-orange-200 rounded-full px-3 py-1 text-xs font-medium;
   }
   
-  /* VSuite Brand Accents */
-  .vsuite-accent-border {
-    border-left: 4px solid var(--vsuite-blue);
+  /* Gigster Garage Brand Accents */
+  .gigster-accent-border {
+    border-left: 4px solid var(--workshop-amber);
   }
   
-  .vsuite-feature-card {
-    @apply vsuite-card p-6 hover:border-blue-200 cursor-pointer;
+  .gigster-feature-card {
+    @apply gigster-card p-6 cursor-pointer;
     transition: all 0.3s ease;
+    border-color: var(--concrete-light);
   }
   
-  .vsuite-feature-card:hover {
+  .gigster-feature-card:hover {
+    border-color: var(--ignition-teal);
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0, 123, 255, 0.1);
+    box-shadow: 0 10px 25px rgba(11, 29, 58, 0.1);
   }
   
-  .vsuite-feature-card:hover .feature-icon {
+  .gigster-feature-card:hover .feature-icon {
     @apply scale-110;
-    color: var(--vsuite-blue);
+    color: var(--ignition-teal);
     transition: all 0.3s ease;
   }
   
@@ -354,47 +384,48 @@
     }
   }
   
-  .pulse-vsuite {
-    animation: pulseVsuite 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .pulse-gigster {
+    animation: pulseGigster 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
-  @keyframes pulseVsuite {
+  @keyframes pulseGigster {
     0%, 100% {
-      box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
+      box-shadow: 0 0 0 0 rgba(46, 197, 194, 0.4);
     }
     50% {
-      box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+      box-shadow: 0 0 0 10px rgba(46, 197, 194, 0);
     }
   }
   
   /* Header Enhancements */
-  .vsuite-header {
-    @apply bg-white border-b border-gray-200 shadow-sm;
+  .gigster-header {
+    @apply bg-white border-b shadow-sm;
+    border-color: var(--concrete-light);
     background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
   }
   
   /* Form Enhancements */
-  .vsuite-form-card {
-    @apply vsuite-card p-6;
+  .gigster-form-card {
+    @apply gigster-card p-6;
     background: linear-gradient(145deg, #ffffff 0%, #f8f9fc 100%);
   }
   
   /* Interactive Elements */
-  .vsuite-interactive:hover {
+  .gigster-interactive:hover {
     transform: translateY(-1px);
     transition: transform 0.2s ease;
   }
   
   /* Brand Consistent Shadows */
-  .vsuite-shadow-sm {
-    box-shadow: 0 1px 3px 0 rgba(0, 123, 255, 0.1), 0 1px 2px 0 rgba(0, 123, 255, 0.06);
+  .gigster-shadow-sm {
+    box-shadow: 0 1px 3px 0 rgba(11, 29, 58, 0.1), 0 1px 2px 0 rgba(11, 29, 58, 0.06);
   }
   
-  .vsuite-shadow-md {
-    box-shadow: 0 4px 6px -1px rgba(0, 123, 255, 0.1), 0 2px 4px -1px rgba(0, 123, 255, 0.06);
+  .gigster-shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(11, 29, 58, 0.1), 0 2px 4px -1px rgba(11, 29, 58, 0.06);
   }
   
-  .vsuite-shadow-lg {
-    box-shadow: 0 10px 15px -3px rgba(0, 123, 255, 0.1), 0 4px 6px -2px rgba(0, 123, 255, 0.05);
+  .gigster-shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(11, 29, 58, 0.1), 0 4px 6px -2px rgba(11, 29, 58, 0.05);
   }
 }

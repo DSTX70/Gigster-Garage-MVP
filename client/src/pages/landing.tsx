@@ -16,7 +16,7 @@ import {
   Clock,
   Target
 } from "lucide-react";
-import { VSuiteLogo } from "@/components/vsuite-logo";
+import { GigsterLogo } from "@/components/vsuite-logo";
 import { ScreenshotCarousel } from "@/components/screenshot-carousel";
 import { Link } from "wouter";
 
@@ -65,44 +65,42 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="vsuite-hero-section py-20">
+      <section className="gigster-hero-section py-20">
         <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
           {/* Logo and Branding */}
           <div className="flex justify-center mb-8 fade-in-up">
-            <div className="vsuite-logo-large pulse-vsuite">
-              V
-            </div>
+            <GigsterLogo size="large" showText={false} className="pulse-gigster" />
           </div>
           
-          <h1 className="text-5xl font-bold text-white mb-4 fade-in-up">
-            VSuite HQ
+          <h1 className="text-5xl font-bold text-white mb-4 fade-in-up" style={{ fontFamily: 'var(--font-display)' }}>
+            Gigster Garage
           </h1>
           
-          <p className="text-xl font-medium text-blue-100 mb-8">
-            Simplified Workflow Hub
+          <p className="text-xl font-medium mb-8" style={{ color: 'rgba(255, 181, 46, 0.9)' }}>
+            Smarter tools for bolder dreams
           </p>
           
-          <p className="text-lg text-blue-100 mb-10 max-w-2xl mx-auto">
-            Transform your productivity with intelligent task management, 
-            smart notifications, and seamless team collaboration.
+          <p className="text-lg mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+            Transform your workflow with intelligent task management, 
+            smart automation, and seamless team collaboration designed for ambitious creators.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-8 py-3 shadow-lg">
+              <Button size="lg" className="bg-white font-semibold px-8 py-3 shadow-lg" style={{ color: 'var(--garage-navy)', fontFamily: 'var(--font-display)' }}>
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             
             <Link href="/login">
-              <Button variant="outline" size="lg" className="border-white/30 text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700 px-8 py-3">
+              <Button variant="outline" size="lg" className="border-white/30 bg-white px-8 py-3" style={{ color: 'var(--garage-navy)', fontFamily: 'var(--font-display)' }}>
                 Sign In
               </Button>
             </Link>
           </div>
           
-          <div className="mt-8 text-sm text-blue-200">
+          <div className="mt-8 text-sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
             <div className="flex items-center justify-center gap-4">
               <div className="flex items-center">
                 <CheckCircle className="h-4 w-4 text-white mr-1" />
@@ -125,12 +123,12 @@ export default function Landing() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-black mb-4">
-              See VSuite HQ in action
+            <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--garage-navy)', fontFamily: 'var(--font-display)' }}>
+              See Gigster Garage in action
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Take a visual tour of our intuitive interface and discover how VSuite HQ 
-              makes task management effortless and efficient.
+              Take a visual tour of our intuitive interface and discover how Gigster Garage 
+              makes task management effortless and efficient for ambitious creators.
             </p>
           </div>
           
@@ -142,7 +140,7 @@ export default function Landing() {
             </p>
             <Link href="/login">
               <Button size="lg" className="px-8">
-                Try VSuite HQ Now
+                Try Gigster Garage Now
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -154,12 +152,12 @@ export default function Landing() {
       <section className="py-20 bg-gradient-to-br from-blue-50 via-white to-blue-50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-black mb-4">
-              Everything you need to stay organized
+            <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--garage-navy)', fontFamily: 'var(--font-display)' }}>
+              Everything you need to turn ideas into reality
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              VSuite HQ combines powerful task management with intelligent automation 
-              to keep you and your team focused on what matters most.
+            <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--steel-gray)' }}>
+              Gigster Garage combines powerful task management with intelligent automation 
+              to keep ambitious creators focused on what matters most.
             </p>
           </div>
           
@@ -167,7 +165,7 @@ export default function Landing() {
             {features.map((feature, index) => (
               <Card 
                 key={index}
-                className="vsuite-feature-card group"
+                className="gigster-feature-card group"
                 onClick={() => setActiveFeature(index)}
               >
                 <CardHeader>
