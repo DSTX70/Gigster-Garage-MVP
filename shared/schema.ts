@@ -58,14 +58,33 @@ export const taskDependencies = pgTable("task_dependencies", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Time Logs table - for time tracking
+export const timeLogs = pgTable("time_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  taskId: varchar("task_id").references(() => tasks.id),
+  projectId: varchar("project_id").references(() => projects.id),
+  description: text("description"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: text("duration"), // In seconds as string for precision
+  isActive: boolean("is_active").default(false), // True when timer is running
+  isManualEntry: boolean("is_manual_entry").default(false),
+  editHistory: jsonb("edit_history").default([]), // Audit trail for manual edits
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   assignedTasks: many(tasks, { relationName: "assignedTasks" }),
   createdTasks: many(tasks, { relationName: "createdTasks" }),
+  timeLogs: many(timeLogs),
 }));
 
 export const projectsRelations = relations(projects, ({ many }) => ({
   tasks: many(tasks),
+  timeLogs: many(timeLogs),
 }));
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
@@ -91,6 +110,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   subtasks: many(tasks, { relationName: "parentTask" }),
   dependencies: many(taskDependencies, { relationName: "taskDependencies" }),
   dependents: many(taskDependencies, { relationName: "dependentTasks" }),
+  timeLogs: many(timeLogs),
 }));
 
 export const taskDependenciesRelations = relations(taskDependencies, ({ one }) => ({
@@ -103,6 +123,21 @@ export const taskDependenciesRelations = relations(taskDependencies, ({ one }) =
     fields: [taskDependencies.dependsOnTaskId],
     references: [tasks.id],
     relationName: "dependentTasks",
+  }),
+}));
+
+export const timeLogsRelations = relations(timeLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [timeLogs.userId],
+    references: [users.id],
+  }),
+  task: one(tasks, {
+    fields: [timeLogs.taskId],
+    references: [tasks.id],
+  }),
+  project: one(projects, {
+    fields: [timeLogs.projectId],
+    references: [projects.id],
   }),
 }));
 
@@ -159,6 +194,42 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   createdAt: true,
 });
 
+// Time Log schemas
+export const insertTimeLogSchema = createInsertSchema(timeLogs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  startTime: z.union([z.date(), z.string()]).transform(val => {
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+  endTime: z.union([z.date(), z.string(), z.null()]).optional().nullable().transform(val => {
+    if (!val) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+  editHistory: z.array(z.object({
+    id: z.string(),
+    timestamp: z.string(),
+    previousValues: z.record(z.any()),
+    editedBy: z.string(),
+    reason: z.string(),
+  })).optional().default([]),
+});
+
+export const updateTimeLogSchema = insertTimeLogSchema.partial();
+
+export const startTimerSchema = z.object({
+  taskId: z.string().optional(),
+  projectId: z.string().optional(),
+  description: z.string().optional(),
+});
+
+export const stopTimerSchema = z.object({
+  timeLogId: z.string(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -176,6 +247,17 @@ export type Task = typeof tasks.$inferSelect & {
   subtasks?: Task[];
   dependencies?: (TaskDependency & { dependsOnTask: Task })[];
   dependents?: (TaskDependency & { task: Task })[];
+  timeLogs?: TimeLog[];
 };
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type UpdateTask = z.infer<typeof updateTaskSchema>;
+
+export type TimeLog = typeof timeLogs.$inferSelect & {
+  user?: User;
+  task?: Task;
+  project?: Project;
+};
+export type InsertTimeLog = z.infer<typeof insertTimeLogSchema>;
+export type UpdateTimeLog = z.infer<typeof updateTimeLogSchema>;
+export type StartTimerRequest = z.infer<typeof startTimerSchema>;
+export type StopTimerRequest = z.infer<typeof stopTimerSchema>;

@@ -1,8 +1,8 @@
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, UpdateTask, Project, InsertProject, TaskDependency, InsertTaskDependency } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, timeLogs } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, UpdateTask, Project, InsertProject, TaskDependency, InsertTaskDependency, TimeLog, InsertTimeLog, UpdateTimeLog } from "@shared/schema";
 
 export interface IStorage {
   // User management
@@ -34,6 +34,22 @@ export interface IStorage {
   createTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency>;
   deleteTaskDependency(id: string): Promise<boolean>;
   wouldCreateCircularDependency(taskId: string, dependsOnTaskId: string): Promise<boolean>;
+
+  // Time log management
+  getTimeLogs(userId?: string, projectId?: string): Promise<TimeLog[]>;
+  getTimeLog(id: string): Promise<TimeLog | undefined>;
+  getActiveTimeLog(userId: string): Promise<TimeLog | undefined>;
+  createTimeLog(insertTimeLog: InsertTimeLog): Promise<TimeLog>;
+  updateTimeLog(id: string, updateTimeLog: UpdateTimeLog): Promise<TimeLog | undefined>;
+  deleteTimeLog(id: string): Promise<boolean>;
+  stopActiveTimer(userId: string): Promise<TimeLog | undefined>;
+  getUserProductivityStats(userId: string, days: number): Promise<{
+    totalHours: number;
+    averageDailyHours: number;
+    streakDays: number;
+    utilizationPercent: number;
+  }>;
+  getDailyTimeLogs(userId: string, date: Date): Promise<TimeLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -392,6 +408,219 @@ export class DatabaseStorage implements IStorage {
     }
 
     return false;
+  }
+
+  // Time log operations
+  async getTimeLogs(userId?: string, projectId?: string): Promise<TimeLog[]> {
+    let query = db
+      .select()
+      .from(timeLogs)
+      .leftJoin(users, eq(timeLogs.userId, users.id))
+      .leftJoin(tasks, eq(timeLogs.taskId, tasks.id))
+      .leftJoin(projects, eq(timeLogs.projectId, projects.id))
+      .orderBy(desc(timeLogs.startTime));
+
+    if (userId) {
+      query = query.where(eq(timeLogs.userId, userId));
+    }
+
+    if (projectId) {
+      query = query.where(eq(timeLogs.projectId, projectId));
+    }
+
+    const result = await query;
+    
+    return result.map(row => ({
+      ...row.time_logs,
+      user: row.users || undefined,
+      task: row.tasks || undefined,
+      project: row.projects || undefined,
+    }));
+  }
+
+  async getTimeLog(id: string): Promise<TimeLog | undefined> {
+    const result = await db
+      .select()
+      .from(timeLogs)
+      .leftJoin(users, eq(timeLogs.userId, users.id))
+      .leftJoin(tasks, eq(timeLogs.taskId, tasks.id))
+      .leftJoin(projects, eq(timeLogs.projectId, projects.id))
+      .where(eq(timeLogs.id, id))
+      .limit(1);
+
+    if (result.length === 0) return undefined;
+
+    const row = result[0];
+    return {
+      ...row.time_logs,
+      user: row.users || undefined,
+      task: row.tasks || undefined,
+      project: row.projects || undefined,
+    };
+  }
+
+  async getActiveTimeLog(userId: string): Promise<TimeLog | undefined> {
+    const result = await db
+      .select()
+      .from(timeLogs)
+      .leftJoin(users, eq(timeLogs.userId, users.id))
+      .leftJoin(tasks, eq(timeLogs.taskId, tasks.id))
+      .leftJoin(projects, eq(timeLogs.projectId, projects.id))
+      .where(and(eq(timeLogs.userId, userId), eq(timeLogs.isActive, true)))
+      .limit(1);
+
+    if (result.length === 0) return undefined;
+
+    const row = result[0];
+    return {
+      ...row.time_logs,
+      user: row.users || undefined,
+      task: row.tasks || undefined,
+      project: row.projects || undefined,
+    };
+  }
+
+  async createTimeLog(insertTimeLog: InsertTimeLog): Promise<TimeLog> {
+    const [timeLog] = await db
+      .insert(timeLogs)
+      .values(insertTimeLog)
+      .returning();
+    
+    return await this.getTimeLog(timeLog.id) as TimeLog;
+  }
+
+  async updateTimeLog(id: string, updateTimeLog: UpdateTimeLog): Promise<TimeLog | undefined> {
+    const [updatedTimeLog] = await db
+      .update(timeLogs)
+      .set({
+        ...updateTimeLog,
+        updatedAt: new Date(),
+      })
+      .where(eq(timeLogs.id, id))
+      .returning();
+
+    if (!updatedTimeLog) return undefined;
+    
+    return await this.getTimeLog(updatedTimeLog.id);
+  }
+
+  async deleteTimeLog(id: string): Promise<boolean> {
+    const result = await db
+      .delete(timeLogs)
+      .where(eq(timeLogs.id, id));
+    
+    return result.rowCount > 0;
+  }
+
+  async stopActiveTimer(userId: string): Promise<TimeLog | undefined> {
+    const activeTimer = await this.getActiveTimeLog(userId);
+    if (!activeTimer) return undefined;
+
+    const endTime = new Date();
+    const duration = Math.floor((endTime.getTime() - new Date(activeTimer.startTime).getTime()) / 1000);
+
+    return await this.updateTimeLog(activeTimer.id, {
+      endTime,
+      duration: duration.toString(),
+      isActive: false,
+    });
+  }
+
+  async getUserProductivityStats(userId: string, days: number): Promise<{
+    totalHours: number;
+    averageDailyHours: number;
+    streakDays: number;
+    utilizationPercent: number;
+  }> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+
+    const timeLogsInPeriod = await db
+      .select()
+      .from(timeLogs)
+      .where(
+        and(
+          eq(timeLogs.userId, userId),
+          gte(timeLogs.startTime, startDate),
+          lte(timeLogs.startTime, endDate),
+          eq(timeLogs.isActive, false) // Only completed time logs
+        )
+      );
+
+    const totalSeconds = timeLogsInPeriod.reduce((sum, log) => {
+      return sum + (log.duration ? parseInt(log.duration) : 0);
+    }, 0);
+
+    const totalHours = totalSeconds / 3600;
+    const averageDailyHours = totalHours / days;
+
+    // Calculate streak days (consecutive days with time logged)
+    let streakDays = 0;
+    const today = new Date();
+    for (let i = 0; i < days; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(checkDate.getDate() - i);
+      checkDate.setHours(0, 0, 0, 0);
+      
+      const nextDay = new Date(checkDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      const dayLogs = timeLogsInPeriod.filter(log => {
+        const logDate = new Date(log.startTime);
+        return logDate >= checkDate && logDate < nextDay;
+      });
+
+      if (dayLogs.length > 0) {
+        streakDays++;
+      } else {
+        break;
+      }
+    }
+
+    // Calculate utilization percentage (assuming 8 hours per day as target)
+    const targetHours = days * 8;
+    const utilizationPercent = targetHours > 0 ? (totalHours / targetHours) * 100 : 0;
+
+    return {
+      totalHours: Math.round(totalHours * 100) / 100,
+      averageDailyHours: Math.round(averageDailyHours * 100) / 100,
+      streakDays,
+      utilizationPercent: Math.round(utilizationPercent * 100) / 100,
+    };
+  }
+
+  async getDailyTimeLogs(userId: string, date: Date): Promise<TimeLog[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const result = await db
+      .select()
+      .from(timeLogs)
+      .leftJoin(users, eq(timeLogs.userId, users.id))
+      .leftJoin(tasks, eq(timeLogs.taskId, tasks.id))
+      .leftJoin(projects, eq(timeLogs.projectId, projects.id))
+      .where(
+        and(
+          eq(timeLogs.userId, userId),
+          gte(timeLogs.startTime, startOfDay),
+          lte(timeLogs.startTime, endOfDay)
+        )
+      )
+      .orderBy(timeLogs.startTime);
+
+    return result.map(row => ({
+      ...row.time_logs,
+      user: row.users || undefined,
+      task: row.tasks || undefined,
+      project: row.projects || undefined,
+    }));
   }
 }
 

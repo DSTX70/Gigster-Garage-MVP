@@ -4,7 +4,7 @@ import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification } from "./emailService";
-import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema, insertProjectSchema, onboardingSchema } from "@shared/schema";
+import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema, insertProjectSchema, onboardingSchema, startTimerSchema, stopTimerSchema, insertTimeLogSchema, updateTimeLogSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
 
 // Extend session type
@@ -588,6 +588,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching tasks with subtasks:", error);
       res.status(500).json({ message: "Failed to fetch tasks with subtasks" });
+    }
+  });
+
+  // =================== TIME TRACKING ROUTES ===================
+
+  // Start timer
+  app.post("/api/timelogs/start", requireAuth, async (req, res) => {
+    try {
+      const result = startTimerSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid timer data", 
+          errors: result.error.issues 
+        });
+      }
+
+      const user = req.session.user!;
+      
+      // Stop any existing active timer for this user
+      await storage.stopActiveTimer(user.id);
+
+      // Create new time log
+      const timeLog = await storage.createTimeLog({
+        userId: user.id,
+        taskId: result.data.taskId || null,
+        projectId: result.data.projectId || null,
+        description: result.data.description,
+        startTime: new Date(),
+        endTime: null,
+        isActive: true,
+        isManualEntry: false,
+        editHistory: [],
+      });
+
+      res.status(201).json(timeLog);
+    } catch (error) {
+      console.error("Error starting timer:", error);
+      res.status(500).json({ message: "Failed to start timer" });
+    }
+  });
+
+  // Stop timer
+  app.post("/api/timelogs/stop", requireAuth, async (req, res) => {
+    try {
+      const result = stopTimerSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid stop timer data", 
+          errors: result.error.issues 
+        });
+      }
+
+      const user = req.session.user!;
+      const timeLog = await storage.getTimeLog(result.data.timeLogId);
+      
+      if (!timeLog) {
+        return res.status(404).json({ message: "Time log not found" });
+      }
+
+      if (timeLog.userId !== user.id) {
+        return res.status(403).json({ message: "Not authorized to stop this timer" });
+      }
+
+      if (!timeLog.isActive) {
+        return res.status(400).json({ message: "Timer is not active" });
+      }
+
+      const endTime = new Date();
+      const duration = Math.floor((endTime.getTime() - new Date(timeLog.startTime).getTime()) / 1000);
+
+      const updatedTimeLog = await storage.updateTimeLog(timeLog.id, {
+        endTime,
+        duration: duration.toString(),
+        isActive: false,
+      });
+
+      res.json(updatedTimeLog);
+    } catch (error) {
+      console.error("Error stopping timer:", error);
+      res.status(500).json({ message: "Failed to stop timer" });
+    }
+  });
+
+  // Get current active timer
+  app.get("/api/timelogs/active", requireAuth, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      const activeTimeLog = await storage.getActiveTimeLog(user.id);
+      res.json(activeTimeLog || null);
+    } catch (error) {
+      console.error("Error fetching active timer:", error);
+      res.status(500).json({ message: "Failed to fetch active timer" });
+    }
+  });
+
+  // Get time logs
+  app.get("/api/timelogs", requireAuth, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      const projectId = req.query.projectId as string | undefined;
+      
+      const timeLogs = await storage.getTimeLogs(
+        user.role === 'admin' ? undefined : user.id,
+        projectId
+      );
+      
+      res.json(timeLogs);
+    } catch (error) {
+      console.error("Error fetching time logs:", error);
+      res.status(500).json({ message: "Failed to fetch time logs" });
+    }
+  });
+
+  // Get productivity stats
+  app.get("/api/productivity/stats", requireAuth, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      const days = parseInt(req.query.days as string) || 30;
+      
+      const stats = await storage.getUserProductivityStats(user.id, days);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching productivity stats:", error);
+      res.status(500).json({ message: "Failed to fetch productivity stats" });
+    }
+  });
+
+  // Get streaks data
+  app.get("/api/streaks", requireAuth, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      const [stats14, stats30] = await Promise.all([
+        storage.getUserProductivityStats(user.id, 14),
+        storage.getUserProductivityStats(user.id, 30)
+      ]);
+      
+      res.json({
+        last14Days: {
+          streakDays: stats14.streakDays,
+          totalHours: stats14.totalHours,
+          averageDailyHours: stats14.averageDailyHours,
+          utilizationPercent: stats14.utilizationPercent,
+        },
+        last30Days: {
+          streakDays: stats30.streakDays,
+          totalHours: stats30.totalHours,
+          averageDailyHours: stats30.averageDailyHours,
+          utilizationPercent: stats30.utilizationPercent,
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching streaks:", error);
+      res.status(500).json({ message: "Failed to fetch streaks" });
+    }
+  });
+
+  // Update time log (manual edit)
+  app.put("/api/timelogs/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = updateTimeLogSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid time log data", 
+          errors: result.error.issues 
+        });
+      }
+
+      const user = req.session.user!;
+      const existingTimeLog = await storage.getTimeLog(id);
+      
+      if (!existingTimeLog) {
+        return res.status(404).json({ message: "Time log not found" });
+      }
+
+      if (existingTimeLog.userId !== user.id && user.role !== 'admin') {
+        return res.status(403).json({ message: "Not authorized to edit this time log" });
+      }
+
+      // Create audit trail entry
+      const editHistory = Array.isArray(existingTimeLog.editHistory) ? [...existingTimeLog.editHistory] : [];
+      editHistory.push({
+        id: Math.random().toString(36).substr(2, 9),
+        timestamp: new Date().toISOString(),
+        previousValues: {
+          startTime: existingTimeLog.startTime,
+          endTime: existingTimeLog.endTime,
+          duration: existingTimeLog.duration,
+          description: existingTimeLog.description,
+        },
+        editedBy: user.id,
+        reason: "Manual edit",
+      });
+
+      const updatedTimeLog = await storage.updateTimeLog(id, {
+        ...result.data,
+        isManualEntry: true,
+        editHistory,
+      });
+
+      res.json(updatedTimeLog);
+    } catch (error) {
+      console.error("Error updating time log:", error);
+      res.status(500).json({ message: "Failed to update time log" });
+    }
+  });
+
+  // Delete time log
+  app.delete("/api/timelogs/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.session.user!;
+      
+      const timeLog = await storage.getTimeLog(id);
+      if (!timeLog) {
+        return res.status(404).json({ message: "Time log not found" });
+      }
+
+      if (timeLog.userId !== user.id && user.role !== 'admin') {
+        return res.status(403).json({ message: "Not authorized to delete this time log" });
+      }
+
+      const success = await storage.deleteTimeLog(id);
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ message: "Time log not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting time log:", error);
+      res.status(500).json({ message: "Failed to delete time log" });
     }
   });
 

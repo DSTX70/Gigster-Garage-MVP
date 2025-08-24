@@ -82,7 +82,7 @@ export default function Home() {
         </div>
 
         {/* Urgent & Overview Section */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           {/* Overdue Tasks */}
           <Link href="/tasks?filter=overdue">
             <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow cursor-pointer">
@@ -138,6 +138,21 @@ export default function Home() {
                     <p className="text-2xl font-bold text-green-700">{completedToday.length}</p>
                   </div>
                   <CheckCircle2 className="h-6 w-6 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Productivity Tools */}
+          <Link href="/productivity">
+            <Card className="border-l-4 border-l-amber-500 hover:shadow-lg transition-all duration-200 cursor-pointer bg-gradient-to-br from-amber-50 to-orange-50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-amber-600">Time Tracking</p>
+                    <p className="text-lg font-bold text-amber-800">Tools</p>
+                  </div>
+                  <BarChart3 className="h-6 w-6 text-amber-500" />
                 </div>
               </CardContent>
             </Card>

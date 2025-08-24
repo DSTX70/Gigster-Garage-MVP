@@ -13,6 +13,7 @@ import Admin from "@/pages/admin";
 import Dashboard from "@/pages/dashboard";
 import ProjectDashboard from "@/pages/project-dashboard";
 import Tasks from "@/pages/tasks";
+import Productivity from "@/pages/productivity";
 import { MessagesPage } from "@/pages/messages";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
@@ -60,6 +61,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/tasks" component={Tasks} />
+      <Route path="/productivity" component={Productivity} />
       <Route path="/project/:projectId" component={ProjectDashboard} />
       <Route path="/messages" component={MessagesPage} />
       {isAdmin && <Route path="/admin" component={Admin} />}
