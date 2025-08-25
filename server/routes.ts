@@ -1270,6 +1270,39 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
+        // Generate content for direct proposals
+        let content = `# ${title}\n\n`;
+        content += `**Prepared for:** ${clientName}\n`;
+        if (clientEmail) content += `**Email:** ${clientEmail}\n\n`;
+        
+        if (projectDescription) {
+          content += `## Project Overview\n${projectDescription}\n\n`;
+        }
+        
+        if (timeline) {
+          content += `## Timeline\n${timeline}\n\n`;
+        }
+        
+        if (lineItems && lineItems.length > 0) {
+          content += `## Services & Pricing\n\n`;
+          content += `| Service | Qty | Rate | Amount |\n`;
+          content += `|---------|-----|------|--------|\n`;
+          lineItems.forEach((item: any) => {
+            content += `| ${item.description || 'Service'} | ${item.quantity} | $${item.rate.toFixed(2)} | $${item.amount.toFixed(2)} |\n`;
+          });
+          content += `\n**Total: $${calculatedTotal.toFixed(2)}**\n\n`;
+        }
+        
+        if (deliverables) {
+          content += `## Deliverables\n${deliverables}\n\n`;
+        }
+        
+        if (terms) {
+          content += `## Terms & Conditions\n${terms}\n\n`;
+        }
+        
+        content += `---\n\n*Generated on ${new Date().toLocaleDateString()}*`;
+
         const proposalData = {
           title,
           projectId: projectId || null,
@@ -1284,6 +1317,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           calculatedTotal: calculatedTotal.toString(),
           expiresInDays,
           expiresAt,
+          content,
           createdById: req.session.user!.id,
           status: 'draft' as const,
           variables: {},
