@@ -44,7 +44,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
-import { insertTaskSchema, updateTaskSchema } from "@shared/schema";
+import { insertTaskSchema, taskSchema } from "@shared/schema";
 import type { Task, User, Project } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -59,7 +59,7 @@ interface TaskDrawerProps {
   onTaskUpdated?: () => void;
 }
 
-const taskFormSchema = updateTaskSchema.extend({
+const taskFormSchema = taskSchema.extend({
   dueDate: z.string().optional(),
   dueDatetime: z.string().optional(),
 });

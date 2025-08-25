@@ -379,7 +379,7 @@ export default function CreateInvoice() {
                     <SelectValue placeholder="Select project (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No project</SelectItem>
+                    <SelectItem value="no-project">No project</SelectItem>
                     {projects.map(project => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}

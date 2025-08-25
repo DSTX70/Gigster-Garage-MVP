@@ -159,6 +159,28 @@ export default function Home() {
           </Link>
         </div>
 
+        {/* Client Management Section */}
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Client Management</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link href="/clients">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-purple-100 p-3 rounded-lg">
+                      <Users className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Client Database</h3>
+                      <p className="text-sm text-gray-600">Manage client relationships & history</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+
         {/* Quick Actions - Document Creation */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Link href="/create-proposal">

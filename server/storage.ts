@@ -1,8 +1,8 @@
 import { eq, and, or, desc, gte, lte, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, timeLogs, templates, proposals } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, UpdateTask, Project, InsertProject, TaskDependency, InsertTaskDependency, TimeLog, InsertTimeLog, UpdateTimeLog, Template, InsertTemplate, UpdateTemplate, Proposal, InsertProposal, UpdateProposal } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, templates, proposals, clients, invoices, payments } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, Invoice, InsertInvoice, Payment, InsertPayment } from "@shared/schema";
 
 export interface IStorage {
   // User management

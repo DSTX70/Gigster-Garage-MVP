@@ -9,7 +9,17 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { Mail, Phone, Bell, MessageSquare, CheckCircle } from "lucide-react";
-import { onboardingSchema, type OnboardingRequest } from "@shared/schema";
+import { z } from "zod";
+
+// Onboarding schema definition
+const onboardingSchema = z.object({
+  notificationEmail: z.string().email("Please enter a valid email"),
+  phone: z.string().optional(),
+  emailOptIn: z.boolean(),
+  smsOptIn: z.boolean(),
+});
+
+type OnboardingRequest = z.infer<typeof onboardingSchema>;
 
 interface OnboardingProps {
   onComplete: () => void;

@@ -4,7 +4,7 @@ import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification } from "./emailService";
-import { insertTaskSchema, updateTaskSchema, loginSchema, insertUserSchema, insertProjectSchema, onboardingSchema, startTimerSchema, stopTimerSchema, insertTimeLogSchema, updateTimeLogSchema, insertTemplateSchema, updateTemplateSchema, insertProposalSchema, updateProposalSchema, generateProposalSchema, sendProposalSchema } from "@shared/schema";
+import { taskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertInvoiceSchema, insertPaymentSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
 
 // Extend session type
@@ -1363,6 +1363,76 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error responding to proposal:", error);
       res.status(500).json({ message: "Failed to respond to proposal" });
+    }
+  });
+
+  // Client Management Routes
+  app.get("/api/clients", requireAuth, async (req, res) => {
+    try {
+      const clients: any[] = []; // Placeholder until storage is implemented
+      res.json(clients);
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+      res.status(500).json({ message: "Failed to fetch clients" });
+    }
+  });
+
+  app.get("/api/clients/:id", requireAuth, async (req, res) => {
+    try {
+      // Placeholder client data
+      const client = null;
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      res.json(client);
+    } catch (error) {
+      console.error("Error fetching client:", error);
+      res.status(500).json({ message: "Failed to fetch client" });
+    }
+  });
+
+  app.post("/api/clients", requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertClientSchema.parse(req.body);
+      // Placeholder - create client
+      const client = { id: "temp-id", ...validatedData, createdAt: new Date(), updatedAt: new Date() };
+      res.status(201).json(client);
+    } catch (error) {
+      console.error("Error creating client:", error);
+      res.status(500).json({ message: "Failed to create client" });
+    }
+  });
+
+  // Proposal Routes for Client Workflow
+  app.get("/api/proposals/client/:clientId", requireAuth, async (req, res) => {
+    try {
+      const proposals: any[] = []; // Placeholder
+      res.json(proposals);
+    } catch (error) {
+      console.error("Error fetching client proposals:", error);
+      res.status(500).json({ message: "Failed to fetch proposals" });
+    }
+  });
+
+  // Invoice Routes for Client Workflow
+  app.get("/api/invoices/client/:clientId", requireAuth, async (req, res) => {
+    try {
+      const invoices: any[] = []; // Placeholder
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching client invoices:", error);
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
+  // Payment Routes for Client Workflow  
+  app.get("/api/payments/client/:clientId", requireAuth, async (req, res) => {
+    try {
+      const payments: any[] = []; // Placeholder
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching client payments:", error);
+      res.status(500).json({ message: "Failed to fetch payments" });
     }
   });
 

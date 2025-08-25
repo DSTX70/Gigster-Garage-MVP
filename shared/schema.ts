@@ -1,138 +1,294 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+import { sql } from 'drizzle-orm';
+import {
+  index,
+  jsonb,
+  pgTable,
+  timestamp,
+  varchar,
+  text,
+  boolean,
+  integer,
+  decimal,
+  primaryKey,
+  date,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 
-// Users table
+// Session storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  role: varchar("role", { enum: ["admin", "user"] }).default("user"),
   username: varchar("username").unique().notNull(),
-  password: varchar("password").notNull(), // Will be hashed
-  role: text("role", { enum: ["admin", "user"] }).notNull().default("user"),
-  name: text("name").notNull(),
-  email: varchar("email"),
-  notificationEmail: varchar("notification_email"),
-  phone: varchar("phone"),
-  smsOptIn: boolean("sms_opt_in").default(false),
-  emailOptIn: boolean("email_opt_in").default(true),
+  password: varchar("password").notNull(),
   hasCompletedOnboarding: boolean("has_completed_onboarding").default(false),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  emailNotifications: boolean("email_notifications").default(true),
+  smsNotifications: boolean("sms_notifications").default(false),
+  phoneNumber: varchar("phone_number"),
+  name: varchar("name"),
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
 });
+
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
 
 // Projects table
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name").notNull(),
   description: text("description"),
-  status: text("status", { enum: ["active", "completed", "on-hold", "cancelled"] }).notNull().default("active"),
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  status: varchar("status", { enum: ["active", "completed", "on-hold", "cancelled"] }).default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  color: varchar("color"),
+  timeline: text("timeline"),
+  clientId: varchar("client_id").references(() => clients.id),
 });
 
-// Tasks table
-export const tasks = pgTable("tasks", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  description: text("description").notNull(),
-  completed: boolean("completed").notNull().default(false),
-  dueDate: timestamp("due_date"),
-  priority: text("priority", { enum: ["low", "medium", "high"] }).notNull().default("medium"),
-  status: text("status", { enum: ["critical", "high", "medium", "low", "complete", "pending", "overdue"] }).notNull().default("pending"),
-  assignedToId: varchar("assigned_to_id").references(() => users.id),
-  createdById: varchar("created_by_id").references(() => users.id).notNull(),
-  projectId: varchar("project_id").references(() => projects.id),
-  parentTaskId: varchar("parent_task_id"), // For subtasks - will be self-referenced
-  notes: text("notes"),
-  attachments: text("attachments").array(),
-  links: text("links").array(),
-  progressNotes: jsonb("progress_notes").default([]),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = typeof projects.$inferInsert;
 
-// Task Dependencies table - for task relationships
-export const taskDependencies = pgTable("task_dependencies", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  taskId: varchar("task_id").notNull(), // The dependent task
-  dependsOnTaskId: varchar("depends_on_task_id").notNull(), // The task it depends on
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
-
-// Time Logs table - for time tracking
-export const timeLogs = pgTable("time_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  taskId: varchar("task_id").references(() => tasks.id),
-  projectId: varchar("project_id").references(() => projects.id),
-  description: text("description"),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time"),
-  duration: text("duration"), // In seconds as string for precision
-  isActive: boolean("is_active").default(false), // True when timer is running
-  isManualEntry: boolean("is_manual_entry").default(false),
-  editHistory: jsonb("edit_history").default([]), // Audit trail for manual edits
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
-});
-
-// Templates table - for reusable document templates
-export const templates = pgTable("templates", {
+// Client Management
+export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name").notNull(),
-  type: text("type", { enum: ["proposal", "contract", "invoice", "deck"] }).notNull(),
-  description: text("description"),
-  content: text("content"), // Optional - form builder approach uses fields instead of content
-  variables: jsonb("variables").default([]), // Array of variable definitions
-  isSystem: boolean("is_system").default(false), // System templates vs user-created
-  isPublic: boolean("is_public").default(false), // Can be used by other users
-  createdById: varchar("created_by_id").references(() => users.id).notNull(),
-  tags: text("tags").array().default([]),
-  metadata: jsonb("metadata").default({}), // Additional template metadata
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+  email: varchar("email"),
+  phone: varchar("phone"),
+  company: varchar("company"),
+  address: text("address"),
+  website: varchar("website"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  status: varchar("status", { enum: ["active", "inactive", "prospect"] }).default("prospect"),
+  totalProposals: integer("total_proposals").default(0),
+  totalInvoices: integer("total_invoices").default(0),
+  totalRevenue: decimal("total_revenue", { precision: 10, scale: 2 }).default("0.00"),
+  outstandingBalance: decimal("outstanding_balance", { precision: 10, scale: 2 }).default("0.00"),
 });
 
-// Proposals table - for generated proposals from templates
+export type Client = typeof clients.$inferSelect;
+export type InsertClient = typeof clients.$inferInsert;
+
+// Enhanced Proposals
 export const proposals = pgTable("proposals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
-  templateId: varchar("template_id").references(() => templates.id),
   projectId: varchar("project_id").references(() => projects.id),
+  clientId: varchar("client_id").references(() => clients.id),
   clientName: varchar("client_name"),
   clientEmail: varchar("client_email"),
-  status: text("status", { enum: ["draft", "sent", "viewed", "accepted", "rejected", "expired"] }).notNull().default("draft"),
-  content: text("content").notNull(), // Final content with variables resolved
-  variables: jsonb("variables").default({}), // Key-value pairs for template variables
+  status: varchar("status", { enum: ["draft", "sent", "accepted", "rejected", "expired"] }).default("draft"),
+  projectDescription: text("project_description"),
+  totalBudget: decimal("total_budget", { precision: 10, scale: 2 }).default("0.00"),
+  timeline: varchar("timeline"),
+  deliverables: text("deliverables"),
+  terms: text("terms"),
+  lineItems: jsonb("line_items").$type<LineItem[]>().default([]),
+  calculatedTotal: decimal("calculated_total", { precision: 10, scale: 2 }).default("0.00"),
+  expiresInDays: integer("expires_in_days").default(30),
+  expirationDate: date("expiration_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
   sentAt: timestamp("sent_at"),
-  viewedAt: timestamp("viewed_at"),
-  respondedAt: timestamp("responded_at"),
-  expiresAt: timestamp("expires_at"),
-  responseMessage: text("response_message"),
-  shareableLink: varchar("shareable_link"),
-  version: varchar("version").notNull().default("1.0"),
-  parentProposalId: varchar("parent_proposal_id"), // For versioning - self-reference
-  createdById: varchar("created_by_id").references(() => users.id).notNull(),
-  metadata: jsonb("metadata").default({}), // Tracking data, metrics, etc.
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+  acceptedAt: timestamp("accepted_at"),
 });
+
+export type Proposal = typeof proposals.$inferSelect;
+export type InsertProposal = typeof proposals.$inferInsert;
+
+// Enhanced Invoices with payment tracking
+export const invoices = pgTable("invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNumber: varchar("invoice_number").notNull().unique(),
+  proposalId: varchar("proposal_id").references(() => proposals.id),
+  projectId: varchar("project_id").references(() => projects.id),
+  clientId: varchar("client_id").references(() => clients.id),
+  clientName: varchar("client_name"),
+  clientEmail: varchar("client_email"),
+  clientAddress: text("client_address"),
+  status: varchar("status", { enum: ["draft", "sent", "paid", "overdue", "cancelled"] }).default("draft"),
+  invoiceDate: date("invoice_date"),
+  dueDate: date("due_date"),
+  lineItems: jsonb("line_items").$type<LineItem[]>().default([]),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).default("0.00"),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default("0.00"),
+  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default("0.00"),
+  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).default("0.00"),
+  depositRequired: decimal("deposit_required", { precision: 10, scale: 2 }).default("0.00"),
+  depositPaid: decimal("deposit_paid", { precision: 10, scale: 2 }).default("0.00"),
+  amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default("0.00"),
+  balanceDue: decimal("balance_due", { precision: 10, scale: 2 }).default("0.00"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  sentAt: timestamp("sent_at"),
+  paidAt: timestamp("paid_at"),
+});
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;
+
+// Payment tracking
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceId: varchar("invoice_id").references(() => invoices.id),
+  clientId: varchar("client_id").references(() => clients.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentDate: date("payment_date").notNull(),
+  paymentMethod: varchar("payment_method", { enum: ["cash", "check", "credit_card", "bank_transfer", "paypal", "stripe", "other"] }),
+  reference: varchar("reference"),
+  notes: text("notes"),
+  isDeposit: boolean("is_deposit").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;
+
+// Tasks table with enhanced features
+export const tasks = pgTable("tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  status: varchar("status", { enum: ["pending", "active", "high", "critical", "completed"] }).default("pending"),
+  priority: varchar("priority", { enum: ["low", "medium", "high"] }).default("medium"),
+  dueDate: timestamp("due_date"),
+  dueTime: varchar("due_time"),
+  completed: boolean("completed").default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  projectId: varchar("project_id").references(() => projects.id),
+  assignedToId: varchar("assigned_to_id").references(() => users.id),
+  createdById: varchar("created_by_id").references(() => users.id),
+  notes: text("notes"),
+  attachments: jsonb("attachments").$type<string[]>().default([]),
+  links: jsonb("links").$type<string[]>().default([]),
+  parentTaskId: varchar("parent_task_id").references(() => tasks.id),
+  progress: jsonb("progress").$type<Array<{ date: string; comment: string; }>>().default([]),
+  estimatedHours: integer("estimated_hours"),
+  actualHours: integer("actual_hours"),
+});
+
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = typeof tasks.$inferInsert;
+
+// Templates table
+export const templates = pgTable("templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  type: varchar("type", { enum: ["proposal", "invoice", "contract", "presentation", "email"] }).notNull(),
+  variables: jsonb("variables").$type<TemplateVariable[]>().default([]),
+  content: text("content"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdById: varchar("created_by_id").references(() => users.id),
+});
+
+export type Template = typeof templates.$inferSelect;
+export type InsertTemplate = typeof templates.$inferInsert;
+
+// Task Dependencies (junction table)
+export const taskDependencies = pgTable("task_dependencies", {
+  dependentTaskId: varchar("dependent_task_id").references(() => tasks.id),
+  dependsOnTaskId: varchar("depends_on_task_id").references(() => tasks.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.dependentTaskId, table.dependsOnTaskId] })
+}));
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
-  assignedTasks: many(tasks, { relationName: "assignedTasks" }),
   createdTasks: many(tasks, { relationName: "createdTasks" }),
-  timeLogs: many(timeLogs),
+  assignedTasks: many(tasks, { relationName: "assignedTasks" }),
   templates: many(templates),
-  proposals: many(proposals),
 }));
 
-export const projectsRelations = relations(projects, ({ many }) => ({
+export const projectsRelations = relations(projects, ({ many, one }) => ({
   tasks: many(tasks),
-  timeLogs: many(timeLogs),
+  client: one(clients, {
+    fields: [projects.clientId],
+    references: [clients.id],
+  }),
   proposals: many(proposals),
+  invoices: many(invoices),
+}));
+
+export const clientsRelations = relations(clients, ({ many }) => ({
+  projects: many(projects),
+  proposals: many(proposals),
+  invoices: many(invoices),
+  payments: many(payments),
+}));
+
+export const proposalsRelations = relations(proposals, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [proposals.projectId],
+    references: [projects.id],
+  }),
+  client: one(clients, {
+    fields: [proposals.clientId],
+    references: [clients.id],
+  }),
+  invoices: many(invoices),
+}));
+
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  proposal: one(proposals, {
+    fields: [invoices.proposalId],
+    references: [proposals.id],
+  }),
+  project: one(projects, {
+    fields: [invoices.projectId],
+    references: [projects.id],
+  }),
+  client: one(clients, {
+    fields: [invoices.clientId],
+    references: [clients.id],
+  }),
+  payments: many(payments),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [payments.invoiceId],
+    references: [invoices.id],
+  }),
+  client: one(clients, {
+    fields: [payments.clientId],
+    references: [clients.id],
+  }),
 }));
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [tasks.projectId],
+    references: [projects.id],
+  }),
   assignedTo: one(users, {
     fields: [tasks.assignedToId],
     references: [users.id],
@@ -143,268 +299,97 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [users.id],
     relationName: "createdTasks",
   }),
-  project: one(projects, {
-    fields: [tasks.projectId],
-    references: [projects.id],
-  }),
   parentTask: one(tasks, {
     fields: [tasks.parentTaskId],
     references: [tasks.id],
     relationName: "parentTask",
   }),
   subtasks: many(tasks, { relationName: "parentTask" }),
-  dependencies: many(taskDependencies, { relationName: "taskDependencies" }),
-  dependents: many(taskDependencies, { relationName: "dependentTasks" }),
-  timeLogs: many(timeLogs),
+  dependents: many(taskDependencies, { relationName: "dependsOn" }),
+  dependencies: many(taskDependencies, { relationName: "dependent" }),
 }));
 
-export const taskDependenciesRelations = relations(taskDependencies, ({ one }) => ({
-  task: one(tasks, {
-    fields: [taskDependencies.taskId],
-    references: [tasks.id],
-    relationName: "taskDependencies",
-  }),
-  dependsOnTask: one(tasks, {
-    fields: [taskDependencies.dependsOnTaskId],
-    references: [tasks.id],
-    relationName: "dependentTasks",
-  }),
-}));
-
-export const timeLogsRelations = relations(timeLogs, ({ one }) => ({
-  user: one(users, {
-    fields: [timeLogs.userId],
-    references: [users.id],
-  }),
-  task: one(tasks, {
-    fields: [timeLogs.taskId],
-    references: [tasks.id],
-  }),
-  project: one(projects, {
-    fields: [timeLogs.projectId],
-    references: [projects.id],
-  }),
-}));
-
-export const templatesRelations = relations(templates, ({ one, many }) => ({
+export const templatesRelations = relations(templates, ({ one }) => ({
   createdBy: one(users, {
     fields: [templates.createdById],
     references: [users.id],
   }),
-  proposals: many(proposals),
 }));
 
-export const proposalsRelations = relations(proposals, ({ one }) => ({
-  template: one(templates, {
-    fields: [proposals.templateId],
-    references: [templates.id],
+export const taskDependenciesRelations = relations(taskDependencies, ({ one }) => ({
+  dependentTask: one(tasks, {
+    fields: [taskDependencies.dependentTaskId],
+    references: [tasks.id],
+    relationName: "dependent",
   }),
-  project: one(projects, {
-    fields: [proposals.projectId],
-    references: [projects.id],
-  }),
-  createdBy: one(users, {
-    fields: [proposals.createdById],
-    references: [users.id],
-  }),
-  parentProposal: one(proposals, {
-    fields: [proposals.parentProposalId],
-    references: [proposals.id],
-    relationName: "proposalVersions",
+  dependsOnTask: one(tasks, {
+    fields: [taskDependencies.dependsOnTaskId],
+    references: [tasks.id],
+    relationName: "dependsOn",
   }),
 }));
 
-// User schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-});
+// Type definitions
+export interface LineItem {
+  id: number;
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+}
 
-export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
+export interface TemplateVariable {
+  name: string;
+  label: string;
+  type: 'text' | 'textarea' | 'number' | 'date' | 'email' | 'phone' | 'line_items';
+  required: boolean;
+  placeholder?: string;
+  defaultValue?: any;
+}
 
-export const onboardingSchema = z.object({
-  notificationEmail: z.string().email("Please enter a valid email address"),
-  phone: z.string().optional(),
-  emailOptIn: z.boolean().default(true),
-  smsOptIn: z.boolean().default(false),
-});
+export interface GenerateProposalRequest {
+  templateId: string;
+  title: string;
+  projectId?: string;
+  clientName: string;
+  clientEmail: string;
+  variables: Record<string, any>;
+  expiresInDays: number;
+}
 
-// Task schemas
-export const insertTaskSchema = createInsertSchema(tasks).omit({
-  id: true,
-  createdAt: true,
-  createdById: true,
-}).extend({
-  dueDate: z.union([z.date(), z.string(), z.null()]).optional().transform(val => {
-    if (!val || val === '') return null;
-    if (typeof val === 'string') return new Date(val);
-    return val;
-  }),
-  assignedToId: z.string().optional().nullable(),
-  projectId: z.string().optional().nullable(),
-  attachments: z.array(z.string()).optional().default([]),
-  links: z.array(z.string()).optional().default([]),
-  progressNotes: z.array(z.object({
-    id: z.string(),
-    date: z.string(),
-    comment: z.string(),
-    createdAt: z.string(),
-  })).optional().default([]),
-});
+// Create Zod schemas for validation
+export const insertTaskSchema = createInsertSchema(tasks);
+export const selectTaskSchema = createSelectSchema(tasks);
+export const taskSchema = insertTaskSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-export const updateTaskSchema = createInsertSchema(tasks).omit({
-  id: true,
-  createdAt: true,
-  createdById: true,
-}).partial();
+export const insertProjectSchema = createInsertSchema(projects);
+export const selectProjectSchema = createSelectSchema(projects);
+export const projectSchema = insertProjectSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-// Project schemas
-export const insertProjectSchema = createInsertSchema(projects).omit({
-  id: true,
-  createdAt: true,
-});
+export const insertClientSchema = createInsertSchema(clients);
+export const selectClientSchema = createSelectSchema(clients);
+export const clientSchema = insertClientSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-// Time Log schemas
-export const insertTimeLogSchema = createInsertSchema(timeLogs).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  startTime: z.union([z.date(), z.string()]).transform(val => {
-    if (typeof val === 'string') return new Date(val);
-    return val;
-  }),
-  endTime: z.union([z.date(), z.string(), z.null()]).optional().nullable().transform(val => {
-    if (!val) return null;
-    if (typeof val === 'string') return new Date(val);
-    return val;
-  }),
-  editHistory: z.array(z.object({
-    id: z.string(),
-    timestamp: z.string(),
-    previousValues: z.record(z.any()),
-    editedBy: z.string(),
-    reason: z.string(),
-  })).optional().default([]),
-});
+export const insertProposalSchema = createInsertSchema(proposals);
+export const selectProposalSchema = createSelectSchema(proposals);
+export const proposalSchema = insertProposalSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-export const updateTimeLogSchema = insertTimeLogSchema.partial();
+export const insertInvoiceSchema = createInsertSchema(invoices);
+export const selectInvoiceSchema = createSelectSchema(invoices);
+export const invoiceSchema = insertInvoiceSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-export const startTimerSchema = z.object({
-  taskId: z.string().optional(),
-  projectId: z.string().optional(),
-  description: z.string().optional(),
-});
+export const insertPaymentSchema = createInsertSchema(payments);
+export const selectPaymentSchema = createSelectSchema(payments);
+export const paymentSchema = insertPaymentSchema.omit({ id: true, createdAt: true });
 
-export const stopTimerSchema = z.object({
-  timeLogId: z.string(),
-});
+export const insertTemplateSchema = createInsertSchema(templates);
+export const selectTemplateSchema = createSelectSchema(templates);
+export const templateSchema = insertTemplateSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-// Template schemas - Form builder approach (content is optional since template is built from form fields)
-export const insertTemplateSchema = createInsertSchema(templates).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  content: z.string().optional(), // Optional since template is built from form fields
-  variables: z.array(z.object({
-    name: z.string(),
-    label: z.string(),
-    type: z.enum(["text", "number", "currency", "date", "email", "phone", "textarea", "line_items"]),
-    required: z.boolean().default(false),
-    defaultValue: z.string().optional(),
-    placeholder: z.string().optional(),
-  })).optional().default([]),
-  tags: z.array(z.string()).optional().default([]),
-  metadata: z.record(z.any()).optional().default({}),
-});
-
-export const updateTemplateSchema = insertTemplateSchema.partial();
-
-// Proposal schemas  
-export const insertProposalSchema = createInsertSchema(proposals).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  shareableLink: true,
-}).extend({
-  variables: z.record(z.any()).optional().default({}),
-  metadata: z.record(z.any()).optional().default({}),
-  expiresAt: z.union([z.date(), z.string()]).optional().transform(val => {
-    if (!val) return undefined;
-    if (typeof val === 'string') return new Date(val);
-    return val;
-  }),
-});
-
-export const updateProposalSchema = insertProposalSchema.partial();
-
-export const generateProposalSchema = z.object({
-  templateId: z.string(),
-  title: z.string(),
-  projectId: z.string().optional(),
-  clientName: z.string().optional(),
-  clientEmail: z.string().email().optional(),
-  variables: z.record(z.any()).default({}),
-  expiresInDays: z.number().min(1).max(365).default(30),
-});
-
-export const sendProposalSchema = z.object({
-  proposalId: z.string(),
-  recipientEmail: z.string().email().optional(),
-  subject: z.string().optional(),
-  message: z.string().optional(),
-});
-
-// Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type LoginRequest = z.infer<typeof loginSchema>;
-export type OnboardingRequest = z.infer<typeof onboardingSchema>;
-export type Project = typeof projects.$inferSelect;
-export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type TaskDependency = typeof taskDependencies.$inferSelect;
-export type InsertTaskDependency = typeof taskDependencies.$inferInsert;
-
-export type Task = typeof tasks.$inferSelect & {
-  assignedTo?: User;
-  project?: Project;
-  parentTask?: Task;
-  subtasks?: Task[];
-  dependencies?: (TaskDependency & { dependsOnTask: Task })[];
-  dependents?: (TaskDependency & { task: Task })[];
-  timeLogs?: TimeLog[];
-};
-export type InsertTask = z.infer<typeof insertTaskSchema>;
-export type UpdateTask = z.infer<typeof updateTaskSchema>;
-
-export type TimeLog = typeof timeLogs.$inferSelect & {
-  user?: User;
-  task?: Task;
-  project?: Project;
-};
-export type InsertTimeLog = z.infer<typeof insertTimeLogSchema>;
-export type UpdateTimeLog = z.infer<typeof updateTimeLogSchema>;
-export type StartTimerRequest = z.infer<typeof startTimerSchema>;
-export type StopTimerRequest = z.infer<typeof stopTimerSchema>;
-
-export type Template = typeof templates.$inferSelect & {
-  createdBy?: User;
-  proposals?: Proposal[];
-};
-export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
-export type UpdateTemplate = z.infer<typeof updateTemplateSchema>;
-
-export type Proposal = typeof proposals.$inferSelect & {
-  template?: Template;
-  project?: Project;
-  createdBy?: User;
-  parentProposal?: Proposal;
-};
-export type InsertProposal = z.infer<typeof insertProposalSchema>;
-export type UpdateProposal = z.infer<typeof updateProposalSchema>;
-export type GenerateProposalRequest = z.infer<typeof generateProposalSchema>;
-export type SendProposalRequest = z.infer<typeof sendProposalSchema>;
+export type InsertTaskData = z.infer<typeof taskSchema>;
+export type InsertProjectData = z.infer<typeof projectSchema>;
+export type InsertClientData = z.infer<typeof clientSchema>;
+export type InsertProposalData = z.infer<typeof proposalSchema>;
+export type InsertInvoiceData = z.infer<typeof invoiceSchema>;
+export type InsertPaymentData = z.infer<typeof paymentSchema>;
+export type InsertTemplateData = z.infer<typeof templateSchema>;

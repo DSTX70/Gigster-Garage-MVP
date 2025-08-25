@@ -18,6 +18,8 @@ import CreateProposal from "@/pages/create-proposal";
 import CreateInvoice from "@/pages/create-invoice";
 import CreateContract from "@/pages/create-contract";
 import CreatePresentation from "@/pages/create-presentation";
+import ClientList from "@/pages/client-list";
+import ClientDetails from "@/pages/client-details";
 import { MessagesPage } from "@/pages/messages";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
@@ -72,6 +74,8 @@ function Router() {
       <Route path="/create-invoice" component={CreateInvoice} />
       <Route path="/create-contract" component={CreateContract} />
       <Route path="/create-presentation" component={CreatePresentation} />
+      <Route path="/clients" component={ClientList} />
+      <Route path="/client/:clientId" component={ClientDetails} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />
