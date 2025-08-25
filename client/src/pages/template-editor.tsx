@@ -859,7 +859,7 @@ export default function TemplateEditor() {
 
                     {/* Always-visible enhanced field type examples */}
                     <div className="space-y-4 border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
-                      <h4 className="font-medium text-center mb-4">✨ Enhanced Field Types Preview</h4>
+                      <h4 className="font-medium text-center mb-4">✨ Enhanced Field Types - Try Them Out!</h4>
                       
                       {/* Text Field */}
                       <div className="space-y-2">
@@ -870,7 +870,6 @@ export default function TemplateEditor() {
                         <Input 
                           placeholder="Enter client name"
                           className="border-blue-200 focus:border-blue-500"
-                          disabled
                         />
                         <p className="text-xs text-muted-foreground">✏️ Short text input field</p>
                       </div>
@@ -889,7 +888,6 @@ export default function TemplateEditor() {
                             className="pl-8 text-right bg-green-50 dark:bg-green-950 border-green-200 focus:border-green-500"
                             min="0"
                             step="0.01"
-                            disabled
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">💰 Currency amount in USD with automatic $ symbol</p>
@@ -906,7 +904,6 @@ export default function TemplateEditor() {
                           rows={4}
                           className="min-h-[100px] resize-y bg-orange-50 dark:bg-orange-950 border-orange-200 focus:border-orange-500"
                           maxLength={1000}
-                          disabled
                         />
                         <div className="flex justify-between text-xs text-muted-foreground">
                           <span>📝 For detailed descriptions and multi-line content</span>
@@ -924,7 +921,6 @@ export default function TemplateEditor() {
                           type="email"
                           placeholder="client@company.com"
                           className="border-blue-200 focus:border-blue-500"
-                          disabled
                         />
                         <p className="text-xs text-muted-foreground">📧 Valid email format required</p>
                       </div>
@@ -939,7 +935,7 @@ export default function TemplateEditor() {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <h4 className="font-medium text-indigo-900 dark:text-indigo-100">Itemized Services</h4>
-                              <Button size="sm" variant="outline" className="text-xs" disabled>
+                              <Button size="sm" variant="outline" className="text-xs">
                                 <Plus className="h-3 w-3 mr-1" />
                                 Add Item
                               </Button>
@@ -959,14 +955,14 @@ export default function TemplateEditor() {
                                 <tbody>
                                   <tr className="border-b border-indigo-100">
                                     <td className="py-2 px-2">
-                                      <Input placeholder="Service description..." className="text-xs border-indigo-300" disabled />
+                                      <Input placeholder="Service description..." className="text-xs border-indigo-300" />
                                     </td>
                                     <td className="py-2 px-2">
-                                      <Input placeholder="1" className="text-xs text-center border-indigo-300" disabled />
+                                      <Input placeholder="1" className="text-xs text-center border-indigo-300" />
                                     </td>
                                     <td className="py-2 px-2">
                                       <div className="relative">
-                                        <Input placeholder="100.00" className="text-xs text-right border-indigo-300 pl-4" disabled />
+                                        <Input placeholder="100.00" className="text-xs text-right border-indigo-300 pl-4" />
                                         <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">$</span>
                                       </div>
                                     </td>
@@ -976,7 +972,7 @@ export default function TemplateEditor() {
                                       </div>
                                     </td>
                                     <td className="py-2 px-1">
-                                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500" disabled>
+                                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500">
                                         <X className="h-3 w-3" />
                                       </Button>
                                     </td>
@@ -1007,7 +1003,7 @@ export default function TemplateEditor() {
 
                       <div className="text-center pt-4 border-t">
                         <p className="text-xs text-muted-foreground">
-                          💡 Add variables above to include these enhanced field types in your template
+                          💡 These fields are fully interactive - try entering data to see the enhanced features in action!
                         </p>
                       </div>
                     </div>
