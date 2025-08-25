@@ -46,10 +46,10 @@ export default function ClientDetails() {
     return (
       <div className="min-h-screen bg-neutral-50">
         {/* Header */}
-        <div className="bg-blue-600 text-white py-4 px-6">
+        <div className="bg-[#FF7F00] text-white py-4 px-6">
           <div className="flex items-center gap-3">
             <div className="text-2xl font-bold">Gigster Garage</div>
-            <div className="text-lg">Simplified Workflow Hub</div>
+            <div className="text-lg">Smarter tools for bolder dreams</div>
           </div>
         </div>
 
@@ -67,10 +67,10 @@ export default function ClientDetails() {
     return (
       <div className="min-h-screen bg-neutral-50">
         {/* Header */}
-        <div className="bg-blue-600 text-white py-4 px-6">
+        <div className="bg-[#FF7F00] text-white py-4 px-6">
           <div className="flex items-center gap-3">
             <div className="text-2xl font-bold">Gigster Garage</div>
-            <div className="text-lg">Simplified Workflow Hub</div>
+            <div className="text-lg">Smarter tools for bolder dreams</div>
           </div>
         </div>
 
@@ -79,7 +79,7 @@ export default function ClientDetails() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Client Not Found</h2>
             <p className="text-gray-600 mb-6">The client you're looking for doesn't exist.</p>
             <Link href="/clients">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-[#FF7F00] hover:bg-[#e6720a] text-white">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Clients
               </Button>
@@ -140,7 +140,7 @@ export default function ClientDetails() {
         {/* Quick Actions */}
         <div className="flex gap-3 mb-6">
           <Link href={`/create-proposal?clientId=${client.id}`}>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-new-proposal">
+            <Button className="bg-[#FF7F00] hover:bg-[#e6720a] text-white" data-testid="button-new-proposal">
               <Plus className="h-4 w-4 mr-2" />
               New Proposal
             </Button>
@@ -297,7 +297,7 @@ export default function ClientDetails() {
               <CardContent>
                 {proposalsLoading ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF7F00] mx-auto"></div>
                   </div>
                 ) : proposals.length === 0 ? (
                   <div className="text-center py-8">
@@ -305,7 +305,7 @@ export default function ClientDetails() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">No proposals yet</h3>
                     <p className="text-gray-600 mb-4">Create the first proposal for this client.</p>
                     <Link href={`/create-proposal?clientId=${client.id}`}>
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Button className="bg-[#FF7F00] hover:bg-[#e6720a] text-white">
                         <Plus className="h-4 w-4 mr-2" />
                         Create Proposal
                       </Button>
@@ -359,7 +359,7 @@ export default function ClientDetails() {
               <CardContent>
                 {invoicesLoading ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF7F00] mx-auto"></div>
                   </div>
                 ) : invoices.length === 0 ? (
                   <div className="text-center py-8">
@@ -367,7 +367,7 @@ export default function ClientDetails() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">No invoices yet</h3>
                     <p className="text-gray-600 mb-4">Create the first invoice for this client.</p>
                     <Link href={`/create-invoice?clientId=${client.id}`}>
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Button className="bg-[#FF7F00] hover:bg-[#e6720a] text-white">
                         <Plus className="h-4 w-4 mr-2" />
                         Create Invoice
                       </Button>
@@ -430,7 +430,7 @@ export default function ClientDetails() {
               <CardContent>
                 {paymentsLoading ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF7F00] mx-auto"></div>
                   </div>
                 ) : payments.length === 0 ? (
                   <div className="text-center py-8">

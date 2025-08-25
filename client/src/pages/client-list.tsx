@@ -109,10 +109,10 @@ export default function ClientList() {
     return (
       <div className="min-h-screen bg-neutral-50">
         {/* Header */}
-        <div className="bg-blue-600 text-white py-4 px-6">
+        <div className="bg-[#FF7F00] text-white py-4 px-6">
           <div className="flex items-center gap-3">
             <div className="text-2xl font-bold">Gigster Garage</div>
-            <div className="text-lg">Simplified Workflow Hub</div>
+            <div className="text-lg">Smarter tools for bolder dreams</div>
           </div>
         </div>
 
@@ -133,10 +133,10 @@ export default function ClientList() {
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
-      <div className="bg-blue-600 text-white py-4 px-6">
+      <div className="bg-[#FF7F00] text-white py-4 px-6">
         <div className="flex items-center gap-3">
           <div className="text-2xl font-bold">Gigster Garage</div>
-          <div className="text-lg">Simplified Workflow Hub</div>
+          <div className="text-lg">Smarter tools for bolder dreams</div>
         </div>
       </div>
 
@@ -144,13 +144,13 @@ export default function ClientList() {
         {/* Page Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-            <Users className="h-8 w-8 text-blue-600" />
+            <Users className="h-8 w-8 text-[#FF7F00]" />
             <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
           </div>
           
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-new-client">
+              <Button className="bg-[#FF7F00] hover:bg-[#e6720a] text-white" data-testid="button-new-client">
                 <Plus className="h-4 w-4 mr-2" />
                 New Client
               </Button>
@@ -255,7 +255,7 @@ export default function ClientList() {
                   <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-create-client">
+                  <Button type="submit" className="bg-[#FF7F00] hover:bg-[#e6720a] text-white" data-testid="button-create-client">
                     Create Client
                   </Button>
                 </div>
@@ -290,7 +290,7 @@ export default function ClientList() {
               {!searchTerm && (
                 <Button
                   onClick={() => setIsOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-[#FF7F00] hover:bg-[#e6720a] text-white"
                   data-testid="button-add-first-client"
                 >
                   <Plus className="h-4 w-4 mr-2" />
