@@ -43,10 +43,11 @@ const VARIABLE_TYPES = [
   { value: "text", label: "Text" },
   { value: "textarea", label: "Long Text" },
   { value: "number", label: "Number" },
+  { value: "currency", label: "Currency" },
   { value: "date", label: "Date" },
   { value: "email", label: "Email" },
   { value: "phone", label: "Phone" },
-  { value: "line_items", label: "Line Items (Invoice/Contract)" },
+  { value: "line_items", label: "Line Items" },
 ];
 
 const TEMPLATE_TYPES = [
@@ -59,7 +60,7 @@ const TEMPLATE_TYPES = [
 interface Variable {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "date" | "email" | "phone" | "line_items";
+  type: "text" | "textarea" | "number" | "currency" | "date" | "email" | "phone" | "line_items";
   required: boolean;
   defaultValue?: string;
   placeholder?: string;
@@ -87,7 +88,7 @@ export default function TemplateEditor() {
   const [newVariable, setNewVariable] = useState<Variable>({
     name: "",
     label: "",
-    type: "text" as "text" | "textarea" | "number" | "date" | "email" | "phone" | "line_items",
+    type: "text" as "text" | "textarea" | "number" | "currency" | "date" | "email" | "phone" | "line_items",
     required: false,
     defaultValue: "",
     placeholder: "",
@@ -96,16 +97,12 @@ export default function TemplateEditor() {
   const [newTag, setNewTag] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
-  const [aiSuggestions, setAiSuggestions] = useState<Variable[]>([]);
-  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
-  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
 
   // Load template data if editing
   const { data: template, isLoading } = useQuery<Template>({
     queryKey: ["/api/templates", id],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/templates/${id}`);
-      return response;
+      return await apiRequest("GET", `/api/templates/${id}`);
     },
     enabled: isEditing,
   });
@@ -178,81 +175,6 @@ export default function TemplateEditor() {
     saveTemplateMutation.mutate(formData);
   };
 
-  // Generate AI suggestions
-  const generateAiSuggestions = async () => {
-    if (!formData.description?.trim() || !formData.type) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter a description and select a template type for AI suggestions.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsGeneratingSuggestions(true);
-    try {
-      const response = await apiRequest("POST", "/api/ai/suggest-template-fields", {
-        templateType: formData.type,
-        description: formData.description,
-        businessContext: formData.name || "Business Template"
-      });
-      
-      setAiSuggestions(response.suggestions || []);
-      setShowAiSuggestions(true);
-      const sourceLabel = response.aiGenerated ? "AI-powered" : "Smart template";
-      toast({
-        title: "Field Suggestions Ready",
-        description: `Generated ${response.suggestions?.length || 0} ${sourceLabel} field suggestions.`,
-      });
-    } catch (error) {
-      console.error("AI suggestion error:", error);
-      toast({
-        title: "Suggestions Unavailable", 
-        description: "Unable to generate suggestions. Please add fields manually.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingSuggestions(false);
-    }
-  };
-
-  const addSuggestedVariable = (suggestion: Variable) => {
-    const existingNames = (formData.variables || []).map(v => v.name);
-    if (existingNames.includes(suggestion.name)) {
-      toast({
-        title: "Field Already Exists",
-        description: `A field named "${suggestion.name}" already exists.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      variables: [...(prev.variables || []), suggestion]
-    }));
-    
-    toast({
-      title: "Field Added",
-      description: `Added "${suggestion.label}" field to your template.`,
-    });
-  };
-
-  const addAllSuggestions = () => {
-    const existingNames = (formData.variables || []).map(v => v.name);
-    const newSuggestions = aiSuggestions.filter(s => !existingNames.includes(s.name));
-    
-    setFormData(prev => ({
-      ...prev,
-      variables: [...(prev.variables || []), ...newSuggestions]
-    }));
-    
-    toast({
-      title: "All Suggestions Added",
-      description: `Added ${newSuggestions.length} new fields to your template.`,
-    });
-    setShowAiSuggestions(false);
-  };
 
   const addVariable = () => {
     
@@ -576,27 +498,9 @@ export default function TemplateEditor() {
           {/* Variables Panel */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center justify-between">
-                Variables
-                <Button
-                  onClick={generateAiSuggestions}
-                  disabled={isGeneratingSuggestions || !formData.description?.trim()}
-                  size="sm"
-                  className="bg-purple-600 hover:bg-purple-700"
-                  data-testid="button-ai-suggestions"
-                >
-                  {isGeneratingSuggestions ? (
-                    <>
-                      <div className="animate-spin h-3 w-3 border border-white border-t-transparent rounded-full mr-2" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>🤖 Smart Suggestions</>
-                  )}
-                </Button>
-              </CardTitle>
+              <CardTitle className="text-lg">Variables</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Define variables that can be substituted in your template. Use AI to get smart field suggestions!
+                Define form fields that will capture data when users fill out your template
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -774,31 +678,48 @@ export default function TemplateEditor() {
                               <Textarea
                                 placeholder={variable.placeholder || `Enter detailed ${variable.label.toLowerCase()}...`}
                                 rows={6}
-                                className="min-h-[120px] resize-y"
+                                className="min-h-[120px] resize-y bg-orange-50 dark:bg-orange-950 border-orange-200 focus:border-orange-500"
+                                maxLength={1000}
                                 data-testid={`preview-field-${variable.name}`}
                               />
                               <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>For detailed descriptions and multi-line content</span>
-                                <span>0 characters</span>
+                                <span>📝 For detailed descriptions and multi-line content</span>
+                                <span className="font-medium">0 / 1,000 characters</span>
                               </div>
                             </div>
                           )}
                           
                           {variable.type === 'number' && (
                             <div className="space-y-2">
+                              <Input
+                                type="number"
+                                placeholder={variable.placeholder || "Enter numeric value"}
+                                className="text-right"
+                                min="0"
+                                step="1"
+                                data-testid={`preview-field-${variable.name}`}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                🔢 Numeric input field (whole or decimal numbers)
+                              </p>
+                            </div>
+                          )}
+
+                          {variable.type === 'currency' && (
+                            <div className="space-y-2">
                               <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
                                 <Input
                                   type="number"
                                   placeholder={variable.placeholder || "0.00"}
-                                  className="pl-8 text-right"
+                                  className="pl-8 text-right bg-green-50 dark:bg-green-950 border-green-200 focus:border-green-500"
                                   min="0"
                                   step="0.01"
                                   data-testid={`preview-field-${variable.name}`}
                                 />
                               </div>
                               <p className="text-xs text-muted-foreground">
-                                💰 Enter amount in USD (numbers only)
+                                💰 Currency amount in USD with automatic $ symbol
                               </p>
                             </div>
                           )}
@@ -935,11 +856,12 @@ export default function TemplateEditor() {
                     <p className="text-sm mb-4">Your template will be built from data entry fields</p>
                     <div className="text-xs text-left max-w-md mx-auto space-y-1">
                       <p>• <strong>Text:</strong> Short inputs (names, titles)</p>
-                      <p>• <strong>Textarea:</strong> Long content (descriptions, notes)</p>
-                      <p>• <strong>Number:</strong> Currency amounts with $ symbol</p>
+                      <p>• <strong>Textarea:</strong> Long content with character count</p>
+                      <p>• <strong>Number:</strong> Numeric inputs (whole/decimal)</p>
+                      <p>• <strong>Currency:</strong> Money amounts with $ symbol</p>
                       <p>• <strong>Date:</strong> Calendar picker for dates</p>
                       <p>• <strong>Email/Phone:</strong> Validated contact fields</p>
-                      <p>• <strong>Line Items:</strong> Itemized billing tables</p>
+                      <p>• <strong>Line Items:</strong> Interactive itemized billing tables</p>
                     </div>
                   </div>
                 )}
@@ -949,89 +871,6 @@ export default function TemplateEditor() {
         </div>
       </div>
 
-      {/* AI Suggestions Dialog */}
-      <Dialog open={showAiSuggestions} onOpenChange={setShowAiSuggestions}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              🤖 Smart Field Suggestions
-            </DialogTitle>
-            <DialogDescription>
-              Based on your template description and type, here are intelligent field recommendations
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {aiSuggestions.length > 0 ? (
-              <>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {aiSuggestions.length} suggested fields for your {formData.type} template
-                    </p>
-                    <Badge variant="secondary" className="mt-1 text-xs">
-                      {(aiSuggestions as any).source === "openai" ? "🤖 AI-Generated" : "📝 Smart Template"}
-                    </Badge>
-                  </div>
-                  <Button onClick={addAllSuggestions} size="sm" className="bg-green-600 hover:bg-green-700">
-                    Add All Fields
-                  </Button>
-                </div>
-                <ScrollArea className="max-h-[50vh]">
-                  <div className="space-y-3">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <div key={index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium">{suggestion.label}</h4>
-                              <Badge variant="outline" className="text-xs">{suggestion.type}</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              Variable: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">
-                                {`{{${suggestion.name}}}`}
-                              </code>
-                            </p>
-                            {suggestion.placeholder && (
-                              <p className="text-xs text-muted-foreground">
-                                Placeholder: "{suggestion.placeholder}"
-                              </p>
-                            )}
-                            {suggestion.defaultValue && (
-                              <p className="text-xs text-muted-foreground">
-                                Default: "{suggestion.defaultValue}"
-                              </p>
-                            )}
-                          </div>
-                          <Button 
-                            onClick={() => addSuggestedVariable(suggestion)}
-                            size="sm"
-                            className="ml-4"
-                            data-testid={`add-suggestion-${suggestion.name}`}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add Field
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <div className="h-12 w-12 mx-auto mb-3 opacity-50">🤖</div>
-                <h4 className="font-medium mb-1">No Suggestions Available</h4>
-                <p className="text-sm">Try providing a more detailed description or different template type.</p>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAiSuggestions(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
