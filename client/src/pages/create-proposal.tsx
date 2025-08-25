@@ -105,10 +105,18 @@ export default function CreateProposal() {
 
   const handleSave = () => {
     const proposalData = {
-      ...formData,
+      title: formData.title,
+      projectId: formData.projectId || undefined,
+      clientName: formData.clientName,
+      clientEmail: formData.clientEmail,
+      projectDescription: formData.projectDescription || undefined,
+      totalBudget: formData.totalBudget || 0,
+      timeline: formData.timeline || undefined,
+      deliverables: formData.deliverables || undefined,
+      terms: formData.terms || undefined,
       lineItems,
       calculatedTotal: getTotalAmount(),
-      type: "proposal"
+      expiresInDays: 30
     };
     saveProposalMutation.mutate(proposalData);
   };
