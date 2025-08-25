@@ -59,7 +59,7 @@ const TEMPLATE_TYPES = [
 interface Variable {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "date" | "email" | "phone";
+  type: "text" | "textarea" | "number" | "date" | "email" | "phone" | "line_items";
   required: boolean;
   defaultValue?: string;
   placeholder?: string;
@@ -87,7 +87,7 @@ export default function TemplateEditor() {
   const [newVariable, setNewVariable] = useState<Variable>({
     name: "",
     label: "",
-    type: "text" as "text" | "textarea" | "number" | "date" | "email" | "phone",
+    type: "text" as "text" | "textarea" | "number" | "date" | "email" | "phone" | "line_items",
     required: false,
     defaultValue: "",
     placeholder: "",
@@ -96,13 +96,16 @@ export default function TemplateEditor() {
   const [newTag, setNewTag] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
+  const [aiSuggestions, setAiSuggestions] = useState<Variable[]>([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
 
   // Load template data if editing
   const { data: template, isLoading } = useQuery<Template>({
     queryKey: ["/api/templates", id],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/templates/${id}`);
-      return response as Template;
+      return response;
     },
     enabled: isEditing,
   });
@@ -114,7 +117,7 @@ export default function TemplateEditor() {
         name: template.name,
         type: template.type,
         description: template.description || "",
-        content: template.content,
+        content: template.content || "",
         variables: Array.isArray(template.variables) ? template.variables : [],
         tags: Array.isArray(template.tags) ? template.tags : [],
         isSystem: template.isSystem,
@@ -141,7 +144,7 @@ export default function TemplateEditor() {
       });
       
       if (!isEditing) {
-        setLocation(`/templates/${savedTemplate.id}`);
+        setLocation(`/templates/${(savedTemplate as any).id}`);
       }
     },
     onError: () => {
@@ -175,8 +178,82 @@ export default function TemplateEditor() {
     saveTemplateMutation.mutate(formData);
   };
 
+  // Generate AI suggestions
+  const generateAiSuggestions = async () => {
+    if (!formData.description?.trim() || !formData.type) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a description and select a template type for AI suggestions.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingSuggestions(true);
+    try {
+      const response = await apiRequest("POST", "/api/ai/suggest-template-fields", {
+        templateType: formData.type,
+        description: formData.description,
+        businessContext: formData.name || "Business Template"
+      });
+      
+      setAiSuggestions(response.suggestions || []);
+      setShowAiSuggestions(true);
+      toast({
+        title: "AI Suggestions Ready",
+        description: `Generated ${response.suggestions?.length || 0} field suggestions.`,
+      });
+    } catch (error) {
+      console.error("AI suggestion error:", error);
+      toast({
+        title: "AI Suggestions Unavailable",
+        description: "Unable to generate suggestions. Please add fields manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSuggestions(false);
+    }
+  };
+
+  const addSuggestedVariable = (suggestion: Variable) => {
+    const existingNames = (formData.variables || []).map(v => v.name);
+    if (existingNames.includes(suggestion.name)) {
+      toast({
+        title: "Field Already Exists",
+        description: `A field named "${suggestion.name}" already exists.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      variables: [...(prev.variables || []), suggestion]
+    }));
+    
+    toast({
+      title: "Field Added",
+      description: `Added "${suggestion.label}" field to your template.`,
+    });
+  };
+
+  const addAllSuggestions = () => {
+    const existingNames = (formData.variables || []).map(v => v.name);
+    const newSuggestions = aiSuggestions.filter(s => !existingNames.includes(s.name));
+    
+    setFormData(prev => ({
+      ...prev,
+      variables: [...(prev.variables || []), ...newSuggestions]
+    }));
+    
+    toast({
+      title: "All Suggestions Added",
+      description: `Added ${newSuggestions.length} new fields to your template.`,
+    });
+    setShowAiSuggestions(false);
+  };
+
   const addVariable = () => {
-    console.log("Adding variable:", newVariable); // Debug log
     
     if (!newVariable.name.trim() || !newVariable.label.trim()) {
       toast({
@@ -498,9 +575,27 @@ export default function TemplateEditor() {
           {/* Variables Panel */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Variables</CardTitle>
+              <CardTitle className="text-lg flex items-center justify-between">
+                Variables
+                <Button
+                  onClick={generateAiSuggestions}
+                  disabled={isGeneratingSuggestions || !formData.description?.trim()}
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700"
+                  data-testid="button-ai-suggestions"
+                >
+                  {isGeneratingSuggestions ? (
+                    <>
+                      <div className="animate-spin h-3 w-3 border border-white border-t-transparent rounded-full mr-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>🤖 AI Suggestions</>
+                  )}
+                </Button>
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Define variables that can be substituted in your template
+                Define variables that can be substituted in your template. Use AI to get smart field suggestions!
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -852,6 +947,85 @@ export default function TemplateEditor() {
           </Card>
         </div>
       </div>
+
+      {/* AI Suggestions Dialog */}
+      <Dialog open={showAiSuggestions} onOpenChange={setShowAiSuggestions}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              🤖 AI Field Suggestions
+            </DialogTitle>
+            <DialogDescription>
+              Based on your template description and type, here are intelligent field recommendations
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {aiSuggestions.length > 0 ? (
+              <>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">
+                    {aiSuggestions.length} suggested fields for your {formData.type} template
+                  </p>
+                  <Button onClick={addAllSuggestions} size="sm" className="bg-green-600 hover:bg-green-700">
+                    Add All Fields
+                  </Button>
+                </div>
+                <ScrollArea className="max-h-[50vh]">
+                  <div className="space-y-3">
+                    {aiSuggestions.map((suggestion, index) => (
+                      <div key={index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium">{suggestion.label}</h4>
+                              <Badge variant="outline" className="text-xs">{suggestion.type}</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Variable: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">
+                                {`{{${suggestion.name}}}`}
+                              </code>
+                            </p>
+                            {suggestion.placeholder && (
+                              <p className="text-xs text-muted-foreground">
+                                Placeholder: "{suggestion.placeholder}"
+                              </p>
+                            )}
+                            {suggestion.defaultValue && (
+                              <p className="text-xs text-muted-foreground">
+                                Default: "{suggestion.defaultValue}"
+                              </p>
+                            )}
+                          </div>
+                          <Button 
+                            onClick={() => addSuggestedVariable(suggestion)}
+                            size="sm"
+                            className="ml-4"
+                            data-testid={`add-suggestion-${suggestion.name}`}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add Field
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="h-12 w-12 mx-auto mb-3 opacity-50">🤖</div>
+                <h4 className="font-medium mb-1">No Suggestions Available</h4>
+                <p className="text-sm">Try providing a more detailed description or different template type.</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAiSuggestions(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>

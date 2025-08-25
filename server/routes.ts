@@ -872,6 +872,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Template Suggestion route
+  app.post("/api/ai/suggest-template-fields", requireAuth, async (req, res) => {
+    try {
+      const { templateType, description, businessContext } = req.body;
+      
+      if (!templateType || !description) {
+        return res.status(400).json({ 
+          message: "Template type and description are required" 
+        });
+      }
+
+      // Check if OpenAI is available
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ 
+          message: "AI suggestions are not available. OpenAI API key not configured." 
+        });
+      }
+
+      // Import OpenAI dynamically
+      const { default: OpenAI } = await import('openai');
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const prompt = `As an expert business template designer, analyze this ${templateType} template request and suggest appropriate form fields.
+
+Business Context: ${businessContext}
+Template Type: ${templateType}
+Description: ${description}
+
+Generate 4-8 intelligent form field suggestions that would be most relevant for this ${templateType}. For each field, provide:
+- name: snake_case variable name (no spaces, lowercase)
+- label: Human-readable field label
+- type: one of [text, textarea, number, date, email, phone, line_items]
+- required: boolean (true for essential fields)
+- placeholder: helpful placeholder text
+- defaultValue: sensible default if applicable
+
+Focus on fields that are:
+1. Essential for this type of ${templateType}
+2. Commonly needed in business scenarios
+3. Professional and practical
+4. Specific to the described use case
+
+Return a JSON object with a "suggestions" array containing the field objects.`;
+
+      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert business template designer. Always respond with valid JSON only, no markdown or extra text."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 1500,
+        temperature: 0.7,
+      });
+
+      const suggestions = JSON.parse(completion.choices[0].message.content || '{"suggestions":[]}');
+      
+      // Validate and filter suggestions
+      const validatedSuggestions = (suggestions.suggestions || [])
+        .filter((s: any) => s.name && s.label && s.type)
+        .map((s: any) => ({
+          name: s.name,
+          label: s.label,
+          type: s.type,
+          required: s.required || false,
+          placeholder: s.placeholder || "",
+          defaultValue: s.defaultValue || ""
+        }))
+        .slice(0, 8); // Limit to 8 suggestions
+
+      res.json({ 
+        suggestions: validatedSuggestions,
+        templateType,
+        generatedAt: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error("Error generating AI suggestions:", error);
+      res.status(500).json({ 
+        message: "Failed to generate AI suggestions. Please try again or add fields manually." 
+      });
+    }
+  });
+
   app.patch("/api/templates/:id", requireAuth, async (req, res) => {
     try {
       const result = updateTemplateSchema.safeParse(req.body);
