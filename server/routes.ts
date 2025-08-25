@@ -1270,6 +1270,29 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
+        // Create or find existing client
+        let clientId = null;
+        if (clientName && clientEmail) {
+          // Check if client already exists
+          const existingClients = await storage.getClients();
+          let existingClient = existingClients.find(c => c.email === clientEmail);
+          
+          if (!existingClient) {
+            // Create new client
+            const clientData = {
+              name: clientName,
+              email: clientEmail,
+              status: 'prospect' as const,
+              totalProposals: 1,
+              totalInvoices: 0,
+              totalRevenue: '0.00',
+              outstandingBalance: '0.00'
+            };
+            existingClient = await storage.createClient(clientData);
+          }
+          clientId = existingClient.id;
+        }
+
         // Generate content for direct proposals
         let content = `# ${title}\n\n`;
         content += `**Prepared for:** ${clientName}\n`;
@@ -1306,6 +1329,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         const proposalData = {
           title,
           projectId: projectId || null,
+          clientId,
           clientName,
           clientEmail,
           projectDescription,
