@@ -232,16 +232,6 @@ export default function CreateProposal() {
               <p className="text-gray-600 mt-1">Generate professional proposals with enhanced field types</p>
             </div>
           </div>
-          <div className="space-x-2">
-            <Button variant="outline" onClick={() => setIsPreview(true)}>
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-            <Button onClick={handleSave} disabled={saveProposalMutation.isPending}>
-              <Send className="h-4 w-4 mr-2" />
-              Save Proposal
-            </Button>
-          </div>
         </div>
 
         <div className="space-y-8">
@@ -527,6 +517,26 @@ export default function CreateProposal() {
               <div className="flex justify-between text-xs text-muted-foreground mt-2">
                 <span>📝 Payment terms, project scope, etc.</span>
                 <span className="font-medium">{termsCount} / 2,000 characters</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsPreview(true)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+                <Button onClick={handleSave} disabled={saveProposalMutation.isPending}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Save Proposal
+                </Button>
+                <Button variant="default" className="bg-green-600 hover:bg-green-700">
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Proposal
+                </Button>
               </div>
             </CardContent>
           </Card>
