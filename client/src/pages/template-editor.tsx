@@ -46,6 +46,7 @@ const VARIABLE_TYPES = [
   { value: "date", label: "Date" },
   { value: "email", label: "Email" },
   { value: "phone", label: "Phone" },
+  { value: "line_items", label: "Line Items (Invoice/Contract)" },
 ];
 
 const TEMPLATE_TYPES = [
@@ -577,6 +578,35 @@ export default function TemplateEditor() {
                                 Short text input...
                               </div>
                               <p className="text-xs text-muted-foreground">✏️ Single line text field</p>
+                            </div>
+                          )}
+                          {variable.type === 'line_items' && (
+                            <div className="space-y-1">
+                              <div className="w-full bg-white dark:bg-gray-800 border rounded-md p-3 text-sm">
+                                <div className="text-xs font-medium text-muted-foreground mb-2">📋 Itemized Billing Table</div>
+                                <div className="grid grid-cols-4 gap-2 text-xs font-medium border-b pb-1 mb-2">
+                                  <div>Description</div>
+                                  <div>Qty</div>
+                                  <div>Cost</div>
+                                  <div>Subtotal</div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+                                  <div>Website design...</div>
+                                  <div>1</div>
+                                  <div>$5,000</div>
+                                  <div>$5,000</div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+                                  <div>SEO setup...</div>
+                                  <div>1</div>
+                                  <div>$2,500</div>
+                                  <div>$2,500</div>
+                                </div>
+                                <div className="border-t mt-2 pt-1 text-xs font-bold text-right">
+                                  Total: $7,500
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground">💰 Dynamic table with add/remove rows, quantity × cost calculations, and total sum</p>
                             </div>
                           )}
                         </div>

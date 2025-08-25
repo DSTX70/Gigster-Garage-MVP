@@ -213,6 +213,116 @@ export default function InstantProposal() {
           </div>
         );
       
+      case "line_items":
+        const lineItems = value || [];
+        return (
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+              💰 <strong>Itemized Billing:</strong> Add line items with descriptions, quantities, and costs. Subtotals calculate automatically.
+            </div>
+            
+            {/* Line Items Table */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="grid grid-cols-12 gap-2 p-3 bg-gray-50 dark:bg-gray-900 text-sm font-medium border-b">
+                <div className="col-span-5">Description</div>
+                <div className="col-span-2 text-center">Qty</div>
+                <div className="col-span-3 text-right">Cost</div>
+                <div className="col-span-2 text-right">Subtotal</div>
+              </div>
+              
+              {lineItems.map((item: any, index: number) => (
+                <div key={index} className="grid grid-cols-12 gap-2 p-3 border-b bg-white dark:bg-gray-950">
+                  <div className="col-span-5">
+                    <Input
+                      value={item.description || ""}
+                      onChange={(e) => {
+                        const newItems = [...lineItems];
+                        newItems[index] = { ...item, description: e.target.value };
+                        updateVariable(variable.name, newItems);
+                      }}
+                      placeholder="Enter description..."
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      type="number"
+                      value={item.quantity || ""}
+                      onChange={(e) => {
+                        const newItems = [...lineItems];
+                        newItems[index] = { ...item, quantity: parseFloat(e.target.value) || 0 };
+                        updateVariable(variable.name, newItems);
+                      }}
+                      placeholder="1"
+                      className="h-9 text-center"
+                      min="0"
+                      step="1"
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm">$</span>
+                      <Input
+                        type="number"
+                        value={item.cost || ""}
+                        onChange={(e) => {
+                          const newItems = [...lineItems];
+                          newItems[index] = { ...item, cost: parseFloat(e.target.value) || 0 };
+                          updateVariable(variable.name, newItems);
+                        }}
+                        placeholder="0.00"
+                        className="h-9 pl-7 text-right"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-between">
+                    <span className="text-right font-medium">
+                      ${((item.quantity || 0) * (item.cost || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const newItems = [...lineItems];
+                        newItems.splice(index, 1);
+                        updateVariable(variable.name, newItems);
+                      }}
+                      className="h-8 w-8 p-0 ml-2 text-red-500 hover:text-red-700"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Total Row */}
+              <div className="grid grid-cols-12 gap-2 p-3 bg-blue-50 dark:bg-blue-950">
+                <div className="col-span-10 text-right font-bold">Total:</div>
+                <div className="col-span-2 text-right font-bold text-lg">
+                  ${lineItems.reduce((total: number, item: any) => 
+                    total + ((item.quantity || 0) * (item.cost || 0)), 0
+                  ).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            </div>
+            
+            {/* Add Item Button */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const newItems = [...lineItems, { description: "", quantity: 1, cost: 0 }];
+                updateVariable(variable.name, newItems);
+              }}
+              className="w-full"
+            >
+              + Add Line Item
+            </Button>
+          </div>
+        );
+
       case "email":
         return (
           <div className="space-y-2">

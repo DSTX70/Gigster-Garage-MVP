@@ -313,7 +313,7 @@ export const insertTemplateSchema = createInsertSchema(templates).omit({
   variables: z.array(z.object({
     name: z.string(),
     label: z.string(),
-    type: z.enum(["text", "number", "date", "email", "phone", "textarea"]),
+    type: z.enum(["text", "number", "date", "email", "phone", "textarea", "line_items"]),
     required: z.boolean().default(false),
     defaultValue: z.string().optional(),
     placeholder: z.string().optional(),

@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gigster Garage — Proposal & Invoice Builder</title>
+  <style>
+    :root{
+      --navy:#0D1C2E; --teal:#28D6C0; --amber:#FFB43C; --gray:#1F1F1F; --light:#F9FAFB;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";}
+    header{padding:16px 24px;background:var(--navy);color:#fff;display:flex;gap:16px;align-items:center}
+    header .logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#ffb43c,#ff9a1f);display:inline-block}
+    header h1{margin:0;font-size:18px;font-weight:700}
+    header small{opacity:.85;display:block;font-size:12px}
+    .wrap{display:grid;grid-template-columns:380px 1fr;min-height:calc(100dvh - 70px)}
+    .left{border-right:1px solid #e6e6e6;background:#fff}
+    .right{background:var(--light)}
+    .tabs{display:flex;border-bottom:1px solid #eee}
+    .tab{flex:1;text-align:center;padding:12px 10px;cursor:pointer;font-weight:600}
+    .tab.active{color:var(--navy);border-bottom:3px solid var(--amber);background:#fff}
+    form{padding:18px 18px 120px;overflow:auto;max-height:calc(100dvh - 120px)}
+    fieldset{border:1px solid #eee;padding:12px 12px 6px;margin:0 0 14px;border-radius:10px;background:#fff}
+    legend{padding:0 6px;color:var(--navy);font-weight:700}
+    label{display:block;font-size:12px;color:#555;margin:8px 0 4px}
+    input,textarea,select{width:100%;padding:10px 12px;border:1px solid #dcdcdc;border-radius:8px;background:#fff;font:inherit}
+    textarea{min-height:96px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row-3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+    .btn{appearance:none;border:none;padding:10px 14px;border-radius:8px;background:var(--navy);color:#fff;font-weight:700;cursor:pointer}
+    .btn.secondary{background:var(--teal);color:#083333}
+    .btn.line{background:#fff;border:1px solid #ccc;color:#333}
+    .fixed-actions{position:sticky;bottom:0;left:0;padding:10px;border-top:1px solid #eee;background:#fff;display:flex;gap:8px}
+    /* Preview */
+    .preview{padding:28px 36px;overflow:auto;max-height:calc(100dvh - 0px)}
+    .doc{max-width:820px;margin:18px auto;background:#fff;padding:32px 36px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+    .doc h2{margin:0 0 8px;font-size:24px;color:var(--amber)}
+    .heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid #f0f0f0;padding-bottom:16px;margin-bottom:16px}
+    .brand h3{margin:0;font-weight:800;color:var(--navy)}
+    .brand small{color:#555}
+    .meta{font-size:14px;color:#444;text-align:right}
+    .section-title{margin:22px 0 8px;font-size:14px;font-weight:800;letter-spacing:.02em;color:var(--navy);text-transform:uppercase}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border:1px solid #eee;text-align:left;font-size:14px}
+    th{background:#f7f9fb}
+    .total{font-weight:800}
+    .muted{color:#666}
+    .footer-note{margin-top:18px;padding-top:10px;border-top:1px dashed #ddd;color:#666}
+    /* Print */
+    @media print{
+      header,.left{display:none}
+      .wrap{grid-template-columns:1fr}
+      body{background:#fff}
+      .doc{box-shadow:none;margin:0;padding:0}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="logo" aria-hidden="true"></span>
+    <div>
+      <h1>Gigster Garage — Proposal & Invoice Builder</h1>
+      <small>Fill the form → live preview → Print/Save as PDF</small>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- LEFT: FORM -->
+    <div class="left">
+      <div class="tabs">
+        <div id="tab-proposal" class="tab active">Proposal</div>
+        <div id="tab-invoice" class="tab">Invoice</div>
+      </div>
+
+      <!-- PROPOSAL FORM -->
+      <form id="form-proposal">
+        <fieldset>
+          <legend>Company Header</legend>
+          <label>Company Name</label><input id="p_company" value="Gigster Garage Inc."/>
+          <label>Logo URL (optional)</label><input id="p_logo" placeholder="https://...logo.png"/>
+          <label>Address</label><input id="p_address" value="123 Innovation Way, San Francisco, CA 94105"/>
+          <div class="row">
+            <div><label>Phone</label><input id="p_phone" value="+1 (555) 123-4567"/></div>
+            <div><label>Website</label><input id="p_site" value="www.gigstergarage.com"/></div>
+          </div>
+          <label>Email</label><input id="p_email" value="hello@gigstergarage.com"/>
+        </fieldset>
+
+        <fieldset>
+          <legend>Client</legend>
+          <label>Client / Company</label><input id="p_client" value="Acme Corp"/>
+          <div class="row">
+            <div><label>Contact Name</label><input id="p_contact" value="Jane Doe"/></div>
+            <div><label>Contact Email</label><input id="p_contact_email" type="email" value="jane.doe@acmecorp.com"/></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Project</legend>
+          <label>Project Title</label><input id="p_title" value="Website Redesign"/>
+          <label>Project Scope (Details)</label><textarea id="p_scope">Redesign of homepage, 3 service pages, and blog. Responsive mobile design, SEO optimization, and CMS integration.</textarea>
+          <div class="row">
+            <div><label>Proposed Budget (USD)</label><input id="p_budget" type="number" value="7500"/></div>
+            <div><label>Completion Date</label><input id="p_deadline" type="date" /></div>
+          </div>
+        </fieldset>
+
+        <div class="fixed-actions">
+          <button type="button" class="btn secondary" onclick="window.print()">Print / Save PDF</button>
+          <button type="button" class="btn line" onclick="resetProposal()">Reset</button>
+        </div>
+      </form>
+
+      <!-- INVOICE FORM -->
+      <form id="form-invoice" style="display:none">
+        <fieldset>
+          <legend>Company Header</legend>
+          <label>Company Name</label><input id="i_company" value="Gigster Garage Inc."/>
+          <label>Logo URL (optional)</label><input id="i_logo" placeholder="https://...logo.png"/>
+          <label>Address</label><input id="i_address" value="123 Innovation Way, San Francisco, CA 94105"/>
+          <div class="row">
+            <div><label>Phone</label><input id="i_phone" value="+1 (555) 123-4567"/></div>
+            <div><label>Website</label><input id="i_site" value="www.gigstergarage.com"/></div>
+          </div>
+          <label>Email</label><input id="i_email" value="hello@gigstergarage.com"/>
+        </fieldset>
+
+        <fieldset>
+          <legend>Invoice Details</legend>
+          <div class="row">
+            <div><label>Invoice #</label><input id="i_no" value="INV-2025-001"/></div>
+            <div><label>Invoice Date</label><input id="i_date" type="date"/></div>
+          </div>
+          <div class="row">
+            <div><label>Due Date</label><input id="i_due" type="date"/></div>
+            <div><label>Client / Company</label><input id="i_client" value="Acme Corp"/></div>
+          </div>
+          <div class="row">
+            <div><label>Client Contact</label><input id="i_contact" value="Jane Doe"/></div>
+            <div><label>Client Email</label><input id="i_contact_email" type="email" value="jane.doe@acmecorp.com"/></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Line Items</legend>
+          <div id="items"></div>
+          <button type="button" class="btn" onclick="addItem()">+ Add Line</button>
+        </fieldset>
+
+        <div class="fixed-actions">
+          <button type="button" class="btn secondary" onclick="window.print()">Print / Save PDF</button>
+          <button type="button" class="btn line" onclick="resetInvoice()">Reset</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- RIGHT: PREVIEW -->
+    <div class="right">
+      <div class="preview">
+        <!-- Proposal preview -->
+        <div id="preview-proposal" class="doc">
+          <div class="heading">
+            <div class="brand">
+              <h3 id="pp_company">Gigster Garage Inc.</h3>
+              <small id="pp_header">123 Innovation Way, San Francisco, CA 94105 • +1 (555) 123-4567 • hello@gigstergarage.com • www.gigstergarage.com</small>
+            </div>
+            <div class="meta">
+              <strong>PROJECT PROPOSAL</strong><br/>
+              <span id="pp_date"></span>
+            </div>
+          </div>
+
+          <div class="section-title">Proposal For</div>
+          <p><strong id="pp_client">Acme Corp</strong> — <span id="pp_contact">Jane Doe</span> • <span id="pp_contact_email">jane.doe@acmecorp.com</span></p>
+
+          <h2 id="pp_title">Website Redesign</h2>
+          <div class="section-title">Scope of Work</div>
+          <p id="pp_scope">—</p>
+
+          <div class="row">
+            <div>
+              <div class="section-title">Budget</div>
+              <p><strong id="pp_budget">$7,500</strong></p>
+            </div>
+            <div>
+              <div class="section-title">Completion By</div>
+              <p id="pp_deadline" class="muted">—</p>
+            </div>
+          </div>
+
+          <div class="footer-note">If this proposal meets your approval, please sign and return. Thank you for the opportunity to collaborate.</div>
+        </div>
+
+        <!-- Invoice preview -->
+        <div id="preview-invoice" class="doc" style="display:none">
+          <div class="heading">
+            <div class="brand">
+              <h3 id="pi_company">Gigster Garage Inc.</h3>
+              <small id="pi_header">123 Innovation Way, San Francisco, CA 94105 • +1 (555) 123-4567 • hello@gigstergarage.com • www.gigstergarage.com</small>
+            </div>
+            <div class="meta">
+              <strong>INVOICE</strong><br/>
+              <span id="pi_info">#INV-2025-001</span>
+            </div>
+          </div>
+
+          <div class="section-title">Bill To</div>
+          <p><strong id="pi_client">Acme Corp</strong> — <span id="pi_contact">Jane Doe</span> • <span id="pi_contact_email">jane.doe@acmecorp.com</span></p>
+
+          <div class="section-title">Services</div>
+          <table id="pi_table">
+            <thead>
+              <tr><th>Description</th><th style="width:80px">Qty</th><th style="width:110px">Rate</th><th style="width:120px">Amount</th></tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+              <tr><td colspan="3" class="total">Total Due</td><td class="total" id="pi_total">$0.00</td></tr>
+            </tfoot>
+          </table>
+
+          <div class="footer-note">Thank you for your business! Please send payment to payments@gigstergarage.com.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    const tabProposal = document.getElementById('tab-proposal');
+    const tabInvoice  = document.getElementById('tab-invoice');
+    const formProposal = document.getElementById('form-proposal');
+    const formInvoice  = document.getElementById('form-invoice');
+    const prevProposal = document.getElementById('preview-proposal');
+    const prevInvoice  = document.getElementById('preview-invoice');
+
+    tabProposal.onclick = () => {
+      tabProposal.classList.add('active'); tabInvoice.classList.remove('active');
+      formProposal.style.display='block'; formInvoice.style.display='none';
+      prevProposal.style.display='block'; prevInvoice.style.display='none';
+    };
+    tabInvoice.onclick = () => {
+      tabInvoice.classList.add('active'); tabProposal.classList.remove('active');
+      formInvoice.style.display='block'; formProposal.style.display='none';
+      prevInvoice.style.display='block'; prevProposal.style.display='none';
+    };
+
+    // Helpers
+    const fmtMoney = n => (isNaN(+n)? 0 : +n).toLocaleString(undefined,{style:'currency',currency:'USD'});
+    const todayStr = ()=> new Date().toLocaleDateString();
+
+    // --- Proposal bindings
+    const P = id=>document.getElementById(id);
+    const setText = (id, val)=> (document.getElementById(id).textContent = val || '—');
+
+    function bindProposal(){
+      const header = `${P('p_address').value} • ${P('p_phone').value} • ${P('p_email').value} • ${P('p_site').value}`;
+      setText('pp_company', P('p_company').value);
+      setText('pp_header', header);
+      setText('pp_client', P('p_client').value);
+      setText('pp_contact', P('p_contact').value);
+      setText('pp_contact_email', P('p_contact_email').value);
+      setText('pp_title', P('p_title').value);
+      setText('pp_scope', P('p_scope').value);
+      setText('pp_budget', fmtMoney(P('p_budget').value));
+      setText('pp_deadline', P('p_deadline').value ? new Date(P('p_deadline').value).toLocaleDateString() : '—');
+      setText('pp_date', todayStr());
+    }
+    ['p_company','p_address','p_phone','p_email','p_site','p_client','p_contact','p_contact_email','p_title','p_scope','p_budget','p_deadline']
+      .forEach(id=>P(id).addEventListener('input', bindProposal));
+    bindProposal();
+
+    function resetProposal(){
+      document.getElementById('form-proposal').reset();
+      bindProposal();
+    }
+
+    // --- Invoice line items
+    let itemCount = 0;
+    function addItem(desc="Website redesign: UX/UI design", qty=1, rate=5000){
+      const wrap = document.getElementById('items');
+      const row = document.createElement('div');
+      row.className = 'row-3';
+      row.style.marginBottom = '8px';
+      row.innerHTML = `
+        <input placeholder="Description" value="${desc}" data-k="desc"/>
+        <input type="number" placeholder="Qty" value="${qty}" min="0" step="1" data-k="qty"/>
+        <input type="number" placeholder="Rate (USD)" value="${rate}" min="0" step="0.01" data-k="rate"/>
+      `;
+      wrap.appendChild(row);
+      row.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', renderInvoice));
+      itemCount++; renderInvoice();
+    }
+
+    function resetInvoice(){
+      document.getElementById('form-invoice').reset();
+      document.getElementById('items').innerHTML='';
+      addItem("Website redesign: UX/UI design",1,5000);
+      addItem("Frontend + CMS setup",1,2500);
+      renderInvoice();
+    }
+
+    // --- Invoice bindings / render
+    function renderInvoice(){
+      const header = `${P('i_address').value} • ${P('i_phone').value} • ${P('i_email').value} • ${P('i_site').value}`;
+      setText('pi_company', P('i_company').value);
+      setText('pi_header', header);
+      const infoPieces = [
+        P('i_no').value ? '#'+P('i_no').value : '',
+        P('i_date').value ? '• '+new Date(P('i_date').value).toLocaleDateString() : '',
+        P('i_due').value ? '• Due '+new Date(P('i_due').value).toLocaleDateString() : ''
+      ].filter(Boolean).join(' ');
+      setText('pi_info', infoPieces || '#INV');
+      setText('pi_client', P('i_client').value);
+      setText('pi_contact', P('i_contact').value);
+      setText('pi_contact_email', P('i_contact_email').value);
+
+      const tbody = document.querySelector('#pi_table tbody');
+      tbody.innerHTML = '';
+      let total = 0;
+      document.querySelectorAll('#items .row-3').forEach(r=>{
+        const d = r.querySelector('[data-k="desc"]').value;
+        const q = parseFloat(r.querySelector('[data-k="qty"]').value||0);
+        const rate = parseFloat(r.querySelector('[data-k="rate"]').value||0);
+        const amt = q*rate;
+        total += amt;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${d||'—'}</td><td style="text-align:center">${q||0}</td><td style="text-align:right">${fmtMoney(rate)}</td><td style="text-align:right">${fmtMoney(amt)}</td>`;
+        tbody.appendChild(tr);
+      });
+      setText('pi_total', fmtMoney(total));
+    }
+
+    // Bind invoice header fields
+    ['i_company','i_address','i_phone','i_email','i_site','i_no','i_date','i_due','i_client','i_contact','i_contact_email']
+      .forEach(id=>P(id).addEventListener('input', renderInvoice));
+
+    // seed items + initial render
+    resetInvoice();
+  </script>
+</body>
+</html>

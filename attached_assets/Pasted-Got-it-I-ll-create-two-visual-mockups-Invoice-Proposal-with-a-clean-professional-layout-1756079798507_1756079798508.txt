@@ -1,0 +1,102 @@
+Got it ✅ — I’ll create **two visual mockups** (Invoice + Proposal) with a clean, professional layout that includes:
+
+* **Company Header (logo + contact info)**
+* **Client details**
+* **Core content (scope, terms, or line items)**
+* **Footer for notes/payment instructions**
+
+Both will be styled in a way that works with Gigster Garage branding.
+
+---
+
+# 🧾 Invoice Mockup (Visual Layout)
+
+**Header (Top Left):**
+
+* \[Gigster Garage Logo]
+* Gigster Garage Inc.
+* 123 Innovation Way, San Francisco, CA 94105
+* +1 (555) 123-4567
+* [hello@gigstergarage.com](mailto:hello@gigstergarage.com)
+* [www.gigstergarage.com](http://www.gigstergarage.com)
+
+---
+
+**Invoice Information (Right side):**
+
+* **Invoice #:** INV-2025-001
+* **Date:** Sept 1, 2025
+* **Due Date:** Sept 15, 2025
+
+---
+
+**Bill To:**
+Acme Corp
+Jane Doe
+[jane.doe@acmecorp.com](mailto:jane.doe@acmecorp.com)
+
+---
+
+**Services Rendered (Table):**
+
+| Description                    | Qty | Rate    | Amount  |
+| ------------------------------ | --- | ------- | ------- |
+| Website redesign: UX/UI design | 1   | \$5,000 | \$5,000 |
+| Frontend + CMS setup           | 1   | \$2,500 | \$2,500 |
+
+**Total Due: \$7,500**
+
+---
+
+**Footer:**
+“Thank you for your business! Please send payment to: [payments@gigstergarage.com](mailto:payments@gigstergarage.com).”
+
+---
+
+# 📄 Proposal Mockup (Visual Layout)
+
+**Header (Top Left):**
+
+* \[Gigster Garage Logo]
+* Gigster Garage Inc.
+* 123 Innovation Way, San Francisco, CA 94105
+* +1 (555) 123-4567
+* [hello@gigstergarage.com](mailto:hello@gigstergarage.com)
+* [www.gigstergarage.com](http://www.gigstergarage.com)
+
+---
+
+**Proposal For:**
+Acme Corp
+Jane Doe
+[jane.doe@acmecorp.com](mailto:jane.doe@acmecorp.com)
+
+**Project Title:** Website Redesign
+
+---
+
+**Scope of Work:**
+
+* Redesign homepage, 3 service pages, blog
+* Responsive mobile design
+* SEO optimization
+* CMS integration
+
+---
+
+**Budget & Timeline:**
+💰 **Proposed Budget:** \$7,500
+📅 **Completion By:** Sept 30, 2025
+
+---
+
+**Acceptance:**
+If this proposal meets your approval, please sign below.
+
+Signature: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_
+
+---
+
+✨ Next step: I can generate these as **designed PDFs with logo and layout** so they look like actual client-ready documents.
+
+👉 Do you want me to go ahead and export these as styled **PDF mockups** (Invoice + Proposal) using Gigster Garage branding?

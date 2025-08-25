@@ -985,7 +985,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         content += `## ${variable.label}\n`;
         
-        if (variable.type === 'number') {
+        if (variable.type === 'line_items') {
+          const lineItems = Array.isArray(value) ? value : [];
+          if (lineItems.length > 0) {
+            content += `\n| Description | Qty | Cost | Subtotal |\n`;
+            content += `|-------------|-----|------|----------|\n`;
+            
+            let total = 0;
+            lineItems.forEach((item: any) => {
+              const qty = item.quantity || 0;
+              const cost = item.cost || 0;
+              const subtotal = qty * cost;
+              total += subtotal;
+              
+              content += `| ${item.description || 'N/A'} | ${qty} | $${cost.toLocaleString('en-US', { minimumFractionDigits: 2 })} | $${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} |\n`;
+            });
+            
+            content += `\n**Total: $${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}**\n\n`;
+          } else {
+            content += `*No line items specified*\n\n`;
+          }
+        } else if (variable.type === 'number') {
           content += `💰 **Amount:** $${parseFloat(value || '0').toLocaleString('en-US', { minimumFractionDigits: 2 })}\n\n`;
         } else if (variable.type === 'date') {
           const dateValue = value ? new Date(value).toLocaleDateString('en-US', { 
