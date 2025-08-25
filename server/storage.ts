@@ -72,6 +72,13 @@ export interface IStorage {
   updateProposal(id: string, updateProposal: UpdateProposal): Promise<Proposal | undefined>;
   deleteProposal(id: string): Promise<boolean>;
   generateShareableLink(proposalId: string): Promise<string>;
+
+  // Client management
+  getClients(): Promise<Client[]>;
+  getClient(id: string): Promise<Client | undefined>;
+  createClient(insertClient: InsertClient): Promise<Client>;
+  updateClient(id: string, updateClient: Partial<InsertClient>): Promise<Client | undefined>;
+  deleteClient(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -915,6 +922,35 @@ export class DatabaseStorage implements IStorage {
       .set({ shareableLink, updatedAt: new Date() })
       .where(eq(proposals.id, proposalId));
     return shareableLink;
+  }
+
+  // Client operations
+  async getClients(): Promise<Client[]> {
+    return await db.select().from(clients);
+  }
+
+  async getClient(id: string): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
+  }
+
+  async createClient(insertClient: InsertClient): Promise<Client> {
+    const [client] = await db.insert(clients).values(insertClient).returning();
+    return client;
+  }
+
+  async updateClient(id: string, updateClient: Partial<InsertClient>): Promise<Client | undefined> {
+    const [client] = await db
+      .update(clients)
+      .set(updateClient)
+      .where(eq(clients.id, id))
+      .returning();
+    return client;
+  }
+
+  async deleteClient(id: string): Promise<boolean> {
+    const result = await db.delete(clients).where(eq(clients.id, id));
+    return result.rowCount! > 0;
   }
 }
 
