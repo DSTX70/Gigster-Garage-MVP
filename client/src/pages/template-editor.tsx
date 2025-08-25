@@ -850,18 +850,166 @@ export default function TemplateEditor() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <h4 className="font-medium mb-1">No Form Fields Yet</h4>
-                    <p className="text-sm mb-4">Your template will be built from data entry fields</p>
-                    <div className="text-xs text-left max-w-md mx-auto space-y-1">
-                      <p>• <strong>Text:</strong> Short inputs (names, titles)</p>
-                      <p>• <strong>Textarea:</strong> Long content with character count</p>
-                      <p>• <strong>Number:</strong> Numeric inputs (whole/decimal)</p>
-                      <p>• <strong>Currency:</strong> Money amounts with $ symbol</p>
-                      <p>• <strong>Date:</strong> Calendar picker for dates</p>
-                      <p>• <strong>Email/Phone:</strong> Validated contact fields</p>
-                      <p>• <strong>Line Items:</strong> Interactive itemized billing tables</p>
+                  <div className="space-y-6">
+                    <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
+                      <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <h4 className="font-medium mb-1">No Variables Added Yet</h4>
+                      <p className="text-sm">Add variables above to see them here. Preview of all available field types below:</p>
+                    </div>
+
+                    {/* Always-visible enhanced field type examples */}
+                    <div className="space-y-4 border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                      <h4 className="font-medium text-center mb-4">✨ Enhanced Field Types Preview</h4>
+                      
+                      {/* Text Field */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm font-medium">Client Name</Label>
+                          <Badge variant="outline" className="text-xs">text</Badge>
+                        </div>
+                        <Input 
+                          placeholder="Enter client name"
+                          className="border-blue-200 focus:border-blue-500"
+                          disabled
+                        />
+                        <p className="text-xs text-muted-foreground">✏️ Short text input field</p>
+                      </div>
+
+                      {/* Currency Field */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm font-medium">Project Budget</Label>
+                          <Badge variant="outline" className="text-xs">currency</Badge>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            className="pl-8 text-right bg-green-50 dark:bg-green-950 border-green-200 focus:border-green-500"
+                            min="0"
+                            step="0.01"
+                            disabled
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">💰 Currency amount in USD with automatic $ symbol</p>
+                      </div>
+
+                      {/* Textarea with Character Count */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm font-medium">Project Description</Label>
+                          <Badge variant="outline" className="text-xs">textarea</Badge>
+                        </div>
+                        <Textarea
+                          placeholder="Enter detailed project description..."
+                          rows={4}
+                          className="min-h-[100px] resize-y bg-orange-50 dark:bg-orange-950 border-orange-200 focus:border-orange-500"
+                          maxLength={1000}
+                          disabled
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>📝 For detailed descriptions and multi-line content</span>
+                          <span className="font-medium">0 / 1,000 characters</span>
+                        </div>
+                      </div>
+
+                      {/* Email Field */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm font-medium">Client Email</Label>
+                          <Badge variant="outline" className="text-xs">email</Badge>
+                        </div>
+                        <Input
+                          type="email"
+                          placeholder="client@company.com"
+                          className="border-blue-200 focus:border-blue-500"
+                          disabled
+                        />
+                        <p className="text-xs text-muted-foreground">📧 Valid email format required</p>
+                      </div>
+
+                      {/* Line Items Table */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm font-medium">Invoice Line Items</Label>
+                          <Badge variant="outline" className="text-xs">line_items</Badge>
+                        </div>
+                        <div className="border-2 border-indigo-200 rounded-lg p-4 bg-indigo-50 dark:bg-indigo-950">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-indigo-900 dark:text-indigo-100">Itemized Services</h4>
+                              <Button size="sm" variant="outline" className="text-xs" disabled>
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add Item
+                              </Button>
+                            </div>
+                            
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-indigo-200">
+                                    <th className="text-left py-2 px-2 font-medium text-indigo-800 dark:text-indigo-200">Description</th>
+                                    <th className="text-center py-2 px-2 font-medium text-indigo-800 dark:text-indigo-200 w-16">Qty</th>
+                                    <th className="text-right py-2 px-2 font-medium text-indigo-800 dark:text-indigo-200 w-20">Rate</th>
+                                    <th className="text-right py-2 px-2 font-medium text-indigo-800 dark:text-indigo-200 w-20">Amount</th>
+                                    <th className="w-8"></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-b border-indigo-100">
+                                    <td className="py-2 px-2">
+                                      <Input placeholder="Service description..." className="text-xs border-indigo-300" disabled />
+                                    </td>
+                                    <td className="py-2 px-2">
+                                      <Input placeholder="1" className="text-xs text-center border-indigo-300" disabled />
+                                    </td>
+                                    <td className="py-2 px-2">
+                                      <div className="relative">
+                                        <Input placeholder="100.00" className="text-xs text-right border-indigo-300 pl-4" disabled />
+                                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">$</span>
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-2">
+                                      <div className="text-xs font-medium text-right px-2 py-1.5 bg-indigo-100 dark:bg-indigo-800 rounded border border-indigo-300">
+                                        $0.00
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-1">
+                                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500" disabled>
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                                <tfoot>
+                                  <tr>
+                                    <td colSpan={3} className="text-right py-2 px-2 font-medium text-indigo-900 dark:text-indigo-100">
+                                      Total:
+                                    </td>
+                                    <td className="py-2 px-2">
+                                      <div className="text-sm font-bold text-right px-2 py-1.5 bg-indigo-200 dark:bg-indigo-700 rounded border-2 border-indigo-400">
+                                        $0.00
+                                      </div>
+                                    </td>
+                                    <td></td>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                          </div>
+                          
+                          <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-3 italic">
+                            💼 Interactive table with add/remove rows, automatic calculations, and export capabilities
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-center pt-4 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          💡 Add variables above to include these enhanced field types in your template
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
