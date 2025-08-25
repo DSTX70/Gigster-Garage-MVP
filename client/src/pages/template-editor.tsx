@@ -533,7 +533,7 @@ export default function TemplateEditor() {
                   <Label className="text-xs">Type</Label>
                   <Select 
                     value={newVariable.type} 
-                    onValueChange={(value: "text" | "textarea" | "number" | "date" | "email" | "phone" | "line_items") => 
+                    onValueChange={(value: "text" | "textarea" | "number" | "currency" | "date" | "email" | "phone" | "line_items") => 
                       setNewVariable(prev => ({ ...prev, type: value }))
                     }
                   >
