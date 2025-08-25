@@ -1,8 +1,8 @@
 import { eq, and, or, desc, gte, lte, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, templates, proposals, clients, invoices, payments } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, Invoice, InsertInvoice, Payment, InsertPayment } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, templates, proposals, clients, invoices, payments, timeLogs } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, Invoice, InsertInvoice, Payment, InsertPayment, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations } from "@shared/schema";
 
 export interface IStorage {
   // User management
@@ -10,6 +10,12 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(insertUser: InsertUser): Promise<User>;
+  updateUserOnboarding(userId: string, onboardingData: {
+    notificationEmail?: string;
+    phone?: string;
+    emailOptIn: boolean;
+    smsOptIn: boolean;
+  }): Promise<User>;
   deleteUser(id: string): Promise<boolean>;
   verifyPassword(user: User, password: string): Promise<boolean>;
 

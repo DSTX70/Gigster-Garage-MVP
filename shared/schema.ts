@@ -48,6 +48,10 @@ export const users = pgTable("users", {
   name: varchar("name"),
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
+  notificationEmail: varchar("notification_email"),
+  phone: varchar("phone"),
+  emailOptIn: boolean("email_opt_in").default(true),
+  smsOptIn: boolean("sms_opt_in").default(false),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
@@ -95,11 +99,14 @@ export type InsertClient = typeof clients.$inferInsert;
 export const proposals = pgTable("proposals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
+  templateId: varchar("template_id").references(() => templates.id),
   projectId: varchar("project_id").references(() => projects.id),
   clientId: varchar("client_id").references(() => clients.id),
   clientName: varchar("client_name"),
   clientEmail: varchar("client_email"),
   status: varchar("status", { enum: ["draft", "sent", "accepted", "rejected", "expired"] }).default("draft"),
+  content: text("content"),
+  variables: jsonb("variables").$type<Record<string, any>>().default({}),
   projectDescription: text("project_description"),
   totalBudget: decimal("total_budget", { precision: 10, scale: 2 }).default("0.00"),
   timeline: varchar("timeline"),
@@ -109,9 +116,18 @@ export const proposals = pgTable("proposals", {
   calculatedTotal: decimal("calculated_total", { precision: 10, scale: 2 }).default("0.00"),
   expiresInDays: integer("expires_in_days").default(30),
   expirationDate: date("expiration_date"),
+  sentAt: timestamp("sent_at"),
+  viewedAt: timestamp("viewed_at"),
+  respondedAt: timestamp("responded_at"),
+  expiresAt: timestamp("expires_at"),
+  responseMessage: text("response_message"),
+  shareableLink: varchar("shareable_link").unique(),
+  version: integer("version").default(1),
+  parentProposalId: varchar("parent_proposal_id").references(() => proposals.id),
+  createdById: varchar("created_by_id").references(() => users.id),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  sentAt: timestamp("sent_at"),
   acceptedAt: timestamp("accepted_at"),
 });
 
@@ -187,8 +203,9 @@ export const tasks = pgTable("tasks", {
   notes: text("notes"),
   attachments: jsonb("attachments").$type<string[]>().default([]),
   links: jsonb("links").$type<string[]>().default([]),
-  parentTaskId: varchar("parent_task_id").references(() => tasks.id),
+  parentTaskId: varchar("parent_task_id"),
   progress: jsonb("progress").$type<Array<{ date: string; comment: string; }>>().default([]),
+  progressNotes: jsonb("progress_notes").$type<Array<{ id: string; date: string; comment: string; createdAt: string; }>>().default([]),
   estimatedHours: integer("estimated_hours"),
   actualHours: integer("actual_hours"),
 });
@@ -204,6 +221,10 @@ export const templates = pgTable("templates", {
   type: varchar("type", { enum: ["proposal", "invoice", "contract", "presentation", "email"] }).notNull(),
   variables: jsonb("variables").$type<TemplateVariable[]>().default([]),
   content: text("content"),
+  isSystem: boolean("is_system").default(false),
+  isPublic: boolean("is_public").default(false),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   createdById: varchar("created_by_id").references(() => users.id),
@@ -214,12 +235,34 @@ export type InsertTemplate = typeof templates.$inferInsert;
 
 // Task Dependencies (junction table)
 export const taskDependencies = pgTable("task_dependencies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   dependentTaskId: varchar("dependent_task_id").references(() => tasks.id),
   dependsOnTaskId: varchar("depends_on_task_id").references(() => tasks.id),
   createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.dependentTaskId, table.dependsOnTaskId] })
-}));
+});
+
+export type TaskDependency = typeof taskDependencies.$inferSelect;
+export type InsertTaskDependency = typeof taskDependencies.$inferInsert;
+
+// Time logs table for time tracking
+export const timeLogs = pgTable("time_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  taskId: varchar("task_id").references(() => tasks.id),
+  projectId: varchar("project_id").references(() => projects.id),
+  description: text("description").notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: varchar("duration"), // Duration in seconds as string
+  isActive: boolean("is_active").default(false),
+  isManualEntry: boolean("is_manual_entry").default(false),
+  editHistory: jsonb("edit_history").$type<Array<{ timestamp: string; changes: Record<string, any>; }>>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type TimeLog = typeof timeLogs.$inferSelect;
+export type InsertTimeLog = typeof timeLogs.$inferInsert;
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -386,6 +429,89 @@ export const insertTemplateSchema = createInsertSchema(templates);
 export const selectTemplateSchema = createSelectSchema(templates);
 export const templateSchema = insertTemplateSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
+// User schemas
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
+export const userSchema = insertUserSchema.omit({ id: true, createdAt: true, updatedAt: true });
+
+// Additional schemas needed by routes
+export const updateTaskSchema = insertTaskSchema.partial();
+export const updateTemplateSchema = insertTemplateSchema.partial();
+export const updateProposalSchema = insertProposalSchema.partial();
+export const updateTimeLogSchema = z.object({
+  endTime: z.date().optional(),
+  duration: z.string().optional(),
+  isActive: z.boolean().optional(),
+  description: z.string().optional()
+});
+
+// Timer schemas
+export const startTimerSchema = z.object({
+  taskId: z.string().optional(),
+  projectId: z.string().optional(),
+  description: z.string().min(1, "Description is required")
+});
+
+export const stopTimerSchema = z.object({
+  timeLogId: z.string().min(1, "Time log ID is required")
+});
+
+// Onboarding schema
+export const onboardingSchema = z.object({
+  notificationEmail: z.string().email().optional(),
+  phone: z.string().optional(),
+  emailOptIn: z.boolean().default(true),
+  smsOptIn: z.boolean().default(false),
+  hasCompletedOnboarding: z.boolean().default(true)
+});
+
+// Proposal generation schema
+export const generateProposalSchema = z.object({
+  templateId: z.string(),
+  title: z.string(),
+  projectId: z.string().optional(),
+  clientName: z.string(),
+  clientEmail: z.string().email(),
+  variables: z.record(z.any()),
+  expiresInDays: z.number().min(1).default(30)
+});
+
+// Send proposal schema
+export const sendProposalSchema = z.object({
+  proposalId: z.string(),
+  clientEmail: z.string().email(),
+  message: z.string().optional()
+});
+
+// Update types for storage interface
+export type UpdateTask = Partial<InsertTask>;
+export type UpdateTemplate = Partial<InsertTemplate>;
+export type UpdateProposal = Partial<InsertProposal>;
+export type UpdateTimeLog = Partial<InsertTimeLog>;
+
+// Extended types with relations for joined queries
+export interface TaskWithRelations extends Task {
+  assignedTo?: User;
+  project?: Project;
+  subtasks?: Task[];
+}
+
+export interface TemplateWithRelations extends Template {
+  createdBy?: User;
+}
+
+export interface ProposalWithRelations extends Proposal {
+  template?: Template;
+  project?: Project;
+  createdBy?: User;
+}
+
+export interface TimeLogWithRelations extends TimeLog {
+  user?: User;
+  task?: Task;
+  project?: Project;
+}
+
 export type InsertTaskData = z.infer<typeof taskSchema>;
 export type InsertProjectData = z.infer<typeof projectSchema>;
 export type InsertClientData = z.infer<typeof clientSchema>;
@@ -393,3 +519,4 @@ export type InsertProposalData = z.infer<typeof proposalSchema>;
 export type InsertInvoiceData = z.infer<typeof invoiceSchema>;
 export type InsertPaymentData = z.infer<typeof paymentSchema>;
 export type InsertTemplateData = z.infer<typeof templateSchema>;
+export type InsertUserData = z.infer<typeof userSchema>;
