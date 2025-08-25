@@ -277,8 +277,8 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
 
   return (
     <section className="mb-8 fade-in-up">
-      <div className="vsuite-form-card">
-        <div className="vsuite-section-header rounded-t-xl mb-6 -mx-8 -mt-8 px-8 pt-6 pb-4">
+      <div className="gigster-form-card">
+        <div className="gigster-section-header rounded-t-xl mb-6 -mx-8 -mt-8 px-8 pt-6 pb-4">
           <h2 className="text-xl font-semibold text-white flex items-center">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center mr-3">
               <Plus size={16} className="text-white" />
@@ -524,7 +524,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
             <Button
               type="submit"
               disabled={createTaskMutation.isPending}
-              className="vsuite-button-primary px-6 py-3"
+              className="gigster-button-primary px-6 py-3"
             >
               <Plus className="mr-2" size={16} />
               {createTaskMutation.isPending ? "Adding..." : "Add Task"}

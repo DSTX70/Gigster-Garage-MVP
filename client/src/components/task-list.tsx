@@ -46,14 +46,14 @@ export function TaskList({ filter, assigneeFilter = 'all' }: TaskListProps) {
   if (filteredTasks.length === 0) {
     return (
       <section className="text-center py-12 fade-in-up">
-        <div className="vsuite-logo-large mx-auto mb-6">
+        <div className="gigster-logo-large mx-auto mb-6">
           <ListTodo size={32} />
         </div>
         <h3 className="text-lg font-medium text-neutral-800 mb-2 brand-heading">
           {filter === 'all' ? 'No tasks yet' : filter === 'active' ? 'No active tasks' : 'No completed tasks'}
         </h3>
         <p className="text-neutral-600">
-          {filter === 'all' ? 'Create your first task to get started with VSuite HQ' : 
+          {filter === 'all' ? 'Create your first task to get started with Gigster Garage' : 
            filter === 'active' ? 'All tasks are completed!' : 'No tasks have been completed yet'}
         </p>
       </section>

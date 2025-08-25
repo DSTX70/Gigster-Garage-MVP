@@ -192,13 +192,13 @@ export default function Landing() {
             Try it now with our demo account
           </h2>
           
-          <Card className="vsuite-accent-section">
+          <Card className="gigster-accent-section">
             <CardContent className="p-8">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div className="text-left">
                   <h3 className="text-xl font-semibold mb-4 text-blue-900">Admin Demo Access</h3>
                   <p className="text-blue-700 mb-6">
-                    Experience the full power of VSuite HQ with admin privileges. 
+                    Experience the full power of Gigster Garage with admin privileges. 
                     Create tasks, manage users, and explore all features.
                   </p>
                   
@@ -265,7 +265,7 @@ export default function Landing() {
             Ready to simplify your workflow?
           </h2>
           <p className="text-xl text-gray-300 mb-8">
-            Join teams who trust VSuite HQ to keep their projects on track.
+            Join teams who trust Gigster Garage to keep their projects on track.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -293,7 +293,7 @@ export default function Landing() {
               <div className="bg-blue-600 p-2 rounded-lg mr-3">
                 <img 
                   src="@assets/IMG_3649_1755004491378.jpeg" 
-                  alt="VSuite HQ Logo"
+                  alt="Gigster Garage Logo"
                   className="w-6 h-6 object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -304,13 +304,13 @@ export default function Landing() {
                 <Shield className="text-white hidden" size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-black">VSuite HQ</h3>
+                <h3 className="font-bold text-black">Gigster Garage</h3>
                 <p className="text-sm text-gray-600">Simplified Workflow Hub</p>
               </div>
             </div>
             
             <div className="text-sm text-gray-500">
-              © {new Date().getFullYear()} VSuite HQ. All rights reserved.
+              © {new Date().getFullYear()} Gigster Garage. All rights reserved.
             </div>
           </div>
         </div>

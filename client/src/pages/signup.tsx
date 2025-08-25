@@ -35,7 +35,7 @@ export default function Signup() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Account Created!",
-        description: "Welcome to VSuite HQ. You'll now complete a quick setup.",
+        description: "Welcome to Gigster Garage. You'll now complete a quick setup.",
       });
       // Refresh the page to trigger the authentication check and onboarding
       window.location.href = "/";
@@ -76,10 +76,10 @@ export default function Signup() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="text-center space-y-2">
-            <CardTitle className="text-2xl font-black text-black">VSuite HQ</CardTitle>
+            <CardTitle className="text-2xl font-black text-black">Gigster Garage</CardTitle>
             <p className="text-xs text-black font-medium">Simplified Workflow Hub</p>
             <CardDescription className="pt-2">
-              Join VSuite HQ to start managing your tasks efficiently
+              Join Gigster Garage to start managing your tasks efficiently
             </CardDescription>
           </div>
         </CardHeader>

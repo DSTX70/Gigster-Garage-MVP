@@ -23,7 +23,7 @@ export function MessagesPage() {
     {
       id: '1',
       from: 'System',
-      subject: 'Welcome to VSuite HQ',
+      subject: 'Welcome to Gigster Garage',
       content: 'Welcome to your new task management dashboard! Start by creating your first project and task.',
       timestamp: new Date(),
       read: false,
