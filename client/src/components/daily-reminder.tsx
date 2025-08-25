@@ -63,14 +63,14 @@ export function DailyReminder() {
         now.getMinutes() === minutes &&
         !hasLoggedToday
       ) {
-        // Request notification permission if not granted
-        if (Notification.permission === "granted") {
+        // Request notification permission if not granted (check if Notification API is available)
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
           new Notification("Gigster Garage - Time to Work! 🔥", {
             body: "Don't break your productivity streak! Start your timer and get to work.",
             icon: "/favicon.ico",
             tag: "daily-reminder",
           });
-        } else if (Notification.permission !== "denied") {
+        } else if (typeof Notification !== "undefined" && Notification.permission !== "denied") {
           Notification.requestPermission().then((permission) => {
             if (permission === "granted") {
               new Notification("Gigster Garage - Time to Work! 🔥", {
@@ -101,8 +101,8 @@ export function DailyReminder() {
     localStorage.setItem("dailyRemindersEnabled", JSON.stringify(enabled));
     
     if (enabled) {
-      // Request notification permission
-      if (Notification.permission === "default") {
+      // Request notification permission (check if Notification API is available)
+      if (typeof Notification !== "undefined" && Notification.permission === "default") {
         Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
             toast({
@@ -117,10 +117,15 @@ export function DailyReminder() {
             });
           }
         });
-      } else if (Notification.permission === "granted") {
+      } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
         toast({
           title: "Reminders Enabled",
           description: "You'll receive daily productivity reminders at the scheduled time.",
+        });
+      } else if (typeof Notification === "undefined") {
+        toast({
+          title: "Reminders Enabled",
+          description: "Notifications aren't supported in this browser, but you'll still get in-app reminders.",
         });
       }
     } else {
@@ -137,7 +142,7 @@ export function DailyReminder() {
   };
 
   const sendTestNotification = () => {
-    if (Notification.permission === "granted") {
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
       new Notification("Gigster Garage - Test Reminder", {
         body: "This is a test of your daily productivity reminder!",
         icon: "/favicon.ico",
@@ -146,6 +151,12 @@ export function DailyReminder() {
       toast({
         title: "Test Notification Sent",
         description: "Check if you received the browser notification.",
+      });
+    } else if (typeof Notification === "undefined") {
+      toast({
+        title: "Notifications Not Supported",
+        description: "Your browser doesn't support notifications, but in-app reminders will still work.",
+        variant: "destructive",
       });
     } else {
       toast({
@@ -253,7 +264,9 @@ export function DailyReminder() {
 
         {/* Notification Permission Status */}
         <div className="text-xs text-purple-600 text-center" data-testid="notification-status">
-          {Notification.permission === "granted" ? (
+          {typeof Notification === "undefined" ? (
+            "📱 Browser notifications not supported"
+          ) : Notification.permission === "granted" ? (
             "✅ Browser notifications enabled"
           ) : Notification.permission === "denied" ? (
             "❌ Browser notifications blocked"
