@@ -96,6 +96,11 @@ export default function TemplateEditor() {
 
   const [newTag, setNewTag] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  
+  // Line items state for interactive demo
+  const [lineItems, setLineItems] = useState([
+    { id: 1, description: "", quantity: 1, rate: 0, amount: 0 }
+  ]);
   const [previewContent, setPreviewContent] = useState("");
 
   // Load template data if editing
@@ -125,6 +130,36 @@ export default function TemplateEditor() {
   }, [template]);
 
   // Save template mutation
+  // Line items functions
+  const addLineItem = () => {
+    const newId = Math.max(...lineItems.map(item => item.id)) + 1;
+    setLineItems([...lineItems, { id: newId, description: "", quantity: 1, rate: 0, amount: 0 }]);
+  };
+
+  const removeLineItem = (id: number) => {
+    if (lineItems.length > 1) {
+      setLineItems(lineItems.filter(item => item.id !== id));
+    }
+  };
+
+  const updateLineItem = (id: number, field: string, value: string | number) => {
+    setLineItems(lineItems.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, [field]: value };
+        // Calculate amount when quantity or rate changes
+        if (field === 'quantity' || field === 'rate') {
+          updated.amount = Number(updated.quantity) * Number(updated.rate);
+        }
+        return updated;
+      }
+      return item;
+    }));
+  };
+
+  const getTotalAmount = () => {
+    return lineItems.reduce((total, item) => total + (item.amount || 0), 0);
+  };
+
   const saveTemplateMutation = useMutation({
     mutationFn: (data: Partial<InsertTemplate>) => {
       if (isEditing) {
@@ -935,7 +970,7 @@ export default function TemplateEditor() {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <h4 className="font-medium text-indigo-900 dark:text-indigo-100">Itemized Services</h4>
-                              <Button size="sm" variant="outline" className="text-xs">
+                              <Button size="sm" variant="outline" className="text-xs" onClick={addLineItem}>
                                 <Plus className="h-3 w-3 mr-1" />
                                 Add Item
                               </Button>
@@ -953,30 +988,59 @@ export default function TemplateEditor() {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr className="border-b border-indigo-100">
-                                    <td className="py-2 px-2">
-                                      <Input placeholder="Service description..." className="text-xs border-indigo-300" />
-                                    </td>
-                                    <td className="py-2 px-2">
-                                      <Input placeholder="1" className="text-xs text-center border-indigo-300" />
-                                    </td>
-                                    <td className="py-2 px-2">
-                                      <div className="relative">
-                                        <Input placeholder="100.00" className="text-xs text-right border-indigo-300 pl-4" />
-                                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">$</span>
-                                      </div>
-                                    </td>
-                                    <td className="py-2 px-2">
-                                      <div className="text-xs font-medium text-right px-2 py-1.5 bg-indigo-100 dark:bg-indigo-800 rounded border border-indigo-300">
-                                        $0.00
-                                      </div>
-                                    </td>
-                                    <td className="py-2 px-1">
-                                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500">
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </td>
-                                  </tr>
+                                  {lineItems.map((item) => (
+                                    <tr key={item.id} className="border-b border-indigo-100">
+                                      <td className="py-2 px-2">
+                                        <Input 
+                                          placeholder="Service description..." 
+                                          className="text-xs border-indigo-300"
+                                          value={item.description}
+                                          onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                                        />
+                                      </td>
+                                      <td className="py-2 px-2">
+                                        <Input 
+                                          type="number"
+                                          placeholder="1" 
+                                          className="text-xs text-center border-indigo-300"
+                                          value={item.quantity}
+                                          onChange={(e) => updateLineItem(item.id, 'quantity', Number(e.target.value))}
+                                          min="0"
+                                          step="1"
+                                        />
+                                      </td>
+                                      <td className="py-2 px-2">
+                                        <div className="relative">
+                                          <Input 
+                                            type="number"
+                                            placeholder="100.00" 
+                                            className="text-xs text-right border-indigo-300 pl-4"
+                                            value={item.rate}
+                                            onChange={(e) => updateLineItem(item.id, 'rate', Number(e.target.value))}
+                                            min="0"
+                                            step="0.01"
+                                          />
+                                          <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">$</span>
+                                        </div>
+                                      </td>
+                                      <td className="py-2 px-2">
+                                        <div className="text-xs font-medium text-right px-2 py-1.5 bg-indigo-100 dark:bg-indigo-800 rounded border border-indigo-300">
+                                          ${item.amount.toFixed(2)}
+                                        </div>
+                                      </td>
+                                      <td className="py-2 px-1">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          className="h-6 w-6 p-0 text-red-500"
+                                          onClick={() => removeLineItem(item.id)}
+                                          disabled={lineItems.length === 1}
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                      </td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                                 <tfoot>
                                   <tr>
@@ -985,7 +1049,7 @@ export default function TemplateEditor() {
                                     </td>
                                     <td className="py-2 px-2">
                                       <div className="text-sm font-bold text-right px-2 py-1.5 bg-indigo-200 dark:bg-indigo-700 rounded border-2 border-indigo-400">
-                                        $0.00
+                                        ${getTotalAmount().toFixed(2)}
                                       </div>
                                     </td>
                                     <td></td>
