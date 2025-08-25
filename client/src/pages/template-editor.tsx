@@ -491,145 +491,6 @@ export default function TemplateEditor() {
             </CardContent>
           </Card>
 
-          {/* Form Builder Preview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Form Builder Preview
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                This shows how your form will appear when users create proposals. Add fields using the Variables panel →
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Form field count info */}
-                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">📝 Form Status:</span>
-                    <span>{(formData.variables || []).length} field{(formData.variables || []).length !== 1 ? 's' : ''} defined</span>
-                  </div>
-                  {(formData.variables || []).length === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Use the Variables panel to add data entry fields
-                    </p>
-                  )}
-                </div>
-                
-                {/* Preview of form fields */}
-                {(formData.variables || []).length > 0 ? (
-                  <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
-                    <h4 className="font-medium mb-4">Form Preview (how users will see it):</h4>
-                    <div className="space-y-4">
-                      {(formData.variables || []).map((variable: any, index: number) => (
-                        <div key={index} className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-sm font-medium">{variable.label}</Label>
-                            {variable.required && <span className="text-red-500 text-xs">*</span>}
-                            <Badge variant="outline" className="text-xs">{variable.type}</Badge>
-                          </div>
-                          
-                          {/* Show different input types */}
-                          {variable.type === 'textarea' && (
-                            <div className="space-y-1">
-                              <div className="w-full h-20 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground">
-                                📄 Large text area for detailed content...
-                              </div>
-                              <p className="text-xs text-muted-foreground">For detailed descriptions and multi-line content</p>
-                            </div>
-                          )}
-                          {variable.type === 'number' && (
-                            <div className="space-y-1">
-                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
-                                <span className="font-medium mr-2">$</span>
-                                <span>0.00</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">💰 Currency input with $ symbol</p>
-                            </div>
-                          )}
-                          {variable.type === 'date' && (
-                            <div className="space-y-1">
-                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
-                                mm/dd/yyyy
-                              </div>
-                              <p className="text-xs text-muted-foreground">📅 Date picker with calendar</p>
-                            </div>
-                          )}
-                          {variable.type === 'email' && (
-                            <div className="space-y-1">
-                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
-                                name@company.com
-                              </div>
-                              <p className="text-xs text-muted-foreground">📧 Email validation required</p>
-                            </div>
-                          )}
-                          {variable.type === 'phone' && (
-                            <div className="space-y-1">
-                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
-                                +1 (555) 123-4567
-                              </div>
-                              <p className="text-xs text-muted-foreground">📞 Phone number with international format</p>
-                            </div>
-                          )}
-                          {variable.type === 'text' && (
-                            <div className="space-y-1">
-                              <div className="w-full h-10 bg-white dark:bg-gray-800 border rounded-md p-2 text-sm text-muted-foreground flex items-center">
-                                Short text input...
-                              </div>
-                              <p className="text-xs text-muted-foreground">✏️ Single line text field</p>
-                            </div>
-                          )}
-                          {variable.type === 'line_items' && (
-                            <div className="space-y-1">
-                              <div className="w-full bg-white dark:bg-gray-800 border rounded-md p-3 text-sm">
-                                <div className="text-xs font-medium text-muted-foreground mb-2">📋 Itemized Billing Table</div>
-                                <div className="grid grid-cols-4 gap-2 text-xs font-medium border-b pb-1 mb-2">
-                                  <div>Description</div>
-                                  <div>Qty</div>
-                                  <div>Cost</div>
-                                  <div>Subtotal</div>
-                                </div>
-                                <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
-                                  <div>Website design...</div>
-                                  <div>1</div>
-                                  <div>$5,000</div>
-                                  <div>$5,000</div>
-                                </div>
-                                <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
-                                  <div>SEO setup...</div>
-                                  <div>1</div>
-                                  <div>$2,500</div>
-                                  <div>$2,500</div>
-                                </div>
-                                <div className="border-t mt-2 pt-1 text-xs font-bold text-right">
-                                  Total: $7,500
-                                </div>
-                              </div>
-                              <p className="text-xs text-muted-foreground">💰 Dynamic table with add/remove rows, quantity × cost calculations, and total sum</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <h4 className="font-medium mb-1">No Form Fields Yet</h4>
-                    <p className="text-sm mb-4">Your template will be built from data entry fields</p>
-                    <div className="text-xs text-left max-w-md mx-auto space-y-1">
-                      <p>• <strong>Text:</strong> Short inputs (names, titles)</p>
-                      <p>• <strong>Textarea:</strong> Long content (descriptions, notes)</p>
-                      <p>• <strong>Number:</strong> Currency amounts with $ symbol</p>
-                      <p>• <strong>Date:</strong> Calendar picker for dates</p>
-                      <p>• <strong>Email/Phone:</strong> Validated contact fields</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Sidebar */}
@@ -672,7 +533,7 @@ export default function TemplateEditor() {
                   <Label className="text-xs">Type</Label>
                   <Select 
                     value={newVariable.type} 
-                    onValueChange={(value: "text" | "textarea" | "number" | "date" | "email" | "phone") => 
+                    onValueChange={(value: "text" | "textarea" | "number" | "date" | "email" | "phone" | "line_items") => 
                       setNewVariable(prev => ({ ...prev, type: value }))
                     }
                   >
@@ -769,6 +630,224 @@ export default function TemplateEditor() {
                   No variables defined yet
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Form Builder Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Form Builder Preview
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Fill out these fields to test how your form will work for users
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Form field count info */}
+                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">📝 Form Status:</span>
+                    <span>{(formData.variables || []).length} field{(formData.variables || []).length !== 1 ? 's' : ''} defined</span>
+                  </div>
+                  {(formData.variables || []).length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Use the Variables panel above to add data entry fields
+                    </p>
+                  )}
+                </div>
+                
+                {/* Interactive form fields for testing */}
+                {(formData.variables || []).length > 0 ? (
+                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-950">
+                    <h4 className="font-medium mb-4">Interactive Form (test your fields):</h4>
+                    <div className="space-y-4">
+                      {(formData.variables || []).map((variable: any, index: number) => (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm font-medium">{variable.label}</Label>
+                            {variable.required && <span className="text-red-500 text-xs">*</span>}
+                            <Badge variant="outline" className="text-xs">{variable.type}</Badge>
+                          </div>
+                          
+                          {/* Render actual interactive inputs */}
+                          {variable.type === 'textarea' && (
+                            <div className="space-y-2">
+                              <Textarea
+                                placeholder={variable.placeholder || `Enter detailed ${variable.label.toLowerCase()}...`}
+                                rows={6}
+                                className="min-h-[120px] resize-y"
+                                data-testid={`preview-field-${variable.name}`}
+                              />
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>For detailed descriptions and multi-line content</span>
+                                <span>0 characters</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {variable.type === 'number' && (
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                                <Input
+                                  type="number"
+                                  placeholder={variable.placeholder || "0.00"}
+                                  className="pl-8 text-right"
+                                  min="0"
+                                  step="0.01"
+                                  data-testid={`preview-field-${variable.name}`}
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                💰 Enter amount in USD (numbers only)
+                              </p>
+                            </div>
+                          )}
+                          
+                          {variable.type === 'date' && (
+                            <div className="space-y-2">
+                              <Input
+                                type="date"
+                                className="w-full"
+                                data-testid={`preview-field-${variable.name}`}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                📅 Select a date from the calendar picker
+                              </p>
+                            </div>
+                          )}
+                          
+                          {variable.type === 'email' && (
+                            <div className="space-y-2">
+                              <Input
+                                type="email"
+                                placeholder={variable.placeholder || "name@company.com"}
+                                autoComplete="email"
+                                data-testid={`preview-field-${variable.name}`}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                📧 Valid email format required
+                              </p>
+                            </div>
+                          )}
+                          
+                          {variable.type === 'phone' && (
+                            <div className="space-y-2">
+                              <Input
+                                type="tel"
+                                placeholder={variable.placeholder || "+1 (555) 123-4567"}
+                                autoComplete="tel"
+                                pattern="[0-9\-\+\s\(\)]*"
+                                data-testid={`preview-field-${variable.name}`}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                📞 Include country code for international numbers
+                              </p>
+                            </div>
+                          )}
+                          
+                          {variable.type === 'text' && (
+                            <div className="space-y-2">
+                              <Input
+                                type="text"
+                                placeholder={variable.placeholder || `Enter ${variable.label.toLowerCase()}`}
+                                autoComplete="off"
+                                data-testid={`preview-field-${variable.name}`}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                ✏️ Short text input field
+                              </p>
+                            </div>
+                          )}
+                          
+                          {variable.type === 'line_items' && (
+                            <div className="space-y-3">
+                              <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                                💰 <strong>Itemized Billing:</strong> Add line items with descriptions, quantities, and costs. Subtotals calculate automatically.
+                              </div>
+                              
+                              {/* Simplified line items table for preview */}
+                              <div className="border rounded-lg overflow-hidden">
+                                <div className="grid grid-cols-12 gap-2 p-3 bg-gray-50 dark:bg-gray-900 text-sm font-medium border-b">
+                                  <div className="col-span-5">Description</div>
+                                  <div className="col-span-2 text-center">Qty</div>
+                                  <div className="col-span-3 text-right">Cost</div>
+                                  <div className="col-span-2 text-right">Subtotal</div>
+                                </div>
+                                
+                                <div className="grid grid-cols-12 gap-2 p-3 border-b bg-white dark:bg-gray-950">
+                                  <div className="col-span-5">
+                                    <Input
+                                      placeholder="Enter description..."
+                                      className="h-9"
+                                      data-testid={`preview-field-${variable.name}-desc`}
+                                    />
+                                  </div>
+                                  <div className="col-span-2">
+                                    <Input
+                                      type="number"
+                                      placeholder="1"
+                                      className="h-9 text-center"
+                                      min="0"
+                                      step="1"
+                                      data-testid={`preview-field-${variable.name}-qty`}
+                                    />
+                                  </div>
+                                  <div className="col-span-3">
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm">$</span>
+                                      <Input
+                                        type="number"
+                                        placeholder="0.00"
+                                        className="h-9 pl-7 text-right"
+                                        min="0"
+                                        step="0.01"
+                                        data-testid={`preview-field-${variable.name}-cost`}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="col-span-2 flex items-center justify-center">
+                                    <span className="text-right font-medium">$0.00</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Total Row */}
+                                <div className="grid grid-cols-12 gap-2 p-3 bg-blue-50 dark:bg-blue-950">
+                                  <div className="col-span-10 text-right font-bold">Total:</div>
+                                  <div className="col-span-2 text-right font-bold text-lg">
+                                    $0.00
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <p className="text-xs text-muted-foreground">
+                                💰 This is a preview - actual line items will have full add/remove functionality
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <h4 className="font-medium mb-1">No Form Fields Yet</h4>
+                    <p className="text-sm mb-4">Your template will be built from data entry fields</p>
+                    <div className="text-xs text-left max-w-md mx-auto space-y-1">
+                      <p>• <strong>Text:</strong> Short inputs (names, titles)</p>
+                      <p>• <strong>Textarea:</strong> Long content (descriptions, notes)</p>
+                      <p>• <strong>Number:</strong> Currency amounts with $ symbol</p>
+                      <p>• <strong>Date:</strong> Calendar picker for dates</p>
+                      <p>• <strong>Email/Phone:</strong> Validated contact fields</p>
+                      <p>• <strong>Line Items:</strong> Itemized billing tables</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
