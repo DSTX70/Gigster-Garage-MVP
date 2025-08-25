@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Plus, Mail, Phone, Building, DollarSign, FileText, Search } from "lucide-react";
+import { Users, Plus, Mail, Phone, Building, DollarSign, FileText, Search, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Client } from "@shared/schema";
@@ -143,9 +143,17 @@ export default function ClientList() {
       <div className="p-6">
         {/* Page Header */}
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <Users className="h-8 w-8 text-[#FF7F00]" />
-            <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
+          <div className="flex items-center gap-4">
+            <Link href="/admin">
+              <Button variant="outline" size="sm" data-testid="button-back-to-admin">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Admin
+              </Button>
+            </Link>
+            <div className="flex items-center gap-3">
+              <Users className="h-8 w-8 text-[#FF7F00]" />
+              <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
+            </div>
           </div>
           
           <Dialog open={isOpen} onOpenChange={setIsOpen}>

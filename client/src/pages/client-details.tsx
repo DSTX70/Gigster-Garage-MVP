@@ -125,6 +125,12 @@ export default function ClientDetails() {
       <div className="p-6">
         {/* Page Header */}
         <div className="flex items-center gap-4 mb-6">
+          <Link href="/admin">
+            <Button variant="outline" size="sm" data-testid="button-back-to-admin">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Admin
+            </Button>
+          </Link>
           <Link href="/clients">
             <Button variant="outline" size="sm" data-testid="button-back-to-clients">
               <ArrowLeft className="h-4 w-4 mr-2" />
