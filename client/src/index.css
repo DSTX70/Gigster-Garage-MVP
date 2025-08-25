@@ -5,13 +5,14 @@
 @tailwind utilities;
 
 :root {
-  /* Gigster Garage Brand Colors */
-  --garage-navy: hsl(214 67% 14%); /* #0B1D3A */
-  --ignition-teal: hsl(179 63% 47%); /* #2EC5C2 */
-  --workshop-amber: hsl(40 100% 58%); /* #FFB52E */
+  /* Gigster Garage Brand Colors - Navy/Teal/Amber Palette */
+  --garage-navy: hsl(200 100% 21%); /* #004C6D */
+  --ignition-teal: hsl(179 96% 31%); /* #029E9D */
+  --workshop-amber: hsl(40 100% 50%); /* #FFB000 */
   --steel-gray: hsl(0 0% 24%); /* #3C3C3C */
   --concrete-light: hsl(0 0% 90%); /* #E5E5E5 */
   --gigster-white: hsl(0 0% 100%); /* #FFFFFF */
+  --cream-card: hsl(38 36% 96%); /* #F9F5F1 */
   
   /* Theme Variables */
   --background: hsl(0 0% 100%);
@@ -20,19 +21,19 @@
   --card-foreground: hsl(0 0% 0%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(0 0% 0%);
-  --primary: hsl(214 67% 14%); /* Garage Navy */
+  --primary: hsl(200 100% 21%); /* Garage Navy */
   --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(179 63% 47%); /* Ignition Teal */
+  --secondary: hsl(179 96% 31%); /* Ignition Teal */
   --secondary-foreground: hsl(0 0% 100%);
   --muted: hsl(220 14.3% 95.9%);
   --muted-foreground: hsl(220 8.9% 46.1%);
-  --accent: hsl(40 100% 58%); /* Workshop Amber for accents */
-  --accent-foreground: hsl(0 0% 100%);
+  --accent: hsl(40 100% 50%); /* Workshop Amber for accents */
+  --accent-foreground: hsl(200 100% 12%);
   --destructive: hsl(0 84% 60%);
   --destructive-foreground: hsl(0 0% 100%);
   --border: hsl(220 13% 91%);
   --input: hsl(220 13% 91%);
-  --ring: hsl(214 67% 14%); /* Garage Navy */
+  --ring: hsl(200 100% 21%); /* Garage Navy */
   --radius: 0.75rem;
   
   /* Neutral colors matching design */
@@ -50,14 +51,14 @@
   --font-sans: 'Open Sans', 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
   --font-display: 'Montserrat', 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
   
-  /* Gigster Garage Brand Gradients */
-  --gigster-gradient: linear-gradient(135deg, #0B1D3A 0%, #2EC5C2 100%);
-  --gigster-gradient-navy: linear-gradient(135deg, #0B1D3A 0%, #1a2e4a 100%);
-  --gigster-gradient-teal: linear-gradient(135deg, #2EC5C2 0%, #25a8a5 100%);
-  --gigster-gradient-amber: linear-gradient(135deg, #FFB52E 0%, #e69d1a 100%);
-  --gigster-shadow-navy: 0 4px 12px rgba(11, 29, 58, 0.15);
-  --gigster-shadow-teal: 0 4px 12px rgba(46, 197, 194, 0.15);
-  --gigster-shadow-amber: 0 4px 12px rgba(255, 181, 46, 0.15);
+  /* Gigster Garage Brand Gradients - Navy/Teal/Amber */
+  --gigster-gradient: linear-gradient(135deg, #004C6D 0%, #029E9D 100%);
+  --gigster-gradient-navy: linear-gradient(135deg, #004C6D 0%, #003d5a 100%);
+  --gigster-gradient-teal: linear-gradient(135deg, #029E9D 0%, #027373 100%);
+  --gigster-gradient-amber: linear-gradient(135deg, #FFB000 0%, #CC8A00 100%);
+  --gigster-shadow-navy: 0 4px 12px rgba(0, 76, 109, 0.15);
+  --gigster-shadow-teal: 0 4px 12px rgba(2, 158, 157, 0.15);
+  --gigster-shadow-amber: 0 4px 12px rgba(255, 176, 0, 0.15);
 }
 
 .dark {
@@ -130,20 +131,21 @@
 @layer components {
   /* Gigster Garage Enhanced Brand Components */
   .gigster-card {
-    @apply bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
-    background: linear-gradient(145deg, #ffffff 0%, #fafbfc 100%);
+    @apply border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
+    background: var(--cream-card);
   }
   
   .gigster-button-primary {
-    @apply text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
-    background: var(--gigster-gradient-navy);
+    @apply font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
+    background: var(--workshop-amber);
+    color: var(--garage-navy);
     font-family: var(--font-display);
   }
   
   .gigster-button-primary:hover {
-    background: var(--gigster-gradient);
+    background: var(--gigster-gradient-amber);
     transform: translateY(-1px);
-    box-shadow: var(--gigster-shadow-navy);
+    box-shadow: var(--gigster-shadow-amber);
   }
   
   .gigster-button-secondary {
@@ -243,7 +245,7 @@
   
   .brand-tagline {
     @apply font-medium;
-    color: var(--steel-gray);
+    color: var(--workshop-amber);
     font-family: var(--font-sans);
   }
   
@@ -281,15 +283,24 @@
   
   /* Priority Indicators with Gigster Garage Brand Colors */
   .priority-high {
-    @apply bg-red-50 text-red-700 border border-red-200 rounded-full px-3 py-1 text-xs font-medium;
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(229, 57, 53, 0.1);
+    color: #E53935;
+    border: 1px solid rgba(229, 57, 53, 0.2);
   }
   
   .priority-medium {
-    @apply bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full px-3 py-1 text-xs font-medium;
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(242, 153, 74, 0.1);
+    color: #F2994A;
+    border: 1px solid rgba(242, 153, 74, 0.2);
   }
   
   .priority-low {
-    @apply bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-1 text-xs font-medium;
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(39, 174, 96, 0.1);
+    color: #27AE60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
   }
   
   /* Gigster Garage Status Badge System */
@@ -334,15 +345,24 @@
 
   /* Status Indicators */
   .status-completed {
-    @apply bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-1 text-xs font-medium;
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(39, 174, 96, 0.1);
+    color: #27AE60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
   }
   
   .status-overdue {
-    @apply bg-red-50 text-red-700 border border-red-200 rounded-full px-3 py-1 text-xs font-medium;
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(229, 57, 53, 0.1);
+    color: #E53935;
+    border: 1px solid rgba(229, 57, 53, 0.2);
   }
   
   .status-due-today {
-    @apply bg-orange-50 text-orange-700 border border-orange-200 rounded-full px-3 py-1 text-xs font-medium;
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(242, 153, 74, 0.1);
+    color: #F2994A;
+    border: 1px solid rgba(242, 153, 74, 0.2);
   }
   
   /* Gigster Garage Brand Accents */

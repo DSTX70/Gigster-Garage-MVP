@@ -71,8 +71,8 @@ export function AppHeader() {
                 <span className="text-white">Gigster</span>
                 <span style={{ color: 'var(--workshop-amber)' }}> Garage</span>
               </h1>
-              <span style={{ color: 'rgba(255, 181, 46, 0.6)' }} className="font-medium">|</span>
-              <p className="text-sm font-medium" style={{ color: 'rgba(255, 181, 46, 0.8)' }}>Smarter tools for bolder dreams</p>
+              <span style={{ color: 'rgba(255, 176, 0, 0.6)' }} className="font-medium">|</span>
+              <p className="text-sm font-medium brand-tagline">Smarter tools for bolder dreams</p>
             </div>
           </div>
           

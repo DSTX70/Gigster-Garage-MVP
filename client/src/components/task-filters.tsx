@@ -24,8 +24,8 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             onClick={() => onFilterChange('all')}
             className={`flex items-center gap-2 ${
               activeFilter === 'all' 
-                ? 'vsuite-button-primary' 
-                : 'vsuite-button-secondary'
+                ? 'gigster-button-primary' 
+                : 'gigster-button-secondary'
             }`}
           >
             All Tasks
@@ -38,8 +38,8 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             onClick={() => onFilterChange('active')}
             className={`flex items-center gap-2 ${
               activeFilter === 'active' 
-                ? 'vsuite-button-primary' 
-                : 'vsuite-button-secondary'
+                ? 'gigster-button-primary' 
+                : 'gigster-button-secondary'
             }`}
           >
             Active
@@ -52,8 +52,8 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             onClick={() => onFilterChange('completed')}
             className={`flex items-center gap-2 ${
               activeFilter === 'completed' 
-                ? 'vsuite-button-primary' 
-                : 'vsuite-button-secondary'
+                ? 'gigster-button-primary' 
+                : 'gigster-button-secondary'
             }`}
           >
             Completed

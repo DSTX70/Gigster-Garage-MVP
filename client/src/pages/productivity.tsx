@@ -46,16 +46,16 @@ export default function ProductivityPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50" data-testid="productivity-page">
+    <div className="min-h-screen" style={{background: 'var(--cream-card)'}} data-testid="productivity-page">
       <AppHeader />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-orange-900 mb-2" data-testid="page-title">
+          <h2 className="text-2xl font-bold brand-heading mb-2" data-testid="page-title">
             Time & Productivity Tools
           </h2>
-          <p className="text-orange-700">
+          <p className="text-gray-700">
             Track your time, maintain productivity streaks, and stay focused on your goals.
           </p>
         </div>
@@ -80,69 +80,69 @@ export default function ProductivityPage() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white border-orange-200" data-testid="stat-card-7days">
+          <Card className="gigster-card" data-testid="stat-card-7days">
             <CardHeader className="pb-3">
-              <CardTitle className="text-orange-900 text-sm font-medium flex items-center space-x-2">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <Calendar className="h-4 w-4" />
                 <span>Last 7 Days</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-800" data-testid="stat-hours-7days">
+              <div className="text-2xl font-bold brand-heading" data-testid="stat-hours-7days">
                 {stats7Days ? `${stats7Days.totalHours}h` : "0h"}
               </div>
-              <div className="text-xs text-orange-600 mt-1">
+              <div className="text-xs text-gray-600 mt-1">
                 Avg: {stats7Days ? `${stats7Days.averageDailyHours}h/day` : "0h/day"}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-orange-200" data-testid="stat-card-30days">
+          <Card className="gigster-card" data-testid="stat-card-30days">
             <CardHeader className="pb-3">
-              <CardTitle className="text-orange-900 text-sm font-medium flex items-center space-x-2">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <TrendingUp className="h-4 w-4" />
                 <span>Last 30 Days</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-800" data-testid="stat-hours-30days">
+              <div className="text-2xl font-bold brand-heading" data-testid="stat-hours-30days">
                 {stats30Days ? `${stats30Days.totalHours}h` : "0h"}
               </div>
-              <div className="text-xs text-orange-600 mt-1">
+              <div className="text-xs text-gray-600 mt-1">
                 Utilization: {stats30Days ? `${stats30Days.utilizationPercent}%` : "0%"}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-orange-200" data-testid="stat-card-streak">
+          <Card className="gigster-card" data-testid="stat-card-streak">
             <CardHeader className="pb-3">
-              <CardTitle className="text-orange-900 text-sm font-medium flex items-center space-x-2">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <BarChart3 className="h-4 w-4" />
                 <span>Streak Days</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-800" data-testid="stat-streak-days">
+              <div className="text-2xl font-bold brand-heading" data-testid="stat-streak-days">
                 {stats7Days ? stats7Days.streakDays : 0}
               </div>
-              <div className="text-xs text-orange-600 mt-1">
+              <div className="text-xs text-gray-600 mt-1">
                 Current streak
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-orange-200" data-testid="stat-card-total-logs">
+          <Card className="gigster-card" data-testid="stat-card-total-logs">
             <CardHeader className="pb-3">
-              <CardTitle className="text-orange-900 text-sm font-medium flex items-center space-x-2">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <Clock className="h-4 w-4" />
                 <span>Total Sessions</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-800" data-testid="stat-total-sessions">
+              <div className="text-2xl font-bold brand-heading" data-testid="stat-total-sessions">
                 {timeLogs.length}
               </div>
-              <div className="text-xs text-orange-600 mt-1">
+              <div className="text-xs text-gray-600 mt-1">
                 Time entries
               </div>
             </CardContent>
@@ -150,9 +150,9 @@ export default function ProductivityPage() {
         </div>
 
         {/* Recent Time Logs */}
-        <Card className="bg-white border-orange-200" data-testid="recent-timelogs-card">
+        <Card className="gigster-card" data-testid="recent-timelogs-card">
           <CardHeader>
-            <CardTitle className="text-orange-900 flex items-center space-x-2">
+            <CardTitle className="brand-heading flex items-center space-x-2">
               <Clock className="h-5 w-5" />
               <span>Recent Time Logs</span>
             </CardTitle>
@@ -179,7 +179,7 @@ export default function ProductivityPage() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
                         <div className="flex-1">
-                          <div className="font-medium text-orange-900">
+                          <div className="font-medium brand-heading">
                             {log.description || 
                              log.task?.description || 
                              log.project?.name || 
@@ -219,7 +219,7 @@ export default function ProductivityPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-orange-600 hover:bg-orange-100"
+                        className="text-gray-600 hover:bg-orange-100"
                         data-testid={`button-edit-${log.id}`}
                       >
                         <Edit className="h-4 w-4" />
