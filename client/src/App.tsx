@@ -14,9 +14,10 @@ import Dashboard from "@/pages/dashboard";
 import ProjectDashboard from "@/pages/project-dashboard";
 import Tasks from "@/pages/tasks";
 import Productivity from "@/pages/productivity";
-import Templates from "@/pages/templates";
-import TemplateEditor from "@/pages/template-editor";
-import InstantProposal from "@/pages/instant-proposal";
+import CreateProposal from "@/pages/create-proposal";
+import CreateInvoice from "@/pages/create-invoice";
+import CreateContract from "@/pages/create-contract";
+import CreatePresentation from "@/pages/create-presentation";
 import { MessagesPage } from "@/pages/messages";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
@@ -67,9 +68,10 @@ function Router() {
       <Route path="/productivity" component={Productivity} />
       <Route path="/project/:projectId" component={ProjectDashboard} />
       <Route path="/messages" component={MessagesPage} />
-      <Route path="/templates" component={Templates} />
-      <Route path="/templates/:id" component={TemplateEditor} />
-      <Route path="/instant-proposal" component={InstantProposal} />
+      <Route path="/create-proposal" component={CreateProposal} />
+      <Route path="/create-invoice" component={CreateInvoice} />
+      <Route path="/create-contract" component={CreateContract} />
+      <Route path="/create-presentation" component={CreatePresentation} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />
