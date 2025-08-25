@@ -199,14 +199,15 @@ export default function TemplateEditor() {
       
       setAiSuggestions(response.suggestions || []);
       setShowAiSuggestions(true);
+      const sourceLabel = response.aiGenerated ? "AI-powered" : "Smart template";
       toast({
-        title: "AI Suggestions Ready",
-        description: `Generated ${response.suggestions?.length || 0} field suggestions.`,
+        title: "Field Suggestions Ready",
+        description: `Generated ${response.suggestions?.length || 0} ${sourceLabel} field suggestions.`,
       });
     } catch (error) {
       console.error("AI suggestion error:", error);
       toast({
-        title: "AI Suggestions Unavailable",
+        title: "Suggestions Unavailable", 
         description: "Unable to generate suggestions. Please add fields manually.",
         variant: "destructive",
       });
@@ -590,7 +591,7 @@ export default function TemplateEditor() {
                       Generating...
                     </>
                   ) : (
-                    <>🤖 AI Suggestions</>
+                    <>🤖 Smart Suggestions</>
                   )}
                 </Button>
               </CardTitle>
@@ -953,7 +954,7 @@ export default function TemplateEditor() {
         <DialogContent className="max-w-4xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              🤖 AI Field Suggestions
+              🤖 Smart Field Suggestions
             </DialogTitle>
             <DialogDescription>
               Based on your template description and type, here are intelligent field recommendations
@@ -963,9 +964,14 @@ export default function TemplateEditor() {
             {aiSuggestions.length > 0 ? (
               <>
                 <div className="flex justify-between items-center">
-                  <p className="text-sm text-muted-foreground">
-                    {aiSuggestions.length} suggested fields for your {formData.type} template
-                  </p>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {aiSuggestions.length} suggested fields for your {formData.type} template
+                    </p>
+                    <Badge variant="secondary" className="mt-1 text-xs">
+                      {(aiSuggestions as any).source === "openai" ? "🤖 AI-Generated" : "📝 Smart Template"}
+                    </Badge>
+                  </div>
                   <Button onClick={addAllSuggestions} size="sm" className="bg-green-600 hover:bg-green-700">
                     Add All Fields
                   </Button>

@@ -872,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Template Suggestion route
+  // Smart Template Suggestion route with AI and fallback
   app.post("/api/ai/suggest-template-fields", requireAuth, async (req, res) => {
     try {
       const { templateType, description, businessContext } = req.body;
@@ -883,18 +883,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if OpenAI is available
-      if (!process.env.OPENAI_API_KEY) {
-        return res.status(503).json({ 
-          message: "AI suggestions are not available. OpenAI API key not configured." 
-        });
-      }
+      // Fallback suggestion templates for when OpenAI is unavailable
+      const fallbackTemplates = {
+        proposal: [
+          { name: "client_name", label: "Client Name", type: "text", required: true, placeholder: "Enter client company name", defaultValue: "" },
+          { name: "client_email", label: "Client Email", type: "email", required: true, placeholder: "client@company.com", defaultValue: "" },
+          { name: "project_title", label: "Project Title", type: "text", required: true, placeholder: "Enter project name", defaultValue: "" },
+          { name: "project_scope", label: "Project Scope", type: "textarea", required: true, placeholder: "Describe the project scope and deliverables", defaultValue: "" },
+          { name: "timeline", label: "Project Timeline", type: "text", required: true, placeholder: "e.g., 6-8 weeks", defaultValue: "" },
+          { name: "budget", label: "Project Budget", type: "number", required: true, placeholder: "Enter proposed budget", defaultValue: "" },
+          { name: "line_items", label: "Itemized Services", type: "line_items", required: false, placeholder: "", defaultValue: "" },
+          { name: "terms", label: "Terms & Conditions", type: "textarea", required: false, placeholder: "Payment terms, project terms, etc.", defaultValue: "" }
+        ],
+        contract: [
+          { name: "party_one", label: "First Party", type: "text", required: true, placeholder: "Your company name", defaultValue: "" },
+          { name: "party_two", label: "Second Party", type: "text", required: true, placeholder: "Client company name", defaultValue: "" },
+          { name: "contract_date", label: "Contract Date", type: "date", required: true, placeholder: "", defaultValue: "" },
+          { name: "service_description", label: "Service Description", type: "textarea", required: true, placeholder: "Detailed description of services to be provided", defaultValue: "" },
+          { name: "contract_value", label: "Contract Value", type: "number", required: true, placeholder: "Total contract amount", defaultValue: "" },
+          { name: "payment_terms", label: "Payment Terms", type: "textarea", required: true, placeholder: "Payment schedule and terms", defaultValue: "" },
+          { name: "start_date", label: "Start Date", type: "date", required: true, placeholder: "", defaultValue: "" },
+          { name: "end_date", label: "End Date", type: "date", required: false, placeholder: "", defaultValue: "" }
+        ],
+        invoice: [
+          { name: "invoice_number", label: "Invoice Number", type: "text", required: true, placeholder: "INV-001", defaultValue: "" },
+          { name: "invoice_date", label: "Invoice Date", type: "date", required: true, placeholder: "", defaultValue: "" },
+          { name: "due_date", label: "Due Date", type: "date", required: true, placeholder: "", defaultValue: "" },
+          { name: "bill_to_name", label: "Bill To", type: "text", required: true, placeholder: "Client name", defaultValue: "" },
+          { name: "bill_to_address", label: "Billing Address", type: "textarea", required: true, placeholder: "Client billing address", defaultValue: "" },
+          { name: "line_items", label: "Invoice Items", type: "line_items", required: true, placeholder: "", defaultValue: "" },
+          { name: "subtotal", label: "Subtotal", type: "number", required: false, placeholder: "Calculated automatically", defaultValue: "" },
+          { name: "tax_rate", label: "Tax Rate (%)", type: "number", required: false, placeholder: "e.g., 8.5", defaultValue: "" },
+          { name: "total_amount", label: "Total Amount", type: "number", required: true, placeholder: "Final amount due", defaultValue: "" }
+        ],
+        deck: [
+          { name: "presentation_title", label: "Presentation Title", type: "text", required: true, placeholder: "Enter presentation title", defaultValue: "" },
+          { name: "presenter_name", label: "Presenter Name", type: "text", required: true, placeholder: "Your name or company", defaultValue: "" },
+          { name: "audience", label: "Target Audience", type: "text", required: false, placeholder: "Who is this presentation for?", defaultValue: "" },
+          { name: "presentation_date", label: "Presentation Date", type: "date", required: false, placeholder: "", defaultValue: "" },
+          { name: "key_message", label: "Key Message", type: "textarea", required: true, placeholder: "Main message or value proposition", defaultValue: "" },
+          { name: "call_to_action", label: "Call to Action", type: "text", required: false, placeholder: "What should the audience do next?", defaultValue: "" },
+          { name: "contact_info", label: "Contact Information", type: "textarea", required: false, placeholder: "How to reach you", defaultValue: "" }
+        ]
+      };
 
-      // Import OpenAI dynamically
-      const { default: OpenAI } = await import('openai');
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      let suggestions = [];
+      let aiGenerated = false;
 
-      const prompt = `As an expert business template designer, analyze this ${templateType} template request and suggest appropriate form fields.
+      // Try OpenAI first if available and quota allows
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const { default: OpenAI } = await import('openai');
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+          const prompt = `As an expert business template designer, analyze this ${templateType} template request and suggest appropriate form fields.
 
 Business Context: ${businessContext}
 Template Type: ${templateType}
@@ -916,52 +958,93 @@ Focus on fields that are:
 
 Return a JSON object with a "suggestions" array containing the field objects.`;
 
-      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-      const completion = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert business template designer. Always respond with valid JSON only, no markdown or extra text."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 1500,
-        temperature: 0.7,
-      });
+          // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+          const completion = await openai.chat.completions.create({
+            model: "gpt-5",
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert business template designer. Always respond with valid JSON only, no markdown or extra text."
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 1500,
+            temperature: 0.7,
+          });
 
-      const suggestions = JSON.parse(completion.choices[0].message.content || '{"suggestions":[]}');
-      
-      // Validate and filter suggestions
-      const validatedSuggestions = (suggestions.suggestions || [])
-        .filter((s: any) => s.name && s.label && s.type)
-        .map((s: any) => ({
-          name: s.name,
-          label: s.label,
-          type: s.type,
-          required: s.required || false,
-          placeholder: s.placeholder || "",
-          defaultValue: s.defaultValue || ""
-        }))
-        .slice(0, 8); // Limit to 8 suggestions
+          const aiSuggestions = JSON.parse(completion.choices[0].message.content || '{"suggestions":[]}');
+          
+          suggestions = (aiSuggestions.suggestions || [])
+            .filter((s: any) => s.name && s.label && s.type)
+            .map((s: any) => ({
+              name: s.name,
+              label: s.label,
+              type: s.type,
+              required: s.required || false,
+              placeholder: s.placeholder || "",
+              defaultValue: s.defaultValue || ""
+            }))
+            .slice(0, 8);
+
+          aiGenerated = true;
+        } catch (openaiError) {
+          console.log("OpenAI unavailable, using fallback suggestions:", openaiError.message);
+          // Fall through to fallback
+        }
+      }
+
+      // Use fallback if OpenAI failed or is unavailable
+      if (suggestions.length === 0) {
+        const baseTemplate = fallbackTemplates[templateType as keyof typeof fallbackTemplates] || fallbackTemplates.proposal;
+        
+        // Customize based on description keywords
+        suggestions = baseTemplate.map(field => ({
+          ...field,
+          // Add context-aware customizations based on description
+          placeholder: customizePlaceholder(field, description, templateType)
+        }));
+      }
 
       res.json({ 
-        suggestions: validatedSuggestions,
+        suggestions,
         templateType,
+        aiGenerated,
+        source: aiGenerated ? "openai" : "smart_fallback",
         generatedAt: new Date().toISOString()
       });
 
     } catch (error) {
-      console.error("Error generating AI suggestions:", error);
+      console.error("Error generating suggestions:", error);
       res.status(500).json({ 
-        message: "Failed to generate AI suggestions. Please try again or add fields manually." 
+        message: "Failed to generate suggestions. Please try again or add fields manually." 
       });
     }
   });
+
+  // Helper function to customize placeholders based on context
+  function customizePlaceholder(field: any, description: string, templateType: string) {
+    const desc = description.toLowerCase();
+    
+    // Context-aware placeholder customization
+    if (field.name === "project_scope" && desc.includes("website")) {
+      return "Website design, development, testing, and deployment";
+    }
+    if (field.name === "project_scope" && desc.includes("marketing")) {
+      return "Marketing strategy, campaign creation, and performance tracking";
+    }
+    if (field.name === "timeline" && desc.includes("urgent")) {
+      return "Rush delivery - 2-3 weeks";
+    }
+    if (field.name === "service_description" && desc.includes("consulting")) {
+      return "Strategic consulting services including analysis, recommendations, and implementation guidance";
+    }
+    
+    return field.placeholder;
+  }
 
   app.patch("/api/templates/:id", requireAuth, async (req, res) => {
     try {
