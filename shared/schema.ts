@@ -476,6 +476,28 @@ export const generateProposalSchema = z.object({
   expiresInDays: z.number().min(1).default(30)
 });
 
+// Direct proposal creation schema (for form-based proposals)
+export const directProposalSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  projectId: z.string().optional(),
+  clientName: z.string().min(1, "Client name is required"),
+  clientEmail: z.string().email("Valid email is required"),
+  projectDescription: z.string().optional(),
+  totalBudget: z.number().min(0).default(0),
+  timeline: z.string().optional(),
+  deliverables: z.string().optional(),
+  terms: z.string().optional(),
+  lineItems: z.array(z.object({
+    id: z.number(),
+    description: z.string(),
+    quantity: z.number().min(0),
+    rate: z.number().min(0),
+    amount: z.number().min(0)
+  })).default([]),
+  calculatedTotal: z.number().min(0).default(0),
+  expiresInDays: z.number().min(1).default(30)
+});
+
 // Send proposal schema
 export const sendProposalSchema = z.object({
   proposalId: z.string(),

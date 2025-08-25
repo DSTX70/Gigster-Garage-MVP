@@ -143,8 +143,22 @@ export default function CreateProposal() {
           <Card className="mb-8">
             <CardContent className="p-8">
               <div className="space-y-8">
+                {/* Company Branding Header */}
+                <div className="text-center border-b-2 border-[#FF7F00] pb-6 mb-8">
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className="w-16 h-16 bg-[#FF7F00] rounded-lg flex items-center justify-center">
+                      <span className="text-white font-bold text-2xl">GG</span>
+                    </div>
+                    <div className="text-left">
+                      <h1 className="text-3xl font-bold text-gray-900">Gigster Garage</h1>
+                      <p className="text-[#FF7F00] font-semibold">Smarter tools for bolder dreams</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Proposal Header */}
                 <div className="text-center border-b pb-6">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{formData.title || "Untitled Proposal"}</h1>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">{formData.title || "Untitled Proposal"}</h2>
                   <p className="text-gray-600">Prepared for {formData.clientName || "Client Name"}</p>
                   <p className="text-sm text-gray-500">{formData.clientEmail}</p>
                 </div>

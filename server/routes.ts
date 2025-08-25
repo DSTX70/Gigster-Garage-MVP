@@ -4,7 +4,7 @@ import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification } from "./emailService";
-import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema } from "@shared/schema";
+import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
 
 // Define login schema
@@ -1210,46 +1210,89 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     return content;
   };
 
+  // Direct proposal creation (form-based)
   app.post("/api/proposals", requireAuth, async (req, res) => {
     try {
-      const result = generateProposalSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({
-          message: "Invalid proposal data",
-          errors: result.error.errors
-        });
+      // Check if this is template-based or direct proposal creation
+      if (req.body.templateId) {
+        // Template-based proposal generation
+        const result = generateProposalSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({
+            message: "Invalid proposal data",
+            errors: result.error.errors
+          });
+        }
+
+        const { templateId, title, projectId, clientName, clientEmail, variables, expiresInDays } = result.data;
+
+        // Get template
+        const template = await storage.getTemplate(templateId);
+        if (!template) {
+          return res.status(404).json({ message: "Template not found" });
+        }
+
+        // Generate formatted content from form fields or substitute variables
+        const content = generateFormattedContent(template, variables, title);
+
+        // Calculate expiry date
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+        const proposalData = {
+          title,
+          templateId,
+          projectId,
+          clientName,
+          clientEmail,
+          content,
+          variables,
+          expiresAt,
+          createdById: req.session.user!.id,
+          metadata: {}
+        };
+
+        const proposal = await storage.createProposal(proposalData);
+        res.status(201).json(proposal);
+      } else {
+        // Direct proposal creation
+        const result = directProposalSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({
+            message: "Invalid proposal data",
+            errors: result.error.errors
+          });
+        }
+
+        const { title, projectId, clientName, clientEmail, projectDescription, totalBudget, timeline, deliverables, terms, lineItems, calculatedTotal, expiresInDays } = result.data;
+
+        // Calculate expiry date
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+        const proposalData = {
+          title,
+          projectId: projectId || null,
+          clientName,
+          clientEmail,
+          projectDescription,
+          totalBudget: totalBudget.toString(),
+          timeline,
+          deliverables,
+          terms,
+          lineItems,
+          calculatedTotal: calculatedTotal.toString(),
+          expiresInDays,
+          expiresAt,
+          createdById: req.session.user!.id,
+          status: 'draft' as const,
+          variables: {},
+          metadata: {}
+        };
+
+        const proposal = await storage.createProposal(proposalData);
+        res.status(201).json(proposal);
       }
-
-      const { templateId, title, projectId, clientName, clientEmail, variables, expiresInDays } = result.data;
-
-      // Get template
-      const template = await storage.getTemplate(templateId);
-      if (!template) {
-        return res.status(404).json({ message: "Template not found" });
-      }
-
-      // Generate formatted content from form fields or substitute variables
-      const content = generateFormattedContent(template, variables, title);
-
-      // Calculate expiry date
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + expiresInDays);
-
-      const proposalData = {
-        title,
-        templateId,
-        projectId,
-        clientName,
-        clientEmail,
-        content,
-        variables,
-        expiresAt,
-        createdById: req.session.user!.id,
-        metadata: {}
-      };
-
-      const proposal = await storage.createProposal(proposalData);
-      res.status(201).json(proposal);
     } catch (error) {
       console.error("Error creating proposal:", error);
       res.status(500).json({ message: "Failed to create proposal" });
