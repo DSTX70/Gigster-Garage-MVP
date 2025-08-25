@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, MailOpen, Reply, Trash2 } from "lucide-react";
+import { Mail, MailOpen, Reply, Trash2, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 
 interface Message {
@@ -48,14 +49,22 @@ export function MessagesPage() {
       
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
-            <p className="text-gray-600 mt-2">
-              {unreadCount > 0 
-                ? `You have ${unreadCount} unread message${unreadCount > 1 ? 's' : ''}`
-                : 'All messages read'
-              }
-            </p>
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Button variant="outline" size="sm" data-testid="button-back-to-home">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
+              <p className="text-gray-600 mt-2">
+                {unreadCount > 0 
+                  ? `You have ${unreadCount} unread message${unreadCount > 1 ? 's' : ''}`
+                  : 'All messages read'
+                }
+              </p>
+            </div>
           </div>
           
           <Button variant="outline" className="flex items-center space-x-2">
