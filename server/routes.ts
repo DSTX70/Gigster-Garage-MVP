@@ -4,8 +4,14 @@ import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification } from "./emailService";
-import { taskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertInvoiceSchema, insertPaymentSchema } from "@shared/schema";
+import { taskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
+
+// Define login schema
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
 
 // Extend session type
 declare module "express-session" {
