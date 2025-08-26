@@ -36,13 +36,13 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
   // Fetch client documents
   const { data: documents = [], isLoading } = useQuery<ClientDocument[]>({
     queryKey: ['/api/clients', clientId, 'documents'],
-    queryFn: () => apiRequest(`/api/clients/${clientId}/documents`).then(res => res.json())
+    queryFn: () => apiRequest(`/api/clients/${clientId}/documents`)
   });
 
   // Delete document mutation
   const deleteDocumentMutation = useMutation({
     mutationFn: (documentId: string) => 
-      apiRequest(`/api/documents/${documentId}`, { method: 'DELETE' }),
+      apiRequest(`/api/documents/${documentId}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId, 'documents'] });
       toast({
@@ -62,11 +62,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
   // Upload document mutation
   const uploadDocumentMutation = useMutation({
     mutationFn: (data: any) => 
-      apiRequest(`/api/clients/${clientId}/documents`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      }),
+      apiRequest(`/api/clients/${clientId}/documents`, 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId, 'documents'] });
       setIsUploadModalOpen(false);
@@ -86,7 +82,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
   });
 
   const handleGetUploadParameters = async () => {
-    const response = await apiRequest('/api/documents/upload', { method: 'POST' });
+    const response = await apiRequest('/api/documents/upload', 'POST');
     const data = await response.json();
     return {
       method: 'PUT' as const,
@@ -260,15 +256,15 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
                       {document.name}
                     </h4>
                     <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
-                      {document.category && (
+                      {document.type && (
                         <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs">
-                          {document.category}
+                          {document.type}
                         </span>
                       )}
                       {document.fileSize && (
                         <span className="text-xs">{formatFileSize(document.fileSize)}</span>
                       )}
-                      <span className="text-xs">{formatDate(document.createdAt)}</span>
+                      <span className="text-xs">{formatDate(document.createdAt || new Date())}</span>
                     </div>
                     {document.description && (
                       <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
@@ -278,11 +274,11 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pt-2 border-t">
-                  {document.filePath && (
+                  {document.url && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(document.filePath, '_blank')}
+                      onClick={() => window.open(document.url, '_blank')}
                       data-testid={`button-view-document-${document.id}`}
                     >
                       <Eye className="h-4 w-4 mr-1" />

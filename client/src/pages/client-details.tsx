@@ -116,10 +116,10 @@ export default function ClientDetails() {
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
-      <div className="bg-blue-600 text-white py-4 px-6">
+      <div className="bg-[#007BFF] text-white py-4 px-6">
         <div className="flex items-center gap-3">
-          <div className="text-2xl font-bold">Gigster Garage</div>
-          <div className="text-lg">Simplified Workflow Hub</div>
+          <div className="text-2xl font-bold text-white">Gigster Garage</div>
+          <div className="text-lg text-white">Smarter tools for bolder dreams</div>
         </div>
       </div>
 

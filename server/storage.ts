@@ -86,6 +86,20 @@ export interface IStorage {
   createClientDocument(insertDocument: InsertClientDocument): Promise<ClientDocument>;
   updateClientDocument(id: string, updateDocument: Partial<InsertClientDocument>): Promise<ClientDocument | undefined>;
   deleteClientDocument(id: string): Promise<boolean>;
+
+  // Invoice management
+  getInvoices(): Promise<Invoice[]>;
+  getInvoice(id: string): Promise<Invoice | undefined>;
+  createInvoice(insertInvoice: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: string, updateInvoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
+  deleteInvoice(id: string): Promise<boolean>;
+
+  // Payment management  
+  getPayments(): Promise<Payment[]>;
+  getPayment(id: string): Promise<Payment | undefined>;
+  createPayment(insertPayment: InsertPayment): Promise<Payment>;
+  updatePayment(id: string, updatePayment: Partial<InsertPayment>): Promise<Payment | undefined>;
+  deletePayment(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1003,6 +1017,70 @@ export class DatabaseStorage implements IStorage {
   async deleteClientDocument(id: string): Promise<boolean> {
     const result = await db.delete(clientDocuments).where(eq(clientDocuments.id, id));
     return result.rowCount! > 0;
+  }
+
+  // Invoice operations
+  async getInvoices(): Promise<Invoice[]> {
+    return await db.select().from(invoices).orderBy(desc(invoices.createdAt));
+  }
+
+  async getInvoice(id: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice;
+  }
+
+  async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
+    const [invoice] = await db
+      .insert(invoices)
+      .values(insertInvoice)
+      .returning();
+    return invoice;
+  }
+
+  async updateInvoice(id: string, updateInvoice: Partial<InsertInvoice>): Promise<Invoice | undefined> {
+    const [invoice] = await db
+      .update(invoices)
+      .set(updateInvoice)
+      .where(eq(invoices.id, id))
+      .returning();
+    return invoice;
+  }
+
+  async deleteInvoice(id: string): Promise<boolean> {
+    const result = await db.delete(invoices).where(eq(invoices.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Payment operations
+  async getPayments(): Promise<Payment[]> {
+    return await db.select().from(payments).orderBy(desc(payments.createdAt));
+  }
+
+  async getPayment(id: string): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment;
+  }
+
+  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
+    const [payment] = await db
+      .insert(payments)
+      .values(insertPayment)
+      .returning();
+    return payment;
+  }
+
+  async updatePayment(id: string, updatePayment: Partial<InsertPayment>): Promise<Payment | undefined> {
+    const [payment] = await db
+      .update(payments)
+      .set(updatePayment)
+      .where(eq(payments.id, id))
+      .returning();
+    return payment;
+  }
+
+  async deletePayment(id: string): Promise<boolean> {
+    const result = await db.delete(payments).where(eq(payments.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
