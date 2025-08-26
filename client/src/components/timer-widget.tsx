@@ -34,16 +34,23 @@ export function TimerWidget() {
   // Fetch active timer
   const { data: activeTimer, isLoading: timerLoading } = useQuery<TimeLog | null>({
     queryKey: ["/api/timelogs/active"],
-    refetchInterval: (data) => data ? 1000 : 10000, // Update every second if active, otherwise every 10 seconds
+    refetchInterval: (data) => data ? 5000 : 30000, // Update every 5 seconds if active, otherwise every 30 seconds
+    staleTime: 1000 * 2, // 2 seconds stale time to reduce flashing
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    refetchOnReconnect: false, // Prevent refetch on reconnect
   });
 
   // Fetch projects and tasks for selection
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    refetchOnWindowFocus: false,
   });
 
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    refetchOnWindowFocus: false,
   });
 
   // Update current time for active timer
@@ -103,19 +110,6 @@ export function TimerWidget() {
     }
   };
 
-  if (timerLoading) {
-    return (
-      <Card className="w-full max-w-md bg-orange-50 border-orange-200" data-testid="timer-widget-loading">
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-2">
-            <Clock className="h-5 w-5 text-orange-600" />
-            <span className="text-sm text-orange-700">Loading timer...</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card className="w-full max-w-md bg-orange-50 border-orange-200" data-testid="timer-widget">
       <CardContent className="p-4">
@@ -123,7 +117,12 @@ export function TimerWidget() {
           <div className="flex items-center space-x-3">
             <Clock className="h-5 w-5 text-orange-600" />
             <div>
-              {activeTimer && activeTimer.isActive ? (
+              {timerLoading ? (
+                <div>
+                  <div className="text-lg font-semibold text-orange-900">Loading...</div>
+                  <div className="text-xs text-orange-700">Checking timer status</div>
+                </div>
+              ) : activeTimer && activeTimer.isActive ? (
                 <div>
                   <div className="text-2xl font-bold text-orange-900" data-testid="timer-display">
                     {formatDuration(currentTime)}
@@ -142,7 +141,7 @@ export function TimerWidget() {
           </div>
           
           <div className="flex items-center space-x-2">
-            {activeTimer && activeTimer.isActive ? (
+            {!timerLoading && activeTimer && activeTimer.isActive ? (
               <Button
                 size="sm"
                 variant="outline"
@@ -154,7 +153,7 @@ export function TimerWidget() {
                 <Square className="h-4 w-4" />
                 Stop
               </Button>
-            ) : (
+            ) : !timerLoading ? (
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button
@@ -244,7 +243,7 @@ export function TimerWidget() {
                   </div>
                 </DialogContent>
               </Dialog>
-            )}
+            ) : null}
             
             <Button
               size="sm"
