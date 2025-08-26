@@ -252,7 +252,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
       }
 
       const taskData = insertTaskSchema.parse({
-        title: description.trim(), // Use description as title since that's what users enter
+        title: description.trim(),
         description: description.trim(),
         dueDate: combinedDateTime,
         priority,
@@ -261,8 +261,8 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
         projectId: projectId || undefined,
         completed: false,
         notes: notes.trim() || undefined,
-        attachments: attachments.length > 0 ? attachments : undefined,
-        links: links.length > 0 ? links.filter(link => link.trim() !== '') : undefined,
+        attachments: attachments.length > 0 ? attachments : [],
+        links: links.length > 0 ? links.filter(link => link.trim() !== '') : [],
       });
 
       createTaskMutation.mutate(taskData);
