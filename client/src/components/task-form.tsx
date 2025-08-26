@@ -261,8 +261,8 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
         projectId: projectId || undefined,
         completed: false,
         notes: notes.trim() || undefined,
-        attachments: attachments,
-        links: links.filter(link => link.trim() !== '') as string[],
+        attachments: attachments.length > 0 ? attachments : undefined,
+        links: links.length > 0 ? links.filter(link => link.trim() !== '') : undefined,
       });
 
       createTaskMutation.mutate(taskData);

@@ -17,7 +17,8 @@ import {
   StickyNote,
   Paperclip,
   ExternalLink,
-  ArrowLeft
+  ArrowLeft,
+  Plus
 } from "lucide-react";
 import { format, isAfter, startOfDay } from "date-fns";
 import { useState } from "react";
@@ -99,8 +100,8 @@ export default function Dashboard() {
               {task.description}
             </h4>
             <div className="flex flex-wrap gap-2 mt-2">
-              <Badge className={getPriorityColor(task.priority)}>
-                {task.priority}
+              <Badge className={getPriorityColor(task.priority || 'medium')}>
+                {task.priority || 'medium'}
               </Badge>
               <div className={`flex items-center space-x-1 ${statusInfo.color}`}>
                 {statusInfo.icon}
@@ -118,10 +119,10 @@ export default function Dashboard() {
             </div>
           )}
           
-          {task.project && (
+          {task.projectId && (
             <div className="flex items-center space-x-2 text-green-600">
               <FileText size={16} />
-              <span>Project: {task.project.name}</span>
+              <span>Project ID: {task.projectId}</span>
             </div>
           )}
 
@@ -181,7 +182,7 @@ export default function Dashboard() {
         </div>
 
         <div className="text-xs text-gray-500">
-          Created: {format(new Date(task.createdAt), 'MMM d, yyyy h:mm a')}
+          Created: {task.createdAt ? format(new Date(task.createdAt), 'MMM d, yyyy h:mm a') : 'Unknown'}
         </div>
       </div>
     );
@@ -203,7 +204,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Avatar>
-                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{user.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                   </Avatar>
                   <div>
                     <CardTitle className="text-lg">{user.name}</CardTitle>
@@ -283,6 +284,16 @@ export default function Dashboard() {
               <p className="text-gray-600 mt-1">Overview of all users and their assigned tasks</p>
             </div>
           </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+            onClick={() => navigate("/")}
+            data-testid="button-new-task-dashboard"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            New Task
+          </Button>
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <div className="text-sm text-gray-600">
               <div><strong>{users.length}</strong> total users</div>
