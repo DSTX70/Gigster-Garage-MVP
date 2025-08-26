@@ -25,7 +25,7 @@ export function GigsterLogo({ size = 'medium', showText = true, className = '' }
     <div className={`flex items-center space-x-3 ${className}`}>
       <div className={sizeClasses[size]} style={{ background: 'var(--gigster-gradient)' }}>
         <img 
-          src="@assets/GG Logo 2.png_1756021117553.png" 
+          src="@assets/GG_symbol_from_reference_1756192525636.png" 
           alt="Gigster Garage"
           className={`${
             size === 'mini' ? 'w-4 h-4' : 
