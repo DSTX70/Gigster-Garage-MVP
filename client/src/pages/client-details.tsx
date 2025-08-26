@@ -160,10 +160,14 @@ export default function ClientDetails() {
           </Link>
         </div>
 
+        {/* Filing Cabinet - Always Visible */}
+        <div className="mb-8">
+          <ClientDocuments clientId={clientId} />
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="documents">Filing Cabinet</TabsTrigger>
             <TabsTrigger value="proposals">Proposals ({proposals.length})</TabsTrigger>
             <TabsTrigger value="invoices">Invoices ({invoices.length})</TabsTrigger>
             <TabsTrigger value="payments">Payments ({payments.length})</TabsTrigger>
@@ -297,9 +301,6 @@ export default function ClientDetails() {
             </div>
           </TabsContent>
 
-          <TabsContent value="documents">
-            <ClientDocuments clientId={clientId} />
-          </TabsContent>
 
           <TabsContent value="proposals">
             <Card>
