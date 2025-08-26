@@ -246,38 +246,38 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
             <p className="text-sm">Click "Upload Document" to add the first document to the filing cabinet</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {documents.map((document) => (
               <div
                 key={document.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 space-y-3"
                 data-testid={`card-document-${document.id}`}
               >
-                <div className="flex items-center gap-3">
-                  <FileText className="h-8 w-8 text-blue-500" />
-                  <div>
-                    <h4 className="font-medium" data-testid={`text-document-name-${document.id}`}>
+                <div className="flex items-start gap-3">
+                  <FileText className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate" data-testid={`text-document-name-${document.id}`}>
                       {document.name}
                     </h4>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
                       {document.category && (
                         <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs">
                           {document.category}
                         </span>
                       )}
                       {document.fileSize && (
-                        <span>{formatFileSize(document.fileSize)}</span>
+                        <span className="text-xs">{formatFileSize(document.fileSize)}</span>
                       )}
-                      <span>{formatDate(document.createdAt)}</span>
+                      <span className="text-xs">{formatDate(document.createdAt)}</span>
                     </div>
                     {document.description && (
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                         {document.description}
                       </p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-2 border-t">
                   {document.filePath && (
                     <Button
                       variant="outline"

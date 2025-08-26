@@ -77,7 +77,7 @@ export default function Signup() {
         <CardHeader className="space-y-1">
           <div className="text-center space-y-2">
             <CardTitle className="text-2xl font-black text-black">Gigster Garage</CardTitle>
-            <p className="text-xs text-black font-medium">Simplified Workflow Hub</p>
+            <p className="text-xs text-black font-medium">Smarter tools for bolder dreams</p>
             <CardDescription className="pt-2">
               Join Gigster Garage to start managing your tasks efficiently
             </CardDescription>
