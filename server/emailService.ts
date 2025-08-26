@@ -47,6 +47,12 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
+  attachments?: Array<{
+    content: Buffer | string;
+    filename: string;
+    type?: string;
+    disposition?: string;
+  }>;
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
@@ -59,19 +65,303 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
   }
 
   try {
-    await mailService.send({
+    const emailData: any = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
-    });
-    console.log(`Email sent successfully to ${params.to}`);
+    };
+
+    // Add attachments if provided
+    if (params.attachments && params.attachments.length > 0) {
+      emailData.attachments = params.attachments.map(attachment => ({
+        content: Buffer.isBuffer(attachment.content) 
+          ? attachment.content.toString('base64') 
+          : attachment.content,
+        filename: attachment.filename,
+        type: attachment.type || 'application/pdf',
+        disposition: attachment.disposition || 'attachment'
+      }));
+    }
+
+    await mailService.send(emailData);
+    console.log(`Email sent successfully to ${params.to}${params.attachments ? ` with ${params.attachments.length} attachment(s)` : ''}`);
     return true;
   } catch (error) {
     console.error('SendGrid email error:', error);
     return false;
   }
+}
+
+// Enhanced email function that can handle different types of emails
+export async function sendCustomEmail(
+  to: string,
+  subject: string,
+  textContent: string,
+  htmlContent: string,
+  fromEmail: string = 'dustinsparks@mac.com'
+): Promise<boolean> {
+  return await sendEmail({
+    to,
+    from: fromEmail,
+    subject,
+    text: textContent,
+    html: htmlContent,
+  });
+}
+
+// Send proposal via email with optional PDF attachment
+export async function sendProposalEmail(
+  clientEmail: string,
+  proposalTitle: string,
+  proposalUrl: string,
+  clientName: string = '',
+  customMessage: string = '',
+  pdfAttachment?: Buffer,
+  fromEmail: string = 'dustinsparks@mac.com'
+): Promise<boolean> {
+  const subject = `Proposal: ${proposalTitle}`;
+  
+  const textContent = `
+Dear ${clientName || 'Valued Client'},
+
+${customMessage || 'We are pleased to present our proposal for your review.'}
+
+Proposal: ${proposalTitle}
+
+Please click the link below to view your proposal:
+${proposalUrl}
+
+This proposal link will remain active and you can review it at any time. The proposal includes all project details, timeline, deliverables, and pricing information.
+
+If you have any questions or would like to discuss this proposal, please don't hesitate to reach out.
+
+Best regards,
+VSuite HQ Team
+  `.trim();
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+            .header { background-color: #007BFF; color: white; padding: 30px 20px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+            .header p { margin: 5px 0 0 0; opacity: 0.9; }
+            .content { padding: 40px 30px; }
+            .proposal-card { background-color: #f8f9fa; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #007BFF; }
+            .proposal-title { font-size: 20px; font-weight: bold; color: #007BFF; margin-bottom: 10px; }
+            .cta-button { 
+                background-color: #007BFF; 
+                color: white; 
+                padding: 15px 30px; 
+                text-decoration: none; 
+                border-radius: 8px; 
+                display: inline-block; 
+                margin: 25px 0; 
+                font-weight: bold;
+                text-align: center;
+            }
+            .footer { background-color: #f1f3f4; padding: 20px 30px; text-align: center; color: #666; font-size: 14px; }
+            .features { margin: 20px 0; }
+            .feature { margin: 10px 0; padding-left: 20px; position: relative; }
+            .feature:before { content: "✓"; position: absolute; left: 0; color: #28a745; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>VSuite HQ</h1>
+                <p>Simplified Workflow Hub</p>
+            </div>
+            <div class="content">
+                <h2>Hello ${clientName || 'Valued Client'},</h2>
+                <p>${customMessage || 'We are pleased to present our proposal for your review.'}</p>
+                
+                <div class="proposal-card">
+                    <div class="proposal-title">${proposalTitle}</div>
+                    <div class="features">
+                        <div class="feature">Detailed project scope and timeline</div>
+                        <div class="feature">Transparent pricing breakdown</div>
+                        <div class="feature">Clear deliverables and milestones</div>
+                        <div class="feature">Terms and conditions</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <a href="${proposalUrl}" class="cta-button">View Your Proposal</a>
+                </div>
+                
+                <p>This proposal link will remain active and you can review it at any time. If you have any questions or would like to discuss this proposal, please don't hesitate to reach out.</p>
+                
+                <p>Thank you for considering our services.</p>
+                
+                <p>Best regards,<br>
+                VSuite HQ Team</p>
+            </div>
+            <div class="footer">
+                <p>This email was sent from VSuite HQ - Simplified Workflow Hub</p>
+                <p>Professional project management and client collaboration platform</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `;
+
+  const emailParams: EmailParams = {
+    to: clientEmail,
+    from: fromEmail,
+    subject,
+    text: textContent,
+    html: htmlContent,
+  };
+
+  // Add PDF attachment if provided
+  if (pdfAttachment) {
+    emailParams.attachments = [{
+      content: pdfAttachment,
+      filename: `${proposalTitle.replace(/[^a-zA-Z0-9]/g, '_')}-proposal.pdf`,
+      type: 'application/pdf',
+      disposition: 'attachment'
+    }];
+  }
+
+  return await sendEmail(emailParams);
+}
+
+// Send invoice via email with PDF attachment
+export async function sendInvoiceEmail(
+  clientEmail: string,
+  invoiceData: any,
+  pdfAttachment?: Buffer,
+  customMessage: string = '',
+  fromEmail: string = 'dustinsparks@mac.com'
+): Promise<boolean> {
+  const subject = `Invoice: ${invoiceData.invoiceNumber || invoiceData.id}`;
+  
+  const textContent = `
+Dear ${invoiceData.clientName || 'Valued Client'},
+
+${customMessage || 'Thank you for your business! Please find your invoice attached.'}
+
+Invoice Details:
+- Invoice #: ${invoiceData.invoiceNumber || invoiceData.id}
+- Date: ${new Date(invoiceData.createdAt).toLocaleDateString()}
+- Amount: $${parseFloat(invoiceData.totalAmount || 0).toFixed(2)}
+${invoiceData.dueDate ? `- Due Date: ${new Date(invoiceData.dueDate).toLocaleDateString()}` : ''}
+
+Payment Terms: ${invoiceData.terms || 'Payment is due within 30 days of invoice date.'}
+
+If you have any questions about this invoice, please don't hesitate to contact us.
+
+Thank you for your business!
+
+Best regards,
+VSuite HQ Team
+  `.trim();
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+            .header { background-color: #007BFF; color: white; padding: 30px 20px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+            .header p { margin: 5px 0 0 0; opacity: 0.9; }
+            .content { padding: 40px 30px; }
+            .invoice-card { background-color: #f8f9fa; padding: 25px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #007BFF; }
+            .invoice-details { display: flex; justify-content: space-between; margin: 15px 0; }
+            .invoice-details .label { font-weight: bold; color: #007BFF; }
+            .amount-highlight { font-size: 24px; font-weight: bold; color: #007BFF; text-align: center; margin: 20px 0; }
+            .payment-terms { background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107; }
+            .footer { background-color: #f1f3f4; padding: 20px 30px; text-align: center; color: #666; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>VSuite HQ</h1>
+                <p>Simplified Workflow Hub</p>
+            </div>
+            <div class="content">
+                <h2>Hello ${invoiceData.clientName || 'Valued Client'},</h2>
+                <p>${customMessage || 'Thank you for your business! Please find your invoice details below.'}</p>
+                
+                <div class="invoice-card">
+                    <h3 style="color: #007BFF; margin-top: 0;">Invoice Details</h3>
+                    <div class="invoice-details">
+                        <span class="label">Invoice #:</span>
+                        <span>${invoiceData.invoiceNumber || invoiceData.id}</span>
+                    </div>
+                    <div class="invoice-details">
+                        <span class="label">Date:</span>
+                        <span>${new Date(invoiceData.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    ${invoiceData.dueDate ? `
+                    <div class="invoice-details">
+                        <span class="label">Due Date:</span>
+                        <span>${new Date(invoiceData.dueDate).toLocaleDateString()}</span>
+                    </div>
+                    ` : ''}
+                    ${invoiceData.projectDescription ? `
+                    <div class="invoice-details">
+                        <span class="label">Project:</span>
+                        <span>${invoiceData.projectDescription}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="amount-highlight">
+                    Total Amount: $${parseFloat(invoiceData.totalAmount || 0).toFixed(2)}
+                </div>
+                
+                <div class="payment-terms">
+                    <h4 style="margin-top: 0; color: #856404;">Payment Terms</h4>
+                    <p style="margin-bottom: 0;">${invoiceData.terms || 'Payment is due within 30 days of invoice date.'}</p>
+                </div>
+                
+                <p>If you have any questions about this invoice, please don't hesitate to contact us.</p>
+                
+                <p>Thank you for your business!</p>
+                
+                <p>Best regards,<br>
+                VSuite HQ Team</p>
+            </div>
+            <div class="footer">
+                <p>This invoice was sent from VSuite HQ - Simplified Workflow Hub</p>
+                <p>Professional project management and client collaboration platform</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `;
+
+  const emailParams: EmailParams = {
+    to: clientEmail,
+    from: fromEmail,
+    subject,
+    text: textContent,
+    html: htmlContent,
+  };
+
+  // Add PDF attachment if provided
+  if (pdfAttachment) {
+    emailParams.attachments = [{
+      content: pdfAttachment,
+      filename: `invoice-${invoiceData.invoiceNumber || invoiceData.id}.pdf`,
+      type: 'application/pdf',
+      disposition: 'attachment'
+    }];
+  }
+
+  return await sendEmail(emailParams);
 }
 
 export async function sendHighPriorityTaskNotification(

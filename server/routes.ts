@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
-import { sendHighPriorityTaskNotification, sendSMSNotification } from "./emailService";
+import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail } from "./emailService";
+import { generateProposalPDF, generateInvoicePDF } from "./pdfService";
 import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
 
@@ -1433,21 +1434,50 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         sentAt: new Date()
       });
 
-      // Send email if recipient email is provided
-      const { recipientEmail, subject, message } = result.data;
+      // Send enhanced email if recipient email is provided
+      const { recipientEmail, subject, message, includePDF } = result.data;
       const emailTo = recipientEmail || proposal.clientEmail;
       
       if (emailTo) {
         try {
           const proposalUrl = `${req.protocol}://${req.get('host')}/shared/proposals/${shareableLink}`;
-          const emailSubject = subject || `Proposal: ${proposal.title}`;
-          const emailMessage = message || `Please review the proposal: ${proposalUrl}`;
           
-          await sendHighPriorityTaskNotification(
+          // Get client details if available
+          const client = proposal.clientId ? await storage.getClient(proposal.clientId) : null;
+          
+          let pdfAttachment: Buffer | undefined;
+          
+          // Generate PDF if requested
+          if (includePDF) {
+            try {
+              console.log('🔄 Generating PDF for proposal:', proposal.title);
+              pdfAttachment = await generateProposalPDF({
+                ...proposal,
+                clientName: client?.name || 'Valued Client',
+                clientEmail: emailTo,
+              });
+              console.log('✅ PDF generated successfully');
+            } catch (pdfError) {
+              console.error('❌ PDF generation failed:', pdfError);
+              // Continue without PDF if generation fails
+            }
+          }
+
+          // Send the email with enhanced template and optional PDF
+          const emailSent = await sendProposalEmail(
             emailTo,
-            emailSubject,
-            emailMessage
+            proposal.title,
+            proposalUrl,
+            client?.name || 'Valued Client',
+            message || 'We are pleased to present our proposal for your review.',
+            pdfAttachment
           );
+
+          if (!emailSent) {
+            console.error("Failed to send proposal email");
+          } else {
+            console.log(`📧 Enhanced proposal email sent for proposal ${proposal.id} to ${emailTo}${includePDF ? ' with PDF attachment' : ''}`);
+          }
         } catch (emailError) {
           console.error("Failed to send proposal email:", emailError);
           // Don't fail the request if email sending fails
@@ -1558,6 +1588,206 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error fetching client payments:", error);
       res.status(500).json({ message: "Failed to fetch payments" });
+    }
+  });
+
+  // Auto-generate and send invoice when project completes
+  app.post("/api/projects/:id/complete", requireAuth, async (req, res) => {
+    try {
+      const projectId = req.params.id;
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      // Update project status to completed
+      const updatedProject = await storage.updateProject(projectId, {
+        status: 'completed',
+        completedAt: new Date()
+      });
+
+      // Generate automatic invoice if client exists
+      if (project.clientId) {
+        try {
+          const client = await storage.getClient(project.clientId);
+          if (client && client.email) {
+            // Get all completed tasks for the project to calculate total
+            const tasks = await storage.getTasksByProject(projectId);
+            const totalHours = tasks.reduce((sum, task) => {
+              return sum + (task.timeSpent || 0);
+            }, 0);
+
+            // Create invoice data
+            const invoiceData = {
+              id: `INV-${project.id}-${Date.now()}`,
+              clientId: project.clientId,
+              clientName: client.name,
+              clientEmail: client.email,
+              projectDescription: project.name,
+              totalAmount: totalHours * 100, // $100/hour default rate
+              status: 'sent',
+              createdAt: new Date(),
+              dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+              terms: 'Payment is due within 30 days of invoice date.',
+              lineItems: [{
+                description: `Professional services for ${project.name}`,
+                quantity: totalHours,
+                rate: 100,
+                amount: totalHours * 100
+              }]
+            };
+
+            // Generate PDF invoice
+            console.log('🔄 Generating invoice PDF for completed project:', project.name);
+            const invoicePDF = await generateInvoicePDF(invoiceData);
+            console.log('✅ Invoice PDF generated successfully');
+
+            // Send invoice email with PDF attachment
+            const emailSent = await sendInvoiceEmail(
+              client.email,
+              invoiceData,
+              invoicePDF,
+              `Thank you for working with us on ${project.name}! Your project has been completed successfully.`
+            );
+
+            if (emailSent) {
+              console.log(`📧 Invoice automatically sent to ${client.email} for completed project: ${project.name}`);
+              
+              res.json({
+                project: updatedProject,
+                invoiceGenerated: true,
+                invoiceSent: true,
+                message: `Project completed and invoice automatically sent to ${client.email}`
+              });
+            } else {
+              res.json({
+                project: updatedProject,
+                invoiceGenerated: true,
+                invoiceSent: false,
+                message: "Project completed and invoice generated, but email sending failed"
+              });
+            }
+          } else {
+            res.json({
+              project: updatedProject,
+              invoiceGenerated: false,
+              message: "Project completed but no client email found for automatic invoicing"
+            });
+          }
+        } catch (invoiceError) {
+          console.error('❌ Failed to generate/send automatic invoice:', invoiceError);
+          res.json({
+            project: updatedProject,
+            invoiceGenerated: false,
+            message: "Project completed but automatic invoice generation failed"
+          });
+        }
+      } else {
+        res.json({
+          project: updatedProject,
+          invoiceGenerated: false,
+          message: "Project completed but no client assigned for automatic invoicing"
+        });
+      }
+    } catch (error) {
+      console.error("Error completing project:", error);
+      res.status(500).json({ message: "Failed to complete project" });
+    }
+  });
+
+  // Manual invoice generation and sending
+  app.post("/api/invoices/generate", requireAuth, async (req, res) => {
+    try {
+      const { projectId, clientId, customAmount, customMessage, includePDF } = req.body;
+      
+      let project, client;
+      
+      if (projectId) {
+        project = await storage.getProject(projectId);
+        if (!project) {
+          return res.status(404).json({ message: "Project not found" });
+        }
+        if (project.clientId) {
+          client = await storage.getClient(project.clientId);
+        }
+      }
+      
+      if (clientId) {
+        client = await storage.getClient(clientId);
+        if (!client) {
+          return res.status(404).json({ message: "Client not found" });
+        }
+      }
+
+      if (!client || !client.email) {
+        return res.status(400).json({ message: "Valid client with email required" });
+      }
+
+      // Calculate amount from project tasks or use custom amount
+      let totalAmount = customAmount || 0;
+      if (project && !customAmount) {
+        const tasks = await storage.getTasksByProject(project.id);
+        const totalHours = tasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0);
+        totalAmount = totalHours * 100; // $100/hour default
+      }
+
+      // Create invoice data
+      const invoiceData = {
+        id: `INV-${Date.now()}`,
+        clientId: client.id,
+        clientName: client.name,
+        clientEmail: client.email,
+        projectDescription: project?.name || 'Professional Services',
+        totalAmount,
+        status: 'sent',
+        createdAt: new Date(),
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        terms: 'Payment is due within 30 days of invoice date.',
+        lineItems: [{
+          description: project ? `Professional services for ${project.name}` : 'Professional Services',
+          quantity: 1,
+          rate: totalAmount,
+          amount: totalAmount
+        }]
+      };
+
+      let invoicePDF: Buffer | undefined;
+      
+      // Generate PDF if requested
+      if (includePDF) {
+        try {
+          console.log('🔄 Generating invoice PDF');
+          invoicePDF = await generateInvoicePDF(invoiceData);
+          console.log('✅ Invoice PDF generated successfully');
+        } catch (pdfError) {
+          console.error('❌ Invoice PDF generation failed:', pdfError);
+        }
+      }
+
+      // Send invoice email
+      const emailSent = await sendInvoiceEmail(
+        client.email,
+        invoiceData,
+        invoicePDF,
+        customMessage || 'Thank you for your business! Please find your invoice attached.'
+      );
+
+      if (emailSent) {
+        res.json({
+          success: true,
+          message: `Invoice sent successfully to ${client.email}${includePDF ? ' with PDF attachment' : ''}`,
+          invoiceData
+        });
+      } else {
+        res.status(500).json({ 
+          error: 'Failed to send invoice email',
+          invoiceData 
+        });
+      }
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+      res.status(500).json({ message: "Failed to generate invoice" });
     }
   });
 
