@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign } from "lucide-react";
+import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -95,7 +95,11 @@ export default function CreateInvoice() {
   // Save invoice mutation
   const saveInvoiceMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/invoices", data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // Store the created invoice ID for sending
+      const invoiceId = response.id;
+      setCreatedInvoiceId(invoiceId);
+      
       toast({
         title: "Invoice saved",
         description: "Your invoice has been saved successfully.",
@@ -110,6 +114,27 @@ export default function CreateInvoice() {
     },
   });
 
+  // Send invoice mutation
+  const sendInvoiceMutation = useMutation({
+    mutationFn: (invoiceId: string) => apiRequest("POST", `/api/invoices/${invoiceId}/send`),
+    onSuccess: (response) => {
+      toast({
+        title: "Invoice sent!",
+        description: `Invoice has been emailed to ${response.sentTo}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send invoice email.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // State to track created invoice ID
+  const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
+
   const handleSave = () => {
     const invoiceData = {
       ...formData,
@@ -117,9 +142,22 @@ export default function CreateInvoice() {
       subtotal: getSubtotal(),
       taxAmount: getTaxAmount(),
       totalAmount: getTotalAmount(),
-      type: "invoice"
+      type: "invoice",
+      status: "sent" // Mark as sent when user clicks Send Invoice
     };
     saveInvoiceMutation.mutate(invoiceData);
+  };
+
+  const handleSend = () => {
+    if (createdInvoiceId) {
+      sendInvoiceMutation.mutate(createdInvoiceId);
+    } else {
+      toast({
+        title: "Error",
+        description: "Please save the invoice first.",
+        variant: "destructive",
+      });
+    }
   };
 
   const updateFormData = (field: string, value: any) => {
@@ -141,10 +179,25 @@ export default function CreateInvoice() {
                 <Download className="h-4 w-4 mr-2" />
                 Export PDF
               </Button>
-              <Button onClick={handleSave}>
-                <Send className="h-4 w-4 mr-2" />
-                Send Invoice
-              </Button>
+              {!createdInvoiceId ? (
+                <Button onClick={handleSave} disabled={saveInvoiceMutation.isPending}>
+                  {saveInvoiceMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save Invoice
+                </Button>
+              ) : (
+                <Button onClick={handleSend} disabled={sendInvoiceMutation.isPending}>
+                  {sendInvoiceMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
+                  Send Invoice
+                </Button>
+              )}
             </div>
           </div>
 

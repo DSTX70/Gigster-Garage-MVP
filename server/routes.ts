@@ -5,7 +5,6 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF } from "./pdfService";
-import { generateProposalPDF, generateInvoicePDF } from "./pdfService";
 import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -1679,6 +1678,66 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Send invoice via email
+  app.post("/api/invoices/:id/send", requireAuth, async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Get client information
+      const client = await storage.getClient(invoice.clientId);
+      if (!client || !client.email) {
+        return res.status(400).json({ message: "Client email required to send invoice" });
+      }
+
+      // Generate PDF invoice
+      console.log('🔄 Generating invoice PDF for sending');
+      const invoicePDF = await generateInvoicePDF({
+        ...invoice,
+        clientName: client.name,
+        clientEmail: client.email,
+      });
+      console.log('✅ Invoice PDF generated successfully');
+
+      // Send invoice email with PDF attachment
+      const emailSent = await sendInvoiceEmail(
+        client.email,
+        {
+          ...invoice,
+          clientName: client.name,
+          clientEmail: client.email,
+        },
+        invoicePDF,
+        `Please find your invoice attached. Payment is due within the terms specified.`
+      );
+
+      if (emailSent) {
+        // Update invoice status to sent
+        await storage.updateInvoice(invoice.id, { 
+          status: 'sent',
+          sentAt: new Date()
+        });
+
+        console.log(`📧 Invoice sent successfully to ${client.email}`);
+        res.json({
+          success: true,
+          message: `Invoice sent successfully to ${client.email}`,
+          sentTo: client.email
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to send invoice email",
+          error: "Email delivery failed"
+        });
+      }
+    } catch (error) {
+      console.error("Error sending invoice:", error);
+      res.status(500).json({ message: "Failed to send invoice" });
     }
   });
 
