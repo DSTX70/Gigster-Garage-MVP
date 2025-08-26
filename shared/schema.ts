@@ -401,7 +401,15 @@ export interface GenerateProposalRequest {
 }
 
 // Create Zod schemas for validation
-export const insertTaskSchema = createInsertSchema(tasks);
+export const insertTaskSchema = createInsertSchema(tasks, {
+  dueDate: z.date().optional().nullable(),
+  progress: z.array(z.object({
+    date: z.string(),
+    comment: z.string()
+  })).optional().nullable(),
+  attachments: z.array(z.string()).optional(),
+  links: z.array(z.string()).optional(),
+});
 export const selectTaskSchema = createSelectSchema(tasks);
 export const taskSchema = insertTaskSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
