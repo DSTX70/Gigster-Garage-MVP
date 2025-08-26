@@ -252,6 +252,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
       }
 
       const taskData = insertTaskSchema.parse({
+        title: description.trim(), // Use description as title since that's what users enter
         description: description.trim(),
         dueDate: combinedDateTime,
         priority,
