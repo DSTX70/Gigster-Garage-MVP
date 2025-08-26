@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home } from "lucide-react";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
@@ -98,6 +98,17 @@ export function AppHeader() {
             </div>
             
             <div className="flex items-center space-x-3">
+              {/* Home Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="text-white hover:bg-white/10 relative p-2"
+                data-testid="button-home"
+              >
+                <Home size={18} />
+              </Button>
+              
               {/* Message System */}
               <Button
                 variant="ghost"
