@@ -1,4 +1,5 @@
 import { Square } from "lucide-react";
+import gigsterLogoOrange from "../assets/gigster-logo-orange.png";
 
 interface GigsterLogoProps {
   size?: 'mini' | 'small' | 'medium' | 'large';
@@ -25,7 +26,7 @@ export function GigsterLogo({ size = 'medium', showText = true, className = '' }
     <div className={`flex items-center space-x-3 ${className}`}>
       <div className={sizeClasses[size]} style={{ background: 'var(--gigster-gradient)' }}>
         <img 
-          src="@assets/GG_symbol_from_reference_1756251575487.png" 
+          src={gigsterLogoOrange} 
           alt="Gigster Garage"
           className={`${
             size === 'mini' ? 'w-4 h-4' : 
