@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Clock, TrendingUp, Calendar, BarChart3, Edit, Trash2 } from "lucide-react";
+import { Clock, TrendingUp, Calendar, BarChart3, Edit, Trash2, ArrowLeft } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { useLocation } from "wouter";
 import type { TimeLog } from "@shared/schema";
 
 interface ProductivityStats {
@@ -31,6 +32,8 @@ const formatDuration = (seconds: number): string => {
 };
 
 export default function ProductivityPage() {
+  const [, navigate] = useLocation();
+  
   // Fetch recent time logs
   const { data: timeLogs = [], isLoading: timeLogsLoading } = useQuery<TimeLog[]>({
     queryKey: ["/api/timelogs"],
@@ -51,13 +54,27 @@ export default function ProductivityPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold brand-heading mb-2" data-testid="page-title">
-            Time & Productivity Tools
-          </h2>
-          <p className="text-gray-700">
-            Track your time, maintain productivity streaks, and stay focused on your goals.
-          </p>
+        {/* Navigation */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/")}
+              className="flex items-center space-x-2"
+              data-testid="button-back-to-dashboard"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Dashboard</span>
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold brand-heading" data-testid="page-title">
+                Time & Productivity Tools
+              </h2>
+              <p className="text-gray-700 text-sm">
+                Track your time, maintain productivity streaks, and stay focused on your goals.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Top Widget Section */}
