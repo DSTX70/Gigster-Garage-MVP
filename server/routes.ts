@@ -1609,8 +1609,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Proposal Routes for Client Workflow
   app.get("/api/proposals/client/:clientId", requireAuth, async (req, res) => {
     try {
-      const proposals: any[] = []; // Placeholder
-      res.json(proposals);
+      const proposals = await storage.getProposals();
+      const clientProposals = proposals.filter(proposal => proposal.clientId === req.params.clientId);
+      res.json(clientProposals);
     } catch (error) {
       console.error("Error fetching client proposals:", error);
       res.status(500).json({ message: "Failed to fetch proposals" });
@@ -1620,8 +1621,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Invoice Routes for Client Workflow
   app.get("/api/invoices/client/:clientId", requireAuth, async (req, res) => {
     try {
-      const invoices: any[] = []; // Placeholder
-      res.json(invoices);
+      const invoices = await storage.getInvoices();
+      const clientInvoices = invoices.filter(invoice => invoice.clientId === req.params.clientId);
+      res.json(clientInvoices);
     } catch (error) {
       console.error("Error fetching client invoices:", error);
       res.status(500).json({ message: "Failed to fetch invoices" });
@@ -1631,8 +1633,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Payment Routes for Client Workflow  
   app.get("/api/payments/client/:clientId", requireAuth, async (req, res) => {
     try {
-      const payments: any[] = []; // Placeholder
-      res.json(payments);
+      const payments = await storage.getPayments();
+      const clientPayments = payments.filter(payment => payment.clientId === req.params.clientId);
+      res.json(clientPayments);
     } catch (error) {
       console.error("Error fetching client payments:", error);
       res.status(500).json({ message: "Failed to fetch payments" });
