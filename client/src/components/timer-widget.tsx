@@ -184,7 +184,7 @@ export function TimerWidget() {
                           <SelectValue placeholder="Select a project" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No project</SelectItem>
+                          <SelectItem value="no-project">No project</SelectItem>
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id}>
                               {project.name}
@@ -203,7 +203,7 @@ export function TimerWidget() {
                           <SelectValue placeholder="Select a task" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No task</SelectItem>
+                          <SelectItem value="no-task">No task</SelectItem>
                           {tasks.map((task) => (
                             <SelectItem key={task.id} value={task.id}>
                               {task.description}

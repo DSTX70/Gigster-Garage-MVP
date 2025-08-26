@@ -429,7 +429,7 @@ export function TaskDrawer({ isOpen, onClose, task, projectId, initialStatus, on
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
                           {users.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.name}
@@ -459,7 +459,7 @@ export function TaskDrawer({ isOpen, onClose, task, projectId, initialStatus, on
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No Project</SelectItem>
+                          <SelectItem value="no-project">No Project</SelectItem>
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id}>
                               {project.name}
