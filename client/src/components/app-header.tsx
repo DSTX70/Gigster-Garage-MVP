@@ -67,9 +67,8 @@ export function AppHeader() {
               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                 <GigsterLogo size="small" showText={false} />
               </div>
-              <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
-                <span className="text-white">Gigster</span>
-                <span style={{ color: 'var(--workshop-amber)' }}> Garage</span>
+              <h1 className="text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+                Gigster Garage
               </h1>
               <span style={{ color: 'rgba(255, 176, 0, 0.6)' }} className="font-medium">|</span>
               <p className="text-sm font-medium brand-tagline">Smarter tools for bolder dreams</p>

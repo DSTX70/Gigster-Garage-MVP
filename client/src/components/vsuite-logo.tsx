@@ -1,4 +1,4 @@
-import { Wrench } from "lucide-react";
+import { Square } from "lucide-react";
 
 interface GigsterLogoProps {
   size?: 'mini' | 'small' | 'medium' | 'large';
@@ -25,7 +25,7 @@ export function GigsterLogo({ size = 'medium', showText = true, className = '' }
     <div className={`flex items-center space-x-3 ${className}`}>
       <div className={sizeClasses[size]} style={{ background: 'var(--gigster-gradient)' }}>
         <img 
-          src="@assets/GG_symbol_from_reference_1756192525636.png" 
+          src="@assets/GG_symbol_from_reference_1756251575487.png" 
           alt="Gigster Garage"
           className={`${
             size === 'mini' ? 'w-4 h-4' : 
@@ -38,11 +38,11 @@ export function GigsterLogo({ size = 'medium', showText = true, className = '' }
             target.nextElementSibling?.classList.remove('hidden');
           }}
         />
-        <Wrench className={`hidden ${
+        <Square className={`hidden ${
           size === 'mini' ? 'w-4 h-4' : 
           size === 'small' ? 'w-5 h-5' : 
           size === 'large' ? 'w-8 h-8' : 'w-6 h-6'
-        }`} />
+        } text-orange-500`} />
       </div>
       
       {showText && (
