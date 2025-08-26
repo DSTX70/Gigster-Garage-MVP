@@ -6,13 +6,13 @@
 
 :root {
   /* Gigster Garage Brand Colors - Navy/Teal/Amber Palette */
-  --garage-navy: hsl(200 100% 21%); /* #004C6D */
-  --ignition-teal: hsl(179 96% 31%); /* #029E9D */
-  --workshop-amber: hsl(40 100% 50%); /* #FFB000 */
+  --garage-navy: #004C6D;
+  --ignition-teal: #029E9D;  
+  --workshop-amber: #FFB000;
   --steel-gray: hsl(0 0% 24%); /* #3C3C3C */
   --concrete-light: hsl(0 0% 90%); /* #E5E5E5 */
   --gigster-white: hsl(0 0% 100%); /* #FFFFFF */
-  --cream-card: hsl(38 36% 96%); /* #F9F5F1 */
+  --cream-card: #F9F5F1;
   
   /* Theme Variables */
   --background: hsl(0 0% 100%);
@@ -21,19 +21,19 @@
   --card-foreground: hsl(0 0% 0%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(0 0% 0%);
-  --primary: hsl(200 100% 21%); /* Garage Navy */
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(179 96% 31%); /* Ignition Teal */
-  --secondary-foreground: hsl(0 0% 100%);
+  --primary: #004C6D; /* Garage Navy */
+  --primary-foreground: #ffffff;
+  --secondary: #029E9D; /* Ignition Teal */
+  --secondary-foreground: #ffffff;
   --muted: hsl(220 14.3% 95.9%);
   --muted-foreground: hsl(220 8.9% 46.1%);
-  --accent: hsl(40 100% 50%); /* Workshop Amber for accents */
-  --accent-foreground: hsl(200 100% 12%);
+  --accent: #FFB000; /* Workshop Amber for accents */
+  --accent-foreground: #004C6D;
   --destructive: hsl(0 84% 60%);
   --destructive-foreground: hsl(0 0% 100%);
   --border: hsl(220 13% 91%);
   --input: hsl(220 13% 91%);
-  --ring: hsl(200 100% 21%); /* Garage Navy */
+  --ring: #004C6D; /* Garage Navy */
   --radius: 0.75rem;
   
   /* Neutral colors matching design */

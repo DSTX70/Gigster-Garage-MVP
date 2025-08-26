@@ -72,7 +72,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, rgba(0,76,109,0.05) 0%, rgba(2,158,157,0.05) 100%)' }}>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="text-center space-y-2">

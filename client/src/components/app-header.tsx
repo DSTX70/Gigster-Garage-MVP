@@ -78,7 +78,7 @@ export function AppHeader() {
           
           {/* Bottom line: User + Messages */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 text-sm text-blue-100">
+            <div className="flex items-center space-x-3 text-sm text-white/80">
               <User size={16} />
               <Button
                 variant="ghost"

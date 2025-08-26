@@ -285,7 +285,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
             </div>
             Add New Task
           </h2>
-          <p className="text-blue-100 text-sm">Create and organize your tasks efficiently</p>
+          <p className="text-white/80 text-sm">Create and organize your tasks efficiently</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -499,7 +499,8 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
                         href={link} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline flex items-center truncate"
+                        className="text-sm hover:underline flex items-center truncate"
+                        style={{ color: 'var(--ignition-teal)' }}
                       >
                         <Link size={14} className="mr-2 flex-shrink-0" />
                         {link}

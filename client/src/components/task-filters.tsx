@@ -62,9 +62,9 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             </span>
           </Button>
         </div>
-        <div className="flex items-center space-x-3 text-sm text-blue-700">
+        <div className="flex items-center space-x-3 text-sm" style={{ color: 'var(--steel-gray)' }}>
           <span className="font-medium">{activeCount} active</span>
-          <span className="text-blue-300">•</span>
+          <span style={{ color: 'var(--ignition-teal)' }}>•</span>
           <span className="font-medium">{completedCount} completed</span>
         </div>
       </div>
