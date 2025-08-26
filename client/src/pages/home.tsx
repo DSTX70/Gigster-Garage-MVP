@@ -67,16 +67,16 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
-            <Link href="/">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                New Task
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+              onClick={() => setIsNewTaskOpen(true)}
+              data-testid="button-new-task-header"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New Task
+            </Button>
           </div>
           <p className="text-gray-600">Welcome back! Here's what's happening with your tasks and projects.</p>
         </div>
@@ -389,6 +389,7 @@ export default function Home() {
                 variant="outline" 
                 size="lg"
                 className="w-full justify-between py-6 text-left hover:bg-blue-50 border-2 border-dashed border-gray-300 hover:border-blue-300"
+                data-testid="button-new-task-collapsible"
               >
                 <div className="flex items-center">
                   <Plus className="h-5 w-5 mr-3 text-blue-600" />
