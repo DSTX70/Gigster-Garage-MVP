@@ -257,19 +257,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTask(insertTask: InsertTask, createdById: string): Promise<Task> {
+    // Handle JSONB arrays properly - use null for empty arrays to avoid PostgreSQL issues
+    const taskData = {
+      ...insertTask,
+      createdById,
+      assignedToId: insertTask.assignedToId || null,
+      projectId: insertTask.projectId || null,
+      dueDate: insertTask.dueDate || null,
+      notes: insertTask.notes || null,
+      attachments: (insertTask.attachments && insertTask.attachments.length > 0) ? insertTask.attachments : null,
+      links: (insertTask.links && insertTask.links.length > 0) ? insertTask.links : null,
+      progressNotes: (insertTask.progressNotes && insertTask.progressNotes.length > 0) ? insertTask.progressNotes : null,
+    };
+
     const [task] = await db
       .insert(tasks)
-      .values({
-        ...insertTask,
-        createdById,
-        assignedToId: insertTask.assignedToId || null,
-        projectId: insertTask.projectId || null,
-        dueDate: insertTask.dueDate || null,
-        notes: insertTask.notes || null,
-        attachments: insertTask.attachments || [],
-        links: insertTask.links || [],
-        progressNotes: insertTask.progressNotes || [],
-      })
+      .values(taskData)
       .returning();
 
     return await this.getTask(task.id) as Task;
