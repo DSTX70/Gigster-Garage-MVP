@@ -402,7 +402,11 @@ export interface GenerateProposalRequest {
 
 // Create Zod schemas for validation
 export const insertTaskSchema = createInsertSchema(tasks, {
-  dueDate: z.date().optional().nullable(),
+  dueDate: z.union([
+    z.string().transform((val) => new Date(val)),
+    z.date(),
+    z.null(),
+  ]).optional().nullable(),
   progress: z.array(z.object({
     date: z.string(),
     comment: z.string()
