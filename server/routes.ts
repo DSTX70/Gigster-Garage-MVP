@@ -187,7 +187,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userId = req.session.user!.id;
-      const user = await storage.updateUserOnboarding(userId, result.data);
+      const updateData = {
+        hasCompletedOnboarding: result.data.hasCompletedOnboarding,
+        emailOptIn: result.data.emailOptIn,
+        smsOptIn: result.data.smsOptIn,
+        notificationEmail: result.data.notificationEmail || '',
+        phone: result.data.phone
+      };
+      const user = await storage.updateUserOnboarding(userId, updateData);
       res.json(user);
     } catch (error) {
       console.error("Error updating user onboarding:", error);
@@ -300,30 +307,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.session.user!;
-      const task = await storage.createTask(result.data, user.id);
+      const task = await storage.createTask({
+        ...result.data,
+        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress : []
+      }, user.id);
       
       // Send notifications for high priority tasks
-      if (task.priority === 'high' && task.assignedToId && task.assignedTo) {
-        console.log(`📬 Sending notifications for high priority task: ${task.description}`);
-        console.log(`📧 Email: ${task.assignedTo.notificationEmail}, Opt-in: ${task.assignedTo.emailOptIn}`);
-        console.log(`📱 Phone: ${task.assignedTo.phone}, SMS Opt-in: ${task.assignedTo.smsOptIn}`);
-        
-        try {
-          // Send email notification
-          const emailSent = await sendHighPriorityTaskNotification(task, task.assignedTo);
-          console.log(`📧 Email notification result: ${emailSent ? 'SUCCESS' : 'FAILED'}`);
+      if (task.priority === 'high' && task.assignedToId) {
+        const users = await storage.getUsers();
+        const assignedUser = users.find(u => u.id === task.assignedToId);
+        if (assignedUser) {
+          console.log(`📬 Sending notifications for high priority task: ${task.title}`);
+          console.log(`📧 Email: ${assignedUser.notificationEmail}, Opt-in: ${assignedUser.emailOptIn}`);
+          console.log(`📱 Phone: ${assignedUser.phone}, SMS Opt-in: ${assignedUser.smsOptIn}`);
           
-          // Send SMS notification if enabled
-          if (task.assignedTo.smsOptIn) {
-            const smsSent = await sendSMSNotification(task, task.assignedTo);
-            console.log(`📱 SMS notification result: ${smsSent ? 'SUCCESS' : 'FAILED'}`);
+          try {
+            // Send email notification
+            const emailSent = await sendHighPriorityTaskNotification(task, assignedUser);
+            console.log(`📧 Email notification result: ${emailSent ? 'SUCCESS' : 'FAILED'}`);
+            
+            // Send SMS notification if enabled
+            if (assignedUser.smsOptIn) {
+              const smsSent = await sendSMSNotification(task, assignedUser);
+              console.log(`📱 SMS notification result: ${smsSent ? 'SUCCESS' : 'FAILED'}`);
+            }
+          } catch (error) {
+            console.error("❌ Error sending notifications:", error);
+            // Don't fail the task creation if notifications fail
           }
-        } catch (error) {
-          console.error("❌ Error sending notifications:", error);
-          // Don't fail the task creation if notifications fail
         }
       } else {
-        console.log(`⚠️ No notifications sent - Priority: ${task.priority}, AssignedToId: ${task.assignedToId}, AssignedTo: ${task.assignedTo ? 'YES' : 'NO'}`);
+        console.log(`⚠️ No notifications sent - Priority: ${task.priority}, AssignedToId: ${task.assignedToId}`);
       }
       
       res.status(201).json(task);
@@ -357,7 +371,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      const task = await storage.updateTask(id, result.data);
+      const task = await storage.updateTask(id, {
+        ...result.data,
+        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress : undefined
+      });
       res.json(task);
     } catch (error) {
       console.error("Error updating task:", error);
@@ -510,7 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot create circular dependency" });
       }
 
-      const dependency = await storage.createTaskDependency({ taskId, dependsOnTaskId });
+      const dependency = await storage.createTaskDependency({ dependentTaskId: taskId, dependsOnTaskId });
       res.status(201).json(dependency);
     } catch (error) {
       console.error("Error creating task dependency:", error);
@@ -576,6 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...result.data,
         parentTaskId: id,
         projectId: parentTask.projectId, // Inherit project from parent
+        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress : []
       }, user.id);
       
       res.status(201).json(subtask);

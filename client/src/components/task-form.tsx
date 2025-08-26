@@ -261,7 +261,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
         projectId: projectId || undefined,
         completed: false,
         notes: notes.trim() || undefined,
-        attachments: attachments.length > 0 ? attachments : [],
+        attachments: attachments.length > 0 ? [...attachments] : [],
         links: links.length > 0 ? links.filter(link => link.trim() !== '') : [],
       });
 

@@ -95,8 +95,8 @@ export const clients = pgTable("clients", {
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = typeof clients.$inferInsert;
 
-// Enhanced Proposals
-export const proposals = pgTable("proposals", {
+// Enhanced Proposals  
+export const proposals: any = pgTable("proposals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
   templateId: varchar("template_id").references(() => templates.id),
@@ -123,7 +123,7 @@ export const proposals = pgTable("proposals", {
   responseMessage: text("response_message"),
   shareableLink: varchar("shareable_link").unique(),
   version: integer("version").default(1),
-  parentProposalId: varchar("parent_proposal_id").references(() => proposals.id),
+  parentProposalId: varchar("parent_proposal_id").references((): any => proposals.id),
   createdById: varchar("created_by_id").references(() => users.id),
   metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
   createdAt: timestamp("created_at").defaultNow(),
