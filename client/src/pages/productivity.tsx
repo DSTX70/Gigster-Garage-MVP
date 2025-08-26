@@ -14,7 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Clock, TrendingUp, Calendar, BarChart3, Edit, Trash2, ArrowLeft, CheckCircle, XCircle, FileText, DollarSign } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { TimeLog } from "@shared/schema";
 
 interface ProductivityStats {
@@ -40,19 +40,30 @@ export default function ProductivityPage() {
   const [selectedForInvoice, setSelectedForInvoice] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const queryClient = useQueryClient();
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   
   // Fetch recent time logs
-  const { data: timeLogs = [], isLoading: timeLogsLoading } = useQuery<TimeLog[]>({
+  const { data: timeLogs = [], isLoading: timeLogsLoading, isError: timeLogsError } = useQuery<TimeLog[]>({
     queryKey: ["/api/timelogs"],
+    staleTime: 1000 * 60 * 2, // 2 minutes to reduce frequent refetching
+    refetchInterval: 1000 * 30, // Refetch every 30 seconds instead of constantly
   });
 
   // Fetch productivity stats for different periods
-  const { data: stats7Days } = useQuery<ProductivityStats>({
+  const { data: stats7Days, isLoading: stats7Loading } = useQuery<ProductivityStats>({
     queryKey: ["/api/productivity/stats", { days: 7 }],
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time for stats
+    refetchInterval: 1000 * 60, // Refetch every minute
   });
 
-  const { data: stats30Days } = useQuery<ProductivityStats>({
+  const { data: stats30Days, isLoading: stats30Loading } = useQuery<ProductivityStats>({
     queryKey: ["/api/productivity/stats", { days: 30 }],
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time for stats
+    refetchInterval: 1000 * 60, // Refetch every minute
   });
 
   // Calculate running total of hours
@@ -181,12 +192,21 @@ export default function ProductivityPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold brand-heading text-blue-600" data-testid="stat-running-total">
-                {formatTotalDuration(totalHours)}
-              </div>
-              <div className="text-xs text-gray-600 mt-1">
-                All time entries
-              </div>
+              {timeLogsLoading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-20"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold brand-heading text-blue-600" data-testid="stat-running-total">
+                    {formatTotalDuration(totalHours)}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    All time entries
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -198,12 +218,21 @@ export default function ProductivityPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold brand-heading" data-testid="stat-hours-7days">
-                {stats7Days ? `${stats7Days.totalHours}h` : "0h"}
-              </div>
-              <div className="text-xs text-gray-600 mt-1">
-                Avg: {stats7Days ? `${stats7Days.averageDailyHours}h/day` : "0h/day"}
-              </div>
+              {stats7Loading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-24"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold brand-heading" data-testid="stat-hours-7days">
+                    {stats7Days ? `${stats7Days.totalHours}h` : "0h"}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Avg: {stats7Days ? `${stats7Days.averageDailyHours}h/day` : "0h/day"}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -215,12 +244,21 @@ export default function ProductivityPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold brand-heading" data-testid="stat-hours-30days">
-                {stats30Days ? `${stats30Days.totalHours}h` : "0h"}
-              </div>
-              <div className="text-xs text-gray-600 mt-1">
-                Utilization: {stats30Days ? `${stats30Days.utilizationPercent}%` : "0%"}
-              </div>
+              {stats30Loading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-28"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold brand-heading" data-testid="stat-hours-30days">
+                    {stats30Days ? `${stats30Days.totalHours}h` : "0h"}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Utilization: {stats30Days ? `${stats30Days.utilizationPercent}%` : "0%"}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -328,9 +366,9 @@ export default function ProductivityPage() {
                       {/* Invoice Selection Checkbox */}
                       {log.approvalStatus === "approved" && (
                         <Checkbox
-                          checked={selectedForInvoice.has(log.id) || log.isSelectedForInvoice}
-                          onCheckedChange={(checked) => handleInvoiceSelection(log.id, checked as boolean)}
-                          disabled={log.isSelectedForInvoice}
+                          checked={selectedForInvoice.has(log.id) || Boolean(log.isSelectedForInvoice)}
+                          onCheckedChange={(checked) => handleInvoiceSelection(log.id, Boolean(checked))}
+                          disabled={Boolean(log.isSelectedForInvoice)}
                           data-testid={`checkbox-invoice-${log.id}`}
                         />
                       )}
