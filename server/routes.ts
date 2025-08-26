@@ -1271,7 +1271,30 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           metadata: {}
         };
 
+        // Check if client exists, create if not (template-based)
+        let proposalClientId = proposalData.clientId;
+        if (!proposalClientId && clientName && clientEmail) {
+          // Check if client exists by email
+          const existingClients = await storage.getClients();
+          let existingClient = existingClients.find(c => c.email === clientEmail);
+          
+          if (!existingClient) {
+            // Create new client automatically
+            const newClient = await storage.createClient({
+              name: clientName,
+              email: clientEmail,
+              status: 'prospect'
+            });
+            existingClient = newClient;
+            console.log(`✅ Created new client: ${newClient.name} (${newClient.email})`);
+          }
+          
+          assignedClientId = existingClient.id;
+          proposalData.clientId = assignedClientId;
+        }
+
         const proposal = await storage.createProposal(proposalData);
+        console.log(`📄 Created proposal "${proposal.title}" for client: ${proposal.clientName}`);
         res.status(201).json(proposal);
       } else {
         // Direct proposal creation
@@ -1290,7 +1313,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
         // Create or find existing client
-        let clientId = null;
+        let directClientId = null;
         if (clientName && clientEmail) {
           // Check if client already exists
           const existingClients = await storage.getClients();
@@ -1309,7 +1332,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
             };
             existingClient = await storage.createClient(clientData);
           }
-          clientId = existingClient.id;
+          directClientId = existingClient.id;
         }
 
         // Generate content for direct proposals
@@ -1348,7 +1371,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         const proposalData = {
           title,
           projectId: projectId || null,
-          clientId,
+          clientId: directClientId,
           clientName,
           clientEmail,
           projectDescription,
@@ -1367,7 +1390,30 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           metadata: {}
         };
 
+        // Check if client exists, create if not (direct proposal)
+        let assignedClientId = proposalData.clientId;
+        if (!assignedClientId && result.data.clientName && result.data.clientEmail) {
+          // Check if client exists by email
+          const existingClients = await storage.getClients();
+          let existingClient = existingClients.find(c => c.email === result.data.clientEmail);
+          
+          if (!existingClient) {
+            // Create new client automatically
+            const newClient = await storage.createClient({
+              name: result.data.clientName,
+              email: result.data.clientEmail,
+              status: 'prospect'
+            });
+            existingClient = newClient;
+            console.log(`✅ Created new client: ${newClient.name} (${newClient.email})`);
+          }
+          
+          assignedClientId = existingClient.id;
+          proposalData.clientId = assignedClientId;
+        }
+
         const proposal = await storage.createProposal(proposalData);
+        console.log(`📄 Created proposal "${proposal.title}" for client: ${proposal.clientName}`);
         res.status(201).json(proposal);
       }
     } catch (error) {
@@ -1524,7 +1570,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Client Management Routes
   app.get("/api/clients", requireAuth, async (req, res) => {
     try {
-      const clients: any[] = []; // Placeholder until storage is implemented
+      const clients = await storage.getClients();
       res.json(clients);
     } catch (error) {
       console.error("Error fetching clients:", error);
@@ -1534,8 +1580,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
   app.get("/api/clients/:id", requireAuth, async (req, res) => {
     try {
-      // Placeholder client data
-      const client = null;
+      const client = await storage.getClient(req.params.id);
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
@@ -1549,8 +1594,8 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   app.post("/api/clients", requireAuth, async (req, res) => {
     try {
       const validatedData = insertClientSchema.parse(req.body);
-      // Placeholder - create client
-      const client = { id: "temp-id", ...validatedData, createdAt: new Date(), updatedAt: new Date() };
+      const client = await storage.createClient(validatedData);
+      console.log(`✅ Client created: ${client.name} (${client.email})`);
       res.status(201).json(client);
     } catch (error) {
       console.error("Error creating client:", error);
