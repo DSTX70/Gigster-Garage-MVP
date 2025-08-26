@@ -24,9 +24,10 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             onClick={() => onFilterChange('all')}
             className={`flex items-center gap-2 ${
               activeFilter === 'all' 
-                ? 'gigster-button-primary' 
-                : 'gigster-button-secondary'
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-teal-500 text-white hover:bg-teal-600 border-teal-500'
             }`}
+            data-testid="filter-all-tasks"
           >
             All Tasks
             <span className="bg-white/20 text-current px-2 py-1 rounded-full text-xs">
@@ -38,9 +39,10 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             onClick={() => onFilterChange('active')}
             className={`flex items-center gap-2 ${
               activeFilter === 'active' 
-                ? 'gigster-button-primary' 
-                : 'gigster-button-secondary'
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-teal-500 text-white hover:bg-teal-600 border-teal-500'
             }`}
+            data-testid="filter-active"
           >
             Active
             <span className="bg-white/20 text-current px-2 py-1 rounded-full text-xs">
@@ -52,9 +54,10 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             onClick={() => onFilterChange('completed')}
             className={`flex items-center gap-2 ${
               activeFilter === 'completed' 
-                ? 'gigster-button-primary' 
-                : 'gigster-button-secondary'
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-teal-500 text-white hover:bg-teal-600 border-teal-500'
             }`}
+            data-testid="filter-completed"
           >
             Completed
             <span className="bg-white/20 text-current px-2 py-1 rounded-full text-xs">
