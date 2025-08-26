@@ -140,7 +140,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Documents
+            Filing Cabinet
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -158,7 +158,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Documents ({documents.length})
+            Filing Cabinet ({documents.length})
           </CardTitle>
           
           <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
@@ -242,8 +242,8 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
         {documents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No documents uploaded yet</p>
-            <p className="text-sm">Click "Upload Document" to add the first document</p>
+            <p>No documents in filing cabinet yet</p>
+            <p className="text-sm">Click "Upload Document" to add the first document to the filing cabinet</p>
           </div>
         ) : (
           <div className="space-y-3">

@@ -163,7 +163,7 @@ export default function ClientDetails() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="documents">Filing Cabinet</TabsTrigger>
             <TabsTrigger value="proposals">Proposals ({proposals.length})</TabsTrigger>
             <TabsTrigger value="invoices">Invoices ({invoices.length})</TabsTrigger>
             <TabsTrigger value="payments">Payments ({payments.length})</TabsTrigger>
