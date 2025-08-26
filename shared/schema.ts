@@ -280,6 +280,12 @@ export const timeLogs = pgTable("time_logs", {
   isActive: boolean("is_active").default(false),
   isManualEntry: boolean("is_manual_entry").default(false),
   editHistory: jsonb("edit_history").$type<Array<{ timestamp: string; changes: Record<string, any>; }>>().default([]),
+  approvalStatus: varchar("approval_status", { enum: ["pending", "approved", "rejected"] }).default("pending"),
+  isSelectedForInvoice: boolean("is_selected_for_invoice").default(false),
+  invoiceId: varchar("invoice_id").references(() => invoices.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -393,6 +399,29 @@ export const taskDependenciesRelations = relations(taskDependencies, ({ one }) =
     fields: [taskDependencies.dependsOnTaskId],
     references: [tasks.id],
     relationName: "dependsOn",
+  }),
+}));
+
+export const timeLogsRelations = relations(timeLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [timeLogs.userId],
+    references: [users.id],
+  }),
+  task: one(tasks, {
+    fields: [timeLogs.taskId],
+    references: [tasks.id],
+  }),
+  project: one(projects, {
+    fields: [timeLogs.projectId],
+    references: [projects.id],
+  }),
+  invoice: one(invoices, {
+    fields: [timeLogs.invoiceId],
+    references: [invoices.id],
+  }),
+  approvedByUser: one(users, {
+    fields: [timeLogs.approvedBy],
+    references: [users.id],
   }),
 }));
 

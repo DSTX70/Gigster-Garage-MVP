@@ -85,6 +85,7 @@ export function TimerWidget() {
       queryClient.invalidateQueries({ queryKey: ["/api/productivity/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/streaks"] });
       setCurrentTime(0);
+      // Reset timer display to show "Timer Ready" state
     },
   });
 
@@ -128,10 +129,7 @@ export function TimerWidget() {
                     {formatDuration(currentTime)}
                   </div>
                   <div className="text-xs text-orange-700" data-testid="timer-description">
-                    {activeTimer.description || 
-                     (activeTimer.task?.description) || 
-                     (activeTimer.project?.name) || 
-                     "Working on task"}
+                    {activeTimer.description || "Working on task"}
                   </div>
                 </div>
               ) : (

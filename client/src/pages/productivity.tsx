@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/app-header";
 import { TimerWidget } from "@/components/timer-widget";
 import { StreakCard } from "@/components/streak-card";
@@ -8,9 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Clock, TrendingUp, Calendar, BarChart3, Edit, Trash2, ArrowLeft } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { apiRequest } from "@/lib/queryClient";
+import { Clock, TrendingUp, Calendar, BarChart3, Edit, Trash2, ArrowLeft, CheckCircle, XCircle, FileText, DollarSign } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
+import { useState } from "react";
 import type { TimeLog } from "@shared/schema";
 
 interface ProductivityStats {
@@ -33,6 +37,9 @@ const formatDuration = (seconds: number): string => {
 
 export default function ProductivityPage() {
   const [, navigate] = useLocation();
+  const [selectedForInvoice, setSelectedForInvoice] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const queryClient = useQueryClient();
   
   // Fetch recent time logs
   const { data: timeLogs = [], isLoading: timeLogsLoading } = useQuery<TimeLog[]>({
@@ -47,6 +54,75 @@ export default function ProductivityPage() {
   const { data: stats30Days } = useQuery<ProductivityStats>({
     queryKey: ["/api/productivity/stats", { days: 30 }],
   });
+
+  // Calculate running total of hours
+  const totalHours = timeLogs.reduce((total, log) => {
+    if (log.duration) {
+      return total + parseInt(log.duration);
+    }
+    return total;
+  }, 0);
+
+  const formatTotalDuration = (totalSeconds: number): string => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  // Filter time logs based on approval status
+  const filteredTimeLogs = timeLogs.filter(log => {
+    if (activeTab === "all") return true;
+    return log.approvalStatus === activeTab;
+  });
+
+  // Approval mutation
+  const approveTimeLogMutation = useMutation({
+    mutationFn: async ({ timeLogId, status }: { timeLogId: string; status: "approved" | "rejected" }) => {
+      return apiRequest("POST", `/api/timelogs/${timeLogId}/approve`, { 
+        approvalStatus: status 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+    },
+  });
+
+  // Invoice selection mutation
+  const updateInvoiceSelectionMutation = useMutation({
+    mutationFn: async ({ timeLogIds, selected }: { timeLogIds: string[]; selected: boolean }) => {
+      return apiRequest("POST", "/api/timelogs/invoice-selection", { 
+        timeLogIds, 
+        isSelectedForInvoice: selected 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      setSelectedForInvoice(new Set());
+    },
+  });
+
+  const handleApproval = (timeLogId: string, status: "approved" | "rejected") => {
+    approveTimeLogMutation.mutate({ timeLogId, status });
+  };
+
+  const handleInvoiceSelection = (timeLogId: string, selected: boolean) => {
+    const newSelection = new Set(selectedForInvoice);
+    if (selected) {
+      newSelection.add(timeLogId);
+    } else {
+      newSelection.delete(timeLogId);
+    }
+    setSelectedForInvoice(newSelection);
+  };
+
+  const handleBulkInvoiceUpdate = () => {
+    if (selectedForInvoice.size > 0) {
+      updateInvoiceSelectionMutation.mutate({ 
+        timeLogIds: Array.from(selectedForInvoice), 
+        selected: true 
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen" style={{background: 'var(--cream-card)'}} data-testid="productivity-page">
@@ -96,7 +172,24 @@ export default function ProductivityPage() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <Card className="gigster-card" data-testid="stat-card-running-total">
+            <CardHeader className="pb-3">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
+                <Clock className="h-4 w-4" />
+                <span>Running Total</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold brand-heading text-blue-600" data-testid="stat-running-total">
+                {formatTotalDuration(totalHours)}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">
+                All time entries
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="gigster-card" data-testid="stat-card-7days">
             <CardHeader className="pb-3">
               <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
@@ -166,73 +259,162 @@ export default function ProductivityPage() {
           </Card>
         </div>
 
-        {/* Recent Time Logs */}
-        <Card className="gigster-card" data-testid="recent-timelogs-card">
+        {/* Enhanced Time Logs Management */}
+        <Card className="gigster-card" data-testid="enhanced-timelogs-card">
           <CardHeader>
-            <CardTitle className="brand-heading flex items-center space-x-2">
-              <Clock className="h-5 w-5" />
-              <span>Recent Time Logs</span>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="brand-heading flex items-center space-x-2">
+                <Clock className="h-5 w-5" />
+                <span>Time Logs Management</span>
+              </CardTitle>
+              {selectedForInvoice.size > 0 && (
+                <Button
+                  onClick={handleBulkInvoiceUpdate}
+                  disabled={updateInvoiceSelectionMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  data-testid="button-add-to-invoice"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Add {selectedForInvoice.size} to Invoice
+                </Button>
+              )}
+            </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab as any} className="mt-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="all" data-testid="tab-all">All ({timeLogs.length})</TabsTrigger>
+                <TabsTrigger value="pending" data-testid="tab-pending">
+                  Pending ({timeLogs.filter(log => log.approvalStatus === "pending").length})
+                </TabsTrigger>
+                <TabsTrigger value="approved" data-testid="tab-approved">
+                  Approved ({timeLogs.filter(log => log.approvalStatus === "approved").length})
+                </TabsTrigger>
+                <TabsTrigger value="rejected" data-testid="tab-rejected">
+                  Rejected ({timeLogs.filter(log => log.approvalStatus === "rejected").length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
           <CardContent>
             {timeLogsLoading ? (
               <div className="flex items-center justify-center py-8" data-testid="timelogs-loading">
                 <div className="animate-spin w-6 h-6 border-2 border-orange-600 border-t-transparent rounded-full" />
               </div>
-            ) : timeLogs.length === 0 ? (
+            ) : filteredTimeLogs.length === 0 ? (
               <div className="text-center py-8 text-orange-700" data-testid="no-timelogs">
                 <Clock className="h-12 w-12 mx-auto mb-4 text-orange-400" />
-                <p className="text-lg font-medium mb-2">No time logs yet</p>
-                <p className="text-sm">Start your first timer to begin tracking your productivity!</p>
+                <p className="text-lg font-medium mb-2">No time logs found</p>
+                <p className="text-sm">
+                  {activeTab === "all" 
+                    ? "Start your first timer to begin tracking your productivity!"
+                    : `No ${activeTab} time logs available.`
+                  }
+                </p>
               </div>
             ) : (
               <div className="space-y-3" data-testid="timelogs-list">
-                {timeLogs.slice(0, 10).map((log) => (
+                {filteredTimeLogs.slice(0, 20).map((log) => (
                   <div
                     key={log.id}
-                    className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-100"
+                    className={`flex items-center justify-between p-4 rounded-lg border ${
+                      log.approvalStatus === "approved" 
+                        ? "bg-green-50 border-green-200" 
+                        : log.approvalStatus === "rejected"
+                        ? "bg-red-50 border-red-200"
+                        : "bg-orange-50 border-orange-100"
+                    }`}
                     data-testid={`timelog-${log.id}`}
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-1">
-                          <div className="font-medium brand-heading">
-                            {log.description || 
-                             log.task?.description || 
-                             log.project?.name || 
-                             "Untitled session"}
+                    <div className="flex items-center space-x-3 flex-1">
+                      {/* Invoice Selection Checkbox */}
+                      {log.approvalStatus === "approved" && (
+                        <Checkbox
+                          checked={selectedForInvoice.has(log.id) || log.isSelectedForInvoice}
+                          onCheckedChange={(checked) => handleInvoiceSelection(log.id, checked as boolean)}
+                          disabled={log.isSelectedForInvoice}
+                          data-testid={`checkbox-invoice-${log.id}`}
+                        />
+                      )}
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-1">
+                            <div className="font-medium brand-heading">
+                              {log.description || "Untitled session"}
+                            </div>
+                            <div className="text-sm text-orange-700 mt-1">
+                              {format(new Date(log.startTime), "MMM dd, yyyy 'at' h:mm a")}
+                              {log.endTime && ` - ${format(new Date(log.endTime), "h:mm a")}`}
+                            </div>
                           </div>
-                          <div className="text-sm text-orange-700 mt-1">
-                            {format(new Date(log.startTime), "MMM dd, yyyy 'at' h:mm a")}
-                            {log.endTime && ` - ${format(new Date(log.endTime), "h:mm a")}`}
+                          
+                          <div className="flex items-center space-x-2">
+                            {/* Approval Status Badge */}
+                            <Badge 
+                              className={
+                                log.approvalStatus === "approved" 
+                                  ? "bg-green-100 text-green-800 border-green-200"
+                                  : log.approvalStatus === "rejected"
+                                  ? "bg-red-100 text-red-800 border-red-200"
+                                  : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                              }
+                            >
+                              {log.approvalStatus}
+                            </Badge>
+
+                            {log.projectId && (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                                Project ID: {log.projectId}
+                              </Badge>
+                            )}
+                            
+                            {log.isActive ? (
+                              <Badge className="bg-green-100 text-green-800 border-green-200">
+                                Running
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-orange-300 text-orange-700">
+                                {log.duration ? formatDuration(parseInt(log.duration)) : "0m"}
+                              </Badge>
+                            )}
+                            
+                            {log.isSelectedForInvoice && (
+                              <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                                <FileText className="h-3 w-3 mr-1" />
+                                In Invoice
+                              </Badge>
+                            )}
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          {log.project && (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-                              {log.project.name}
-                            </Badge>
-                          )}
-                          {log.isActive ? (
-                            <Badge className="bg-green-100 text-green-800 border-green-200">
-                              Running
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="border-orange-300 text-orange-700">
-                              {log.duration ? formatDuration(parseInt(log.duration)) : "0m"}
-                            </Badge>
-                          )}
-                          {log.isManualEntry && (
-                            <Badge variant="outline" className="border-purple-300 text-purple-700">
-                              Manual
-                            </Badge>
-                          )}
                         </div>
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-4">
+                      {/* Approval Controls */}
+                      {log.approvalStatus === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleApproval(log.id, "approved")}
+                            disabled={approveTimeLogMutation.isPending}
+                            className="text-green-600 hover:bg-green-100"
+                            data-testid={`button-approve-${log.id}`}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleApproval(log.id, "rejected")}
+                            disabled={approveTimeLogMutation.isPending}
+                            className="text-red-600 hover:bg-red-100"
+                            data-testid={`button-reject-${log.id}`}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      
                       <Button
                         size="sm"
                         variant="ghost"
@@ -253,10 +435,10 @@ export default function ProductivityPage() {
                   </div>
                 ))}
                 
-                {timeLogs.length > 10 && (
+                {filteredTimeLogs.length > 20 && (
                   <div className="text-center pt-4">
                     <Button variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50">
-                      View All Time Logs ({timeLogs.length})
+                      View All {activeTab} Time Logs ({filteredTimeLogs.length})
                     </Button>
                   </div>
                 )}
