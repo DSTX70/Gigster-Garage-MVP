@@ -15,7 +15,7 @@ import {
 import { ObjectUploader } from "./ObjectUploader";
 import { FileText, Upload, Download, Trash2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { ClientDocument } from "@shared/schema";
+import type { ClientDocument, InsertClientDocument } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ClientDocumentsProps {
@@ -36,7 +36,6 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
   // Fetch client documents
   const { data: documents = [], isLoading } = useQuery<ClientDocument[]>({
     queryKey: ['/api/clients', clientId, 'documents'],
-    queryFn: () => apiRequest(`/api/clients/${clientId}/documents`)
   });
 
   // Delete document mutation
@@ -61,7 +60,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
 
   // Upload document mutation
   const uploadDocumentMutation = useMutation({
-    mutationFn: (data: any) => 
+    mutationFn: (data: Omit<InsertClientDocument, 'id' | 'createdAt' | 'updatedAt'>) => 
       apiRequest(`/api/clients/${clientId}/documents`, 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId, 'documents'] });
@@ -111,7 +110,18 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
       return;
     }
 
-    uploadDocumentMutation.mutate(uploadForm);
+    const documentData = {
+      name: uploadForm.name,
+      fileName: uploadForm.name,
+      description: uploadForm.description || null,
+      type: 'other' as const,
+      fileUrl: uploadForm.filePath,
+      fileSize: null,
+      uploadedById: '', // Will be set by the API
+      clientId: clientId
+    };
+
+    uploadDocumentMutation.mutate(documentData);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -154,7 +164,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Filing Cabinet ({documents.length})
+            Filing Cabinet ({documents?.length || 0})
           </CardTitle>
           
           <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
@@ -235,7 +245,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {documents.length === 0 ? (
+        {!documents || documents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No documents in filing cabinet yet</p>
@@ -243,7 +253,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {documents.map((document) => (
+            {(documents || []).map((document: ClientDocument) => (
               <div
                 key={document.id}
                 className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 space-y-3"
@@ -264,7 +274,7 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
                       {document.fileSize && (
                         <span className="text-xs">{formatFileSize(document.fileSize)}</span>
                       )}
-                      <span className="text-xs">{formatDate(document.createdAt || new Date())}</span>
+                      <span className="text-xs">{document.createdAt ? formatDate(document.createdAt.toString()) : formatDate(new Date().toISOString())}</span>
                     </div>
                     {document.description && (
                       <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
@@ -274,11 +284,11 @@ export function ClientDocuments({ clientId }: ClientDocumentsProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pt-2 border-t">
-                  {document.url && (
+                  {document.fileUrl && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(document.url, '_blank')}
+                      onClick={() => window.open(document.fileUrl, '_blank')}
                       data-testid={`button-view-document-${document.id}`}
                     >
                       <Eye className="h-4 w-4 mr-1" />

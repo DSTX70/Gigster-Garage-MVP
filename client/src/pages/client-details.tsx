@@ -397,8 +397,8 @@ export default function ClientDetails() {
                               <p className="text-sm text-gray-500">From proposal</p>
                             )}
                           </div>
-                          <Badge variant={getStatusBadgeVariant(invoice.status)}>
-                            {invoice.status}
+                          <Badge variant={getStatusBadgeVariant(invoice.status || 'draft')}>
+                            {invoice.status || 'draft'}
                           </Badge>
                         </div>
                         <div className="flex justify-between items-center text-sm text-gray-600">
