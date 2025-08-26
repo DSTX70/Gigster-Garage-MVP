@@ -261,7 +261,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
         completed: false,
         notes: notes.trim() || undefined,
         attachments: attachments,
-        links: links,
+        links: links.filter(link => link.trim() !== '') as string[],
       });
 
       createTaskMutation.mutate(taskData);
