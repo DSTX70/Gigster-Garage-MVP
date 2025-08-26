@@ -1,8 +1,8 @@
 import { eq, and, or, desc, gte, lte, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, templates, proposals, clients, invoices, payments, timeLogs } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, Invoice, InsertInvoice, Payment, InsertPayment, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, timeLogs } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations } from "@shared/schema";
 
 export interface IStorage {
   // User management
@@ -79,6 +79,13 @@ export interface IStorage {
   createClient(insertClient: InsertClient): Promise<Client>;
   updateClient(id: string, updateClient: Partial<InsertClient>): Promise<Client | undefined>;
   deleteClient(id: string): Promise<boolean>;
+
+  // Client Document management
+  getClientDocuments(clientId: string): Promise<ClientDocument[]>;
+  getClientDocument(id: string): Promise<ClientDocument | undefined>;
+  createClientDocument(insertDocument: InsertClientDocument): Promise<ClientDocument>;
+  updateClientDocument(id: string, updateDocument: Partial<InsertClientDocument>): Promise<ClientDocument | undefined>;
+  deleteClientDocument(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -953,6 +960,48 @@ export class DatabaseStorage implements IStorage {
 
   async deleteClient(id: string): Promise<boolean> {
     const result = await db.delete(clients).where(eq(clients.id, id));
+    return result.rowCount! > 0;
+  }
+
+  // Client Document operations
+  async getClientDocuments(clientId: string): Promise<ClientDocument[]> {
+    return await db
+      .select()
+      .from(clientDocuments)
+      .where(eq(clientDocuments.clientId, clientId))
+      .orderBy(desc(clientDocuments.createdAt));
+  }
+
+  async getClientDocument(id: string): Promise<ClientDocument | undefined> {
+    const [document] = await db
+      .select()
+      .from(clientDocuments)
+      .where(eq(clientDocuments.id, id));
+    return document;
+  }
+
+  async createClientDocument(insertDocument: InsertClientDocument): Promise<ClientDocument> {
+    const [document] = await db
+      .insert(clientDocuments)
+      .values(insertDocument)
+      .returning();
+    return document;
+  }
+
+  async updateClientDocument(id: string, updateDocument: Partial<InsertClientDocument>): Promise<ClientDocument | undefined> {
+    const [document] = await db
+      .update(clientDocuments)
+      .set({
+        ...updateDocument,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientDocuments.id, id))
+      .returning();
+    return document;
+  }
+
+  async deleteClientDocument(id: string): Promise<boolean> {
+    const result = await db.delete(clientDocuments).where(eq(clientDocuments.id, id));
     return result.rowCount! > 0;
   }
 }

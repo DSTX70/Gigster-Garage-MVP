@@ -95,6 +95,29 @@ export const clients = pgTable("clients", {
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = typeof clients.$inferInsert;
 
+// Client Documents
+export const clientDocuments = pgTable("client_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  type: varchar("type", { enum: ["proposal", "invoice", "contract", "presentation", "report", "agreement", "other"] }).notNull(),
+  fileUrl: varchar("file_url").notNull(),
+  fileName: varchar("file_name").notNull(),
+  fileSize: integer("file_size"), // in bytes
+  mimeType: varchar("mime_type"),
+  version: integer("version").default(1),
+  status: varchar("status", { enum: ["draft", "active", "archived", "expired"] }).default("active"),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  uploadedById: varchar("uploaded_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type ClientDocument = typeof clientDocuments.$inferSelect;
+export type InsertClientDocument = typeof clientDocuments.$inferInsert;
+
 // Enhanced Proposals  
 export const proposals: any = pgTable("proposals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -286,6 +309,7 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   proposals: many(proposals),
   invoices: many(invoices),
   payments: many(payments),
+  documents: many(clientDocuments),
 }));
 
 export const proposalsRelations = relations(proposals, ({ one, many }) => ({
@@ -372,6 +396,17 @@ export const taskDependenciesRelations = relations(taskDependencies, ({ one }) =
   }),
 }));
 
+export const clientDocumentsRelations = relations(clientDocuments, ({ one }) => ({
+  client: one(clients, {
+    fields: [clientDocuments.clientId],
+    references: [clients.id],
+  }),
+  uploadedBy: one(users, {
+    fields: [clientDocuments.uploadedById],
+    references: [users.id],
+  }),
+}));
+
 // Type definitions
 export interface LineItem {
   id: number;
@@ -445,6 +480,11 @@ export const templateSchema = insertTemplateSchema.omit({ id: true, createdAt: t
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const userSchema = insertUserSchema.omit({ id: true, createdAt: true, updatedAt: true });
+
+// Client Document schemas
+export const insertClientDocumentSchema = createInsertSchema(clientDocuments);
+export const selectClientDocumentSchema = createSelectSchema(clientDocuments);
+export const clientDocumentSchema = insertClientDocumentSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
 // Additional schemas needed by routes
 export const updateTaskSchema = insertTaskSchema.partial();

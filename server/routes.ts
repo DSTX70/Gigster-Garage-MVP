@@ -5,7 +5,9 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail } from "./emailService";
 import { generateProposalPDF, generateInvoicePDF } from "./pdfService";
-import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema } from "@shared/schema";
+import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema } from "@shared/schema";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
 
 // Define login schema
@@ -1289,8 +1291,8 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
             console.log(`✅ Created new client: ${newClient.name} (${newClient.email})`);
           }
           
-          assignedClientId = existingClient.id;
-          proposalData.clientId = assignedClientId;
+          proposalClientId = existingClient.id;
+          proposalData.clientId = proposalClientId;
         }
 
         const proposal = await storage.createProposal(proposalData);
@@ -1480,9 +1482,10 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         sentAt: new Date()
       });
 
-      // Send enhanced email if recipient email is provided
-      const { recipientEmail, subject, message, includePDF } = result.data;
+      // Send enhanced email if client email is provided
+      const { clientEmail: recipientEmail, message } = result.data;
       const emailTo = recipientEmail || proposal.clientEmail;
+      const includePDF = true; // Default to include PDF
       
       if (emailTo) {
         try {
@@ -1636,6 +1639,129 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Client Document Management Routes
+  
+  // Get documents for a client
+  app.get("/api/clients/:clientId/documents", requireAuth, async (req, res) => {
+    try {
+      const documents = await storage.getClientDocuments(req.params.clientId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching client documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  // Get a specific document
+  app.get("/api/documents/:id", requireAuth, async (req, res) => {
+    try {
+      const document = await storage.getClientDocument(req.params.id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      res.json(document);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ message: "Failed to fetch document" });
+    }
+  });
+
+  // Get upload URL for document
+  app.post("/api/documents/upload", requireAuth, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Create document record after upload
+  app.post("/api/clients/:clientId/documents", requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertClientDocumentSchema.parse({
+        ...req.body,
+        clientId: req.params.clientId,
+        createdById: req.session.user?.id
+      });
+
+      // Set object ACL policy for the uploaded file
+      if (validatedData.filePath) {
+        const objectStorageService = new ObjectStorageService();
+        const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+          validatedData.filePath,
+          {
+            owner: req.session.user?.id || "",
+            visibility: "private", // Client documents are private by default
+          }
+        );
+        validatedData.filePath = normalizedPath;
+      }
+
+      const document = await storage.createClientDocument(validatedData);
+      console.log(`✅ Document created: ${document.name} for client ${req.params.clientId}`);
+      res.status(201).json(document);
+    } catch (error) {
+      console.error("Error creating document:", error);
+      res.status(500).json({ message: "Failed to create document" });
+    }
+  });
+
+  // Update document
+  app.put("/api/documents/:id", requireAuth, async (req, res) => {
+    try {
+      const updateData = req.body;
+      const document = await storage.updateClientDocument(req.params.id, updateData);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      res.json(document);
+    } catch (error) {
+      console.error("Error updating document:", error);
+      res.status(500).json({ message: "Failed to update document" });
+    }
+  });
+
+  // Delete document
+  app.delete("/api/documents/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteClientDocument(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: "Failed to delete document" });
+    }
+  });
+
+  // Serve document files
+  app.get("/objects/:objectPath(*)", requireAuth, async (req, res) => {
+    const userId = req.session.user?.id;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      const canAccess = await objectStorageService.canAccessObjectEntity({
+        objectFile,
+        userId: userId,
+        requestedPermission: ObjectPermission.READ,
+      });
+      if (!canAccess) {
+        return res.sendStatus(401);
+      }
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing document:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
   // Auto-generate and send invoice when project completes
   app.post("/api/projects/:id/complete", requireAuth, async (req, res) => {
     try {
@@ -1648,8 +1774,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
       // Update project status to completed
       const updatedProject = await storage.updateProject(projectId, {
-        status: 'completed',
-        completedAt: new Date()
+        status: 'completed'
       });
 
       // Generate automatic invoice if client exists
@@ -1660,7 +1785,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
             // Get all completed tasks for the project to calculate total
             const tasks = await storage.getTasksByProject(projectId);
             const totalHours = tasks.reduce((sum, task) => {
-              return sum + (task.timeSpent || 0);
+              return sum + (task.actualHours || 0);
             }, 0);
 
             // Create invoice data
@@ -1773,7 +1898,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       let totalAmount = customAmount || 0;
       if (project && !customAmount) {
         const tasks = await storage.getTasksByProject(project.id);
-        const totalHours = tasks.reduce((sum, task) => sum + (task.timeSpent || 0), 0);
+        const totalHours = tasks.reduce((sum, task) => sum + (task.actualHours || 0), 0);
         totalAmount = totalHours * 100; // $100/hour default
       }
 

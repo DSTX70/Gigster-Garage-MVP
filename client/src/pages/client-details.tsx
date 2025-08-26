@@ -21,6 +21,7 @@ import {
   Download
 } from "lucide-react";
 import type { Client, Proposal, Invoice, Payment } from "@shared/schema";
+import { ClientDocuments } from "@/components/ClientDocuments";
 
 export default function ClientDetails() {
   const { clientId } = useParams() as { clientId: string };
@@ -138,7 +139,7 @@ export default function ClientDetails() {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
-          <Badge variant={getStatusBadgeVariant(client.status)} data-testid={`badge-status-${client.status}`}>
+          <Badge variant={getStatusBadgeVariant(client.status || '')} data-testid={`badge-status-${client.status || ''}`}>
             {client.status}
           </Badge>
         </div>
@@ -160,8 +161,9 @@ export default function ClientDetails() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="proposals">Proposals ({proposals.length})</TabsTrigger>
             <TabsTrigger value="invoices">Invoices ({invoices.length})</TabsTrigger>
             <TabsTrigger value="payments">Payments ({payments.length})</TabsTrigger>
@@ -295,6 +297,10 @@ export default function ClientDetails() {
             </div>
           </TabsContent>
 
+          <TabsContent value="documents">
+            <ClientDocuments clientId={clientId} />
+          </TabsContent>
+
           <TabsContent value="proposals">
             <Card>
               <CardHeader>
@@ -323,7 +329,7 @@ export default function ClientDetails() {
                       <div key={proposal.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-semibold text-gray-900">{proposal.title}</h4>
-                          <Badge variant={getStatusBadgeVariant(proposal.status)}>
+                          <Badge variant={getStatusBadgeVariant(proposal.status || '')}>
                             {proposal.status}
                           </Badge>
                         </div>
