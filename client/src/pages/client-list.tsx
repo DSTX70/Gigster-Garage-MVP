@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users, Plus, Mail, Phone, Building, DollarSign, FileText, Search, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { AppHeader } from "@/components/app-header";
 import type { Client } from "@shared/schema";
 
 interface NewClientForm {
@@ -27,6 +28,11 @@ interface NewClientForm {
 
 export default function ClientList() {
   const { toast } = useToast();
+  
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<NewClientForm>({
@@ -108,13 +114,7 @@ export default function ClientList() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-50">
-        {/* Header */}
-        <div className="bg-[#FF7F00] text-white py-4 px-6">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl font-bold">Gigster Garage</div>
-            <div className="text-lg">Smarter tools for bolder dreams</div>
-          </div>
-        </div>
+        <AppHeader />
 
         <div className="p-6">
           <div className="animate-pulse space-y-6">
@@ -132,13 +132,7 @@ export default function ClientList() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
-      <div className="bg-[#FF7F00] text-white py-4 px-6">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl font-bold">Gigster Garage</div>
-          <div className="text-lg">Smarter tools for bolder dreams</div>
-        </div>
-      </div>
+      <AppHeader />
 
       <div className="p-6">
         {/* Page Header */}

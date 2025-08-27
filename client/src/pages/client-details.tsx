@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -22,10 +22,16 @@ import {
 } from "lucide-react";
 import type { Client, Proposal, Invoice, Payment } from "@shared/schema";
 import { ClientDocuments } from "@/components/ClientDocuments";
+import { AppHeader } from "@/components/app-header";
 
 export default function ClientDetails() {
   const { clientId } = useParams() as { clientId: string };
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const { data: client, isLoading: clientLoading } = useQuery<Client>({
     queryKey: ["/api/clients", clientId],
@@ -46,13 +52,7 @@ export default function ClientDetails() {
   if (clientLoading) {
     return (
       <div className="min-h-screen bg-neutral-50">
-        {/* Header */}
-        <div className="bg-[#FF7F00] text-white py-4 px-6">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl font-bold">Gigster Garage</div>
-            <div className="text-lg">Smarter tools for bolder dreams</div>
-          </div>
-        </div>
+        <AppHeader />
 
         <div className="p-6">
           <div className="animate-pulse space-y-6">
@@ -67,13 +67,7 @@ export default function ClientDetails() {
   if (!client) {
     return (
       <div className="min-h-screen bg-neutral-50">
-        {/* Header */}
-        <div className="bg-[#FF7F00] text-white py-4 px-6">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl font-bold">Gigster Garage</div>
-            <div className="text-lg">Smarter tools for bolder dreams</div>
-          </div>
-        </div>
+        <AppHeader />
 
         <div className="p-6">
           <div className="text-center py-12">
@@ -115,13 +109,7 @@ export default function ClientDetails() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
-      <div className="bg-[#007BFF] text-white py-4 px-6">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl font-bold text-white">Gigster Garage</div>
-          <div className="text-lg text-white">Smarter tools for bolder dreams</div>
-        </div>
-      </div>
+      <AppHeader />
 
       <div className="p-6">
         {/* Page Header */}
