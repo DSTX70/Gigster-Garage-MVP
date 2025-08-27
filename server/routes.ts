@@ -5,7 +5,7 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF } from "./pdfService";
-import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema } from "@shared/schema";
+import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
@@ -2021,6 +2021,62 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error generating invoice:", error);
       res.status(500).json({ message: "Failed to generate invoice" });
+    }
+  });
+
+  // Message endpoints
+  app.post("/api/messages", requireAuth, async (req, res) => {
+    try {
+      const messageData = insertMessageSchema.parse(req.body);
+      
+      const message = await storage.createMessage({
+        ...messageData,
+        fromUserId: req.user!.id,
+      });
+
+      res.json(message);
+    } catch (error) {
+      console.error("Error creating message:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid message data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  app.get("/api/messages", requireAuth, async (req, res) => {
+    try {
+      const messages = await storage.getMessages(req.user!.id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.put("/api/messages/:id/read", requireAuth, async (req, res) => {
+    try {
+      const messageId = req.params.id;
+      const message = await storage.markMessageAsRead(messageId, req.user!.id);
+      
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      res.json(message);
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ error: "Failed to mark message as read" });
+    }
+  });
+
+  app.get("/api/messages/unread-count", requireAuth, async (req, res) => {
+    try {
+      const count = await storage.getUnreadMessageCount(req.user!.id);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching unread message count:", error);
+      res.status(500).json({ error: "Failed to fetch unread message count" });
     }
   });
 

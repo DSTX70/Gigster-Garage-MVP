@@ -1,8 +1,8 @@
-import { eq, and, or, desc, gte, lte, isNull } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, isNull, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, timeLogs } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, timeLogs, messages } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations } from "@shared/schema";
 
 export interface IStorage {
   // User management
@@ -100,6 +100,13 @@ export interface IStorage {
   createPayment(insertPayment: InsertPayment): Promise<Payment>;
   updatePayment(id: string, updatePayment: Partial<InsertPayment>): Promise<Payment | undefined>;
   deletePayment(id: string): Promise<boolean>;
+
+  // Message management
+  getMessages(userId: string): Promise<MessageWithRelations[]>;
+  getMessage(id: string): Promise<MessageWithRelations | undefined>;
+  createMessage(insertMessage: InsertMessage): Promise<Message>;
+  markMessageAsRead(messageId: string, userId: string): Promise<Message | undefined>;
+  getUnreadMessageCount(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1081,6 +1088,110 @@ export class DatabaseStorage implements IStorage {
   async deletePayment(id: string): Promise<boolean> {
     const result = await db.delete(payments).where(eq(payments.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Message operations
+  async getMessages(userId: string): Promise<MessageWithRelations[]> {
+    return await db
+      .select({
+        id: messages.id,
+        fromUserId: messages.fromUserId,
+        toUserId: messages.toUserId,
+        toEmail: messages.toEmail,
+        subject: messages.subject,
+        content: messages.content,
+        priority: messages.priority,
+        attachments: messages.attachments,
+        isRead: messages.isRead,
+        readAt: messages.readAt,
+        createdAt: messages.createdAt,
+        updatedAt: messages.updatedAt,
+        fromUser: {
+          id: users.id,
+          name: users.name,
+          username: users.username,
+          email: users.email,
+        },
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.fromUserId, users.id))
+      .where(or(eq(messages.toUserId, userId), eq(messages.fromUserId, userId)))
+      .orderBy(desc(messages.createdAt));
+  }
+
+  async getMessage(id: string): Promise<MessageWithRelations | undefined> {
+    const [message] = await db
+      .select({
+        id: messages.id,
+        fromUserId: messages.fromUserId,
+        toUserId: messages.toUserId,
+        toEmail: messages.toEmail,
+        subject: messages.subject,
+        content: messages.content,
+        priority: messages.priority,
+        attachments: messages.attachments,
+        isRead: messages.isRead,
+        readAt: messages.readAt,
+        createdAt: messages.createdAt,
+        updatedAt: messages.updatedAt,
+        fromUser: {
+          id: users.id,
+          name: users.name,
+          username: users.username,
+          email: users.email,
+        },
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.fromUserId, users.id))
+      .where(eq(messages.id, id));
+    return message;
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    // Find user by email if toUserId is not provided
+    let finalToUserId = insertMessage.toUserId;
+    if (!finalToUserId && insertMessage.toEmail) {
+      const user = await this.getUserByUsername(insertMessage.toEmail);
+      if (user) {
+        finalToUserId = user.id;
+      }
+    }
+
+    const [message] = await db
+      .insert(messages)
+      .values({
+        ...insertMessage,
+        toUserId: finalToUserId,
+      })
+      .returning();
+    return message;
+  }
+
+  async markMessageAsRead(messageId: string, userId: string): Promise<Message | undefined> {
+    const [message] = await db
+      .update(messages)
+      .set({ 
+        isRead: true, 
+        readAt: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(and(
+        eq(messages.id, messageId),
+        eq(messages.toUserId, userId)
+      ))
+      .returning();
+    return message;
+  }
+
+  async getUnreadMessageCount(userId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql`count(*)` })
+      .from(messages)
+      .where(and(
+        eq(messages.toUserId, userId),
+        eq(messages.isRead, false)
+      ));
+    return Number(result?.count || 0);
   }
 }
 

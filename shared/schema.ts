@@ -623,3 +623,70 @@ export type InsertInvoiceData = z.infer<typeof invoiceSchema>;
 export type InsertPaymentData = z.infer<typeof paymentSchema>;
 export type InsertTemplateData = z.infer<typeof templateSchema>;
 export type InsertUserData = z.infer<typeof userSchema>;
+
+// Messages table for internal messaging system
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromUserId: varchar("from_user_id").references(() => users.id).notNull(),
+  toUserId: varchar("to_user_id").references(() => users.id),
+  toEmail: varchar("to_email"), // For external recipients
+  subject: varchar("subject").notNull(),
+  content: text("content").notNull(),
+  priority: varchar("priority", { enum: ["low", "medium", "high"] }).default("medium"),
+  attachments: jsonb("attachments").$type<{
+    id: string;
+    filename: string;
+    size: number;
+    type: string;
+    url: string;
+  }[]>().default([]),
+  isRead: boolean("is_read").default(false),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
+
+// Message relations
+export const messageRelations = relations(messages, ({ one }) => ({
+  fromUser: one(users, {
+    fields: [messages.fromUserId],
+    references: [users.id],
+  }),
+  toUser: one(users, {
+    fields: [messages.toUserId],
+    references: [users.id],
+  }),
+}));
+
+// Message schemas for validation
+export const insertMessageSchema = createInsertSchema(messages, {
+  subject: z.string().min(1, "Subject is required"),
+  content: z.string().min(1, "Content is required"),
+  priority: z.enum(["low", "medium", "high"]).default("medium"),
+  attachments: z.array(z.object({
+    id: z.string(),
+    filename: z.string(),
+    size: z.number(),
+    type: z.string(),
+    url: z.string(),
+  })).default([]),
+}).omit({
+  id: true,
+  isRead: true,
+  readAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectMessageSchema = createSelectSchema(messages);
+
+// Message with relations type
+export interface MessageWithRelations extends Message {
+  fromUser?: User;
+  toUser?: User;
+}
+
+export type InsertMessageData = z.infer<typeof insertMessageSchema>;

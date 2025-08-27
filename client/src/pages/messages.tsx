@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Mail, MailOpen, Reply, Trash2, ArrowLeft, Paperclip, Send, X, FileText, Download, FolderOpen, HardDrive, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Message {
   id: string;
@@ -77,21 +77,28 @@ export function MessagesPage() {
     { id: '5', name: 'Budget_Spreadsheet.xlsx', size: 67000, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
   ];
 
-  // Mock messages for now - this would come from an API
-  const mockMessages: Message[] = [
-    {
-      id: '1',
-      from: 'System',
-      subject: 'Welcome to Gigster Garage',
-      content: 'Welcome to your new task management dashboard! Start by creating your first project and task.',
-      timestamp: new Date(),
-      read: false,
-      priority: 'medium',
-      attachments: []
+  // Fetch messages from API
+  const { data: messagesData = [], isLoading: messagesLoading } = useQuery({
+    queryKey: ['/api/messages'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/messages');
+      return Array.isArray(response) ? response : [];
     }
-  ];
+  });
 
-  const messages = mockMessages;
+  // Transform API messages to match local interface
+  const messages: Message[] = messagesData.map((msg: any) => ({
+    id: msg.id,
+    from: msg.fromUser?.name || msg.fromUser?.username || 'System',
+    to: msg.toEmail,
+    subject: msg.subject,
+    content: msg.content,
+    timestamp: new Date(msg.createdAt),
+    read: msg.isRead,
+    priority: msg.priority || 'medium',
+    attachments: msg.attachments || []
+  }));
+
   const unreadCount = messages.filter(m => !m.read).length;
 
   const getPriorityColor = (priority: string) => {
@@ -104,7 +111,13 @@ export function MessagesPage() {
   };
 
   const handleSendMessage = useMutation({
-    mutationFn: (data: ComposeData) => apiRequest("POST", "/api/messages", data),
+    mutationFn: (data: ComposeData) => apiRequest("POST", "/api/messages", {
+      toEmail: data.to,
+      subject: data.subject,
+      content: data.content,
+      priority: data.priority,
+      attachments: data.attachments
+    }),
     onSuccess: () => {
       toast({
         title: "Message sent",
@@ -118,6 +131,8 @@ export function MessagesPage() {
         priority: 'medium',
         attachments: []
       });
+      // Invalidate messages query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
     },
     onError: () => {
       toast({
@@ -235,10 +250,19 @@ export function MessagesPage() {
     }));
   };
 
+  const markAsRead = useMutation({
+    mutationFn: (messageId: string) => apiRequest("PUT", `/api/messages/${messageId}/read`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
+    }
+  });
+
   const handleMessageClick = (message: Message) => {
     setSelectedMessage(message);
-    // Mark as read
-    message.read = true;
+    // Mark as read if not already read
+    if (!message.read) {
+      markAsRead.mutate(message.id);
+    }
   };
 
   const handleComposeSubmit = () => {
@@ -466,7 +490,17 @@ export function MessagesPage() {
         </div>
 
         <div className="space-y-4">
-          {messages.length === 0 ? (
+          {messagesLoading ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Loading messages...</h3>
+                <p className="text-gray-600 text-center">
+                  Please wait while we fetch your messages.
+                </p>
+              </CardContent>
+            </Card>
+          ) : messages.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Mail size={48} className="text-gray-400 mb-4" />
