@@ -116,12 +116,14 @@ export default function CreateInvoice() {
 
   // Send invoice mutation
   const sendInvoiceMutation = useMutation({
-    mutationFn: (invoiceId: string) => apiRequest("POST", `/api/invoices/${invoiceId}/send`),
+    mutationFn: (invoiceId: string) => apiRequest("POST", `/api/invoices/${invoiceId}/send`, { includePDF: true }),
     onSuccess: (response) => {
       toast({
         title: "Invoice sent!",
-        description: `Invoice has been emailed to ${response.sentTo}`,
+        description: response.message || "Invoice has been sent successfully",
       });
+      // Redirect to invoices list after sending
+      window.location.href = "/invoices";
     },
     onError: () => {
       toast({
@@ -139,11 +141,10 @@ export default function CreateInvoice() {
     const invoiceData = {
       ...formData,
       lineItems,
-      subtotal: getSubtotal(),
-      taxAmount: getTaxAmount(),
-      totalAmount: getTotalAmount(),
-      type: "invoice",
-      status: "sent" // Mark as sent when user clicks Send Invoice
+      subtotal: getSubtotal().toString(),
+      taxAmount: getTaxAmount().toString(),
+      totalAmount: getTotalAmount().toString(),
+      status: "draft" // Save as draft initially
     };
     saveInvoiceMutation.mutate(invoiceData);
   };

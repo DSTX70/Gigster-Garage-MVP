@@ -2026,6 +2026,185 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Invoice Management Endpoints
+  
+  // Create draft invoice
+  app.post("/api/invoices", requireAuth, async (req, res) => {
+    try {
+      const invoiceData = insertInvoiceSchema.parse(req.body);
+      
+      // Ensure status is draft for new invoices
+      const draftInvoice = {
+        ...invoiceData,
+        status: "draft" as const,
+        invoiceNumber: `INV-${Date.now()}`,
+        createdById: req.user!.id,
+      };
+
+      const invoice = await storage.createInvoice(draftInvoice);
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error creating draft invoice:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid invoice data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create invoice" });
+    }
+  });
+
+  // Get all invoices
+  app.get("/api/invoices", requireAuth, async (req, res) => {
+    try {
+      const invoices = await storage.getInvoices();
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
+
+  // Get specific invoice
+  app.get("/api/invoices/:id", requireAuth, async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      res.status(500).json({ error: "Failed to fetch invoice" });
+    }
+  });
+
+  // Update invoice (edit line items, amounts, etc.)
+  app.put("/api/invoices/:id", requireAuth, async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      // Only allow editing draft invoices
+      if (invoice.status !== "draft") {
+        return res.status(400).json({ error: "Only draft invoices can be edited" });
+      }
+
+      const updateData = insertInvoiceSchema.partial().parse(req.body);
+      
+      // Calculate totals if line items are updated
+      if (updateData.lineItems) {
+        const subtotal = updateData.lineItems.reduce((sum, item) => sum + item.amount, 0);
+        const taxAmount = subtotal * Number(updateData.taxRate || invoice.taxRate || 0) / 100;
+        const totalAmount = subtotal + taxAmount - Number(updateData.discountAmount || 0);
+        
+        updateData.subtotal = subtotal.toString();
+        updateData.taxAmount = taxAmount.toString();
+        updateData.totalAmount = totalAmount.toString();
+      }
+
+      const updatedInvoice = await storage.updateInvoice(req.params.id, updateData);
+      res.json(updatedInvoice);
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid invoice data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update invoice" });
+    }
+  });
+
+  // Send existing draft invoice
+  app.post("/api/invoices/:id/send", requireAuth, async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      if (invoice.status !== "draft") {
+        return res.status(400).json({ error: "Only draft invoices can be sent" });
+      }
+
+      const { customMessage, includePDF } = req.body;
+
+      // Get client information
+      let client;
+      if (invoice.clientId) {
+        client = await storage.getClient(invoice.clientId);
+      }
+
+      if (!client || !client.email) {
+        return res.status(400).json({ error: "Valid client with email required" });
+      }
+
+      let invoicePDF: Buffer | undefined;
+      
+      // Generate PDF if requested
+      if (includePDF) {
+        try {
+          console.log('🔄 Generating invoice PDF');
+          invoicePDF = await generateInvoicePDF(invoice);
+          console.log('✅ Invoice PDF generated successfully');
+        } catch (pdfError) {
+          console.error('❌ Invoice PDF generation failed:', pdfError);
+        }
+      }
+
+      // Send invoice email
+      const emailSent = await sendInvoiceEmail(
+        client.email,
+        invoice,
+        invoicePDF,
+        customMessage || 'Thank you for your business! Please find your invoice attached.'
+      );
+
+      if (emailSent) {
+        // Update invoice status to sent
+        await storage.updateInvoice(invoice.id, { status: "sent" });
+        
+        res.json({
+          success: true,
+          message: `Invoice sent successfully to ${client.email}${includePDF ? ' with PDF attachment' : ''}`,
+          invoiceData: invoice
+        });
+      } else {
+        res.status(500).json({ 
+          error: 'Failed to send invoice email',
+          invoiceData: invoice 
+        });
+      }
+    } catch (error) {
+      console.error("Error sending invoice:", error);
+      res.status(500).json({ error: "Failed to send invoice" });
+    }
+  });
+
+  // Delete draft invoice
+  app.delete("/api/invoices/:id", requireAuth, async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      // Only allow deleting draft invoices
+      if (invoice.status !== "draft") {
+        return res.status(400).json({ error: "Only draft invoices can be deleted" });
+      }
+
+      const deleted = await storage.deleteInvoice(req.params.id);
+      if (deleted) {
+        res.json({ success: true, message: "Invoice deleted successfully" });
+      } else {
+        res.status(500).json({ error: "Failed to delete invoice" });
+      }
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      res.status(500).json({ error: "Failed to delete invoice" });
+    }
+  });
+
   // Message endpoints
   app.post("/api/messages", requireAuth, async (req, res) => {
     try {
