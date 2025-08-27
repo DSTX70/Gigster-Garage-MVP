@@ -138,10 +138,10 @@ export default function ClientList() {
         {/* Page Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
-            <Link href="/admin">
-              <Button variant="outline" size="sm" data-testid="button-back-to-admin">
+            <Link href="/">
+              <Button variant="outline" size="sm" data-testid="button-back-to-dashboard">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Admin
+                Back to Dashboard
               </Button>
             </Link>
             <div className="flex items-center gap-3">
