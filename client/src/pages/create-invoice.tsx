@@ -326,16 +326,6 @@ export default function CreateInvoice() {
               <p className="text-gray-600 mt-1">Generate professional invoices with automatic calculations</p>
             </div>
           </div>
-          <div className="space-x-2">
-            <Button variant="outline" onClick={() => setIsPreview(true)}>
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-            <Button onClick={handleSave} disabled={saveInvoiceMutation.isPending}>
-              <Send className="h-4 w-4 mr-2" />
-              Save Invoice
-            </Button>
-          </div>
         </div>
 
         <div className="space-y-8">
@@ -623,6 +613,32 @@ export default function CreateInvoice() {
               <div className="flex justify-between text-xs text-muted-foreground mt-2">
                 <span>📝 Payment terms, special instructions, etc.</span>
                 <span className="font-medium">{notesCount} / 1,000 characters</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center space-x-4">
+                <Button variant="outline" onClick={() => setIsPreview(true)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+                <Button onClick={handleSave} disabled={saveInvoiceMutation.isPending}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saveInvoiceMutation.isPending ? "Saving..." : "Save Invoice"}
+                </Button>
+                {createdInvoiceId && (
+                  <Button onClick={handleSend} disabled={sendInvoiceMutation.isPending}>
+                    {sendInvoiceMutation.isPending ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    Send Invoice
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

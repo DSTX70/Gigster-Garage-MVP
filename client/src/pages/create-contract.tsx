@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, FileCheck, Send, Download, Eye, Scale, Calendar } from "lucide-react";
+import { ArrowLeft, FileCheck, Send, Download, Eye, Scale, Calendar, Save } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -221,16 +221,6 @@ export default function CreateContract() {
               </h1>
               <p className="text-gray-600 mt-1">Generate professional contracts with legal terms and conditions</p>
             </div>
-          </div>
-          <div className="space-x-2">
-            <Button variant="outline" onClick={() => setIsPreview(true)}>
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-            <Button onClick={handleSave} disabled={saveContractMutation.isPending}>
-              <Send className="h-4 w-4 mr-2" />
-              Save Contract
-            </Button>
           </div>
         </div>
 
@@ -567,6 +557,26 @@ export default function CreateContract() {
                     className="border-purple-200 focus:border-purple-500"
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center space-x-4">
+                <Button variant="outline" onClick={() => setIsPreview(true)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+                <Button onClick={handleSave} disabled={saveContractMutation.isPending}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saveContractMutation.isPending ? "Saving..." : "Save Contract"}
+                </Button>
+                <Button onClick={handleSave} disabled={saveContractMutation.isPending}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Contract
+                </Button>
               </div>
             </CardContent>
           </Card>

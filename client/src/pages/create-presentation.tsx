@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown } from "lucide-react";
+import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown, Save } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -211,16 +211,6 @@ export default function CreatePresentation() {
               </h1>
               <p className="text-gray-600 mt-1">Build professional presentations with multiple slide types</p>
             </div>
-          </div>
-          <div className="space-x-2">
-            <Button variant="outline" onClick={() => setIsPreview(true)}>
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-            <Button onClick={handleSave} disabled={savePresentationMutation.isPending}>
-              <Send className="h-4 w-4 mr-2" />
-              Save Presentation
-            </Button>
           </div>
         </div>
 
@@ -474,6 +464,26 @@ export default function CreatePresentation() {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center space-x-4">
+                <Button variant="outline" onClick={() => setIsPreview(true)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+                <Button onClick={handleSave} disabled={savePresentationMutation.isPending}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {savePresentationMutation.isPending ? "Saving..." : "Save Presentation"}
+                </Button>
+                <Button onClick={handleSave} disabled={savePresentationMutation.isPending}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Presentation
+                </Button>
               </div>
             </CardContent>
           </Card>
