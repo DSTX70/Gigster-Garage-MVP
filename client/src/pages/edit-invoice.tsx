@@ -168,6 +168,8 @@ export default function EditInvoice() {
   const handleUpdate = () => {
     const invoiceData = {
       ...formData,
+      taxRate: formData.taxRate.toString(),
+      discountAmount: formData.discountAmount.toString(),
       lineItems,
       subtotal: getSubtotal().toString(),
       taxAmount: getTaxAmount().toString(),

@@ -140,6 +140,8 @@ export default function CreateInvoice() {
   const handleSave = () => {
     const invoiceData = {
       ...formData,
+      taxRate: formData.taxRate.toString(),
+      discountAmount: formData.discountAmount.toString(),
       lineItems,
       subtotal: getSubtotal().toString(),
       taxAmount: getTaxAmount().toString(),
