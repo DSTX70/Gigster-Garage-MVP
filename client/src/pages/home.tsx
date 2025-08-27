@@ -248,7 +248,7 @@ export default function Home() {
         </div>
 
         {/* Secondary Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           <Link href="/productivity">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6">
