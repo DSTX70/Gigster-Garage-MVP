@@ -41,6 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session.user) {
       return res.status(401).json({ message: "Authentication required" });
     }
+    req.user = req.session.user;
     next();
   };
 
@@ -52,6 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (req.session.user.role !== 'admin') {
       return res.status(403).json({ message: "Admin access required" });
     }
+    req.user = req.session.user;
     next();
   };
 
