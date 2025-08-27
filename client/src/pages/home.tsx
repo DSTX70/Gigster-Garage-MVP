@@ -170,7 +170,7 @@ export default function Home() {
                       <Users className="h-6 w-6 text-purple-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Client Database</h3>
+                      <h3 className="font-semibold text-gray-900">Client Management</h3>
                       <p className="text-sm text-gray-600">Manage client relationships & history</p>
                     </div>
                   </div>
