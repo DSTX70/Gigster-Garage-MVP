@@ -16,6 +16,10 @@ import { format, formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import type { TimeLog } from "@shared/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductivityStats {
   totalHours: number;
@@ -39,7 +43,11 @@ export default function ProductivityPage() {
   const [, navigate] = useLocation();
   const [selectedForInvoice, setSelectedForInvoice] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
+  const [editNotes, setEditNotes] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -131,6 +139,59 @@ export default function ProductivityPage() {
       updateInvoiceSelectionMutation.mutate({ 
         timeLogIds: Array.from(selectedForInvoice), 
         selected: true 
+      });
+    }
+  };
+
+  // Delete time log mutation
+  const deleteTimeLogMutation = useMutation({
+    mutationFn: async (timeLogId: string) => {
+      return apiRequest("DELETE", `/api/timelogs/${timeLogId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      toast({ title: "Success", description: "Time log deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete time log", variant: "destructive" });
+    },
+  });
+
+  // Update time log mutation
+  const updateTimeLogMutation = useMutation({
+    mutationFn: async ({ timeLogId, description, notes }: { timeLogId: string; description: string; notes: string }) => {
+      return apiRequest("PUT", `/api/timelogs/${timeLogId}`, { description, notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      toast({ title: "Success", description: "Time log updated successfully" });
+      setEditingLog(null);
+      setEditNotes("");
+      setEditDescription("");
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update time log", variant: "destructive" });
+    },
+  });
+
+  const handleDelete = (timeLogId: string) => {
+    if (confirm("Are you sure you want to delete this time log entry?")) {
+      deleteTimeLogMutation.mutate(timeLogId);
+    }
+  };
+
+  const handleEdit = (log: TimeLog) => {
+    setEditingLog(log);
+    setEditDescription(log.description || "");
+    setEditNotes(log.notes || "");
+  };
+
+  const handleSaveEdit = () => {
+    if (editingLog) {
+      updateTimeLogMutation.mutate({
+        timeLogId: editingLog.id,
+        description: editDescription,
+        notes: editNotes
       });
     }
   };
@@ -456,6 +517,7 @@ export default function ProductivityPage() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        onClick={() => handleEdit(log)}
                         className="text-gray-600 hover:bg-orange-100"
                         data-testid={`button-edit-${log.id}`}
                       >
@@ -464,6 +526,8 @@ export default function ProductivityPage() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        onClick={() => handleDelete(log.id)}
+                        disabled={deleteTimeLogMutation.isPending}
                         className="text-red-600 hover:bg-red-100"
                         data-testid={`button-delete-${log.id}`}
                       >
@@ -484,6 +548,52 @@ export default function ProductivityPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Edit Time Log Dialog */}
+        {editingLog && (
+          <Dialog open={!!editingLog} onOpenChange={() => setEditingLog(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit Time Log</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Enter description..."
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-notes">Notes</Label>
+                  <Textarea
+                    id="edit-notes"
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    placeholder="Add notes..."
+                    rows={3}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button variant="outline" onClick={() => setEditingLog(null)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSaveEdit}
+                    disabled={updateTimeLogMutation.isPending}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    {updateTimeLogMutation.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </div>
   );
