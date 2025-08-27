@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Mail, MailOpen, Reply, Trash2, ArrowLeft, Paperclip, Send, X, FileText, Download } from "lucide-react";
+import { Mail, MailOpen, Reply, Trash2, ArrowLeft, Paperclip, Send, X, FileText, Download, FolderOpen, HardDrive, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -48,6 +48,8 @@ export function MessagesPage() {
   const { toast } = useToast();
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [isAttachmentSourceOpen, setIsAttachmentSourceOpen] = useState(false);
+  const [isFilingCabinetOpen, setIsFilingCabinetOpen] = useState(false);
   const [composeData, setComposeData] = useState<ComposeData>({
     to: '',
     subject: '',
@@ -55,6 +57,15 @@ export function MessagesPage() {
     priority: 'medium',
     attachments: []
   });
+  
+  // Mock filing cabinet files
+  const filingCabinetFiles = [
+    { id: '1', name: 'Contract_Template.docx', size: 45000, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+    { id: '2', name: 'Invoice_2024.pdf', size: 125000, type: 'application/pdf' },
+    { id: '3', name: 'Project_Proposal.pdf', size: 89000, type: 'application/pdf' },
+    { id: '4', name: 'Meeting_Notes.txt', size: 15000, type: 'text/plain' },
+    { id: '5', name: 'Budget_Spreadsheet.xlsx', size: 67000, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+  ];
 
   // Mock messages for now - this would come from an API
   const mockMessages: Message[] = [
@@ -112,6 +123,46 @@ export function MessagesPage() {
       ...prev,
       attachments: [...prev.attachments, file]
     }));
+  };
+  
+  const handleDeviceFileUpload = () => {
+    // Create a hidden file input element
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '*/*';
+    
+    input.onchange = (event) => {
+      const files = (event.target as HTMLInputElement).files;
+      if (files) {
+        Array.from(files).forEach(file => {
+          const attachment: Attachment = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            filename: file.name,
+            size: file.size,
+            type: file.type || 'application/octet-stream',
+            url: URL.createObjectURL(file)
+          };
+          handleAttachFile(attachment);
+        });
+      }
+    };
+    
+    input.click();
+    setIsAttachmentSourceOpen(false);
+  };
+  
+  const handleFilingCabinetSelect = (file: { id: string; name: string; size: number; type: string }) => {
+    const attachment: Attachment = {
+      id: file.id,
+      filename: file.name,
+      size: file.size,
+      type: file.type,
+      url: `/api/filing-cabinet/${file.id}` // Mock URL for filing cabinet file
+    };
+    handleAttachFile(attachment);
+    setIsFilingCabinetOpen(false);
+    setIsAttachmentSourceOpen(false);
   };
 
   const removeAttachment = (attachmentId: string) => {
@@ -214,27 +265,60 @@ export function MessagesPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Attachments</Label>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => {
-                        // Mock file attachment - in real app this would open file picker
-                        const mockFile: Attachment = {
-                          id: Date.now().toString(),
-                          filename: 'document.pdf',
-                          size: 1024 * 250, // 250KB
-                          type: 'application/pdf',
-                          url: '#'
-                        };
-                        handleAttachFile(mockFile);
-                      }}
-                      data-testid="button-attach-file"
-                    >
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Attach File
-                    </Button>
+                    <Dialog open={isAttachmentSourceOpen} onOpenChange={setIsAttachmentSourceOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          data-testid="button-attach-file"
+                        >
+                          <Paperclip className="h-4 w-4 mr-2" />
+                          Attach File
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Choose File Source</DialogTitle>
+                          <DialogDescription>
+                            Select where you want to attach files from.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start h-auto p-4"
+                            onClick={() => setIsFilingCabinetOpen(true)}
+                            data-testid="button-filing-cabinet"
+                          >
+                            <FolderOpen className="h-5 w-5 mr-3 text-blue-600" />
+                            <div className="text-left">
+                              <div className="font-medium">My Filing Cabinet</div>
+                              <div className="text-sm text-gray-500">Choose from saved documents</div>
+                            </div>
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start h-auto p-4"
+                            onClick={handleDeviceFileUpload}
+                            data-testid="button-my-device"
+                          >
+                            <HardDrive className="h-5 w-5 mr-3 text-green-600" />
+                            <div className="text-left">
+                              <div className="font-medium">My Device</div>
+                              <div className="text-sm text-gray-500">Upload from computer</div>
+                            </div>
+                          </Button>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsAttachmentSourceOpen(false)}>
+                            Cancel
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
                 
@@ -448,6 +532,53 @@ export function MessagesPage() {
             </DialogContent>
           </Dialog>
         )}
+        
+        {/* Filing Cabinet Dialog */}
+        <Dialog open={isFilingCabinetOpen} onOpenChange={setIsFilingCabinetOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <FolderOpen className="h-5 w-5" />
+                <span>My Filing Cabinet</span>
+              </DialogTitle>
+              <DialogDescription>
+                Select files from your filing cabinet to attach to the message.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-96 overflow-y-auto">
+              <div className="space-y-2">
+                {filingCabinetFiles.map((file) => (
+                  <div 
+                    key={file.id} 
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleFilingCabinetSelect(file)}
+                    data-testid={`filing-cabinet-file-${file.id}`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="font-medium text-sm">{file.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {file.type.split('/')[1]?.toUpperCase() || 'FILE'} • {(file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm">
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsFilingCabinetOpen(false)}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
