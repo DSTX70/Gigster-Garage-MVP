@@ -675,6 +675,7 @@ export const insertMessageSchema = createInsertSchema(messages, {
   })).default([]),
 }).omit({
   id: true,
+  fromUserId: true, // Server sets this from authenticated user
   isRead: true,
   readAt: true,
   createdAt: true,

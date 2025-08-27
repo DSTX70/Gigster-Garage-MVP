@@ -1,9 +1,9 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import { z } from "zod";
 import { storage } from "./storage";
-import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail } from "./emailService";
+import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF } from "./pdfService";
 import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -2034,6 +2034,24 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         fromUserId: req.user!.id,
       });
 
+      // Send email if recipient is external (has email but no internal user)
+      if (messageData.toEmail && !messageData.toUserId) {
+        const fromUser = await storage.getUser(req.user!.id);
+        if (fromUser) {
+          const emailSent = await sendMessageAsEmail(
+            message,
+            fromUser,
+            messageData.toEmail
+          );
+          
+          if (emailSent) {
+            console.log(`📧 Message sent as email to ${messageData.toEmail}`);
+          } else {
+            console.log(`⚠️ Failed to send message as email to ${messageData.toEmail}`);
+          }
+        }
+      }
+
       res.json(message);
     } catch (error) {
       console.error("Error creating message:", error);
@@ -2077,6 +2095,95 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error fetching unread message count:", error);
       res.status(500).json({ error: "Failed to fetch unread message count" });
+    }
+  });
+
+  // Email configuration info endpoint
+  app.get("/api/messages/email-config", requireAuth, async (req, res) => {
+    const sendGridConfigured = !!(process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY_2);
+    const webhookUrl = `${APP_URL}/api/inbound-email`;
+    
+    res.json({
+      emailIntegration: {
+        outbound: {
+          enabled: sendGridConfigured,
+          status: sendGridConfigured ? "✅ Configured" : "⚠️ Not configured",
+          note: sendGridConfigured 
+            ? "Messages to external emails will be sent via SendGrid" 
+            : "Set SENDGRID_API_KEY to enable outbound emails"
+        },
+        inbound: {
+          webhookUrl,
+          status: "🔧 Ready for configuration",
+          setupInstructions: [
+            "1. Go to SendGrid dashboard → Settings → Inbound Parse",
+            "2. Add a new host & URL configuration",
+            `3. Set webhook URL to: ${webhookUrl}`,
+            "4. Configure a subdomain (e.g., messages.yourdomain.com)",
+            "5. Emails sent to that address will appear in your messages"
+          ]
+        },
+        emailAddress: `messages@${process.env.REPLIT_DOMAINS?.split(',')[0] || 'yourapp.replit.app'}`,
+        note: "Once configured, send emails to the above address and they'll appear as messages in your app"
+      }
+    });
+  });
+
+  // Inbound email webhook for SendGrid
+  app.post("/api/inbound-email", express.raw({ type: 'text/plain' }), async (req, res) => {
+    try {
+      console.log('📧 Received inbound email webhook');
+      
+      // Parse the multipart form data from SendGrid
+      const formData = req.body.toString();
+      const emailData = parseInboundEmail(formData);
+      
+      console.log(`Inbound email from: ${emailData.fromEmail}`);
+      console.log(`Subject: ${emailData.subject}`);
+      
+      // Try to find a user by email to route the message to
+      const possibleUsers = await storage.getUsers();
+      let toUser = possibleUsers.find(u => u.email === emailData.fromEmail || u.notificationEmail === emailData.fromEmail);
+      
+      if (!toUser) {
+        // Create a system message for unrecognized senders
+        const systemUser = possibleUsers.find(u => u.role === 'admin');
+        if (systemUser) {
+          const message = await storage.createMessage({
+            toUserId: systemUser.id,
+            toEmail: systemUser.email,
+            subject: `Unrecognized Email: ${emailData.subject}`,
+            content: `Received email from unrecognized sender: ${emailData.fromEmail}\n\nOriginal Subject: ${emailData.subject}\n\nContent:\n${emailData.content}`,
+            priority: 'medium',
+            attachments: emailData.attachments || [],
+            fromUserId: systemUser.id // System message
+          });
+          
+          console.log(`📧 Created system message for unrecognized sender: ${emailData.fromEmail}`);
+        }
+      } else {
+        // Find admin or first user to receive the message  
+        const adminUser = possibleUsers.find(u => u.role === 'admin') || possibleUsers[0];
+        
+        if (adminUser) {
+          const message = await storage.createMessage({
+            toUserId: adminUser.id,
+            toEmail: adminUser.email,
+            subject: emailData.subject,
+            content: emailData.content,
+            priority: 'medium',
+            attachments: emailData.attachments || [],
+            fromUserId: toUser.id
+          });
+          
+          console.log(`📧 Created message from ${emailData.fromEmail} for ${adminUser.email}`);
+        }
+      }
+
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error("Error processing inbound email:", error);
+      res.status(500).send('Error processing email');
     }
   });
 

@@ -1,6 +1,6 @@
 import { MailService } from '@sendgrid/mail';
 import twilio from 'twilio';
-import type { Task, User } from '@shared/schema';
+import type { Task, User, Message } from '@shared/schema';
 
 const SENDGRID_KEY = process.env.SENDGRID_API_KEY_2 || process.env.SENDGRID_API_KEY;
 
@@ -530,4 +530,134 @@ export async function sendSMSNotification(
     }
     return false;
   }
+}
+
+// Message email functionality
+export async function sendMessageAsEmail(
+  message: Message,
+  fromUser: User,
+  toEmail: string,
+  fromEmail: string = 'noreply@vsuite.app'
+): Promise<boolean> {
+  const subject = message.subject;
+  
+  const textContent = `
+From: ${fromUser.name || fromUser.username}
+Priority: ${message.priority?.toUpperCase() || 'MEDIUM'}
+
+${message.content}
+
+---
+Sent via VSuite HQ Messaging System
+Reply to this email to respond directly.
+  `;
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; }
+            .header { background: #0B1D3A; color: white; padding: 20px; text-align: center; }
+            .content { padding: 30px; }
+            .priority { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-bottom: 15px; }
+            .priority.high { background: #fee2e2; color: #dc2626; }
+            .priority.medium { background: #fef3c7; color: #d97706; }
+            .priority.low { background: #dbeafe; color: #2563eb; }
+            .message-content { line-height: 1.6; margin: 20px 0; }
+            .footer { border-top: 1px solid #e5e5e5; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">VSuite HQ</h1>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">Simplified Workflow Hub</p>
+            </div>
+            
+            <div class="content">
+                <h2 style="margin-top: 0; color: #333;">New Message</h2>
+                
+                <p><strong>From:</strong> ${fromUser.name || fromUser.username}</p>
+                
+                <div class="priority ${message.priority || 'medium'}">${(message.priority || 'medium').toUpperCase()} PRIORITY</div>
+                
+                <div class="message-content">
+                    ${message.content.replace(/\n/g, '<br>')}
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>VSuite HQ - Simplified Workflow Hub</p>
+                <p style="font-size: 12px; margin-top: 10px;">
+                    Reply to this email to respond directly through the messaging system.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: toEmail,
+    from: fromEmail,
+    subject,
+    text: textContent,
+    html: htmlContent
+  });
+}
+
+// Parse incoming email from SendGrid webhook and extract message data
+export function parseInboundEmail(formData: string): {
+  fromEmail: string;
+  subject: string;
+  content: string;
+  attachments?: any[];
+} {
+  // Simple parser for SendGrid's multipart form data
+  // In a production setup, you'd use a proper multipart parser like 'multiparty'
+  const lines = formData.split('\n');
+  let fromEmail = '';
+  let subject = '';
+  let content = '';
+  
+  // Extract basic fields from form data
+  for (const line of lines) {
+    if (line.includes('name="from"')) {
+      const nextLineIndex = lines.indexOf(line) + 2;
+      if (nextLineIndex < lines.length) {
+        fromEmail = lines[nextLineIndex].trim();
+      }
+    } else if (line.includes('name="subject"')) {
+      const nextLineIndex = lines.indexOf(line) + 2;
+      if (nextLineIndex < lines.length) {
+        subject = lines[nextLineIndex].trim();
+      }
+    } else if (line.includes('name="text"')) {
+      const nextLineIndex = lines.indexOf(line) + 2;
+      if (nextLineIndex < lines.length) {
+        content = lines[nextLineIndex].trim();
+      }
+    }
+  }
+
+  // Fallback for simple email format
+  if (!fromEmail && !subject && !content) {
+    // Try to parse as simple key-value pairs
+    const keyValuePairs = formData.split('&');
+    for (const pair of keyValuePairs) {
+      const [key, value] = pair.split('=');
+      if (key === 'from') fromEmail = decodeURIComponent(value || '');
+      if (key === 'subject') subject = decodeURIComponent(value || '');
+      if (key === 'text') content = decodeURIComponent(value || '');
+    }
+  }
+
+  return {
+    fromEmail: fromEmail || 'unknown@email.com',
+    subject: subject || 'No Subject',
+    content: content || 'Empty message',
+    attachments: []
+  };
 }
