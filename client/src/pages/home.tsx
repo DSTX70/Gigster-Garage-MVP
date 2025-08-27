@@ -161,7 +161,7 @@ export default function Home() {
 
         {/* Client Management Section */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <Link href="/clients">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="p-6">
@@ -181,7 +181,7 @@ export default function Home() {
         </div>
 
         {/* Quick Actions - Document Creation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           <Link href="/create-proposal">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6">
