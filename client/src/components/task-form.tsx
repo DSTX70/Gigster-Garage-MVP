@@ -501,7 +501,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-sm hover:underline flex items-center truncate"
-                        style={{ color: 'var(--ignition-teal)' }}
+                        style={{ color: 'var(--garage-navy)' }}
                       >
                         <Link size={14} className="mr-2 flex-shrink-0" />
                         {link}

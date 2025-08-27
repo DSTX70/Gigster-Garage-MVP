@@ -34,7 +34,7 @@ export default function Landing() {
       icon: <Mail className="h-6 w-6" />,
       title: "Email & SMS Alerts",
       description: "High-priority tasks trigger automatic notifications",
-      color: "text-teal-600"
+      color: "text-blue-900"
     },
     {
       icon: <Users className="h-6 w-6" />,
@@ -217,11 +217,11 @@ export default function Landing() {
                     <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--garage-navy)' }}>Regular User Demo</h4>
                     <div className="space-y-2">
                       <div className="flex items-center">
-                        <Badge style={{ backgroundColor: 'var(--ignition-teal)', color: 'white' }} className="mr-2">Username</Badge>
+                        <Badge style={{ backgroundColor: 'var(--garage-navy)', color: 'white' }} className="mr-2">Username</Badge>
                         <code className="bg-white px-3 py-2 rounded shadow-sm border">demo</code>
                       </div>
                       <div className="flex items-center">
-                        <Badge style={{ backgroundColor: 'var(--ignition-teal)', color: 'white' }} className="mr-2">Password</Badge>
+                        <Badge style={{ backgroundColor: 'var(--garage-navy)', color: 'white' }} className="mr-2">Password</Badge>
                         <code className="bg-white px-3 py-2 rounded shadow-sm border">password</code>
                       </div>
                     </div>

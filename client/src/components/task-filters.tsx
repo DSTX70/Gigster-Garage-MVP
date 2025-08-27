@@ -25,7 +25,7 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             className={`flex items-center gap-2 ${
               activeFilter === 'all' 
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                : 'bg-teal-500 text-white hover:bg-teal-600 border-teal-500'
+                : 'bg-blue-900 text-white hover:bg-blue-800 border-blue-900'
             }`}
             data-testid="filter-all-tasks"
           >
@@ -40,7 +40,7 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             className={`flex items-center gap-2 ${
               activeFilter === 'active' 
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                : 'bg-teal-500 text-white hover:bg-teal-600 border-teal-500'
+                : 'bg-blue-900 text-white hover:bg-blue-800 border-blue-900'
             }`}
             data-testid="filter-active"
           >
@@ -55,7 +55,7 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
             className={`flex items-center gap-2 ${
               activeFilter === 'completed' 
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                : 'bg-teal-500 text-white hover:bg-teal-600 border-teal-500'
+                : 'bg-blue-900 text-white hover:bg-blue-800 border-blue-900'
             }`}
             data-testid="filter-completed"
           >
@@ -67,7 +67,7 @@ export function TaskFilters({ activeFilter, onFilterChange }: TaskFiltersProps) 
         </div>
         <div className="flex items-center space-x-3 text-sm" style={{ color: 'var(--steel-gray)' }}>
           <span className="font-medium">{activeCount} active</span>
-          <span style={{ color: 'var(--ignition-teal)' }}>•</span>
+          <span style={{ color: 'var(--garage-navy)' }}>•</span>
           <span className="font-medium">{completedCount} completed</span>
         </div>
       </div>

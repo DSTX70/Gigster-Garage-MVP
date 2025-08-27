@@ -124,7 +124,7 @@ export function ScreenshotCarousel() {
             onClick={() => goToSlide(index)}
             className={`relative w-20 h-12 rounded-lg overflow-hidden border-2 transition-all ${
               index === currentIndex
-                ? "border-teal-500 ring-2 ring-teal-200"
+                ? "border-blue-900 ring-2 ring-blue-200"
                 : "border-gray-200 hover:border-gray-300"
             }`}
           >
@@ -134,7 +134,7 @@ export function ScreenshotCarousel() {
               className="w-full h-full object-cover"
             />
             {index === currentIndex && (
-              <div className="absolute inset-0 bg-teal-500/20" />
+              <div className="absolute inset-0 bg-blue-900/20" />
             )}
           </button>
         ))}
@@ -146,7 +146,7 @@ export function ScreenshotCarousel() {
           <div
             key={index}
             className={`h-2 rounded-full transition-all ${
-              index === currentIndex ? "w-8 bg-teal-500" : "w-2 bg-gray-300"
+              index === currentIndex ? "w-8 bg-blue-900" : "w-2 bg-gray-300"
             }`}
           />
         ))}

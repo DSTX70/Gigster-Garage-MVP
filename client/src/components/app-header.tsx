@@ -58,7 +58,7 @@ export function AppHeader() {
   const reminderCount = getReminderCount();
 
   return (
-    <header className="gigster-header-gradient border-b sticky top-0 z-50 shadow-lg" style={{ borderColor: 'var(--ignition-teal)' }}>
+    <header className="gigster-header-gradient border-b sticky top-0 z-50 shadow-lg" style={{ borderColor: 'var(--garage-navy)' }}>
       <div className="max-w-6xl mx-auto px-6 py-3">
         <div className="flex flex-col space-y-3">
           {/* Top line: Shield + Logo + Tagline */}

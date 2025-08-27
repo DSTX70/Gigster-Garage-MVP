@@ -7,7 +7,7 @@
 :root {
   /* Gigster Garage Brand Colors - Navy/Teal/Amber Palette */
   --garage-navy: #004C6D;
-  --ignition-teal: #029E9D;  
+  --ignition-teal: #0B1D3A;  
   --workshop-amber: #FFB000;
   --steel-gray: hsl(0 0% 24%); /* #3C3C3C */
   --concrete-light: hsl(0 0% 90%); /* #E5E5E5 */
@@ -23,7 +23,7 @@
   --popover-foreground: hsl(0 0% 0%);
   --primary: #004C6D; /* Garage Navy */
   --primary-foreground: #ffffff;
-  --secondary: #029E9D; /* Ignition Teal */
+  --secondary: #0B1D3A; /* Garage Navy */
   --secondary-foreground: #ffffff;
   --muted: hsl(220 14.3% 95.9%);
   --muted-foreground: hsl(220 8.9% 46.1%);
@@ -52,12 +52,12 @@
   --font-display: 'Montserrat', 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
   
   /* Gigster Garage Brand Gradients - Navy/Teal/Amber */
-  --gigster-gradient: linear-gradient(135deg, #004C6D 0%, #029E9D 100%);
+  --gigster-gradient: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
   --gigster-gradient-navy: linear-gradient(135deg, #004C6D 0%, #003d5a 100%);
-  --gigster-gradient-teal: linear-gradient(135deg, #029E9D 0%, #027373 100%);
+  --gigster-gradient-teal: linear-gradient(135deg, #0B1D3A 0%, #081729 100%);
   --gigster-gradient-amber: linear-gradient(135deg, #FFB000 0%, #CC8A00 100%);
   --gigster-shadow-navy: 0 4px 12px rgba(0, 76, 109, 0.15);
-  --gigster-shadow-teal: 0 4px 12px rgba(2, 158, 157, 0.15);
+  --gigster-shadow-teal: 0 4px 12px rgba(11, 29, 58, 0.15);
   --gigster-shadow-amber: 0 4px 12px rgba(255, 176, 0, 0.15);
 }
 
