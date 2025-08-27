@@ -289,7 +289,7 @@ export default function Home() {
             <Badge variant="secondary" className="text-sm">{projects.length} active</Badge>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-6">
             {projects.map((project) => {
               const projectTasks = tasks.filter(task => task.projectId === project.id);
               const outstandingTasks = projectTasks.filter(task => !task.completed);
