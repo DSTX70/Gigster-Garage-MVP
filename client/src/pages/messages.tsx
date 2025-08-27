@@ -48,9 +48,19 @@ export function MessagesPage() {
   const { toast } = useToast();
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [isAttachmentSourceOpen, setIsAttachmentSourceOpen] = useState(false);
+  const [isReplyAttachmentSourceOpen, setIsReplyAttachmentSourceOpen] = useState(false);
   const [isFilingCabinetOpen, setIsFilingCabinetOpen] = useState(false);
+  const [isReplyFilingCabinetOpen, setIsReplyFilingCabinetOpen] = useState(false);
   const [composeData, setComposeData] = useState<ComposeData>({
+    to: '',
+    subject: '',
+    content: '',
+    priority: 'medium',
+    attachments: []
+  });
+  const [replyData, setReplyData] = useState<ComposeData>({
     to: '',
     subject: '',
     content: '',
@@ -164,6 +174,59 @@ export function MessagesPage() {
     setIsFilingCabinetOpen(false);
     setIsAttachmentSourceOpen(false);
   };
+  
+  const handleReplyAttachFile = (file: Attachment) => {
+    setReplyData(prev => ({
+      ...prev,
+      attachments: [...prev.attachments, file]
+    }));
+  };
+  
+  const handleReplyDeviceFileUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '*/*';
+    
+    input.onchange = (event) => {
+      const files = (event.target as HTMLInputElement).files;
+      if (files) {
+        Array.from(files).forEach(file => {
+          const attachment: Attachment = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            filename: file.name,
+            size: file.size,
+            type: file.type || 'application/octet-stream',
+            url: URL.createObjectURL(file)
+          };
+          handleReplyAttachFile(attachment);
+        });
+      }
+    };
+    
+    input.click();
+    setIsReplyAttachmentSourceOpen(false);
+  };
+  
+  const handleReplyFilingCabinetSelect = (file: { id: string; name: string; size: number; type: string }) => {
+    const attachment: Attachment = {
+      id: file.id,
+      filename: file.name,
+      size: file.size,
+      type: file.type,
+      url: `/api/filing-cabinet/${file.id}`
+    };
+    handleReplyAttachFile(attachment);
+    setIsReplyFilingCabinetOpen(false);
+    setIsReplyAttachmentSourceOpen(false);
+  };
+  
+  const removeReplyAttachment = (attachmentId: string) => {
+    setReplyData(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter(a => a.id !== attachmentId)
+    }));
+  };
 
   const removeAttachment = (attachmentId: string) => {
     setComposeData(prev => ({
@@ -188,6 +251,30 @@ export function MessagesPage() {
       return;
     }
     handleSendMessage.mutate(composeData);
+  };
+  
+  const handleReplySubmit = () => {
+    if (!replyData.to || !replyData.subject || !replyData.content) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    handleSendMessage.mutate(replyData);
+  };
+  
+  const handleReplyClick = (message: Message) => {
+    setReplyData({
+      to: message.from,
+      subject: message.subject.startsWith('Re: ') ? message.subject : `Re: ${message.subject}`,
+      content: `\n\n--- Original Message ---\nFrom: ${message.from}\nSubject: ${message.subject}\nDate: ${format(message.timestamp, 'MMM d, yyyy h:mm a')}\n\n${message.content}`,
+      priority: 'medium',
+      attachments: []
+    });
+    setSelectedMessage(null);
+    setIsReplyOpen(true);
   };
 
   return (
@@ -524,7 +611,7 @@ export function MessagesPage() {
                 <Button variant="outline" onClick={() => setSelectedMessage(null)} data-testid="button-close-message">
                   Close
                 </Button>
-                <Button variant="outline" data-testid="button-reply-message">
+                <Button variant="outline" onClick={() => selectedMessage && handleReplyClick(selectedMessage)} data-testid="button-reply-message">
                   <Reply className="h-4 w-4 mr-2" />
                   Reply
                 </Button>
@@ -574,6 +661,211 @@ export function MessagesPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsFilingCabinetOpen(false)}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Reply Dialog */}
+        <Dialog open={isReplyOpen} onOpenChange={setIsReplyOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Reply to Message</DialogTitle>
+              <DialogDescription>
+                Send a reply with optional file attachments.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reply-to">To *</Label>
+                <Input
+                  id="reply-to"
+                  placeholder="Enter recipient email or name"
+                  value={replyData.to}
+                  onChange={(e) => setReplyData(prev => ({ ...prev, to: e.target.value }))}
+                  data-testid="input-reply-to"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reply-subject">Subject *</Label>
+                <Input
+                  id="reply-subject"
+                  placeholder="Enter message subject"
+                  value={replyData.subject}
+                  onChange={(e) => setReplyData(prev => ({ ...prev, subject: e.target.value }))}
+                  data-testid="input-reply-subject"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Priority</Label>
+                  <Select value={replyData.priority} onValueChange={(value: 'low' | 'medium' | 'high') => setReplyData(prev => ({ ...prev, priority: value }))}>
+                    <SelectTrigger data-testid="select-reply-priority">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Attachments</Label>
+                  <Dialog open={isReplyAttachmentSourceOpen} onOpenChange={setIsReplyAttachmentSourceOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        data-testid="button-reply-attach-file"
+                      >
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        Attach File
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Choose File Source</DialogTitle>
+                        <DialogDescription>
+                          Select where you want to attach files from.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-3">
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start h-auto p-4"
+                          onClick={() => setIsReplyFilingCabinetOpen(true)}
+                          data-testid="button-reply-filing-cabinet"
+                        >
+                          <FolderOpen className="h-5 w-5 mr-3 text-blue-600" />
+                          <div className="text-left">
+                            <div className="font-medium">My Filing Cabinet</div>
+                            <div className="text-sm text-gray-500">Choose from saved documents</div>
+                          </div>
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start h-auto p-4"
+                          onClick={handleReplyDeviceFileUpload}
+                          data-testid="button-reply-my-device"
+                        >
+                          <HardDrive className="h-5 w-5 mr-3 text-green-600" />
+                          <div className="text-left">
+                            <div className="font-medium">My Device</div>
+                            <div className="text-sm text-gray-500">Upload from computer</div>
+                          </div>
+                        </Button>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsReplyAttachmentSourceOpen(false)}>
+                          Cancel
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+              
+              {replyData.attachments.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Attachments ({replyData.attachments.length})</Label>
+                  <div className="space-y-2">
+                    {replyData.attachments.map((attachment) => (
+                      <div key={attachment.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm font-medium">{attachment.filename}</span>
+                          <span className="text-xs text-gray-500">({(attachment.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeReplyAttachment(attachment.id)}
+                          className="text-red-500 hover:text-red-700"
+                          data-testid={`button-remove-reply-attachment-${attachment.id}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="reply-content">Message *</Label>
+                <Textarea
+                  id="reply-content"
+                  placeholder="Enter your reply..."
+                  rows={8}
+                  value={replyData.content}
+                  onChange={(e) => setReplyData(prev => ({ ...prev, content: e.target.value }))}
+                  data-testid="textarea-reply-content"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsReplyOpen(false)} data-testid="button-cancel-reply">
+                Cancel
+              </Button>
+              <Button onClick={handleReplySubmit} disabled={handleSendMessage.isPending} data-testid="button-send-reply">
+                {handleSendMessage.isPending ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Send Reply
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Reply Filing Cabinet Dialog */}
+        <Dialog open={isReplyFilingCabinetOpen} onOpenChange={setIsReplyFilingCabinetOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <FolderOpen className="h-5 w-5" />
+                <span>My Filing Cabinet</span>
+              </DialogTitle>
+              <DialogDescription>
+                Select files from your filing cabinet to attach to your reply.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-96 overflow-y-auto">
+              <div className="space-y-2">
+                {filingCabinetFiles.map((file) => (
+                  <div 
+                    key={file.id} 
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleReplyFilingCabinetSelect(file)}
+                    data-testid={`reply-filing-cabinet-file-${file.id}`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="font-medium text-sm">{file.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {file.type.split('/')[1]?.toUpperCase() || 'FILE'} • {(file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm">
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsReplyFilingCabinetOpen(false)}>
                 Cancel
               </Button>
             </DialogFooter>
