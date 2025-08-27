@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail } from "lucide-react";
+import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen } from "lucide-react";
 import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -248,7 +248,7 @@ export default function Home() {
         </div>
 
         {/* Secondary Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4 mb-8">
           <Link href="/productivity">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6">
@@ -275,6 +275,22 @@ export default function Home() {
                   <div>
                     <h3 className="font-semibold text-gray-900">Messages</h3>
                     <p className="text-sm text-gray-600">Client communication</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/filing-cabinet">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-gray-100 p-3 rounded-lg">
+                    <FolderOpen className="h-6 w-6 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Filing Cabinet</h3>
+                    <p className="text-sm text-gray-600">Organize all files & documents</p>
                   </div>
                 </div>
               </CardContent>

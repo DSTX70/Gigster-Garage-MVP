@@ -1657,6 +1657,17 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Get all client documents for filing cabinet
+  app.get("/api/client-documents", requireAuth, async (req, res) => {
+    try {
+      const documents = await storage.getAllClientDocuments();
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching all client documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
   // Get a specific document
   app.get("/api/documents/:id", requireAuth, async (req, res) => {
     try {

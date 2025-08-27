@@ -23,6 +23,7 @@ import CreatePresentation from "@/pages/create-presentation";
 import ClientList from "@/pages/client-list";
 import ClientDetails from "@/pages/client-details";
 import { MessagesPage } from "@/pages/messages";
+import FilingCabinet from "@/pages/filing-cabinet";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 import Test404 from "@/pages/test-404";
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/create-presentation" component={CreatePresentation} />
       <Route path="/clients" component={ClientList} />
       <Route path="/client/:clientId" component={ClientDetails} />
+      <Route path="/filing-cabinet" component={FilingCabinet} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

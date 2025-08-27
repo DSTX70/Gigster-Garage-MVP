@@ -993,6 +993,43 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(clientDocuments.createdAt));
   }
 
+  async getAllClientDocuments(): Promise<any[]> {
+    return await db
+      .select({
+        id: clientDocuments.id,
+        clientId: clientDocuments.clientId,
+        name: clientDocuments.name,
+        description: clientDocuments.description,
+        type: clientDocuments.type,
+        fileUrl: clientDocuments.fileUrl,
+        fileName: clientDocuments.fileName,
+        fileSize: clientDocuments.fileSize,
+        mimeType: clientDocuments.mimeType,
+        version: clientDocuments.version,
+        status: clientDocuments.status,
+        tags: clientDocuments.tags,
+        metadata: clientDocuments.metadata,
+        uploadedById: clientDocuments.uploadedById,
+        createdAt: clientDocuments.createdAt,
+        updatedAt: clientDocuments.updatedAt,
+        client: {
+          id: clients.id,
+          name: clients.name,
+          email: clients.email,
+          company: clients.company,
+        },
+        uploadedBy: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        }
+      })
+      .from(clientDocuments)
+      .leftJoin(clients, eq(clientDocuments.clientId, clients.id))
+      .leftJoin(users, eq(clientDocuments.uploadedById, users.id))
+      .orderBy(desc(clientDocuments.createdAt));
+  }
+
   async getClientDocument(id: string): Promise<ClientDocument | undefined> {
     const [document] = await db
       .select()
