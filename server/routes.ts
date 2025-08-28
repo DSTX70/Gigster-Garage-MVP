@@ -9,6 +9,12 @@ import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
+import OpenAI from "openai";
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Define login schema
 const loginSchema = z.object({
@@ -2376,6 +2382,131 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error processing inbound email:", error);
       res.status(500).send('Error processing email');
+    }
+  });
+
+  // Agency Hub AI-powered endpoints
+  app.post("/api/agency/create", requireAuth, async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: `You are a creative marketing expert specializing in visual content and social media mockups. Create detailed, professional marketing content concepts including visual descriptions, copy suggestions, and design recommendations. Focus on creating actionable, implementable marketing materials.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.8
+      });
+
+      const content = response.choices[0].message.content;
+      res.json({ content });
+    } catch (error) {
+      console.error("OpenAI Create API Error:", error);
+      res.status(500).json({ error: "Failed to generate creative content" });
+    }
+  });
+
+  app.post("/api/agency/write", requireAuth, async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: `You are a professional copywriter and content creator with expertise in writing compelling marketing materials, press releases, presentations, and advertising copy. Create engaging, persuasive, and well-structured content that drives action and communicates value effectively.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 1200,
+        temperature: 0.7
+      });
+
+      const content = response.choices[0].message.content;
+      res.json({ content });
+    } catch (error) {
+      console.error("OpenAI Write API Error:", error);
+      res.status(500).json({ error: "Failed to generate written content" });
+    }
+  });
+
+  app.post("/api/agency/promote", requireAuth, async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: `You are a digital marketing strategist and advertising expert with deep knowledge of paid advertising platforms, audience targeting, budget optimization, and campaign strategy. Provide detailed, actionable advertising strategies with specific recommendations for platforms, budgets, targeting, and campaign structures.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 1200,
+        temperature: 0.6
+      });
+
+      const content = response.choices[0].message.content;
+      res.json({ content });
+    } catch (error) {
+      console.error("OpenAI Promote API Error:", error);
+      res.status(500).json({ error: "Failed to generate promotion strategy" });
+    }
+  });
+
+  app.post("/api/agency/track", requireAuth, async (req, res) => {
+    try {
+      const { data } = req.body;
+      if (!data) {
+        return res.status(400).json({ error: "Data is required" });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: `You are a marketing analytics expert and data analyst specializing in campaign performance, ROI analysis, and marketing metrics interpretation. Analyze marketing data and provide actionable insights, recommendations, and performance assessments. Focus on practical improvements and strategic guidance.`
+          },
+          {
+            role: "user",
+            content: `Please analyze this marketing data and provide insights: ${data}`
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.5
+      });
+
+      const insights = response.choices[0].message.content;
+      res.json({ insights });
+    } catch (error) {
+      console.error("OpenAI Track API Error:", error);
+      res.status(500).json({ error: "Failed to analyze marketing data" });
     }
   });
 

@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen } from "lucide-react";
+import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen, Zap } from "lucide-react";
 import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -264,7 +264,7 @@ export default function Home() {
         </div>
 
         {/* Secondary Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4 mb-8">
           <Link href="/productivity">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6">
@@ -275,6 +275,22 @@ export default function Home() {
                   <div>
                     <h3 className="font-semibold text-gray-900">Productivity Tools</h3>
                     <p className="text-sm text-gray-600">Time tracking & insights</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/agency-hub">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-purple-500">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-purple-100 p-3 rounded-lg">
+                    <Zap className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Agency Hub</h3>
+                    <p className="text-sm text-gray-600">AI-powered marketing tools</p>
                   </div>
                 </div>
               </CardContent>
