@@ -16,6 +16,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Verify OpenAI configuration on startup
+if (!process.env.OPENAI_API_KEY) {
+  console.error('⚠️  OPENAI_API_KEY not found - AI tools will be disabled');
+} else {
+  console.log('✅ OpenAI API key configured successfully');
+}
+
 // Define login schema
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -2393,8 +2400,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(400).json({ error: "Prompt is required" });
       }
 
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      console.log("🎨 Creating marketing content for:", prompt.substring(0, 50) + "...");
+
       const response = await openai.chat.completions.create({
-        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        model: "gpt-4o", // Use gpt-4o instead as gpt-5 may not be available yet
         messages: [
           {
             role: "system",
@@ -2410,10 +2423,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       });
 
       const content = response.choices[0].message.content;
+      console.log("✅ Marketing content generated successfully");
       res.json({ content });
-    } catch (error) {
-      console.error("OpenAI Create API Error:", error);
-      res.status(500).json({ error: "Failed to generate creative content" });
+    } catch (error: any) {
+      console.error("❌ OpenAI Create API Error:", error.message || error);
+      if (error.code === 'model_not_found') {
+        return res.status(500).json({ error: "AI model not available. Please try again later." });
+      }
+      res.status(500).json({ error: "Failed to generate creative content: " + (error.message || "Unknown error") });
     }
   });
 
@@ -2424,8 +2441,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(400).json({ error: "Prompt is required" });
       }
 
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      console.log("✍️ Writing content for:", prompt.substring(0, 50) + "...");
+
       const response = await openai.chat.completions.create({
-        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -2441,10 +2464,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       });
 
       const content = response.choices[0].message.content;
+      console.log("✅ Written content generated successfully");
       res.json({ content });
-    } catch (error) {
-      console.error("OpenAI Write API Error:", error);
-      res.status(500).json({ error: "Failed to generate written content" });
+    } catch (error: any) {
+      console.error("❌ OpenAI Write API Error:", error.message || error);
+      if (error.code === 'model_not_found') {
+        return res.status(500).json({ error: "AI model not available. Please try again later." });
+      }
+      res.status(500).json({ error: "Failed to generate written content: " + (error.message || "Unknown error") });
     }
   });
 
@@ -2455,8 +2482,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(400).json({ error: "Prompt is required" });
       }
 
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      console.log("📢 Creating promotion strategy for:", prompt.substring(0, 50) + "...");
+
       const response = await openai.chat.completions.create({
-        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -2472,10 +2505,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       });
 
       const content = response.choices[0].message.content;
+      console.log("✅ Promotion strategy generated successfully");
       res.json({ content });
-    } catch (error) {
-      console.error("OpenAI Promote API Error:", error);
-      res.status(500).json({ error: "Failed to generate promotion strategy" });
+    } catch (error: any) {
+      console.error("❌ OpenAI Promote API Error:", error.message || error);
+      if (error.code === 'model_not_found') {
+        return res.status(500).json({ error: "AI model not available. Please try again later." });
+      }
+      res.status(500).json({ error: "Failed to generate promotion strategy: " + (error.message || "Unknown error") });
     }
   });
 
@@ -2486,8 +2523,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(400).json({ error: "Data is required" });
       }
 
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      console.log("📊 Analyzing marketing data:", data.substring(0, 50) + "...");
+
       const response = await openai.chat.completions.create({
-        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -2503,10 +2546,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       });
 
       const insights = response.choices[0].message.content;
+      console.log("✅ Marketing analysis completed successfully");
       res.json({ insights });
-    } catch (error) {
-      console.error("OpenAI Track API Error:", error);
-      res.status(500).json({ error: "Failed to analyze marketing data" });
+    } catch (error: any) {
+      console.error("❌ OpenAI Track API Error:", error.message || error);
+      if (error.code === 'model_not_found') {
+        return res.status(500).json({ error: "AI model not available. Please try again later." });
+      }
+      res.status(500).json({ error: "Failed to analyze marketing data: " + (error.message || "Unknown error") });
     }
   });
 
