@@ -2557,6 +2557,40 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Image generation endpoint for Agency Hub
+  app.post("/api/agency/generate-image", requireAuth, async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      console.log("🖼️ Generating image for:", prompt.substring(0, 50) + "...");
+
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "standard",
+      });
+
+      const imageUrl = response.data[0].url;
+      console.log("✅ Image generated successfully");
+      res.json({ imageUrl });
+    } catch (error: any) {
+      console.error("❌ OpenAI Image Generation Error:", error.message || error);
+      if (error.code === 'model_not_found') {
+        return res.status(500).json({ error: "Image generation model not available. Please try again later." });
+      }
+      res.status(500).json({ error: "Failed to generate image: " + (error.message || "Unknown error") });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

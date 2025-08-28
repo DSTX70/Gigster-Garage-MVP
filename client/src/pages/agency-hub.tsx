@@ -16,6 +16,7 @@ export default function AgencyHub() {
   const [promotePrompt, setPromotePrompt] = useState("");
   const [trackData, setTrackData] = useState("");
   const [createdContent, setCreatedContent] = useState("");
+  const [generatedImageUrl, setGeneratedImageUrl] = useState("");
   const [writtenContent, setWrittenContent] = useState("");
   const [promoteContent, setPromoteContent] = useState("");
   const [trackInsights, setTrackInsights] = useState("");
@@ -38,6 +39,25 @@ export default function AgencyHub() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to create content", variant: "destructive" });
+    },
+  });
+
+  const generateImageMutation = useMutation({
+    mutationFn: async (prompt: string) => {
+      const response = await fetch("/api/agency/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!response.ok) throw new Error("Failed to generate image");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedImageUrl(data.imageUrl);
+      toast({ title: "Image generated!", description: "Your marketing visual is ready." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to generate image", variant: "destructive" });
     },
   });
 
@@ -144,7 +164,7 @@ export default function AgencyHub() {
 
           {/* CREATE TAB */}
           <TabsContent value="create">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -165,55 +185,127 @@ export default function AgencyHub() {
                       data-testid="textarea-create-prompt"
                     />
                   </div>
-                  <Button 
-                    onClick={() => createMutation.mutate(createPrompt)}
-                    disabled={!createPrompt.trim() || createMutation.isPending}
-                    className="w-full bg-purple-600 hover:bg-purple-700"
-                    data-testid="button-create-generate"
-                  >
-                    {createMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Palette className="h-4 w-4 mr-2" />
-                        Generate Mockup
-                      </>
-                    )}
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={() => createMutation.mutate(createPrompt)}
+                      disabled={!createPrompt.trim() || createMutation.isPending}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                      data-testid="button-create-generate"
+                    >
+                      {createMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Creating Concept...
+                        </>
+                      ) : (
+                        <>
+                          <Palette className="h-4 w-4 mr-2" />
+                          Generate Concept
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={() => generateImageMutation.mutate(createPrompt)}
+                      disabled={!createPrompt.trim() || generateImageMutation.isPending}
+                      variant="outline"
+                      className="w-full border-purple-200 hover:bg-purple-50"
+                      data-testid="button-generate-image"
+                    >
+                      {generateImageMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating Image...
+                        </>
+                      ) : (
+                        <>
+                          🖼️ Generate Visual
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Generated Content</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {createdContent ? (
-                    <div className="space-y-4">
-                      <div className="bg-gray-50 p-4 rounded-lg border">
-                        <pre className="whitespace-pre-wrap text-sm">{createdContent}</pre>
+              <div className="space-y-6">
+                {/* Generated Image */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Generated Visual</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {generatedImageUrl ? (
+                      <div className="space-y-4">
+                        <div className="bg-gray-50 p-4 rounded-lg border">
+                          <img 
+                            src={generatedImageUrl} 
+                            alt="Generated marketing visual" 
+                            className="w-full rounded-lg shadow-md"
+                            data-testid="generated-image"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => window.open(generatedImageUrl, '_blank')}
+                            className="flex-1"
+                            data-testid="button-view-image"
+                          >
+                            🔍 View Full Size
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = generatedImageUrl;
+                              link.download = 'marketing-visual.png';
+                              link.click();
+                            }}
+                            className="flex-1"
+                            data-testid="button-download-image"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => copyToClipboard(createdContent)}
-                        className="w-full"
-                        data-testid="button-copy-created"
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy Content
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center text-gray-500 py-8">
-                      <Palette className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>Your generated mockup will appear here</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    ) : (
+                      <div className="text-center text-gray-500 py-8">
+                        🖼️ <p className="mt-2">Your generated visual will appear here</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Generated Content */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Marketing Concept</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {createdContent ? (
+                      <div className="space-y-4">
+                        <div className="bg-gray-50 p-4 rounded-lg border">
+                          <pre className="whitespace-pre-wrap text-sm">{createdContent}</pre>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => copyToClipboard(createdContent)}
+                          className="w-full"
+                          data-testid="button-copy-created"
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Content
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-500 py-8">
+                        <Palette className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                        <p>Your marketing concept will appear here</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
 
