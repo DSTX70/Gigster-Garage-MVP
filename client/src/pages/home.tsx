@@ -177,6 +177,22 @@ export default function Home() {
                 </CardContent>
               </Card>
             </Link>
+
+            <Link href="/messages">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-blue-100 p-3 rounded-lg">
+                      <Mail className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Messages</h3>
+                      <p className="text-sm text-gray-600">Client communication</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </div>
 
@@ -248,7 +264,7 @@ export default function Home() {
         </div>
 
         {/* Secondary Actions */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           <Link href="/productivity">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6">
@@ -259,22 +275,6 @@ export default function Home() {
                   <div>
                     <h3 className="font-semibold text-gray-900">Productivity Tools</h3>
                     <p className="text-sm text-gray-600">Time tracking & insights</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/messages">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-blue-100 p-3 rounded-lg">
-                    <Mail className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Messages</h3>
-                    <p className="text-sm text-gray-600">Client communication</p>
                   </div>
                 </div>
               </CardContent>
