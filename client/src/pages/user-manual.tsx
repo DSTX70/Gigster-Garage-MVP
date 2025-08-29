@@ -214,7 +214,46 @@ export default function UserManual() {
           'Review all invoice details before sending to clients',
           'Use the draft system for internal approval processes',
           'Include clear payment terms and due dates',
-          'Track invoice status for follow-up actions'
+          'Track invoice status for follow-up actions',
+          'Note: Invoices typically use existing client profiles from your Client Management system'
+        ]
+      }
+    },
+    {
+      id: 'proposals',
+      title: 'Proposal System',
+      icon: <FileText className="h-5 w-5 text-blue-600" />,
+      description: 'Create and manage client proposals',
+      content: {
+        overview: 'Professional proposal creation system with template support, automated client management, and streamlined approval workflows.',
+        sections: [
+          {
+            title: 'Proposal Creation',
+            content: 'Create professional proposals using templates or direct input. Include project details, timeline, deliverables, pricing, and terms & conditions for comprehensive client presentations.'
+          },
+          {
+            title: 'Template-Based Proposals',
+            content: 'Use pre-built templates to quickly generate proposals. Templates streamline the creation process and ensure consistency across client communications.'
+          },
+          {
+            title: 'Direct Proposal Creation',
+            content: 'Create proposals from scratch with custom content, line items, pricing calculations, and personalized terms. Full control over proposal structure and content.'
+          },
+          {
+            title: 'Client Integration',
+            content: 'Proposals automatically integrate with your client management system. If a client profile doesn\'t exist, the system will create one automatically when generating proposals.'
+          },
+          {
+            title: 'Proposal Delivery',
+            content: 'Send proposals directly to clients via email with professional formatting. Track proposal status and manage follow-up communications.'
+          }
+        ],
+        tips: [
+          'Use templates for faster proposal creation and consistency',
+          'Include detailed project descriptions and clear timelines',
+          'Set appropriate expiration dates for proposals',
+          'Tip: Creating a proposal will automatically create a Client Profile if none exists for the provided email address',
+          'Review all pricing calculations before sending to clients'
         ]
       }
     },
