@@ -215,7 +215,7 @@ export default function UserManual() {
           'Use the draft system for internal approval processes',
           'Include clear payment terms and due dates',
           'Track invoice status for follow-up actions',
-          'Note: Invoices typically use existing client profiles from your Client Management system'
+          'Tip: Invoices integrate with your Client Management system. If no client profile exists for the invoice recipient, one will be automatically created using the client information from the invoice'
         ]
       }
     },
