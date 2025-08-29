@@ -62,27 +62,28 @@ export default function Home() {
       <AppHeader />
       <ReminderSystem />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
         {/* Dashboard Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
-            <div className="flex gap-2">
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Dashboard</h1>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
               <Link href="/user-manual">
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="bg-green-600 text-white border-green-600 hover:bg-green-700 hover:border-green-700"
+                  className="w-full sm:w-auto bg-green-600 text-white border-green-600 hover:bg-green-700 hover:border-green-700"
                   data-testid="button-user-manual"
                 >
                   <BookOpen className="h-4 w-4 mr-1" />
-                  User Manual
+                  <span className="hidden sm:inline">User Manual</span>
+                  <span className="sm:hidden">Manual</span>
                 </Button>
               </Link>
               <Button 
                 variant="outline" 
                 size="sm"
-                className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+                className="w-full sm:w-auto bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
                 onClick={() => setIsNewTaskOpen(true)}
                 data-testid="button-new-task-header"
               >
@@ -91,11 +92,11 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <p className="text-gray-600">Welcome back! Here's what's happening with your tasks and projects.</p>
+          <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening with your tasks and projects.</p>
         </div>
 
         {/* Urgent & Overview Section */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {/* Overdue Tasks */}
           <Link href="/tasks?filter=overdue">
             <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow cursor-pointer">
@@ -173,18 +174,18 @@ export default function Home() {
         </div>
 
         {/* Client Management Section */}
-        <div className="mb-8">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Link href="/clients">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-purple-100 p-3 rounded-lg">
-                      <Users className="h-6 w-6 text-purple-600" />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="bg-purple-100 p-2 sm:p-3 rounded-lg">
+                      <Users className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Client Management</h3>
-                      <p className="text-sm text-gray-600">Manage client relationships & history</p>
+                      <h3 className="text-sm sm:text-base font-semibold text-gray-900">Client Management</h3>
+                      <p className="text-xs sm:text-sm text-gray-600">Manage client relationships & history</p>
                     </div>
                   </div>
                 </CardContent>
@@ -193,14 +194,14 @@ export default function Home() {
 
             <Link href="/messages">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-blue-100 p-3 rounded-lg">
-                      <Mail className="h-6 w-6 text-blue-600" />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="bg-blue-100 p-2 sm:p-3 rounded-lg">
+                      <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Messages</h3>
-                      <p className="text-sm text-gray-600">Client communication</p>
+                      <h3 className="text-sm sm:text-base font-semibold text-gray-900">Messages</h3>
+                      <p className="text-xs sm:text-sm text-gray-600">Client communication</p>
                     </div>
                   </div>
                 </CardContent>
@@ -210,17 +211,17 @@ export default function Home() {
         </div>
 
         {/* Quick Actions - Document Creation */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Link href="/create-proposal">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-blue-100 p-3 rounded-lg">
-                    <FileText className="h-6 w-6 text-blue-600" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-blue-100 p-2 sm:p-3 rounded-lg">
+                    <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Create Proposal</h3>
-                    <p className="text-sm text-gray-600">Professional project proposals</p>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900">Create Proposal</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Professional project proposals</p>
                   </div>
                 </div>
               </CardContent>
@@ -229,14 +230,14 @@ export default function Home() {
 
           <Link href="/create-invoice">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-green-100 p-3 rounded-lg">
-                    <Mail className="h-6 w-6 text-green-600" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-green-100 p-2 sm:p-3 rounded-lg">
+                    <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Create Invoice</h3>
-                    <p className="text-sm text-gray-600">Professional billing & invoices</p>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900">Create Invoice</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Professional billing & invoices</p>
                   </div>
                 </div>
               </CardContent>
@@ -245,14 +246,14 @@ export default function Home() {
 
           <Link href="/create-contract">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-purple-100 p-3 rounded-lg">
-                    <FileText className="h-6 w-6 text-purple-600" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-purple-100 p-2 sm:p-3 rounded-lg">
+                    <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Create Contract</h3>
-                    <p className="text-sm text-gray-600">Legal agreements & terms</p>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900">Create Contract</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Legal agreements & terms</p>
                   </div>
                 </div>
               </CardContent>
@@ -261,14 +262,14 @@ export default function Home() {
 
           <Link href="/create-presentation">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-orange-100 p-3 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-orange-600" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-orange-100 p-2 sm:p-3 rounded-lg">
+                    <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Create Presentation</h3>
-                    <p className="text-sm text-gray-600">Slide decks & presentations</p>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900">Create Presentation</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Slide decks & presentations</p>
                   </div>
                 </div>
               </CardContent>
@@ -277,17 +278,17 @@ export default function Home() {
         </div>
 
         {/* Secondary Actions */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Link href="/productivity">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-amber-100 p-3 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-amber-600" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-amber-100 p-2 sm:p-3 rounded-lg">
+                    <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Productivity Tools</h3>
-                    <p className="text-sm text-gray-600">Time tracking & insights</p>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900">Productivity Tools</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Time tracking & insights</p>
                   </div>
                 </div>
               </CardContent>
@@ -296,14 +297,14 @@ export default function Home() {
 
           <Link href="/agency-hub">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-purple-500">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-purple-100 p-3 rounded-lg">
-                    <Zap className="h-6 w-6 text-purple-600" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-purple-100 p-2 sm:p-3 rounded-lg">
+                    <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Agency Hub</h3>
-                    <p className="text-sm text-gray-600">AI-powered marketing tools</p>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900">Agency Hub</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">AI-powered marketing tools</p>
                   </div>
                 </div>
               </CardContent>
@@ -312,14 +313,14 @@ export default function Home() {
 
           <Link href="/filing-cabinet">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-gray-100 p-3 rounded-lg">
-                    <FolderOpen className="h-6 w-6 text-gray-600" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-gray-100 p-2 sm:p-3 rounded-lg">
+                    <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Filing Cabinet</h3>
-                    <p className="text-sm text-gray-600">Organize all files & documents</p>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900">Filing Cabinet</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Organize all files & documents</p>
                   </div>
                 </div>
               </CardContent>
@@ -328,13 +329,13 @@ export default function Home() {
         </div>
 
         {/* Project Folders Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
-            <Badge variant="secondary" className="text-sm">{projects.length} active</Badge>
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Projects</h2>
+            <Badge variant="secondary" className="text-xs sm:text-sm">{projects.length} active</Badge>
           </div>
           
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {projects.map((project) => {
               const projectTasks = tasks.filter(task => task.projectId === project.id);
               const outstandingTasks = projectTasks.filter(task => !task.completed);
@@ -426,25 +427,25 @@ export default function Home() {
         </div>
 
         {/* Collapsible New Task Section */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <Collapsible open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
             <CollapsibleTrigger asChild>
               <Button 
                 variant="outline" 
                 size="lg"
-                className="w-full justify-between py-6 text-left hover:bg-blue-50 border-2 border-dashed border-gray-300 hover:border-blue-300"
+                className="w-full justify-between py-4 sm:py-6 text-left hover:bg-blue-50 border-2 border-dashed border-gray-300 hover:border-blue-300"
                 data-testid="button-new-task-collapsible"
               >
                 <div className="flex items-center">
-                  <Plus className="h-5 w-5 mr-3 text-blue-600" />
-                  <span className="text-lg font-medium">New Task</span>
+                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-3 text-blue-600" />
+                  <span className="text-base sm:text-lg font-medium">New Task</span>
                 </div>
-                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${isNewTaskOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 transition-transform ${isNewTaskOpen ? 'rotate-180' : ''}`} />
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-4">
               <Card className="border-2 border-blue-200">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <TaskForm onSuccess={() => setIsNewTaskOpen(false)} />
                 </CardContent>
               </Card>
@@ -480,9 +481,9 @@ export default function Home() {
 
         {/* Mobile task list */}
         <div className="block lg:hidden">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Tasks</h2>
-            <div className="flex flex-wrap items-center gap-4">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Tasks</h2>
+            <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-4">
               <TaskFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
               <AssignmentFilter selectedAssignee={selectedAssignee} onAssigneeChange={setSelectedAssignee} />
             </div>

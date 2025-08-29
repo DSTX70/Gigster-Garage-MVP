@@ -59,53 +59,52 @@ export function AppHeader() {
 
   return (
     <header className="gigster-header-gradient border-b sticky top-0 z-50 shadow-lg" style={{ borderColor: 'var(--garage-navy)' }}>
-      <div className="max-w-6xl mx-auto px-6 py-3">
-        <div className="flex flex-col space-y-3">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2 sm:py-3">
+        <div className="flex flex-col space-y-2 sm:space-y-3">
           {/* Top line: Shield + Logo + Tagline */}
           <div className="flex items-center justify-center">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                 <GigsterLogo size="small" showText={false} />
               </div>
-              <h1 className="text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+              <h1 className="text-lg sm:text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
                 Gigster Garage
               </h1>
-              <span style={{ color: 'rgba(255, 176, 0, 0.6)' }} className="font-medium">|</span>
-              <p className="text-sm font-medium brand-tagline">Smarter tools for bolder dreams</p>
+              <span style={{ color: 'rgba(255, 176, 0, 0.6)' }} className="font-medium hidden sm:inline">|</span>
+              <p className="text-xs sm:text-sm font-medium brand-tagline hidden sm:block">Smarter tools for bolder dreams</p>
             </div>
           </div>
           
           {/* Bottom line: User + Messages */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 text-sm text-white/80">
-              <User size={16} />
+            <div className="flex items-center space-x-2 sm:space-x-3 text-xs sm:text-sm text-white/80">
+              <User size={14} className="sm:w-4 sm:h-4" />
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
-                className="text-white hover:bg-white/10 font-medium p-1 h-auto"
+                className="text-white hover:bg-white/10 font-medium p-1 h-auto text-xs sm:text-sm"
               >
                 {user?.name}
               </Button>
               {user?.role === 'admin' && (
-                <span className="bg-white/20 text-white px-2 py-0.5 rounded-full text-xs font-medium border border-white/30">
+                <span className="bg-white/20 text-white px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium border border-white/30">
                   Admin
                 </span>
               )}
-
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               {/* Home Button */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/")}
-                className="text-white hover:bg-white/10 relative p-2"
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
                 data-testid="button-home"
               >
-                <Home size={18} />
+                <Home size={16} className="sm:w-[18px] sm:h-[18px]" />
               </Button>
               
               {/* Message System */}
@@ -113,11 +112,11 @@ export function AppHeader() {
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/messages")}
-                className="text-white hover:bg-white/10 relative p-2"
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
               >
-                <Mail size={18} />
+                <Mail size={16} className="sm:w-[18px] sm:h-[18px]" />
                 {/* Show badge if there are unread messages */}
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-bold">
                   0
                 </span>
               </Button>
