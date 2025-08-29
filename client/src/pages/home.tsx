@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen, Zap } from "lucide-react";
+import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen, Zap, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -67,16 +67,29 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
-              onClick={() => setIsNewTaskOpen(true)}
-              data-testid="button-new-task-header"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              New Task
-            </Button>
+            <div className="flex gap-2">
+              <Link href="/user-manual">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-green-600 text-white border-green-600 hover:bg-green-700 hover:border-green-700"
+                  data-testid="button-user-manual"
+                >
+                  <BookOpen className="h-4 w-4 mr-1" />
+                  User Manual
+                </Button>
+              </Link>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+                onClick={() => setIsNewTaskOpen(true)}
+                data-testid="button-new-task-header"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New Task
+              </Button>
+            </div>
           </div>
           <p className="text-gray-600">Welcome back! Here's what's happening with your tasks and projects.</p>
         </div>
