@@ -4,6 +4,7 @@ import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home } f
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
+import { GlobalSearch } from "@/components/global-search";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -72,6 +73,13 @@ export function AppHeader() {
               </h1>
               <span style={{ color: 'rgba(255, 176, 0, 0.6)' }} className="font-medium hidden sm:inline">|</span>
               <p className="text-xs sm:text-sm font-medium brand-tagline hidden sm:block">Smarter tools for bolder dreams</p>
+            </div>
+          </div>
+
+          {/* Middle line: Search */}
+          <div className="flex justify-center px-2">
+            <div className="w-full max-w-md">
+              <GlobalSearch className="w-full" />
             </div>
           </div>
           

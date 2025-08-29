@@ -280,6 +280,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search endpoint
+  app.get("/api/search", requireAuth, async (req, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.length < 2) {
+        return res.json([]);
+      }
+      
+      const query = q.toLowerCase();
+      const user = req.session.user!;
+      const results: any[] = [];
+      
+      // Search tasks
+      try {
+        const tasks = await storage.getTasks(user.role === 'admin' ? undefined : user.id);
+        const matchingTasks = tasks.filter(task => 
+          task.title.toLowerCase().includes(query) ||
+          task.description?.toLowerCase().includes(query) ||
+          task.notes?.toLowerCase().includes(query)
+        ).slice(0, 5);
+        
+        for (const task of matchingTasks) {
+          // Get project name for context
+          let projectName;
+          if (task.projectId) {
+            const project = await storage.getProject(task.projectId);
+            projectName = project?.name;
+          }
+          
+          // Get assignee name for context
+          let assigneeName;
+          if (task.assignedToId) {
+            const assignee = await storage.getUser(task.assignedToId);
+            assigneeName = assignee?.name;
+          }
+          
+          results.push({
+            id: task.id,
+            type: "task",
+            title: task.title,
+            description: task.description,
+            url: `/tasks?id=${task.id}`,
+            metadata: {
+              status: task.completed ? "completed" : "active",
+              priority: task.priority,
+              dueDate: task.dueDate,
+              projectName,
+              assigneeName
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error searching tasks:", error);
+      }
+      
+      // Search projects
+      try {
+        const projects = await storage.getProjects();
+        const matchingProjects = projects.filter(project => 
+          project.name.toLowerCase().includes(query) ||
+          project.description?.toLowerCase().includes(query)
+        ).slice(0, 5);
+        
+        for (const project of matchingProjects) {
+          results.push({
+            id: project.id,
+            type: "project",
+            title: project.name,
+            description: project.description,
+            url: `/project/${project.id}`,
+            metadata: {
+              status: project.status
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error searching projects:", error);
+      }
+      
+      // Search clients
+      try {
+        const clients = await storage.getClients();
+        const matchingClients = clients.filter(client => 
+          client.name.toLowerCase().includes(query) ||
+          client.company?.toLowerCase().includes(query) ||
+          client.email?.toLowerCase().includes(query)
+        ).slice(0, 3);
+        
+        for (const client of matchingClients) {
+          results.push({
+            id: client.id,
+            type: "client",
+            title: client.name,
+            description: client.company ? `${client.company} - ${client.email}` : client.email,
+            url: `/client/${client.id}`,
+            metadata: {}
+          });
+        }
+      } catch (error) {
+        console.error("Error searching clients:", error);
+      }
+      
+      // Search invoices
+      try {
+        const invoices = await storage.getInvoices();
+        const matchingInvoices = invoices.filter(invoice => 
+          invoice.invoiceNumber?.toLowerCase().includes(query) ||
+          invoice.description?.toLowerCase().includes(query)
+        ).slice(0, 3);
+        
+        for (const invoice of matchingInvoices) {
+          let clientName;
+          if (invoice.clientId) {
+            const client = await storage.getClient(invoice.clientId);
+            clientName = client?.name;
+          }
+          
+          results.push({
+            id: invoice.id,
+            type: "invoice",
+            title: invoice.invoiceNumber || `Invoice ${invoice.id}`,
+            description: clientName ? `${clientName} - $${invoice.total}` : `$${invoice.total}`,
+            url: `/invoices?id=${invoice.id}`,
+            metadata: {
+              status: invoice.status
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error searching invoices:", error);
+      }
+      
+      // Search messages
+      try {
+        const messages = await storage.getMessages();
+        const matchingMessages = messages.filter(message => 
+          message.subject?.toLowerCase().includes(query) ||
+          message.content?.toLowerCase().includes(query) ||
+          message.recipientEmail?.toLowerCase().includes(query)
+        ).slice(0, 3);
+        
+        for (const message of matchingMessages) {
+          results.push({
+            id: message.id,
+            type: "message",
+            title: message.subject || "No Subject",
+            description: message.recipientEmail,
+            url: `/messages?id=${message.id}`,
+            metadata: {
+              status: message.status
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error searching messages:", error);
+      }
+      
+      // Sort results by relevance (exact matches first)
+      results.sort((a, b) => {
+        const aExact = a.title.toLowerCase() === query ? 1 : 0;
+        const bExact = b.title.toLowerCase() === query ? 1 : 0;
+        return bExact - aExact;
+      });
+      
+      res.json(results.slice(0, 20)); // Limit total results
+    } catch (error) {
+      console.error("Error in search:", error);
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
   // Task routes
   app.get("/api/tasks", requireAuth, async (req, res) => {
     try {
