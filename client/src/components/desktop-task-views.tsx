@@ -192,22 +192,165 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
     </div>
   );
 
-  const GanttView = () => (
-    <Card>
-      <CardContent className="p-6">
-        <div className="text-center py-12">
-          <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Timeline View</h3>
-          <p className="text-gray-600 mb-4">
-            Advanced Gantt chart view for project planning and dependency tracking.
-          </p>
-          <p className="text-sm text-gray-500">
-            Coming soon with enhanced project management features.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const GanttView = () => {
+    // Get tasks with due dates for timeline
+    const tasksWithDates = tasks.filter(task => task.dueDate).sort((a, b) => 
+      new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()
+    );
+
+    // Calculate timeline range
+    const today = new Date();
+    const startDate = tasksWithDates.length > 0 
+      ? new Date(Math.min(today.getTime(), new Date(tasksWithDates[0].dueDate!).getTime()))
+      : today;
+    const endDate = tasksWithDates.length > 0
+      ? new Date(Math.max(today.getTime(), new Date(tasksWithDates[tasksWithDates.length - 1].dueDate!).getTime()))
+      : new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+
+    // Generate weeks for timeline header
+    const weeks = [];
+    const currentWeek = new Date(startDate);
+    while (currentWeek <= endDate) {
+      weeks.push(new Date(currentWeek));
+      currentWeek.setDate(currentWeek.getDate() + 7);
+    }
+
+    const getTaskPosition = (task: Task) => {
+      if (!task.dueDate) return null;
+      const taskDate = new Date(task.dueDate);
+      const totalRange = endDate.getTime() - startDate.getTime();
+      const taskOffset = taskDate.getTime() - startDate.getTime();
+      const percentage = (taskOffset / totalRange) * 100;
+      return Math.max(0, Math.min(100, percentage));
+    };
+
+    const getTaskWidth = (task: Task) => {
+      // For now, all tasks have 1-day width, could be enhanced with start/end dates
+      const totalRange = endDate.getTime() - startDate.getTime();
+      const dayWidth = (24 * 60 * 60 * 1000 / totalRange) * 100;
+      return Math.max(1, dayWidth);
+    };
+
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Project Timeline</h3>
+              <div className="text-sm text-gray-500">
+                {format(startDate, 'MMM d')} - {format(endDate, 'MMM d, yyyy')}
+              </div>
+            </div>
+            
+            {tasksWithDates.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">No Timeline Data</h4>
+                <p className="text-gray-600">
+                  Add due dates to tasks to see them on the timeline.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                {/* Timeline Header */}
+                <div className="flex mb-4 min-w-[800px]">
+                  <div className="w-64 flex-shrink-0"></div>
+                  <div className="flex-1 relative">
+                    <div className="flex border-b border-gray-300 pb-2">
+                      {weeks.map((week, index) => (
+                        <div key={index} className="flex-1 text-center text-sm font-medium text-gray-600">
+                          {format(week, 'MMM d')}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Today indicator */}
+                    <div 
+                      className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
+                      style={{
+                        left: `${((today.getTime() - startDate.getTime()) / (endDate.getTime() - startDate.getTime())) * 100}%`
+                      }}
+                    >
+                      <div className="absolute -top-2 -left-8 text-xs text-red-600 font-medium">Today</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Tasks Timeline */}
+                <div className="space-y-3 min-w-[800px]">
+                  {tasksWithDates.map(task => {
+                    const position = getTaskPosition(task);
+                    const width = getTaskWidth(task);
+                    const isOverdue = task.dueDate && new Date(task.dueDate) < today && !task.completed;
+                    
+                    if (position === null) return null;
+                    
+                    return (
+                      <div key={task.id} className="flex items-center">
+                        {/* Task Info */}
+                        <div className="w-64 flex-shrink-0 pr-4">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              task.completed ? 'bg-green-500' :
+                              isOverdue ? 'bg-red-500' :
+                              task.priority === 'high' ? 'bg-orange-500' :
+                              task.priority === 'medium' ? 'bg-yellow-500' :
+                              'bg-blue-500'
+                            }`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {task.description}
+                              </div>
+                              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                <Badge className={`text-xs ${
+                                  task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {task.priority}
+                                </Badge>
+                                {task.project && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {task.project.name}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Timeline Bar */}
+                        <div className="flex-1 relative h-6">
+                          <div 
+                            className={`absolute h-4 rounded ${
+                              task.completed ? 'bg-green-500' :
+                              isOverdue ? 'bg-red-500' :
+                              task.priority === 'high' ? 'bg-orange-500' :
+                              task.priority === 'medium' ? 'bg-yellow-500' :
+                              'bg-blue-500'
+                            } hover:shadow-md transition-all cursor-pointer`}
+                            style={{
+                              left: `${position}%`,
+                              width: `${width}%`,
+                              minWidth: '20px'
+                            }}
+                            title={`${task.description} - Due: ${format(new Date(task.dueDate!), 'MMM d, h:mm a')}`}
+                          >
+                            {task.completed && (
+                              <CheckCircle2 className="h-3 w-3 text-white absolute top-0.5 left-1" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   // Only show desktop views on larger screens
   const [isDesktop, setIsDesktop] = useState(false);
