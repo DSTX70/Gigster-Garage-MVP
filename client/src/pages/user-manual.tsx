@@ -426,6 +426,44 @@ export default function UserManual() {
           'Ensure contact information is up to date for delivery'
         ]
       }
+    },
+    {
+      id: 'file-storage',
+      title: 'File Storage & Documents',
+      icon: <FileText className="h-5 w-5 text-indigo-600" />,
+      description: 'Secure file storage and document management',
+      content: {
+        overview: 'Comprehensive file storage capabilities with secure cloud storage, automatic access controls, and seamless integration with tasks, projects, and client management.',
+        sections: [
+          {
+            title: 'Security Features',
+            content: 'All files are protected with secure presigned URL uploads, automatic access control policies, private file protection, and user-based permissions. Files are encrypted and backed up automatically.'
+          },
+          {
+            title: 'File Upload Capabilities',  
+            content: 'Support for all file types up to 10MB per file. Multiple file uploads with real-time progress tracking. Files are automatically organized and categorized based on context.'
+          },
+          {
+            title: 'Organization System',
+            content: 'Filing Cabinet serves as central repository for client documents. Task attachments for project files. Project-specific document spaces. Client document organization with filtering and search.'
+          },
+          {
+            title: 'Access Control',
+            content: 'Private files accessible only to authorized users. Public files shareable via secure links. Client-specific documents automatically protected. Role-based access controls.'
+          },
+          {
+            title: 'How to Upload Files',
+            content: '1. Navigate to relevant section (Tasks, Projects, Filing Cabinet) 2. Click upload button to open file modal 3. Drag and drop or select files 4. Monitor upload progress 5. Files automatically secured with proper permissions'
+          }
+        ],
+        tips: [
+          'Use descriptive file names for easy identification',
+          'Organize files by client or project for better management', 
+          'Upload files directly to tasks/projects for context',
+          'All files are automatically backed up and secured',
+          'Large files are optimized for fast loading'
+        ]
+      }
     }
   ];
 
