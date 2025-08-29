@@ -464,6 +464,50 @@ export default function UserManual() {
           'Large files are optimized for fast loading'
         ]
       }
+    },
+    {
+      id: 'payment-tracking',
+      title: 'Payment Tracking & Management',
+      icon: <CreditCard className="h-5 w-5 text-green-600" />,
+      description: 'Comprehensive payment recording and invoice management',
+      content: {
+        overview: 'Advanced payment tracking system that automatically updates invoice statuses, calculates balances, and provides detailed payment history for complete financial management.',
+        sections: [
+          {
+            title: 'Payment Recording Features',
+            content: 'Record payments with multiple payment methods (Cash, Check, Credit Card, Bank Transfer, PayPal, Stripe). Automatic invoice balance calculations and status updates. Deposit tracking and partial payment support.'
+          },
+          {
+            title: 'Invoice Integration',
+            content: 'Payments automatically link to invoices and update paid amounts. Real-time balance calculations showing total due vs. paid. Automatic status changes from draft → sent → paid based on payment completion.'
+          },
+          {
+            title: 'Payment Methods Supported',
+            content: 'Cash payments for in-person transactions. Check payments with reference tracking. Credit card processing integration. Bank transfers with transaction IDs. PayPal and Stripe online payments. Custom payment methods as needed.'
+          },
+          {
+            title: 'Reporting & Analytics',
+            content: 'Total payment summaries across all invoices. Monthly payment tracking and trends. Deposit vs. final payment analysis. Average payment amounts and timing. Payment method usage statistics.'
+          },
+          {
+            title: 'How to Record Payments',
+            content: '1. Navigate to Payments page or Invoice Details 2. Click "Record Payment" button 3. Enter payment amount and date 4. Select payment method and add reference 5. Link to specific invoice (optional) 6. Mark as deposit if applicable 7. Add notes for context 8. Invoice status updates automatically'
+          },
+          {
+            title: 'Payment History & Search',
+            content: 'Complete payment history with client and invoice links. Search by amount, reference, client name, or payment method. Filter by payment method or date range. Export payment data for accounting. Quick access from invoice details pages.'
+          }
+        ],
+        tips: [
+          'Record payments immediately to keep accurate balances',
+          'Use reference numbers (check #, transaction ID) for tracking',
+          'Mark partial payments as deposits for clarity',
+          'Link payments to invoices for automatic status updates',
+          'Search payment history by client name or invoice number',
+          'Use notes field for important payment context',
+          'Review monthly payment summaries for cash flow analysis'
+        ]
+      }
     }
   ];
 

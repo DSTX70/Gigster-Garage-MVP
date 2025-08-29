@@ -17,7 +17,9 @@ import Productivity from "@/pages/productivity";
 import CreateProposal from "@/pages/create-proposal";
 import CreateInvoice from "@/pages/create-invoice";
 import Invoices from "@/pages/invoices";
+import InvoiceDetails from "@/pages/invoice-details";
 import EditInvoice from "@/pages/edit-invoice";
+import Payments from "@/pages/payments";
 import CreateContract from "@/pages/create-contract";
 import CreatePresentation from "@/pages/create-presentation";
 import ClientList from "@/pages/client-list";
@@ -77,8 +79,10 @@ function Router() {
       <Route path="/messages" component={MessagesPage} />
       <Route path="/create-proposal" component={CreateProposal} />
       <Route path="/invoices" component={Invoices} />
+      <Route path="/invoices/:id" component={InvoiceDetails} />
       <Route path="/create-invoice" component={CreateInvoice} />
       <Route path="/edit-invoice/:id" component={EditInvoice} />
+      <Route path="/payments" component={Payments} />
       <Route path="/create-contract" component={CreateContract} />
       <Route path="/create-presentation" component={CreatePresentation} />
       <Route path="/clients" component={ClientList} />

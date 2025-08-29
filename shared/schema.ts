@@ -207,6 +207,17 @@ export const payments = pgTable("payments", {
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
 
+export const insertPaymentSchema = createInsertSchema(payments, {
+  paymentDate: z.union([
+    z.string().transform((val) => new Date(val)),
+    z.date(),
+  ]),
+  amount: z.union([
+    z.string().transform((val) => val),
+    z.number().transform((val) => val.toString()),
+  ]),
+});
+
 // Tasks table with enhanced features
 export const tasks = pgTable("tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -497,7 +508,6 @@ export const insertInvoiceSchema = createInsertSchema(invoices);
 export const selectInvoiceSchema = createSelectSchema(invoices);
 export const invoiceSchema = insertInvoiceSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertPaymentSchema = createInsertSchema(payments);
 export const selectPaymentSchema = createSelectSchema(payments);
 export const paymentSchema = insertPaymentSchema.omit({ id: true, createdAt: true });
 

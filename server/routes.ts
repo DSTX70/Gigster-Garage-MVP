@@ -2763,6 +2763,189 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Payment endpoints
+  app.get("/api/payments", requireAuth, async (req, res) => {
+    try {
+      const payments = await storage.getPayments();
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  app.get("/api/payments/:id", requireAuth, async (req, res) => {
+    try {
+      const payment = await storage.getPayment(req.params.id);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.json(payment);
+    } catch (error) {
+      console.error("Error fetching payment:", error);
+      res.status(500).json({ error: "Failed to fetch payment" });
+    }
+  });
+
+  app.post("/api/payments", requireAuth, async (req, res) => {
+    try {
+      const result = insertPaymentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          error: "Invalid payment data", 
+          details: result.error.issues 
+        });
+      }
+
+      const payment = await storage.createPayment(result.data);
+      
+      // Update invoice paid amounts if payment is linked to an invoice
+      if (payment.invoiceId) {
+        const invoice = await storage.getInvoice(payment.invoiceId);
+        if (invoice) {
+          const totalPaid = parseFloat(invoice.amountPaid || "0") + parseFloat(payment.amount);
+          const balanceDue = parseFloat(invoice.totalAmount || "0") - totalPaid;
+          const status = balanceDue <= 0 ? "paid" : "sent";
+          
+          await storage.updateInvoice(payment.invoiceId, {
+            amountPaid: totalPaid.toFixed(2),
+            balanceDue: balanceDue.toFixed(2),
+            status: status,
+            paidAt: balanceDue <= 0 ? new Date() : invoice.paidAt
+          });
+        }
+      }
+
+      res.json(payment);
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      res.status(500).json({ error: "Failed to create payment" });
+    }
+  });
+
+  app.put("/api/payments/:id", requireAuth, async (req, res) => {
+    try {
+      const updateData = req.body;
+      const payment = await storage.updatePayment(req.params.id, updateData);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.json(payment);
+    } catch (error) {
+      console.error("Error updating payment:", error);
+      res.status(500).json({ error: "Failed to update payment" });
+    }
+  });
+
+  app.delete("/api/payments/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deletePayment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+      res.status(500).json({ error: "Failed to delete payment" });
+    }
+  });
+
+  app.get("/api/invoices/:id/payments", requireAuth, async (req, res) => {
+    try {
+      const payments = await storage.getPayments();
+      const invoicePayments = payments.filter(p => p.invoiceId === req.params.id);
+      res.json(invoicePayments);
+    } catch (error) {
+      console.error("Error fetching invoice payments:", error);
+      res.status(500).json({ error: "Failed to fetch invoice payments" });
+    }
+  });
+
+  // Test PDF generation endpoint
+  app.post("/api/test-pdf/:type", requireAuth, async (req, res) => {
+    try {
+      const { type } = req.params;
+      
+      if (type === "invoice") {
+        // Test invoice PDF generation
+        const testInvoice = {
+          id: "test-invoice-001",
+          invoiceNumber: "INV-2025-001",
+          clientName: "Test Client Corp",
+          clientEmail: "test@example.com",
+          clientAddress: "123 Test Street\nTest City, TC 12345",
+          projectDescription: "Test Project Services",
+          status: "draft",
+          totalAmount: "2500.00",
+          taxAmount: "250.00",
+          lineItems: [
+            {
+              description: "Web Development Services",
+              quantity: 40,
+              rate: 50.00,
+              amount: 2000.00
+            },
+            {
+              description: "Project Management",
+              quantity: 10,
+              rate: 50.00,
+              amount: 500.00
+            }
+          ],
+          terms: "Payment due within 30 days. Late fees may apply.",
+          createdAt: new Date(),
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        };
+
+        const pdfBuffer = await generateInvoicePDF(testInvoice);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="test-invoice.pdf"');
+        res.send(pdfBuffer);
+      } else if (type === "proposal") {
+        // Test proposal PDF generation
+        const testProposal = {
+          id: "test-proposal-001",
+          title: "Website Redesign Proposal",
+          clientName: "Test Client Corp",
+          clientEmail: "test@example.com",
+          content: `
+            <h2>Project Overview</h2>
+            <p>We propose to redesign your company website with modern, responsive design and improved user experience.</p>
+            
+            <h2>Scope of Work</h2>
+            <ul>
+              <li>Complete website redesign</li>
+              <li>Mobile-responsive implementation</li>
+              <li>Content management system integration</li>
+              <li>SEO optimization</li>
+              <li>Performance optimization</li>
+            </ul>
+            
+            <h2>Timeline</h2>
+            <p>The project will be completed within 8-10 weeks from project start date.</p>
+            
+            <h2>Investment</h2>
+            <p>Total project investment: <strong>$15,000</strong></p>
+          `,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        };
+
+        const pdfBuffer = await generateProposalPDF(testProposal);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="test-proposal.pdf"');
+        res.send(pdfBuffer);
+      } else {
+        return res.status(400).json({ error: "Invalid PDF type. Use 'invoice' or 'proposal'" });
+      }
+      
+      console.log(`✅ ${type} PDF generated successfully`);
+    } catch (error) {
+      console.error(`❌ PDF generation error:`, error);
+      res.status(500).json({ error: `Failed to generate ${req.params.type} PDF: ${error.message}` });
+    }
+  });
+
   // Serve public assets from object storage
   app.get("/public-objects/:filePath(*)", async (req, res) => {
     const filePath = req.params.filePath;
