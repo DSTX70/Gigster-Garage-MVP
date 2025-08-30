@@ -304,6 +304,47 @@ export const timeLogs = pgTable("time_logs", {
 export type TimeLog = typeof timeLogs.$inferSelect;
 export type InsertTimeLog = typeof timeLogs.$inferInsert;
 
+// File Attachments table for tasks and projects
+export const fileAttachments = pgTable("file_attachments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fileName: varchar("file_name").notNull(),
+  originalName: varchar("original_name").notNull(),
+  filePath: varchar("file_path").notNull(), // Object storage path
+  fileSize: integer("file_size"), // in bytes
+  mimeType: varchar("mime_type"),
+  entityType: varchar("entity_type", { enum: ["task", "project", "client"] }).notNull(),
+  entityId: varchar("entity_id").notNull(),
+  uploadedById: varchar("uploaded_by_id").references(() => users.id).notNull(),
+  description: text("description"),
+  isPublic: boolean("is_public").default(false),
+  version: integer("version").default(1),
+  parentFileId: varchar("parent_file_id"), // For version control
+  tags: jsonb("tags").$type<string[]>().default([]),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type FileAttachment = typeof fileAttachments.$inferSelect;
+export type InsertFileAttachment = typeof fileAttachments.$inferInsert;
+
+// Document Versions table for enhanced version control
+export const documentVersions = pgTable("document_versions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  documentId: varchar("document_id").notNull(), // References file_attachments or client_documents
+  versionNumber: integer("version_number").notNull(),
+  fileName: varchar("file_name").notNull(),
+  filePath: varchar("file_path").notNull(),
+  fileSize: integer("file_size"),
+  mimeType: varchar("mime_type"),
+  changes: text("changes"), // Description of changes
+  uploadedById: varchar("uploaded_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type DocumentVersion = typeof documentVersions.$inferSelect;
+export type InsertDocumentVersion = typeof documentVersions.$inferInsert;
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdTasks: many(tasks, { relationName: "createdTasks" }),
@@ -447,6 +488,26 @@ export const clientDocumentsRelations = relations(clientDocuments, ({ one }) => 
   }),
 }));
 
+export const fileAttachmentsRelations = relations(fileAttachments, ({ one, many }) => ({
+  uploadedBy: one(users, {
+    fields: [fileAttachments.uploadedById],
+    references: [users.id],
+  }),
+  parentFile: one(fileAttachments, {
+    fields: [fileAttachments.parentFileId],
+    references: [fileAttachments.id],
+    relationName: "fileVersions",
+  }),
+  versions: many(fileAttachments, { relationName: "fileVersions" }),
+}));
+
+export const documentVersionsRelations = relations(documentVersions, ({ one }) => ({
+  uploadedBy: one(users, {
+    fields: [documentVersions.uploadedById],
+    references: [users.id],
+  }),
+}));
+
 // Type definitions
 export interface LineItem {
   id: number;
@@ -524,6 +585,16 @@ export const userSchema = insertUserSchema.omit({ id: true, createdAt: true, upd
 export const insertClientDocumentSchema = createInsertSchema(clientDocuments);
 export const selectClientDocumentSchema = createSelectSchema(clientDocuments);
 export const clientDocumentSchema = insertClientDocumentSchema.omit({ id: true, createdAt: true, updatedAt: true });
+
+// File Attachment schemas
+export const insertFileAttachmentSchema = createInsertSchema(fileAttachments);
+export const selectFileAttachmentSchema = createSelectSchema(fileAttachments);
+export const fileAttachmentSchema = insertFileAttachmentSchema.omit({ id: true, createdAt: true, updatedAt: true });
+
+// Document Version schemas
+export const insertDocumentVersionSchema = createInsertSchema(documentVersions);
+export const selectDocumentVersionSchema = createSelectSchema(documentVersions);
+export const documentVersionSchema = insertDocumentVersionSchema.omit({ id: true, createdAt: true });
 
 // Additional schemas needed by routes
 export const updateTaskSchema = insertTaskSchema.partial();

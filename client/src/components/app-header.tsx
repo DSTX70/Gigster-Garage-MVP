@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database } from "lucide-react";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
@@ -113,6 +113,17 @@ export function AppHeader() {
                 data-testid="button-home"
               >
                 <Home size={16} className="sm:w-[18px] sm:h-[18px]" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/bulk-operations")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-bulk-operations"
+                title="Bulk Operations"
+              >
+                <Database size={16} className="sm:w-[18px] sm:h-[18px]" />
               </Button>
               
               {/* Message System */}

@@ -1,6 +1,9 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
+import multer from "multer";
+import csvParser from "csv-parser";
+import createCsvWriter from "csv-writer";
 import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
@@ -37,6 +40,12 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure multer for file uploads
+  const upload = multer({ 
+    dest: 'uploads/',
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+
   // Session middleware
   app.use(session({
     secret: process.env.SESSION_SECRET || 'taskflow-secret-key',
@@ -1879,6 +1888,64 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // File attachment routes for tasks/projects
+  
+  // Get upload URL for file attachment
+  app.post("/api/attachments/upload", requireAuth, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Create file attachment record after upload
+  app.post("/api/attachments", requireAuth, async (req, res) => {
+    try {
+      const { fileName, originalName, filePath, fileSize, mimeType, entityType, entityId, description, isPublic, tags } = req.body;
+      
+      if (!fileName || !filePath || !entityType || !entityId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const attachment = await storage.createFileAttachment({
+        fileName,
+        originalName: originalName || fileName,
+        filePath,
+        fileSize: fileSize || null,
+        mimeType: mimeType || null,
+        entityType,
+        entityId,
+        uploadedById: req.session.user!.id,
+        description: description || null,
+        isPublic: isPublic || false,
+        tags: tags || [],
+        metadata: {},
+        version: 1
+      });
+
+      res.status(201).json(attachment);
+    } catch (error) {
+      console.error("Error creating file attachment:", error);
+      res.status(500).json({ message: "Failed to create file attachment" });
+    }
+  });
+
+  // Get file attachments for an entity
+  app.get("/api/attachments/:entityType/:entityId", requireAuth, async (req, res) => {
+    try {
+      const { entityType, entityId } = req.params;
+      const attachments = await storage.getFileAttachments(entityType as any, entityId);
+      res.json(attachments);
+    } catch (error) {
+      console.error("Error getting file attachments:", error);
+      res.status(500).json({ message: "Failed to get file attachments" });
+    }
+  });
+
   // Send invoice via email
   app.post("/api/invoices/:id/send", requireAuth, async (req, res) => {
     try {
@@ -2959,6 +3026,500 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error searching for public object:", error);
       return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Bulk Operations Routes
+  
+  // Bulk delete tasks
+  app.post("/api/bulk/tasks/delete", requireAuth, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "IDs array required" });
+      }
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const id of ids) {
+        try {
+          const success = await storage.deleteTask(id);
+          if (success) completed++;
+          else errors++;
+        } catch (error) {
+          console.error(`Error deleting task ${id}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ total: ids.length, completed, errors });
+    } catch (error) {
+      console.error("Error in bulk delete tasks:", error);
+      res.status(500).json({ message: "Failed to delete tasks" });
+    }
+  });
+
+  // Bulk edit tasks
+  app.post("/api/bulk/tasks/edit", requireAuth, async (req, res) => {
+    try {
+      const { ids, updates } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "IDs array required" });
+      }
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const id of ids) {
+        try {
+          const updated = await storage.updateTask(id, updates);
+          if (updated) completed++;
+          else errors++;
+        } catch (error) {
+          console.error(`Error updating task ${id}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ total: ids.length, completed, errors });
+    } catch (error) {
+      console.error("Error in bulk edit tasks:", error);
+      res.status(500).json({ message: "Failed to update tasks" });
+    }
+  });
+
+  // Bulk delete projects
+  app.post("/api/bulk/projects/delete", requireAdmin, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "IDs array required" });
+      }
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const id of ids) {
+        try {
+          // Archive instead of delete to preserve data integrity
+          const success = await storage.updateProject(id, { status: 'archived' });
+          if (success) completed++;
+          else errors++;
+        } catch (error) {
+          console.error(`Error archiving project ${id}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ total: ids.length, completed, errors });
+    } catch (error) {
+      console.error("Error in bulk delete projects:", error);
+      res.status(500).json({ message: "Failed to archive projects" });
+    }
+  });
+
+  // Bulk edit projects
+  app.post("/api/bulk/projects/edit", requireAdmin, async (req, res) => {
+    try {
+      const { ids, updates } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "IDs array required" });
+      }
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const id of ids) {
+        try {
+          const updated = await storage.updateProject(id, updates);
+          if (updated) completed++;
+          else errors++;
+        } catch (error) {
+          console.error(`Error updating project ${id}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ total: ids.length, completed, errors });
+    } catch (error) {
+      console.error("Error in bulk edit projects:", error);
+      res.status(500).json({ message: "Failed to update projects" });
+    }
+  });
+
+  // Bulk delete clients
+  app.post("/api/bulk/clients/delete", requireAdmin, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "IDs array required" });
+      }
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const id of ids) {
+        try {
+          const success = await storage.deleteClient(id);
+          if (success) completed++;
+          else errors++;
+        } catch (error) {
+          console.error(`Error deleting client ${id}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ total: ids.length, completed, errors });
+    } catch (error) {
+      console.error("Error in bulk delete clients:", error);
+      res.status(500).json({ message: "Failed to delete clients" });
+    }
+  });
+
+  // Bulk edit clients
+  app.post("/api/bulk/clients/edit", requireAdmin, async (req, res) => {
+    try {
+      const { ids, updates } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "IDs array required" });
+      }
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const id of ids) {
+        try {
+          const updated = await storage.updateClient(id, updates);
+          if (updated) completed++;
+          else errors++;
+        } catch (error) {
+          console.error(`Error updating client ${id}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ total: ids.length, completed, errors });
+    } catch (error) {
+      console.error("Error in bulk edit clients:", error);
+      res.status(500).json({ message: "Failed to update clients" });
+    }
+  });
+
+  // CSV Export Routes
+  
+  // Export tasks to CSV
+  app.get("/api/export/tasks", requireAuth, async (req, res) => {
+    try {
+      const { format = 'csv', ids } = req.query;
+      const userId = req.session.user?.role === 'admin' ? undefined : req.session.user?.id;
+      
+      let tasks;
+      if (ids && typeof ids === 'string') {
+        const taskIds = ids.split(',');
+        tasks = [];
+        for (const id of taskIds) {
+          const task = await storage.getTask(id);
+          if (task && (!userId || task.assignedToId === userId)) {
+            tasks.push(task);
+          }
+        }
+      } else {
+        tasks = await storage.getTasks(userId);
+      }
+
+      if (format === 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', 'attachment; filename="tasks.json"');
+        return res.send(JSON.stringify(tasks, null, 2));
+      }
+
+      // CSV export
+      const csvWriter = createCsvWriter.createObjectCsvStringifier({
+        header: [
+          { id: 'id', title: 'ID' },
+          { id: 'title', title: 'Title' },
+          { id: 'description', title: 'Description' },
+          { id: 'status', title: 'Status' },
+          { id: 'priority', title: 'Priority' },
+          { id: 'assignedToId', title: 'Assigned To ID' },
+          { id: 'projectId', title: 'Project ID' },
+          { id: 'dueDate', title: 'Due Date' },
+          { id: 'createdAt', title: 'Created At' },
+          { id: 'updatedAt', title: 'Updated At' }
+        ]
+      });
+
+      const csvContent = csvWriter.getHeaderString() + csvWriter.stringifyRecords(tasks);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="tasks.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Error exporting tasks:", error);
+      res.status(500).json({ message: "Failed to export tasks" });
+    }
+  });
+
+  // Export projects to CSV
+  app.get("/api/export/projects", requireAuth, async (req, res) => {
+    try {
+      const { format = 'csv', ids } = req.query;
+      
+      let projects;
+      if (ids && typeof ids === 'string') {
+        const projectIds = ids.split(',');
+        projects = [];
+        for (const id of projectIds) {
+          const project = await storage.getProject(id);
+          if (project) {
+            projects.push(project);
+          }
+        }
+      } else {
+        projects = await storage.getProjects();
+      }
+
+      if (format === 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', 'attachment; filename="projects.json"');
+        return res.send(JSON.stringify(projects, null, 2));
+      }
+
+      // CSV export
+      const csvWriter = createCsvWriter.createObjectCsvStringifier({
+        header: [
+          { id: 'id', title: 'ID' },
+          { id: 'name', title: 'Name' },
+          { id: 'description', title: 'Description' },
+          { id: 'status', title: 'Status' },
+          { id: 'createdAt', title: 'Created At' },
+          { id: 'updatedAt', title: 'Updated At' }
+        ]
+      });
+
+      const csvContent = csvWriter.getHeaderString() + csvWriter.stringifyRecords(projects);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="projects.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Error exporting projects:", error);
+      res.status(500).json({ message: "Failed to export projects" });
+    }
+  });
+
+  // Export clients to CSV
+  app.get("/api/export/clients", requireAuth, async (req, res) => {
+    try {
+      const { format = 'csv', ids } = req.query;
+      
+      let clients;
+      if (ids && typeof ids === 'string') {
+        const clientIds = ids.split(',');
+        clients = [];
+        for (const id of clientIds) {
+          const client = await storage.getClient(id);
+          if (client) {
+            clients.push(client);
+          }
+        }
+      } else {
+        clients = await storage.getClients();
+      }
+
+      if (format === 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', 'attachment; filename="clients.json"');
+        return res.send(JSON.stringify(clients, null, 2));
+      }
+
+      // CSV export
+      const csvWriter = createCsvWriter.createObjectCsvStringifier({
+        header: [
+          { id: 'id', title: 'ID' },
+          { id: 'name', title: 'Name' },
+          { id: 'email', title: 'Email' },
+          { id: 'phone', title: 'Phone' },
+          { id: 'company', title: 'Company' },
+          { id: 'address', title: 'Address' },
+          { id: 'website', title: 'Website' },
+          { id: 'createdAt', title: 'Created At' },
+          { id: 'updatedAt', title: 'Updated At' }
+        ]
+      });
+
+      const csvContent = csvWriter.getHeaderString() + csvWriter.stringifyRecords(clients);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="clients.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Error exporting clients:", error);
+      res.status(500).json({ message: "Failed to export clients" });
+    }
+  });
+
+  // CSV Import Routes
+  
+  // Import tasks from CSV
+  app.post("/api/import/tasks", requireAuth, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const results: any[] = [];
+      const fs = require('fs');
+      
+      const readStream = fs.createReadStream(req.file.path);
+      
+      readStream
+        .pipe(csvParser())
+        .on('data', (data) => results.push(data))
+        .on('end', async () => {
+          let completed = 0;
+          let errors = 0;
+          
+          for (const row of results) {
+            try {
+              // Validate and clean the data
+              const taskData = {
+                title: row.Title || row.title || '',
+                description: row.Description || row.description || null,
+                status: row.Status || row.status || 'todo',
+                priority: row.Priority || row.priority || 'medium',
+                assignedToId: row['Assigned To ID'] || row.assignedToId || req.session.user!.id,
+                projectId: row['Project ID'] || row.projectId || null,
+                dueDate: row['Due Date'] || row.dueDate ? new Date(row['Due Date'] || row.dueDate) : null
+              };
+              
+              if (!taskData.title) {
+                errors++;
+                continue;
+              }
+
+              await storage.createTask(taskData, req.session.user!.id);
+              completed++;
+            } catch (error) {
+              console.error('Error importing task row:', error);
+              errors++;
+            }
+          }
+
+          // Clean up uploaded file
+          fs.unlink(req.file.path, () => {});
+          
+          res.json({ total: results.length, completed, errors });
+        });
+    } catch (error) {
+      console.error("Error importing tasks:", error);
+      res.status(500).json({ message: "Failed to import tasks" });
+    }
+  });
+
+  // Import projects from CSV
+  app.post("/api/import/projects", requireAdmin, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const results: any[] = [];
+      const fs = require('fs');
+      
+      const readStream = fs.createReadStream(req.file.path);
+      
+      readStream
+        .pipe(csvParser())
+        .on('data', (data) => results.push(data))
+        .on('end', async () => {
+          let completed = 0;
+          let errors = 0;
+          
+          for (const row of results) {
+            try {
+              const projectData = {
+                name: row.Name || row.name || '',
+                description: row.Description || row.description || null,
+                status: row.Status || row.status || 'active'
+              };
+              
+              if (!projectData.name) {
+                errors++;
+                continue;
+              }
+
+              await storage.createProject(projectData);
+              completed++;
+            } catch (error) {
+              console.error('Error importing project row:', error);
+              errors++;
+            }
+          }
+
+          // Clean up uploaded file
+          fs.unlink(req.file.path, () => {});
+          
+          res.json({ total: results.length, completed, errors });
+        });
+    } catch (error) {
+      console.error("Error importing projects:", error);
+      res.status(500).json({ message: "Failed to import projects" });
+    }
+  });
+
+  // Import clients from CSV
+  app.post("/api/import/clients", requireAdmin, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const results: any[] = [];
+      const fs = require('fs');
+      
+      const readStream = fs.createReadStream(req.file.path);
+      
+      readStream
+        .pipe(csvParser())
+        .on('data', (data) => results.push(data))
+        .on('end', async () => {
+          let completed = 0;
+          let errors = 0;
+          
+          for (const row of results) {
+            try {
+              const clientData = {
+                name: row.Name || row.name || '',
+                email: row.Email || row.email || null,
+                phone: row.Phone || row.phone || null,
+                company: row.Company || row.company || null,
+                address: row.Address || row.address || null,
+                website: row.Website || row.website || null
+              };
+              
+              if (!clientData.name) {
+                errors++;
+                continue;
+              }
+
+              await storage.createClient(clientData);
+              completed++;
+            } catch (error) {
+              console.error('Error importing client row:', error);
+              errors++;
+            }
+          }
+
+          // Clean up uploaded file
+          fs.unlink(req.file.path, () => {});
+          
+          res.json({ total: results.length, completed, errors });
+        });
+    } catch (error) {
+      console.error("Error importing clients:", error);
+      res.status(500).json({ message: "Failed to import clients" });
     }
   });
 

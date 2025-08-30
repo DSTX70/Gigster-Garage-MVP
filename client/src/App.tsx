@@ -28,6 +28,7 @@ import { MessagesPage } from "@/pages/messages";
 import FilingCabinet from "@/pages/filing-cabinet";
 import AgencyHub from "@/pages/agency-hub";
 import UserManual from "@/pages/user-manual";
+import BulkOperations from "@/pages/bulk-operations";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 import Test404 from "@/pages/test-404";
@@ -90,6 +91,7 @@ function Router() {
       <Route path="/filing-cabinet" component={FilingCabinet} />
       <Route path="/agency-hub" component={AgencyHub} />
       <Route path="/user-manual" component={UserManual} />
+      <Route path="/bulk-operations" component={BulkOperations} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

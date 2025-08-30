@@ -107,6 +107,20 @@ export interface IStorage {
   createMessage(insertMessage: InsertMessage): Promise<Message>;
   markMessageAsRead(messageId: string, userId: string): Promise<Message | undefined>;
   getUnreadMessageCount(userId: string): Promise<number>;
+
+  // File Attachment management
+  getFileAttachments(entityType: 'task' | 'project' | 'client', entityId: string): Promise<FileAttachment[]>;
+  getAllFileAttachments(): Promise<FileAttachment[]>;
+  getFileAttachment(id: string): Promise<FileAttachment | undefined>;
+  createFileAttachment(insertAttachment: InsertFileAttachment): Promise<FileAttachment>;
+  updateFileAttachment(id: string, updateAttachment: Partial<InsertFileAttachment>): Promise<FileAttachment | undefined>;
+  deleteFileAttachment(id: string): Promise<boolean>;
+
+  // Document Version management
+  getDocumentVersions(documentId: string): Promise<DocumentVersion[]>;
+  getDocumentVersion(id: string): Promise<DocumentVersion | undefined>;
+  createDocumentVersion(insertVersion: InsertDocumentVersion): Promise<DocumentVersion>;
+  deleteDocumentVersion(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1229,6 +1243,80 @@ export class DatabaseStorage implements IStorage {
         eq(messages.isRead, false)
       ));
     return Number(result?.count || 0);
+  }
+
+  // File Attachment operations
+  async getFileAttachments(entityType: 'task' | 'project' | 'client', entityId: string): Promise<FileAttachment[]> {
+    const result = await db.select().from(fileAttachments)
+      .where(and(
+        eq(fileAttachments.entityType, entityType),
+        eq(fileAttachments.entityId, entityId)
+      ))
+      .orderBy(desc(fileAttachments.createdAt));
+    return result;
+  }
+
+  async getAllFileAttachments(): Promise<FileAttachment[]> {
+    return await db.select().from(fileAttachments)
+      .orderBy(desc(fileAttachments.createdAt));
+  }
+
+  async getFileAttachment(id: string): Promise<FileAttachment | undefined> {
+    const [attachment] = await db.select().from(fileAttachments)
+      .where(eq(fileAttachments.id, id));
+    return attachment;
+  }
+
+  async createFileAttachment(insertAttachment: InsertFileAttachment): Promise<FileAttachment> {
+    const [attachment] = await db
+      .insert(fileAttachments)
+      .values(insertAttachment)
+      .returning();
+    return attachment;
+  }
+
+  async updateFileAttachment(id: string, updateAttachment: Partial<InsertFileAttachment>): Promise<FileAttachment | undefined> {
+    const [attachment] = await db
+      .update(fileAttachments)
+      .set(updateAttachment)
+      .where(eq(fileAttachments.id, id))
+      .returning();
+    return attachment;
+  }
+
+  async deleteFileAttachment(id: string): Promise<boolean> {
+    const result = await db
+      .delete(fileAttachments)
+      .where(eq(fileAttachments.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Document Version operations
+  async getDocumentVersions(documentId: string): Promise<DocumentVersion[]> {
+    return await db.select().from(documentVersions)
+      .where(eq(documentVersions.documentId, documentId))
+      .orderBy(desc(documentVersions.versionNumber));
+  }
+
+  async getDocumentVersion(id: string): Promise<DocumentVersion | undefined> {
+    const [version] = await db.select().from(documentVersions)
+      .where(eq(documentVersions.id, id));
+    return version;
+  }
+
+  async createDocumentVersion(insertVersion: InsertDocumentVersion): Promise<DocumentVersion> {
+    const [version] = await db
+      .insert(documentVersions)
+      .values(insertVersion)
+      .returning();
+    return version;
+  }
+
+  async deleteDocumentVersion(id: string): Promise<boolean> {
+    const result = await db
+      .delete(documentVersions)
+      .where(eq(documentVersions.id, id));
+    return result.rowCount > 0;
   }
 }
 
