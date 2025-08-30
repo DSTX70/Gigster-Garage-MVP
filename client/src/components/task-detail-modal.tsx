@@ -29,6 +29,9 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { CommentsSection } from "@/components/CommentsSection";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Task } from "@shared/schema";
 
 interface TaskDetailModalProps {
@@ -343,6 +346,41 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                 </Button>
               </form>
             </div>
+          </div>
+
+          <Separator className="my-6" />
+
+          {/* Team Collaboration Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-[#0B1D3A] flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Team Collaboration
+            </h2>
+            
+            <Tabs defaultValue="comments" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="comments">Comments & Discussion</TabsTrigger>
+                <TabsTrigger value="activity">Activity Feed</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="comments" className="space-y-4">
+                <CommentsSection 
+                  entityType="task" 
+                  entityId={task.id} 
+                  className="border-0 p-0"
+                />
+              </TabsContent>
+              
+              <TabsContent value="activity" className="space-y-4">
+                <ActivityFeed 
+                  entityType="task" 
+                  entityId={task.id}
+                  limit={20}
+                  showFilters={false}
+                  className="border-0 p-0"
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </ScrollArea>
       </DialogContent>

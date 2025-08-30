@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap } from "lucide-react";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
@@ -135,6 +135,17 @@ export function AppHeader() {
                 title="Custom Fields"
               >
                 <Settings size={16} className="sm:w-[18px] sm:h-[18px]" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/workflow-automation")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-workflow-automation"
+                title="Workflow Automation"
+              >
+                <Zap size={16} className="sm:w-[18px] sm:h-[18px]" />
               </Button>
               
               {/* Message System */}

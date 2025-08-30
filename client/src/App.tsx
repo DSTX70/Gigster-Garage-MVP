@@ -30,6 +30,7 @@ import AgencyHub from "@/pages/agency-hub";
 import UserManual from "@/pages/user-manual";
 import BulkOperations from "@/pages/bulk-operations";
 import CustomFields from "@/pages/custom-fields";
+import WorkflowAutomation from "@/pages/workflow-automation";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 import Test404 from "@/pages/test-404";
@@ -94,6 +95,7 @@ function Router() {
       <Route path="/user-manual" component={UserManual} />
       <Route path="/bulk-operations" component={BulkOperations} />
       <Route path="/custom-fields" component={CustomFields} />
+      <Route path="/workflow-automation" component={WorkflowAutomation} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

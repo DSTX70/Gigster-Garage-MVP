@@ -3514,6 +3514,17 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Get workflow executions
+  app.get("/api/workflow-executions", requireAuth, async (req, res) => {
+    try {
+      const executions = await storage.getWorkflowExecutions();
+      res.json(executions);
+    } catch (error) {
+      console.error("Error fetching workflow executions:", error);
+      res.status(500).json({ message: "Failed to fetch workflow executions" });
+    }
+  });
+
   // Comments API Routes
 
   // Get comments for an entity

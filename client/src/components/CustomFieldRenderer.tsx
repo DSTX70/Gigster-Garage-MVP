@@ -56,26 +56,22 @@ export function CustomFieldRenderer({ entityType, entityId, form, className = ""
       
       if (existingValue) {
         // Parse existing value based on field type
-        const valueStr = existingValue.value || '';
+        const rawValue = existingValue.value;
         switch (definition.type) {
           case 'boolean':
-            initialData[definition.id] = valueStr === 'true';
+            initialData[definition.id] = typeof rawValue === 'boolean' ? rawValue : rawValue === 'true';
             break;
           case 'number':
-            initialData[definition.id] = valueStr ? parseFloat(valueStr) : 0;
+            initialData[definition.id] = typeof rawValue === 'number' ? rawValue : (rawValue ? parseFloat(String(rawValue)) : 0);
             break;
           case 'date':
-            initialData[definition.id] = valueStr ? new Date(valueStr) : null;
+            initialData[definition.id] = rawValue ? new Date(String(rawValue)) : null;
             break;
           case 'multiselect':
-            try {
-              initialData[definition.id] = valueStr ? JSON.parse(valueStr) : [];
-            } catch {
-              initialData[definition.id] = [];
-            }
+            initialData[definition.id] = Array.isArray(rawValue) ? rawValue : [];
             break;
           default:
-            initialData[definition.id] = valueStr;
+            initialData[definition.id] = rawValue ? String(rawValue) : '';
         }
       } else {
         // Set default value
