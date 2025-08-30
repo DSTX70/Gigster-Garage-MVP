@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Zap, Palette, PenTool, Megaphone, BarChart3, Loader2, Copy, Download } from "lucide-react";
+import { Zap, Palette, PenTool, Megaphone, BarChart3, Loader2, Copy, Download, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 export default function AgencyHub() {
   const [createPrompt, setCreatePrompt] = useState("");
@@ -131,6 +132,12 @@ export default function AgencyHub() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
+            <Link href="/">
+              <Button variant="outline" size="sm" className="flex items-center gap-2" data-testid="button-back-to-dashboard">
+                <ArrowLeft className="w-4 h-4" />
+                Back to My Dashboard
+              </Button>
+            </Link>
             <div className="bg-purple-100 p-3 rounded-lg">
               <Zap className="h-8 w-8 text-purple-600" />
             </div>
