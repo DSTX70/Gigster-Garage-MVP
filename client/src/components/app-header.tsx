@@ -125,6 +125,17 @@ export function AppHeader() {
               >
                 <Database size={16} className="sm:w-[18px] sm:h-[18px]" />
               </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/custom-fields")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-custom-fields"
+                title="Custom Fields"
+              >
+                <Settings size={16} className="sm:w-[18px] sm:h-[18px]" />
+              </Button>
               
               {/* Message System */}
               <Button

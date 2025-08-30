@@ -1,8 +1,8 @@
 import { eq, and, or, desc, gte, lte, isNull, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, timeLogs, messages } from "@shared/schema";
-import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage } from "@shared/schema";
+import type { User, InsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage } from "@shared/schema";
 
 export interface IStorage {
   // User management
@@ -121,6 +121,59 @@ export interface IStorage {
   getDocumentVersion(id: string): Promise<DocumentVersion | undefined>;
   createDocumentVersion(insertVersion: InsertDocumentVersion): Promise<DocumentVersion>;
   deleteDocumentVersion(id: string): Promise<boolean>;
+
+  // Custom Field Definitions management
+  getCustomFieldDefinitions(entityType?: string): Promise<CustomFieldDefinition[]>;
+  getCustomFieldDefinition(id: string): Promise<CustomFieldDefinition | undefined>;
+  createCustomFieldDefinition(insertDefinition: InsertCustomFieldDefinition): Promise<CustomFieldDefinition>;
+  updateCustomFieldDefinition(id: string, updateDefinition: Partial<InsertCustomFieldDefinition>): Promise<CustomFieldDefinition | undefined>;
+  deleteCustomFieldDefinition(id: string): Promise<boolean>;
+
+  // Custom Field Values management
+  getCustomFieldValues(entityType: string, entityId: string): Promise<CustomFieldValue[]>;
+  getCustomFieldValue(id: string): Promise<CustomFieldValue | undefined>;
+  setCustomFieldValue(insertValue: InsertCustomFieldValue): Promise<CustomFieldValue>;
+  updateCustomFieldValue(id: string, updateValue: Partial<InsertCustomFieldValue>): Promise<CustomFieldValue | undefined>;
+  deleteCustomFieldValue(id: string): Promise<boolean>;
+
+  // Workflow Rules management
+  getWorkflowRules(entityType?: string, isActive?: boolean): Promise<WorkflowRule[]>;
+  getWorkflowRule(id: string): Promise<WorkflowRule | undefined>;
+  createWorkflowRule(insertRule: InsertWorkflowRule): Promise<WorkflowRule>;
+  updateWorkflowRule(id: string, updateRule: Partial<InsertWorkflowRule>): Promise<WorkflowRule | undefined>;
+  deleteWorkflowRule(id: string): Promise<boolean>;
+  executeWorkflowRules(entityType: string, entityId: string, event: string, entityData: any): Promise<WorkflowExecution[]>;
+
+  // Workflow Executions management
+  getWorkflowExecutions(ruleId?: string, entityId?: string): Promise<WorkflowExecution[]>;
+  getWorkflowExecution(id: string): Promise<WorkflowExecution | undefined>;
+  createWorkflowExecution(insertExecution: InsertWorkflowExecution): Promise<WorkflowExecution>;
+
+  // Comments management
+  getComments(entityType: string, entityId: string): Promise<Comment[]>;
+  getComment(id: string): Promise<Comment | undefined>;
+  createComment(insertComment: InsertComment): Promise<Comment>;
+  updateComment(id: string, updateComment: Partial<InsertComment>): Promise<Comment | undefined>;
+  deleteComment(id: string): Promise<boolean>;
+
+  // Activities management
+  getActivities(entityType?: string, entityId?: string, actorId?: string, limit?: number): Promise<Activity[]>;
+  getActivity(id: string): Promise<Activity | undefined>;
+  createActivity(insertActivity: InsertActivity): Promise<Activity>;
+  deleteActivity(id: string): Promise<boolean>;
+
+  // API Keys management
+  getApiKeys(createdById?: string): Promise<ApiKey[]>;
+  getApiKey(id: string): Promise<ApiKey | undefined>;
+  getApiKeyByKey(key: string): Promise<ApiKey | undefined>;
+  createApiKey(insertKey: InsertApiKey): Promise<ApiKey>;
+  updateApiKey(id: string, updateKey: Partial<InsertApiKey>): Promise<ApiKey | undefined>;
+  deleteApiKey(id: string): Promise<boolean>;
+  validateApiKey(key: string): Promise<ApiKey | null>;
+
+  // API Usage tracking
+  getApiUsage(keyId?: string, startDate?: Date, endDate?: Date): Promise<ApiUsage[]>;
+  createApiUsage(insertUsage: InsertApiUsage): Promise<ApiUsage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1317,6 +1370,489 @@ export class DatabaseStorage implements IStorage {
       .delete(documentVersions)
       .where(eq(documentVersions.id, id));
     return result.rowCount > 0;
+  }
+
+  // Custom Field Definitions operations
+  async getCustomFieldDefinitions(entityType?: string): Promise<CustomFieldDefinition[]> {
+    let query = db.select().from(customFieldDefinitions);
+    
+    if (entityType) {
+      query = query.where(eq(customFieldDefinitions.entityType, entityType));
+    }
+    
+    return await query
+      .where(eq(customFieldDefinitions.isActive, true))
+      .orderBy(customFieldDefinitions.order, customFieldDefinitions.createdAt);
+  }
+
+  async getCustomFieldDefinition(id: string): Promise<CustomFieldDefinition | undefined> {
+    const [definition] = await db.select().from(customFieldDefinitions)
+      .where(eq(customFieldDefinitions.id, id));
+    return definition;
+  }
+
+  async createCustomFieldDefinition(insertDefinition: InsertCustomFieldDefinition): Promise<CustomFieldDefinition> {
+    const [definition] = await db
+      .insert(customFieldDefinitions)
+      .values(insertDefinition)
+      .returning();
+    return definition;
+  }
+
+  async updateCustomFieldDefinition(id: string, updateDefinition: Partial<InsertCustomFieldDefinition>): Promise<CustomFieldDefinition | undefined> {
+    const [definition] = await db
+      .update(customFieldDefinitions)
+      .set({ ...updateDefinition, updatedAt: new Date() })
+      .where(eq(customFieldDefinitions.id, id))
+      .returning();
+    return definition;
+  }
+
+  async deleteCustomFieldDefinition(id: string): Promise<boolean> {
+    const result = await db
+      .delete(customFieldDefinitions)
+      .where(eq(customFieldDefinitions.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Custom Field Values operations
+  async getCustomFieldValues(entityType: string, entityId: string): Promise<CustomFieldValue[]> {
+    return await db.select().from(customFieldValues)
+      .where(and(
+        eq(customFieldValues.entityType, entityType),
+        eq(customFieldValues.entityId, entityId)
+      ))
+      .orderBy(customFieldValues.createdAt);
+  }
+
+  async getCustomFieldValue(id: string): Promise<CustomFieldValue | undefined> {
+    const [value] = await db.select().from(customFieldValues)
+      .where(eq(customFieldValues.id, id));
+    return value;
+  }
+
+  async setCustomFieldValue(insertValue: InsertCustomFieldValue): Promise<CustomFieldValue> {
+    // Check if value already exists and update or insert
+    const existing = await db.select().from(customFieldValues)
+      .where(and(
+        eq(customFieldValues.fieldId, insertValue.fieldId),
+        eq(customFieldValues.entityType, insertValue.entityType),
+        eq(customFieldValues.entityId, insertValue.entityId)
+      ));
+
+    if (existing.length > 0) {
+      const [value] = await db
+        .update(customFieldValues)
+        .set({ value: insertValue.value, updatedAt: new Date() })
+        .where(eq(customFieldValues.id, existing[0].id))
+        .returning();
+      return value;
+    } else {
+      const [value] = await db
+        .insert(customFieldValues)
+        .values(insertValue)
+        .returning();
+      return value;
+    }
+  }
+
+  async updateCustomFieldValue(id: string, updateValue: Partial<InsertCustomFieldValue>): Promise<CustomFieldValue | undefined> {
+    const [value] = await db
+      .update(customFieldValues)
+      .set({ ...updateValue, updatedAt: new Date() })
+      .where(eq(customFieldValues.id, id))
+      .returning();
+    return value;
+  }
+
+  async deleteCustomFieldValue(id: string): Promise<boolean> {
+    const result = await db
+      .delete(customFieldValues)
+      .where(eq(customFieldValues.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Workflow Rules operations
+  async getWorkflowRules(entityType?: string, isActive?: boolean): Promise<WorkflowRule[]> {
+    let query = db.select().from(workflowRules);
+    
+    const conditions = [];
+    if (entityType) {
+      conditions.push(eq(workflowRules.entityType, entityType));
+    }
+    if (isActive !== undefined) {
+      conditions.push(eq(workflowRules.isActive, isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(workflowRules.priority, workflowRules.createdAt);
+  }
+
+  async getWorkflowRule(id: string): Promise<WorkflowRule | undefined> {
+    const [rule] = await db.select().from(workflowRules)
+      .where(eq(workflowRules.id, id));
+    return rule;
+  }
+
+  async createWorkflowRule(insertRule: InsertWorkflowRule): Promise<WorkflowRule> {
+    const [rule] = await db
+      .insert(workflowRules)
+      .values(insertRule)
+      .returning();
+    return rule;
+  }
+
+  async updateWorkflowRule(id: string, updateRule: Partial<InsertWorkflowRule>): Promise<WorkflowRule | undefined> {
+    const [rule] = await db
+      .update(workflowRules)
+      .set({ ...updateRule, updatedAt: new Date() })
+      .where(eq(workflowRules.id, id))
+      .returning();
+    return rule;
+  }
+
+  async deleteWorkflowRule(id: string): Promise<boolean> {
+    const result = await db
+      .delete(workflowRules)
+      .where(eq(workflowRules.id, id));
+    return result.rowCount > 0;
+  }
+
+  async executeWorkflowRules(entityType: string, entityId: string, event: string, entityData: any): Promise<WorkflowExecution[]> {
+    // Get active workflow rules for this entity type
+    const rules = await this.getWorkflowRules(entityType, true);
+    const executions: WorkflowExecution[] = [];
+
+    for (const rule of rules) {
+      // Check if the rule's trigger matches the event
+      if (rule.trigger.event === event) {
+        // Evaluate conditions
+        let conditionsMet = true;
+        
+        for (const condition of rule.trigger.conditions) {
+          const fieldValue = entityData[condition.field];
+          
+          switch (condition.operator) {
+            case 'equals':
+              conditionsMet = conditionsMet && (fieldValue === condition.value);
+              break;
+            case 'not_equals':
+              conditionsMet = conditionsMet && (fieldValue !== condition.value);
+              break;
+            case 'contains':
+              conditionsMet = conditionsMet && (String(fieldValue).includes(condition.value));
+              break;
+            case 'greater_than':
+              conditionsMet = conditionsMet && (Number(fieldValue) > Number(condition.value));
+              break;
+            case 'less_than':
+              conditionsMet = conditionsMet && (Number(fieldValue) < Number(condition.value));
+              break;
+            default:
+              conditionsMet = false;
+          }
+          
+          if (!conditionsMet) break;
+        }
+
+        if (conditionsMet) {
+          // Execute actions
+          const executedActions = [];
+          const failedActions = [];
+          const errors = [];
+
+          for (const action of rule.actions) {
+            try {
+              await this.executeWorkflowAction(action, entityType, entityId, entityData);
+              executedActions.push(action);
+            } catch (error) {
+              failedActions.push(action);
+              errors.push(error.message);
+            }
+          }
+
+          // Log execution
+          const execution = await this.createWorkflowExecution({
+            ruleId: rule.id,
+            entityType,
+            entityId,
+            status: errors.length === 0 ? 'success' : (executedActions.length > 0 ? 'partial' : 'failed'),
+            result: {
+              executedActions: executedActions.length,
+              failedActions: failedActions.length,
+              errors,
+              details: { executedActions, failedActions }
+            }
+          });
+
+          executions.push(execution);
+        }
+      }
+    }
+
+    return executions;
+  }
+
+  private async executeWorkflowAction(action: any, entityType: string, entityId: string, entityData: any): Promise<void> {
+    switch (action.type) {
+      case 'send_email':
+        // Email sending logic would go here
+        console.log('Would send email:', action.config);
+        break;
+      case 'create_task':
+        if (entityType !== 'task') {
+          await this.createTask(action.config, entityData.createdBy || entityData.assignedToId);
+        }
+        break;
+      case 'update_status':
+        if (entityType === 'task') {
+          await this.updateTask(entityId, { status: action.config.status });
+        } else if (entityType === 'project') {
+          await this.updateProject(entityId, { status: action.config.status });
+        }
+        break;
+      case 'assign_user':
+        if (entityType === 'task') {
+          await this.updateTask(entityId, { assignedToId: action.config.userId });
+        }
+        break;
+      default:
+        throw new Error(`Unknown action type: ${action.type}`);
+    }
+  }
+
+  // Workflow Executions operations
+  async getWorkflowExecutions(ruleId?: string, entityId?: string): Promise<WorkflowExecution[]> {
+    let query = db.select().from(workflowExecutions);
+    
+    const conditions = [];
+    if (ruleId) {
+      conditions.push(eq(workflowExecutions.ruleId, ruleId));
+    }
+    if (entityId) {
+      conditions.push(eq(workflowExecutions.entityId, entityId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(workflowExecutions.executedAt));
+  }
+
+  async getWorkflowExecution(id: string): Promise<WorkflowExecution | undefined> {
+    const [execution] = await db.select().from(workflowExecutions)
+      .where(eq(workflowExecutions.id, id));
+    return execution;
+  }
+
+  async createWorkflowExecution(insertExecution: InsertWorkflowExecution): Promise<WorkflowExecution> {
+    const [execution] = await db
+      .insert(workflowExecutions)
+      .values(insertExecution)
+      .returning();
+    return execution;
+  }
+
+  // Comments operations
+  async getComments(entityType: string, entityId: string): Promise<Comment[]> {
+    return await db.select().from(comments)
+      .where(and(
+        eq(comments.entityType, entityType),
+        eq(comments.entityId, entityId)
+      ))
+      .orderBy(comments.createdAt);
+  }
+
+  async getComment(id: string): Promise<Comment | undefined> {
+    const [comment] = await db.select().from(comments)
+      .where(eq(comments.id, id));
+    return comment;
+  }
+
+  async createComment(insertComment: InsertComment): Promise<Comment> {
+    const [comment] = await db
+      .insert(comments)
+      .values(insertComment)
+      .returning();
+    
+    // Create activity for comment
+    await this.createActivity({
+      type: 'comment_added',
+      entityType: insertComment.entityType as any,
+      entityId: insertComment.entityId,
+      actorId: insertComment.authorId,
+      description: `Added a comment`,
+      data: { commentId: comment.id }
+    });
+
+    return comment;
+  }
+
+  async updateComment(id: string, updateComment: Partial<InsertComment>): Promise<Comment | undefined> {
+    const [comment] = await db
+      .update(comments)
+      .set({ 
+        ...updateComment, 
+        isEdited: true, 
+        editedAt: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(comments.id, id))
+      .returning();
+    return comment;
+  }
+
+  async deleteComment(id: string): Promise<boolean> {
+    const result = await db
+      .delete(comments)
+      .where(eq(comments.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Activities operations
+  async getActivities(entityType?: string, entityId?: string, actorId?: string, limit: number = 50): Promise<Activity[]> {
+    let query = db.select().from(activities);
+    
+    const conditions = [];
+    if (entityType) {
+      conditions.push(eq(activities.entityType, entityType));
+    }
+    if (entityId) {
+      conditions.push(eq(activities.entityId, entityId));
+    }
+    if (actorId) {
+      conditions.push(eq(activities.actorId, actorId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query
+      .orderBy(desc(activities.createdAt))
+      .limit(limit);
+  }
+
+  async getActivity(id: string): Promise<Activity | undefined> {
+    const [activity] = await db.select().from(activities)
+      .where(eq(activities.id, id));
+    return activity;
+  }
+
+  async createActivity(insertActivity: InsertActivity): Promise<Activity> {
+    const [activity] = await db
+      .insert(activities)
+      .values(insertActivity)
+      .returning();
+    return activity;
+  }
+
+  async deleteActivity(id: string): Promise<boolean> {
+    const result = await db
+      .delete(activities)
+      .where(eq(activities.id, id));
+    return result.rowCount > 0;
+  }
+
+  // API Keys operations
+  async getApiKeys(createdById?: string): Promise<ApiKey[]> {
+    let query = db.select().from(apiKeys);
+    
+    if (createdById) {
+      query = query.where(eq(apiKeys.createdById, createdById));
+    }
+    
+    return await query
+      .orderBy(desc(apiKeys.createdAt));
+  }
+
+  async getApiKey(id: string): Promise<ApiKey | undefined> {
+    const [key] = await db.select().from(apiKeys)
+      .where(eq(apiKeys.id, id));
+    return key;
+  }
+
+  async getApiKeyByKey(key: string): Promise<ApiKey | undefined> {
+    const [apiKey] = await db.select().from(apiKeys)
+      .where(eq(apiKeys.key, key));
+    return apiKey;
+  }
+
+  async createApiKey(insertKey: InsertApiKey): Promise<ApiKey> {
+    const [key] = await db
+      .insert(apiKeys)
+      .values(insertKey)
+      .returning();
+    return key;
+  }
+
+  async updateApiKey(id: string, updateKey: Partial<InsertApiKey>): Promise<ApiKey | undefined> {
+    const [key] = await db
+      .update(apiKeys)
+      .set({ ...updateKey, updatedAt: new Date() })
+      .where(eq(apiKeys.id, id))
+      .returning();
+    return key;
+  }
+
+  async deleteApiKey(id: string): Promise<boolean> {
+    const result = await db
+      .delete(apiKeys)
+      .where(eq(apiKeys.id, id));
+    return result.rowCount > 0;
+  }
+
+  async validateApiKey(key: string): Promise<ApiKey | null> {
+    const [apiKey] = await db.select().from(apiKeys)
+      .where(and(
+        eq(apiKeys.key, key),
+        eq(apiKeys.isActive, true),
+        or(
+          isNull(apiKeys.expiresAt),
+          gte(apiKeys.expiresAt, new Date())
+        )
+      ));
+    
+    if (apiKey) {
+      // Update last used timestamp
+      await this.updateApiKey(apiKey.id, { lastUsedAt: new Date() });
+    }
+    
+    return apiKey || null;
+  }
+
+  // API Usage operations
+  async getApiUsage(keyId?: string, startDate?: Date, endDate?: Date): Promise<ApiUsage[]> {
+    let query = db.select().from(apiUsage);
+    
+    const conditions = [];
+    if (keyId) {
+      conditions.push(eq(apiUsage.keyId, keyId));
+    }
+    if (startDate) {
+      conditions.push(gte(apiUsage.requestedAt, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(apiUsage.requestedAt, endDate));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(apiUsage.requestedAt));
+  }
+
+  async createApiUsage(insertUsage: InsertApiUsage): Promise<ApiUsage> {
+    const [usage] = await db
+      .insert(apiUsage)
+      .values(insertUsage)
+      .returning();
+    return usage;
   }
 }
 

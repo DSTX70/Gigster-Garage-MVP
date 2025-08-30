@@ -3360,6 +3360,306 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Custom Fields API Routes
+  
+  // Get custom field definitions
+  app.get("/api/custom-fields", requireAuth, async (req, res) => {
+    try {
+      const { entityType } = req.query;
+      const fields = await storage.getCustomFieldDefinitions(entityType as string);
+      res.json(fields);
+    } catch (error) {
+      console.error("Error fetching custom field definitions:", error);
+      res.status(500).json({ message: "Failed to fetch custom fields" });
+    }
+  });
+
+  // Get specific custom field definition
+  app.get("/api/custom-fields/:id", requireAuth, async (req, res) => {
+    try {
+      const field = await storage.getCustomFieldDefinition(req.params.id);
+      if (!field) {
+        return res.status(404).json({ message: "Custom field not found" });
+      }
+      res.json(field);
+    } catch (error) {
+      console.error("Error fetching custom field:", error);
+      res.status(500).json({ message: "Failed to fetch custom field" });
+    }
+  });
+
+  // Create custom field definition
+  app.post("/api/custom-fields", requireAuth, async (req, res) => {
+    try {
+      const fieldData = {
+        ...req.body,
+        createdById: req.session.user!.id,
+      };
+      const field = await storage.createCustomFieldDefinition(fieldData);
+      res.status(201).json(field);
+    } catch (error) {
+      console.error("Error creating custom field:", error);
+      res.status(500).json({ message: "Failed to create custom field" });
+    }
+  });
+
+  // Update custom field definition
+  app.put("/api/custom-fields/:id", requireAuth, async (req, res) => {
+    try {
+      const field = await storage.updateCustomFieldDefinition(req.params.id, req.body);
+      if (!field) {
+        return res.status(404).json({ message: "Custom field not found" });
+      }
+      res.json(field);
+    } catch (error) {
+      console.error("Error updating custom field:", error);
+      res.status(500).json({ message: "Failed to update custom field" });
+    }
+  });
+
+  // Delete custom field definition
+  app.delete("/api/custom-fields/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteCustomFieldDefinition(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Custom field not found" });
+      }
+      res.json({ message: "Custom field deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting custom field:", error);
+      res.status(500).json({ message: "Failed to delete custom field" });
+    }
+  });
+
+  // Get custom field values for an entity
+  app.get("/api/custom-field-values/:entityType/:entityId", requireAuth, async (req, res) => {
+    try {
+      const { entityType, entityId } = req.params;
+      const values = await storage.getCustomFieldValues(entityType, entityId);
+      res.json(values);
+    } catch (error) {
+      console.error("Error fetching custom field values:", error);
+      res.status(500).json({ message: "Failed to fetch custom field values" });
+    }
+  });
+
+  // Set custom field value
+  app.post("/api/custom-field-values", requireAuth, async (req, res) => {
+    try {
+      const value = await storage.setCustomFieldValue(req.body);
+      res.json(value);
+    } catch (error) {
+      console.error("Error setting custom field value:", error);
+      res.status(500).json({ message: "Failed to set custom field value" });
+    }
+  });
+
+  // Workflow Rules API Routes
+
+  // Get workflow rules
+  app.get("/api/workflow-rules", requireAuth, async (req, res) => {
+    try {
+      const { entityType, isActive } = req.query;
+      const rules = await storage.getWorkflowRules(
+        entityType as string,
+        isActive ? isActive === 'true' : undefined
+      );
+      res.json(rules);
+    } catch (error) {
+      console.error("Error fetching workflow rules:", error);
+      res.status(500).json({ message: "Failed to fetch workflow rules" });
+    }
+  });
+
+  // Create workflow rule
+  app.post("/api/workflow-rules", requireAuth, async (req, res) => {
+    try {
+      const ruleData = {
+        ...req.body,
+        createdById: req.session.user!.id,
+      };
+      const rule = await storage.createWorkflowRule(ruleData);
+      res.status(201).json(rule);
+    } catch (error) {
+      console.error("Error creating workflow rule:", error);
+      res.status(500).json({ message: "Failed to create workflow rule" });
+    }
+  });
+
+  // Update workflow rule
+  app.put("/api/workflow-rules/:id", requireAuth, async (req, res) => {
+    try {
+      const rule = await storage.updateWorkflowRule(req.params.id, req.body);
+      if (!rule) {
+        return res.status(404).json({ message: "Workflow rule not found" });
+      }
+      res.json(rule);
+    } catch (error) {
+      console.error("Error updating workflow rule:", error);
+      res.status(500).json({ message: "Failed to update workflow rule" });
+    }
+  });
+
+  // Delete workflow rule
+  app.delete("/api/workflow-rules/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteWorkflowRule(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Workflow rule not found" });
+      }
+      res.json({ message: "Workflow rule deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting workflow rule:", error);
+      res.status(500).json({ message: "Failed to delete workflow rule" });
+    }
+  });
+
+  // Comments API Routes
+
+  // Get comments for an entity
+  app.get("/api/comments/:entityType/:entityId", requireAuth, async (req, res) => {
+    try {
+      const { entityType, entityId } = req.params;
+      const comments = await storage.getComments(entityType, entityId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  // Create comment
+  app.post("/api/comments", requireAuth, async (req, res) => {
+    try {
+      const commentData = {
+        ...req.body,
+        authorId: req.session.user!.id,
+      };
+      const comment = await storage.createComment(commentData);
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Update comment
+  app.put("/api/comments/:id", requireAuth, async (req, res) => {
+    try {
+      const comment = await storage.updateComment(req.params.id, req.body);
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      res.json(comment);
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      res.status(500).json({ message: "Failed to update comment" });
+    }
+  });
+
+  // Delete comment
+  app.delete("/api/comments/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteComment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      res.json({ message: "Comment deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
+  // Activities API Routes
+
+  // Get activities
+  app.get("/api/activities", requireAuth, async (req, res) => {
+    try {
+      const { entityType, entityId, actorId, limit } = req.query;
+      const activities = await storage.getActivities(
+        entityType as string,
+        entityId as string,
+        actorId as string,
+        limit ? parseInt(limit as string) : undefined
+      );
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+      res.status(500).json({ message: "Failed to fetch activities" });
+    }
+  });
+
+  // API Keys Management Routes
+
+  // Get API keys
+  app.get("/api/api-keys", requireAdmin, async (req, res) => {
+    try {
+      const keys = await storage.getApiKeys(req.session.user!.id);
+      res.json(keys);
+    } catch (error) {
+      console.error("Error fetching API keys:", error);
+      res.status(500).json({ message: "Failed to fetch API keys" });
+    }
+  });
+
+  // Create API key
+  app.post("/api/api-keys", requireAdmin, async (req, res) => {
+    try {
+      const crypto = require('crypto');
+      const bcrypt = require('bcryptjs');
+      
+      // Generate API key
+      const key = `pk_${crypto.randomBytes(32).toString('hex')}`;
+      const hashedKey = await bcrypt.hash(key, 10);
+      const prefix = key.substring(0, 8);
+
+      const keyData = {
+        ...req.body,
+        key,
+        hashedKey,
+        prefix,
+        createdById: req.session.user!.id,
+      };
+      
+      const apiKey = await storage.createApiKey(keyData);
+      
+      // Return the key only once for security
+      res.status(201).json({ ...apiKey, key });
+    } catch (error) {
+      console.error("Error creating API key:", error);
+      res.status(500).json({ message: "Failed to create API key" });
+    }
+  });
+
+  // Update API key
+  app.put("/api/api-keys/:id", requireAdmin, async (req, res) => {
+    try {
+      const key = await storage.updateApiKey(req.params.id, req.body);
+      if (!key) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      res.json(key);
+    } catch (error) {
+      console.error("Error updating API key:", error);
+      res.status(500).json({ message: "Failed to update API key" });
+    }
+  });
+
+  // Delete API key
+  app.delete("/api/api-keys/:id", requireAdmin, async (req, res) => {
+    try {
+      const success = await storage.deleteApiKey(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      res.json({ message: "API key deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting API key:", error);
+      res.status(500).json({ message: "Failed to delete API key" });
+    }
+  });
+
   // CSV Import Routes
   
   // Import tasks from CSV

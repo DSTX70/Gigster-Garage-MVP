@@ -772,3 +772,162 @@ export interface MessageWithRelations extends Message {
 }
 
 export type InsertMessageData = z.infer<typeof insertMessageSchema>;
+
+// Custom Field Definitions - User-defined fields for entities
+export const customFieldDefinitions = pgTable("custom_field_definitions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  label: varchar("label").notNull(),
+  type: varchar("type", { enum: ["text", "textarea", "number", "date", "boolean", "select", "multiselect"] }).notNull(),
+  entityType: varchar("entity_type", { enum: ["task", "project", "client"] }).notNull(),
+  options: jsonb("options").$type<string[]>().default([]), // For select/multiselect fields
+  required: boolean("required").default(false),
+  defaultValue: text("default_value"),
+  validation: jsonb("validation").$type<Record<string, any>>().default({}),
+  order: integer("order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdById: varchar("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type CustomFieldDefinition = typeof customFieldDefinitions.$inferSelect;
+export type InsertCustomFieldDefinition = typeof customFieldDefinitions.$inferInsert;
+
+// Custom Field Values - Actual values for custom fields
+export const customFieldValues = pgTable("custom_field_values", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fieldId: varchar("field_id").references(() => customFieldDefinitions.id, { onDelete: "cascade" }).notNull(),
+  entityType: varchar("entity_type", { enum: ["task", "project", "client"] }).notNull(),
+  entityId: varchar("entity_id").notNull(), // References the actual entity ID
+  value: jsonb("value"), // Stores any type of value
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type CustomFieldValue = typeof customFieldValues.$inferSelect;
+export type InsertCustomFieldValue = typeof customFieldValues.$inferInsert;
+
+// Workflow Rules - Rule-based automation
+export const workflowRules = pgTable("workflow_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  entityType: varchar("entity_type", { enum: ["task", "project", "client"] }).notNull(),
+  trigger: jsonb("trigger").$type<{
+    event: string; // "created", "updated", "status_changed", "due_date_approaching", etc.
+    conditions: Array<{
+      field: string;
+      operator: string;
+      value: any;
+    }>;
+  }>().notNull(),
+  actions: jsonb("actions").$type<Array<{
+    type: string; // "send_email", "create_task", "update_status", "assign_user", etc.
+    config: Record<string, any>;
+  }>>().notNull(),
+  isActive: boolean("is_active").default(true),
+  priority: integer("priority").default(0),
+  createdById: varchar("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WorkflowRule = typeof workflowRules.$inferSelect;
+export type InsertWorkflowRule = typeof workflowRules.$inferInsert;
+
+// Workflow Execution Log - Track automation executions
+export const workflowExecutions = pgTable("workflow_executions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ruleId: varchar("rule_id").references(() => workflowRules.id, { onDelete: "cascade" }).notNull(),
+  entityType: varchar("entity_type").notNull(),
+  entityId: varchar("entity_id").notNull(),
+  status: varchar("status", { enum: ["success", "failed", "partial"] }).notNull(),
+  result: jsonb("result").$type<{
+    executedActions: number;
+    failedActions: number;
+    errors: string[];
+    details: Record<string, any>;
+  }>(),
+  executedAt: timestamp("executed_at").defaultNow(),
+});
+
+export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
+export type InsertWorkflowExecution = typeof workflowExecutions.$inferInsert;
+
+// Comments - Team collaboration on entities
+export const comments = pgTable("comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  entityType: varchar("entity_type", { enum: ["task", "project", "client"] }).notNull(),
+  entityId: varchar("entity_id").notNull(),
+  content: text("content").notNull(),
+  authorId: varchar("author_id").references(() => users.id).notNull(),
+  parentId: varchar("parent_id").references(() => comments.id), // For threaded comments
+  mentions: jsonb("mentions").$type<string[]>().default([]), // User IDs mentioned in comment
+  attachments: jsonb("attachments").$type<Array<{
+    id: string;
+    filename: string;
+    url: string;
+    size: number;
+    type: string;
+  }>>().default([]),
+  isEdited: boolean("is_edited").default(false),
+  editedAt: timestamp("edited_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = typeof comments.$inferInsert;
+
+// Activity Feed - Track all system activities
+export const activities = pgTable("activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: varchar("type").notNull(), // "task_created", "task_updated", "comment_added", etc.
+  entityType: varchar("entity_type", { enum: ["task", "project", "client", "user"] }).notNull(),
+  entityId: varchar("entity_id").notNull(),
+  actorId: varchar("actor_id").references(() => users.id).notNull(),
+  data: jsonb("data").$type<Record<string, any>>().default({}), // Activity-specific data
+  description: text("description").notNull(), // Human-readable description
+  isPrivate: boolean("is_private").default(false), // Whether activity is private to actor
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = typeof activities.$inferInsert;
+
+// API Keys - Third-party integrations
+export const apiKeys = pgTable("api_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  key: varchar("key").unique().notNull(), // The actual API key
+  hashedKey: varchar("hashed_key").notNull(), // Hashed version for security
+  prefix: varchar("prefix", { length: 8 }).notNull(), // First 8 chars for identification
+  permissions: jsonb("permissions").$type<string[]>().notNull(), // ["read:tasks", "write:projects", etc.]
+  rateLimit: integer("rate_limit").default(1000), // Requests per hour
+  isActive: boolean("is_active").default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"),
+  createdById: varchar("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+// API Usage Tracking
+export const apiUsage = pgTable("api_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  keyId: varchar("key_id").references(() => apiKeys.id, { onDelete: "cascade" }).notNull(),
+  method: varchar("method").notNull(), // GET, POST, etc.
+  endpoint: varchar("endpoint").notNull(), // /api/tasks, etc.
+  statusCode: integer("status_code").notNull(),
+  responseTime: integer("response_time"), // in milliseconds
+  userAgent: varchar("user_agent"),
+  ipAddress: varchar("ip_address"),
+  requestedAt: timestamp("requested_at").defaultNow(),
+});
+
+export type ApiUsage = typeof apiUsage.$inferSelect;
+export type InsertApiUsage = typeof apiUsage.$inferInsert;
