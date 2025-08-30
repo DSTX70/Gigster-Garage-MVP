@@ -16,8 +16,9 @@ import { Separator } from "@/components/ui/separator";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Play, Pause, Trash2, Settings, Zap, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Play, Pause, Trash2, Settings, Zap, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 interface WorkflowRule {
   id: string;
@@ -592,7 +593,13 @@ export default function WorkflowAutomationPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <div>
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="outline" size="sm" className="flex items-center gap-2" data-testid="button-back-to-dashboard">
+              <ArrowLeft className="w-4 h-4" />
+              Back to My Dashboard
+            </Button>
+          </Link>
           <h1 className="text-3xl font-bold text-[#0B1D3A]">Workflow Automation</h1>
           <p className="text-muted-foreground mt-1">
             Automate repetitive tasks with intelligent rules and triggers
