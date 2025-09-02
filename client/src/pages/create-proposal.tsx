@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, FileText, Plus, X, Send, Download, Eye } from "lucide-react";
+import { ArrowLeft, FileText, Plus, X, Send, Download, Eye, PenTool, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -49,6 +49,11 @@ export default function CreateProposal() {
   const [descriptionCount, setDescriptionCount] = useState(0);
   const [deliverablesCount, setDeliverablesCount] = useState(0);
   const [termsCount, setTermsCount] = useState(0);
+
+  // AI writing states
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [isGeneratingDeliverables, setIsGeneratingDeliverables] = useState(false);
+  const [isGeneratingTerms, setIsGeneratingTerms] = useState(false);
 
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -123,6 +128,128 @@ export default function CreateProposal() {
 
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // AI content generation functions
+  const generateProjectDescription = async () => {
+    if (!formData.title.trim()) {
+      toast({
+        title: "Project Title Required",
+        description: "Please enter a project title before generating description.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingDescription(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "project_description",
+          projectTitle: formData.title,
+          clientName: formData.clientName,
+          context: `Generate a professional project description for "${formData.title}" ${formData.clientName ? `for client ${formData.clientName}` : ''}.`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate description");
+      const data = await response.json();
+      
+      updateFormData("projectDescription", data.content);
+      setDescriptionCount(data.content.length);
+      toast({
+        title: "Description Generated!",
+        description: "AI has created a professional project description.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate project description. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
+
+  const generateDeliverables = async () => {
+    if (!formData.title.trim()) {
+      toast({
+        title: "Project Title Required",
+        description: "Please enter a project title before generating deliverables.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingDeliverables(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "deliverables",
+          projectTitle: formData.title,
+          projectDescription: formData.projectDescription,
+          context: `Generate detailed deliverables list for project "${formData.title}".`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate deliverables");
+      const data = await response.json();
+      
+      updateFormData("deliverables", data.content);
+      setDeliverablesCount(data.content.length);
+      toast({
+        title: "Deliverables Generated!",
+        description: "AI has created a comprehensive deliverables list.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate deliverables. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingDeliverables(false);
+    }
+  };
+
+  const generateTermsConditions = async () => {
+    setIsGeneratingTerms(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "terms_conditions",
+          projectTitle: formData.title,
+          totalBudget: formData.totalBudget,
+          timeline: formData.timeline,
+          context: `Generate professional terms and conditions for project "${formData.title}" with budget $${formData.totalBudget} and timeline ${formData.timeline}.`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate terms");
+      const data = await response.json();
+      
+      updateFormData("terms", data.content);
+      setTermsCount(data.content.length);
+      toast({
+        title: "Terms Generated!",
+        description: "AI has created professional terms and conditions.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate terms and conditions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingTerms(false);
+    }
   };
 
   if (isPreview) {
@@ -322,9 +449,26 @@ export default function CreateProposal() {
           {/* Project Description */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Project Description 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Project Description 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateProjectDescription}
+                  disabled={isGeneratingDescription}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-description"
+                >
+                  {isGeneratingDescription ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingDescription ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -492,9 +636,26 @@ export default function CreateProposal() {
           {/* Deliverables */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Deliverables 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Deliverables 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateDeliverables}
+                  disabled={isGeneratingDeliverables}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-deliverables"
+                >
+                  {isGeneratingDeliverables ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingDeliverables ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -519,9 +680,26 @@ export default function CreateProposal() {
           {/* Terms & Conditions */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Terms & Conditions 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Terms & Conditions 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateTermsConditions}
+                  disabled={isGeneratingTerms}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-terms"
+                >
+                  {isGeneratingTerms ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingTerms ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>

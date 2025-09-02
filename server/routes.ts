@@ -3834,6 +3834,109 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // AI Content Generation Route
+  app.post("/api/ai/generate-content", requireAuth, async (req, res) => {
+    try {
+      const { type, projectTitle, clientName, projectDescription, totalBudget, timeline, context } = req.body;
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ 
+          message: "AI content generation is not available",
+          error: "OpenAI API key not configured" 
+        });
+      }
+
+      let prompt = "";
+      let maxTokens = 800;
+
+      switch (type) {
+        case "project_description":
+          prompt = `Write a professional project description for "${projectTitle}"${clientName ? ` for client ${clientName}` : ''}. 
+
+The description should:
+- Be detailed but concise (around 200-400 words)
+- Explain the project objectives clearly
+- Outline the scope of work
+- Use professional business language
+- Be engaging and persuasive
+
+Context: ${context}`;
+          maxTokens = 600;
+          break;
+
+        case "deliverables":
+          prompt = `Create a comprehensive list of deliverables for project "${projectTitle}".
+
+The deliverables should:
+- Be specific and measurable
+- Include key components and features
+- Be organized in a logical order
+- Use bullet points or numbered list format
+- Cover all major aspects of the project
+
+${projectDescription ? `Project context: ${projectDescription}` : ''}
+Context: ${context}`;
+          maxTokens = 500;
+          break;
+
+        case "terms_conditions":
+          prompt = `Generate professional terms and conditions for project "${projectTitle}".
+
+Include sections for:
+- Payment terms and schedule
+- Project timeline and milestones
+- Scope of work and responsibilities
+- Revision and change request policies
+- Intellectual property rights
+- Cancellation and refund policies
+- Liability and warranty terms
+
+${totalBudget ? `Budget: $${totalBudget}` : ''}
+${timeline ? `Timeline: ${timeline}` : ''}
+Context: ${context}
+
+Keep it professional but easy to understand.`;
+          maxTokens = 1000;
+          break;
+
+        default:
+          return res.status(400).json({ message: "Invalid content type" });
+      }
+
+      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional business consultant helping to write proposal content. Generate clear, professional, and persuasive content that would be appropriate for client-facing business proposals."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      });
+
+      const content = completion.choices[0].message.content?.trim();
+
+      if (!content) {
+        throw new Error("No content generated");
+      }
+
+      res.json({ content });
+
+    } catch (error: any) {
+      console.error("AI content generation error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate content",
+        error: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
