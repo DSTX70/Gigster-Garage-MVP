@@ -3917,7 +3917,6 @@ Keep it professional but easy to understand.`;
           }
         ],
         max_completion_tokens: maxTokens,
-        temperature: 0.7,
       });
 
       const content = completion.choices[0].message.content?.trim();
