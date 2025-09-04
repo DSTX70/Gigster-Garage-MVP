@@ -29,7 +29,7 @@ export function TaskList({ filter, assigneeFilter = 'all' }: TaskListProps) {
     return (
       <section className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="task-card animate-pulse">
+          <div key={i} className="gg-task-card animate-pulse">
             <div className="flex items-start space-x-4">
               <div className="w-5 h-5 bg-neutral-200 rounded"></div>
               <div className="flex-1">

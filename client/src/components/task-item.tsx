@@ -206,7 +206,7 @@ export function TaskItem({ task }: TaskItemProps) {
 
   return (
     <>
-    <div className={`task-card fade-in-up group ${
+    <div className={`gg-task-card fade-in-up group ${
       task.completed ? 'opacity-75' : ''
     } ${isOverdue ? 'border-red-200' : ''}`}>
       <div className="flex items-start space-x-4">

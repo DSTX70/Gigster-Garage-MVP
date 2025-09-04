@@ -5,10 +5,19 @@
 @tailwind utilities;
 
 :root {
-  /* Gigster Garage Brand Colors - Navy/Teal/Amber Palette */
+  /* New Gigster Garage Brand Colors - Teal/Amber Palette */
+  --slate-ink: #1A241A;
+  --light-card: #F7F9FA;
+  --brand-teal: #008272;
+  --brand-teal-tint: #66E0C7;
+  --brand-blue-tint: #66C7FF;
+  --brand-amber: #FFB200;
+  --brand-amber-tint: #FFD87A;
+  
+  /* Legacy colors for backward compatibility */
   --garage-navy: #004C6D;
   --ignition-teal: #0B1D3A;  
-  --workshop-amber: #FFB000;
+  --workshop-amber: #FFB200;
   --steel-gray: hsl(0 0% 24%); /* #3C3C3C */
   --concrete-light: hsl(0 0% 90%); /* #E5E5E5 */
   --gigster-white: hsl(0 0% 100%); /* #FFFFFF */
@@ -51,11 +60,13 @@
   --font-sans: 'Open Sans', 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
   --font-display: 'Montserrat', 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
   
-  /* Gigster Garage Brand Gradients - Navy/Teal/Amber */
-  --gigster-gradient: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+  /* New Gigster Garage Brand Gradients - Teal/Amber */
+  --gigster-gradient-teal-amber: linear-gradient(90deg, #008272 0%, #FFB200 100%);
+  --gigster-gradient-soft: linear-gradient(90deg, #E7F7F3 0%, #FFF3DB 100%);
+  --gigster-gradient: linear-gradient(135deg, #008272 0%, #FFB200 100%);
   --gigster-gradient-navy: linear-gradient(135deg, #004C6D 0%, #003d5a 100%);
-  --gigster-gradient-teal: linear-gradient(135deg, #0B1D3A 0%, #081729 100%);
-  --gigster-gradient-amber: linear-gradient(135deg, #FFB000 0%, #CC8A00 100%);
+  --gigster-gradient-teal: linear-gradient(135deg, #008272 0%, #006b5e 100%);
+  --gigster-gradient-amber: linear-gradient(135deg, #FFB200 0%, #CC8A00 100%);
   --gigster-shadow-navy: 0 4px 12px rgba(0, 76, 109, 0.15);
   --gigster-shadow-teal: 0 4px 12px rgba(11, 29, 58, 0.15);
   --gigster-shadow-amber: 0 4px 12px rgba(255, 176, 0, 0.15);
@@ -129,6 +140,93 @@
 }
 
 @layer components {
+  /* New Gigster Garage Card Styles */
+  .gg-card {
+    @apply bg-white rounded-xl shadow-card p-6 dark:bg-slate-900;
+  }
+  
+  .gg-card-muted {
+    @apply rounded-xl p-6;
+    background-color: var(--light-card);
+  }
+  
+  .gg-btn-glow {
+    box-shadow: 0 8px 26px rgba(0,130,114,.22), inset 0 0 0 1px rgba(255,178,0,.45);
+  }
+  
+  /* Enhanced Task Cards with Gigster Garage Styling */
+  .gg-task-card {
+    @apply gg-card relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
+    border-left: 4px solid var(--brand-teal);
+  }
+  
+  .gg-task-card:hover {
+    border-left-color: var(--brand-amber);
+  }
+  
+  .gg-task-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--brand-teal) 0%, var(--brand-amber) 100%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .gg-task-card:hover::before {
+    opacity: 1;
+  }
+  
+  /* Priority badges with new colors */
+  .gg-priority-high {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  
+  .gg-priority-medium {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background: rgba(255, 178, 0, 0.1);
+    color: var(--brand-amber);
+    border: 1px solid rgba(255, 178, 0, 0.2);
+  }
+  
+  .gg-priority-low {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background: rgba(0, 130, 114, 0.1);
+    color: var(--brand-teal);
+    border: 1px solid rgba(0, 130, 114, 0.2);
+  }
+  
+  /* Icon Gradient Support */
+  .icon-gradient-teal-amber {
+    fill: url(#gg-gradient-teal-amber);
+    color: url(#gg-gradient-teal-amber);
+  }
+  
+  .icon-brand-teal {
+    color: var(--brand-teal);
+  }
+  
+  .icon-brand-amber {
+    color: var(--brand-amber);
+  }
+  
+  /* Header with new gradient */
+  .gg-header {
+    @apply border-b;
+    background: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-amber) 100%);
+  }
+  
+  .gg-header-light {
+    @apply bg-white border-b shadow-sm;
+    border-color: var(--light-card);
+  }
+  
   /* Gigster Garage Enhanced Brand Components */
   .gigster-card {
     @apply border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;

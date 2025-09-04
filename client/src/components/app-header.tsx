@@ -59,7 +59,7 @@ export function AppHeader() {
   const reminderCount = getReminderCount();
 
   return (
-    <header className="gigster-header-gradient border-b sticky top-0 z-50 shadow-lg" style={{ borderColor: 'var(--garage-navy)' }}>
+    <header className="gg-header border-b sticky top-0 z-50 shadow-lg">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2 sm:py-3">
         <div className="flex flex-col space-y-2 sm:space-y-3">
           {/* Top line: Shield + Logo + Tagline */}
@@ -71,8 +71,8 @@ export function AppHeader() {
               <h1 className="text-lg sm:text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
                 Gigster Garage
               </h1>
-              <span style={{ color: 'rgba(255, 176, 0, 0.6)' }} className="font-medium hidden sm:inline">|</span>
-              <p className="text-xs sm:text-sm font-medium brand-tagline hidden sm:block">Smarter tools for bolder dreams</p>
+              <span style={{ color: 'var(--brand-amber-tint)' }} className="font-medium hidden sm:inline">|</span>
+              <p className="text-xs sm:text-sm font-medium hidden sm:block" style={{ color: 'var(--brand-amber-tint)' }}>Smarter tools for bolder dreams</p>
             </div>
           </div>
 

@@ -14,6 +14,16 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       colors: {
+        // New Gigster Garage Brand Colors
+        slateInk: '#1A241A',
+        lightCard: '#F7F9FA', 
+        brand: {
+          teal: '#008272',
+          tealTint: '#66E0C7',
+          blueTint: '#66C7FF',
+          amber: '#FFB200',
+          amberTint: '#FFD87A'
+        },
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: {
@@ -66,6 +76,13 @@ export default {
           800: "var(--neutral-800)",
           900: "var(--neutral-900)",
         },
+      },
+      boxShadow: {
+        card: '0 6px 22px rgba(0,0,0,0.06)',
+        'gigster-glow': '0 8px 26px rgba(0,130,114,.22), inset 0 0 0 1px rgba(255,178,0,.45)'
+      },
+      borderRadius: {
+        xl2: '1.25rem'
       },
       keyframes: {
         "accordion-down": {
