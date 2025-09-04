@@ -1159,7 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { default: OpenAI } = await import('openai');
           const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-          const prompt = `As an expert business template designer, analyze this ${templateType} template request and suggest appropriate form fields.
+          const prompt = `As an expert business template contractor, analyze this ${templateType} template request and suggest appropriate form fields.
 
 Business Context: ${businessContext}
 Template Type: ${templateType}
@@ -1187,7 +1187,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
             messages: [
               {
                 role: "system",
-                content: "You are an expert business template designer. Always respond with valid JSON only, no markdown or extra text."
+                content: "You are an expert business template contractor. Always respond with valid JSON only, no markdown or extra text."
               },
               {
                 role: "user",
