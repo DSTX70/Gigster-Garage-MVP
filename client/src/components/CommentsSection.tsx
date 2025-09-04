@@ -306,7 +306,7 @@ function CommentForm({
                     <div className="space-y-2">
                       {users.map((user) => (
                         <div
-                          key={user.id}
+                          key={`comments-mention-${user.id}`}
                           className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 ${
                             mentions.includes(user.id) ? 'bg-blue-50 border border-blue-200' : ''
                           }`}

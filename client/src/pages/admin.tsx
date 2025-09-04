@@ -229,7 +229,7 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user.id} className="border-b">
+                    <tr key={`admin-table-${user.id}`} className="border-b">
                       <td className="p-3 font-medium">{user.username}</td>
                       <td className="p-3">{user.name}</td>
                       <td className="p-3">{user.email || "-"}</td>

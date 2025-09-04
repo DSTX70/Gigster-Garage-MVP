@@ -431,7 +431,7 @@ export function TaskDrawer({ isOpen, onClose, task, projectId, initialStatus, on
                         <SelectContent>
                           <SelectItem value="unassigned">Unassigned</SelectItem>
                           {users.map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
+                            <SelectItem key={`task-drawer-assignee-${user.id}`} value={user.id}>
                               {user.name}
                             </SelectItem>
                           ))}

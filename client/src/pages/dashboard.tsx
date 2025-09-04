@@ -305,7 +305,7 @@ export default function Dashboard() {
 
         <div className="space-y-6">
           {usersWithTasks.map((user) => (
-            <UserSection key={user.id} user={user} />
+            <UserSection key={`dashboard-user-${user.id}`} user={user} />
           ))}
 
           {unassignedTasks.length > 0 && (
