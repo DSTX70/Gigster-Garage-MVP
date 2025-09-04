@@ -1,4 +1,5 @@
 import { AppHeader } from "@/components/app-header";
+import { copy } from "@/lib/copy";
 import { TaskForm } from "@/components/task-form";
 import { TaskFilters } from "@/components/task-filters";
 import { TaskList } from "@/components/task-list";
@@ -89,7 +90,7 @@ export default function Home() {
                 data-testid="button-new-task-header"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                New Task
+                {copy.tasks.createButton}
               </Button>
             </div>
           </div>
@@ -552,7 +553,7 @@ export default function Home() {
               >
                 <div className="flex items-center">
                   <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-3 text-blue-600" />
-                  <span className="text-base sm:text-lg font-medium">New Task</span>
+                  <span className="text-base sm:text-lg font-medium">{copy.tasks.createButton}</span>
                 </div>
                 <ChevronDown className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 transition-transform ${isNewTaskOpen ? 'rotate-180' : ''}`} />
               </Button>

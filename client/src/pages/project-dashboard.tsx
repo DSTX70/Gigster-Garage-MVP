@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
+import { copy } from "@/lib/copy";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,7 @@ export default function ProjectDashboard() {
             data-testid="new-task-button"
           >
             <Plus className="h-4 w-4 mr-1" />
-            New Task
+{copy.tasks.createButton}
           </Button>
         </div>
         
