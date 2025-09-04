@@ -1,0 +1,456 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Bot,
+  Sparkles,
+  Send,
+  X,
+  ChevronRight,
+  MessageSquare,
+  Bell,
+  Calendar,
+  BarChart3,
+  Users,
+  Wallet,
+  CheckCircle2,
+} from "lucide-react";
+
+/**
+ * Garage Assistant Wireframes — CodeBlock Build
+ * -------------------------------------------------------------
+ * A single-file React component that demonstrates the three UI modes for
+ * the Garage Assistant "voice":
+ *   1) Chat Bubble (conversational on-demand coach)
+ *   2) Sidebar (persistent context & quick actions)
+ *   3) Dashboard Nudges (just-in-time micro-interactions)
+ *
+ * Tech notes:
+ * - TailwindCSS utility classes for styling (minimal, clean, modern)
+ * - framer-motion for micro-animations
+ * - lucide-react for crisp icons
+ * - No external state mgmt — simple local state with realistic placeholders
+ *
+ * Usage:
+ *   - Drop this file into a React (or Next.js) project with Tailwind configured.
+ *   - Ensure dependencies are installed:
+ *       npm i framer-motion lucide-react
+ *   - Render <GarageAssistantUI /> anywhere in your app (e.g., a dashboard page).
+ *
+ * Accessibility:
+ *   - Keyboard accessible buttons, aria labels, Escape to close chat, focus sentry
+ */
+
+// ---------- Types ----------
+
+type Message = {
+  id: string;
+  role: "assistant" | "user";
+  text: string;
+};
+
+// ---------- Mock Data ----------
+
+const SUGGESTED_PROMPTS = [
+  { label: "Draft Proposal", value: "Draft a proposal for ACME website redesign" },
+  { label: "Today's Plan", value: "Create my plan for today with 3 priorities" },
+  { label: "Growth Report", value: "Show my weekly growth insights" },
+];
+
+const DAILY_PRIORITIES = [
+  { id: 1, label: "Send invoice reminders (#101, #102)", icon: Wallet },
+  { id: 2, label: "Client call with River @ 2:00 PM", icon: Calendar },
+  { id: 3, label: "Finalize proposal draft for Nova Studio", icon: MessageSquare },
+];
+
+const QUICK_ACTIONS = [
+  { id: 1, label: "Create Proposal", icon: Sparkles },
+  { id: 2, label: "Check Analytics", icon: BarChart3 },
+  { id: 3, label: "Find Collaborator", icon: Users },
+];
+
+// ---------- Root Component ----------
+
+export default function GarageAssistantUI() {
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "m1",
+      role: "assistant",
+      text:
+        "Hey! I can draft proposals, plan your day, or surface growth insights. What do you want to do first?",
+    },
+  ]);
+  const [input, setInput] = useState("");
+
+  // Sidebar toggles
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Fake AI typing effect
+  const sendMessage = (text: string) => {
+    if (!text.trim()) return;
+    const userMsg: Message = { id: cryptoRandomId(), role: "user", text };
+    setMessages((prev) => [...prev, userMsg]);
+
+    // fake assistant response
+    const replyId = cryptoRandomId();
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: replyId,
+          role: "assistant",
+          text: generateAssistantReply(text),
+        },
+      ]);
+    }, 600);
+  };
+
+  // Escape to close chat
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && chatOpen) setChatOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [chatOpen]);
+
+  return (
+    <div className="min-h-screen w-full bg-slate-50 text-slate-900 antialiased dark:bg-slate-900 dark:text-slate-100">
+      {/* Header */}
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/60 bg-white/70 px-6 py-4 backdrop-blur-md dark:border-slate-700/60 dark:bg-slate-900/70">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-sm">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight">Gigster Garage — Dashboard</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Digital Garage Launchpad</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <Bell className="h-4 w-4" />
+          <span>Mentor session in 3h</span>
+        </div>
+      </header>
+
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-6 py-6 md:grid-cols-12">
+        {/* Sidebar Assistant */}
+        <aside className={`md:col-span-4 lg:col-span-3 ${sidebarOpen ? "block" : "hidden md:block"}`}>
+          <AssistantSidebar />
+        </aside>
+
+        {/* Main content */}
+        <main className="md:col-span-8 lg:col-span-9">
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <NudgeCard
+              title="2 invoices overdue — draft reminders?"
+              cta="Yes, Send Now"
+              onClick={() => alert("Drafting reminders…")}
+            />
+            <NudgeCard
+              title="Your response rate is highest at night. Reschedule tasks?"
+              cta="Reschedule"
+              onClick={() => alert("Rescheduling…")}
+            />
+            <NudgeCard
+              title="Alex (designer) is open to collab. Introduce you?"
+              cta="Connect"
+              onClick={() => alert("Connecting…")}
+            />
+          </section>
+
+          <section className="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/60">
+            <h2 className="mb-2 flex items-center gap-2 text-base font-semibold"><BarChart3 className="h-4 w-4"/> Weekly Snapshot</h2>
+            <ul className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+              <li className="rounded-xl border border-slate-200 bg-white p-4 text-center dark:border-slate-700 dark:bg-slate-800">
+                <p className="text-xs text-slate-500">Revenue</p>
+                <p className="mt-1 text-xl font-semibold">$1,940</p>
+              </li>
+              <li className="rounded-xl border border-slate-200 bg-white p-4 text-center dark:border-slate-700 dark:bg-slate-800">
+                <p className="text-xs text-slate-500">New Clients</p>
+                <p className="mt-1 text-xl font-semibold">+3</p>
+              </li>
+              <li className="rounded-xl border border-slate-200 bg-white p-4 text-center dark:border-slate-700 dark:bg-slate-800">
+                <p className="text-xs text-slate-500">Invoices Sent</p>
+                <p className="mt-1 text-xl font-semibold">7</p>
+              </li>
+              <li className="rounded-xl border border-slate-200 bg-white p-4 text-center dark:border-slate-700 dark:bg-slate-800">
+                <p className="text-xs text-slate-500">Avg. Response Time</p>
+                <p className="mt-1 text-xl font-semibold">3h 12m</p>
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+
+      {/* Floating Chat Bubble */}
+      <FloatingChat
+        open={chatOpen}
+        onOpen={() => setChatOpen(true)}
+        onClose={() => setChatOpen(false)}
+        messages={messages}
+        input={input}
+        setInput={setInput}
+        onSend={(t) => {
+          setInput("");
+          sendMessage(t);
+        }}
+      />
+
+      {/* Sidebar toggle button (mobile) */}
+      <button
+        onClick={() => setSidebarOpen((s) => !s)}
+        className="fixed left-4 bottom-4 z-20 rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-lg ring-1 ring-black/10 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+        aria-label="Toggle assistant sidebar"
+      >
+        Assistant
+      </button>
+    </div>
+  );
+}
+
+// ---------- Components ----------
+
+function AssistantSidebar() {
+  return (
+    <motion.aside
+      initial={{ y: 10, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="sticky top-24 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-800/60"
+      aria-label="Garage Assistant Sidebar"
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-sm">
+          <Bot className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Garage Assistant</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Always-on guidance</p>
+        </div>
+      </div>
+
+      <section>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Daily Priorities</h3>
+        <ul className="flex flex-col gap-2">
+          {DAILY_PRIORITIES.map(({ id, label, icon: Icon }) => (
+            <li key={id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-800">
+              <Icon className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+              <span>{label}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {QUICK_ACTIONS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700/80"
+              onClick={() => alert(`${label}…`)}
+            >
+              <Icon className="h-4 w-4 text-cyan-600 transition group-hover:scale-110 dark:text-cyan-400" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-sm font-semibold">Nudge</p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">You sent 3 invoices this week — upgrade for unlimited & analytics.</p>
+          <button className="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100">
+            Upgrade <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
+      </section>
+    </motion.aside>
+  );
+}
+
+function NudgeCard({ title, cta, onClick }: { title: string; cta: string; onClick: () => void }) {
+  return (
+    <motion.div
+      initial={{ y: 8, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.25 }}
+      className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/60"
+      role="region"
+      aria-label="Assistant nudge"
+    >
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-sm">
+          <Sparkles className="h-3.5 w-3.5" />
+        </div>
+        <p className="text-sm text-slate-800 dark:text-slate-100">{title}</p>
+      </div>
+      <div className="mt-3 flex items-center justify-between">
+        <button
+          onClick={onClick}
+          className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+        >
+          {cta} <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+        <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-hidden />
+      </div>
+    </motion.div>
+  );
+}
+
+function FloatingChat({
+  open,
+  onOpen,
+  onClose,
+  messages,
+  input,
+  setInput,
+  onSend,
+}: {
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  messages: Message[];
+  input: string;
+  setInput: (v: string) => void;
+  onSend: (v: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  return (
+    <>
+      {/* Bubble */}
+      <motion.button
+        onClick={onOpen}
+        aria-label="Open Garage Assistant chat"
+        className="fixed bottom-4 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-xl ring-1 ring-black/10 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-white"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+      >
+        <Bot className="h-6 w-6" />
+      </motion.button>
+
+      {/* Panel */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="fixed inset-0 z-40 flex items-end justify-end bg-black/10 p-4 md:items-center md:p-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            aria-label="Chat overlay"
+          >
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 280, damping: 24 }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl backdrop-blur-md dark:border-slate-700 dark:bg-slate-900"
+            >
+              <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Garage Assistant</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Coach • Planner • Builder</p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  aria-label="Close chat"
+                  className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:hover:bg-slate-800"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-white to-slate-50 p-4 dark:from-slate-900 dark:to-slate-900">
+                {/* Suggested prompts */}
+                <div className="mb-1 flex flex-wrap gap-2">
+                  {SUGGESTED_PROMPTS.map((p) => (
+                    <button
+                      key={p.label}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                      onClick={() => onSend(p.value)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Messages */}
+                {messages.map((m) => (
+                  <div key={m.id} className={`flex ${m.role === "assistant" ? "justify-start" : "justify-end"}`}>
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ring-1 ${
+                        m.role === "assistant"
+                          ? "bg-white ring-slate-200 dark:bg-slate-800 dark:ring-slate-700"
+                          : "bg-slate-900 text-white ring-slate-900 dark:bg-white dark:text-slate-900"
+                      }`}
+                    >
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <form
+                className="flex items-center gap-2 border-t border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  onSend(input);
+                }}
+              >
+                <input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask me to plan your day, draft a proposal, or show insights…"
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 placeholder:text-slate-400 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-800"
+                  aria-label="Type a message"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                >
+                  <Send className="h-4 w-4" /> Send
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ---------- Helpers ----------
+
+function cryptoRandomId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return (crypto as any).randomUUID();
+  return Math.random().toString(36).slice(2);
+}
+
+function generateAssistantReply(input: string) {
+  const lower = input.toLowerCase();
+  if (lower.includes("proposal")) {
+    return "Drafted a proposal outline with timeline, scope, and pricing tiers. Want me to open it in the editor?";
+  }
+  if (lower.includes("plan")) {
+    return "Here’s your plan: 1) Send invoice reminders 2) Finalize Nova Studio proposal 3) Prep for 2pm client call.";
+  }
+  if (lower.includes("growth") || lower.includes("insight")) {
+    return "Weekly insight: Response rates peak Tue 10am–1pm. You’re +15% revenue WoW. Consider offering an evening slot.";
+  }
+  return "Got it. I can help draft, plan, or analyze. Try: ‘Draft Proposal for ACME’ or ‘Plan my day’.";
+}
