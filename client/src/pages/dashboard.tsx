@@ -275,7 +275,7 @@ export default function Dashboard() {
               className="flex items-center"
             >
               <ArrowLeft size={16} className="mr-2" />
-{copy.tasks.backButton}
+              {copy.tasks.backButton}
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center">
@@ -293,7 +293,7 @@ export default function Dashboard() {
             data-testid="button-new-task-dashboard"
           >
             <Plus className="h-4 w-4 mr-1" />
-{copy.tasks.createButton}
+            {copy.tasks.createButton}
           </Button>
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <div className="text-sm text-gray-600">

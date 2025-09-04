@@ -285,15 +285,15 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center mr-3">
               <Plus size={16} className="text-white" />
             </div>
-{copy.tasks.createButton}
+            {copy.tasks.createButton}
           </h2>
-          <p className="text-white/80 text-sm">Create and organize your tasks efficiently</p>
+          <p className="text-white/80 text-sm">{copy.tasks.empty.sub}</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-2">
-{copy.tasks.formLabels.title}
+                {copy.tasks.formLabels.title}
               </Label>
               <Input
                 id="description"
@@ -530,7 +530,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
               className="gigster-button-primary px-6 py-3"
             >
               <Plus className="mr-2" size={16} />
-              {createTaskMutation.isPending ? "Adding..." : "Add Task"}
+              {createTaskMutation.isPending ? "Adding..." : copy.tasks.createButton}
             </Button>
           </div>
         </form>
