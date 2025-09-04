@@ -29,7 +29,7 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
       return a.completed ? 1 : -1;
     }
     // Then by priority
-    const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+    const priorityDiff = (priorityOrder[b.priority || 'low'] || 1) - (priorityOrder[a.priority || 'low'] || 1);
     if (priorityDiff !== 0) return priorityDiff;
     // Finally by due date
     if (a.dueDate && b.dueDate) {
@@ -57,7 +57,7 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-3 flex-1">
                 <Checkbox
-                  checked={task.completed}
+                  checked={!!task.completed}
                   onCheckedChange={(checked) => 
                     onTaskUpdate?.(task.id, { completed: !!checked })
                   }
@@ -92,9 +92,9 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
                 {task.priority}
               </Badge>
               
-              {task.project && (
+              {(task as any).project && (
                 <Badge variant="outline" className="text-xs">
-                  {task.project.name}
+                  {(task as any).project.name}
                 </Badge>
               )}
 
@@ -116,10 +116,10 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
             {/* Footer */}
             <div className="flex items-center justify-between text-xs text-gray-500">
               <div className="flex items-center space-x-3">
-                {task.assignedTo && (
+                {(task as any).assignedTo && (
                   <span className="flex items-center">
                     <Users className="h-3 w-3 mr-1" />
-                    {task.assignedTo.name}
+                    {(task as any).assignedTo.name}
                   </span>
                 )}
                 {task.dueDate && (
@@ -129,10 +129,10 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
                   </span>
                 )}
               </div>
-              {task.subtasks && task.subtasks.length > 0 && (
+              {(task as any).subtasks && (task as any).subtasks.length > 0 && (
                 <span className="flex items-center">
                   <GitBranch className="h-3 w-3 mr-1" />
-                  {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+                  {(task as any).subtasks.filter((s: any) => s.completed).length}/{(task as any).subtasks.length}
                 </span>
               )}
             </div>
@@ -308,9 +308,9 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
                                 }`}>
                                   {task.priority}
                                 </Badge>
-                                {task.project && (
+                                {(task as any).project && (
                                   <Badge variant="outline" className="text-xs">
-                                    {task.project.name}
+                                    {(task as any).project.name}
                                   </Badge>
                                 )}
                               </div>
