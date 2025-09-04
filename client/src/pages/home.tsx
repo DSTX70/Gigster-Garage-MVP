@@ -85,7 +85,18 @@ export default function Home() {
               <Button 
                 variant="outline" 
                 size="sm"
-                className="w-full sm:w-auto bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+                className="w-full sm:w-auto text-white border-2"
+                style={{
+                  background: 'var(--gg-teal)',
+                  borderColor: 'var(--gg-teal)',
+                  color: 'var(--gg-white)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--grad)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--gg-teal)';
+                }}
                 onClick={() => setIsNewTaskOpen(true)}
                 data-testid="button-new-task-header"
               >
@@ -548,11 +559,11 @@ export default function Home() {
               <Button 
                 variant="outline" 
                 size="lg"
-                className="w-full justify-center py-4 sm:py-6 text-left hover:bg-blue-50 border-2 border-dashed border-gray-300 hover:border-blue-300"
+                className="w-full justify-center py-4 sm:py-6 text-left hover:bg-brand-tealTint/10 border-2 border-dashed border-gray-300 hover:border-brand-teal"
                 data-testid="button-new-task-modal"
               >
                 <div className="flex items-center">
-                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-3 text-blue-600" />
+                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-3 text-brand-teal" />
                   <span className="text-base sm:text-lg font-medium">{copy.tasks.createButton}</span>
                 </div>
               </Button>

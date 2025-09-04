@@ -43,14 +43,14 @@ export function GigsterLogo({ size = 'medium', showText = true, className = '' }
           size === 'mini' ? 'w-4 h-4' : 
           size === 'small' ? 'w-5 h-5' : 
           size === 'large' ? 'w-8 h-8' : 'w-6 h-6'
-        } text-orange-500`} />
+        } text-brand-amber`} />
       </div>
       
       {showText && (
         <div>
-          <h1 className={`brand-heading ${textSizes[size]}`}>Gigster Garage</h1>
+          <h1 className={`brand-heading ${textSizes[size]} gg-h1`} style={{ color: 'var(--gg-slate-ink)' }}>Gigster Garage</h1>
           {size !== 'mini' && (
-            <p className="text-xs brand-tagline">Smarter tools for bolder dreams</p>
+            <p className="text-xs gg-subtext" style={{ color: 'var(--gg-amber)' }}>Smarter tools for bolder dreams</p>
           )}
         </div>
       )}
