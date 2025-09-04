@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, AlertTriangle, Clock, CheckCircle2, Target } from "lucide-react";
 import { format, isAfter, startOfDay } from "date-fns";
 import type { Task } from "@shared/schema";
+import { copy } from "@/lib/copy";
 
 export default function Tasks() {
   const [location, navigate] = useLocation();
@@ -64,45 +65,45 @@ export default function Tasks() {
     switch (filter) {
       case 'overdue':
         return {
-          title: 'Overdue Tasks',
+          title: copy.dashboard.overdue.title,
           icon: <AlertTriangle className="h-6 w-6 text-red-600" />,
-          description: 'Tasks that have passed their due date',
+          description: copy.dashboard.overdue.sub,
           color: 'text-red-600',
           bgColor: 'bg-red-50',
           borderColor: 'border-red-200'
         };
       case 'due-soon':
         return {
-          title: 'Due Soon',
+          title: copy.dashboard.dueSoon.title,
           icon: <Clock className="h-6 w-6 text-yellow-600" />,
-          description: 'Tasks due today or tomorrow',
+          description: copy.dashboard.dueSoon.sub,
           color: 'text-yellow-600',
           bgColor: 'bg-yellow-50',
           borderColor: 'border-yellow-200'
         };
       case 'high-priority':
         return {
-          title: 'High Priority Tasks',
+          title: copy.dashboard.highPriority.title,
           icon: <Target className="h-6 w-6 text-orange-600" />,
-          description: 'Tasks marked as high priority',
+          description: copy.dashboard.highPriority.sub,
           color: 'text-orange-600',
           bgColor: 'bg-orange-50',
           borderColor: 'border-orange-200'
         };
       case 'completed-today':
         return {
-          title: 'Completed Today',
+          title: copy.dashboard.completed.title,
           icon: <CheckCircle2 className="h-6 w-6 text-green-600" />,
-          description: 'Tasks completed today',
+          description: copy.dashboard.completed.sub,
           color: 'text-green-600',
           bgColor: 'bg-green-50',
           borderColor: 'border-green-200'
         };
       default:
         return {
-          title: 'All Tasks',
+          title: copy.tasks.title,
           icon: <Calendar className="h-6 w-6 text-blue-600" />,
-          description: 'Complete list of all tasks',
+          description: copy.dashboard.greeting,
           color: 'text-blue-600',
           bgColor: 'bg-blue-50',
           borderColor: 'border-blue-200'
@@ -143,7 +144,7 @@ export default function Tasks() {
             className="mb-4 text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+{copy.tasks.backButton}
           </Button>
           
           <Card className={`${filterInfo.bgColor} ${filterInfo.borderColor} border-2`}>
@@ -181,22 +182,22 @@ export default function Tasks() {
                 {filterInfo.icon}
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No tasks found
+                {copy.tasks.empty.title}
               </h3>
               <p className="text-gray-500 mb-6">
                 {filter === 'completed-today' 
-                  ? "You haven't completed any tasks today yet."
+                  ? copy.dashboard.completed.sub
                   : filter === 'overdue'
-                  ? "Great! You don't have any overdue tasks."
+                  ? copy.dashboard.overdue.sub
                   : filter === 'due-soon'
-                  ? "No tasks are due in the near future."
+                  ? copy.dashboard.dueSoon.sub
                   : filter === 'high-priority'
-                  ? "No high priority tasks at the moment."
-                  : "No tasks have been created yet."
+                  ? copy.dashboard.highPriority.sub
+                  : copy.tasks.empty.sub
                 }
               </p>
               <Button onClick={() => navigate("/")}>
-                {filter === 'all' ? 'Create your first task' : 'Back to Dashboard'}
+                {filter === 'all' ? copy.tasks.empty.cta : copy.tasks.backButton}
               </Button>
             </CardContent>
           </Card>

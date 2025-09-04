@@ -142,7 +142,7 @@ export function ProjectList({ onCreateProject }: ProjectListProps) {
         <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
         <Button onClick={onCreateProject} data-testid="create-project-button">
           <Plus className="h-4 w-4 mr-2" />
-          New Project
+Spark New Project
         </Button>
       </div>
 

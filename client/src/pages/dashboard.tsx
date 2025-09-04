@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { copy } from "@/lib/copy";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -257,7 +258,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading dashboard...</p>
+          <p className="mt-2 text-gray-600">{copy.system.loading}</p>
         </div>
       </div>
     );
@@ -274,7 +275,7 @@ export default function Dashboard() {
               className="flex items-center"
             >
               <ArrowLeft size={16} className="mr-2" />
-              Back to Tasks
+{copy.tasks.backButton}
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center">
@@ -292,7 +293,7 @@ export default function Dashboard() {
             data-testid="button-new-task-dashboard"
           >
             <Plus className="h-4 w-4 mr-1" />
-            New Task
+{copy.tasks.createButton}
           </Button>
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <div className="text-sm text-gray-600">

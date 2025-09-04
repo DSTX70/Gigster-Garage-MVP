@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { copy } from "@/lib/copy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -284,7 +285,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center mr-3">
               <Plus size={16} className="text-white" />
             </div>
-            Add New Task
+{copy.tasks.createButton}
           </h2>
           <p className="text-white/80 text-sm">Create and organize your tasks efficiently</p>
         </div>
@@ -337,7 +338,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
             </Label>
             <Textarea
               id="notes"
-              placeholder="Add any additional notes or details..."
+              placeholder={copy.tasks.formLabels.description}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full h-24"
@@ -364,7 +365,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
             <UserDropdown
               value={assignedToId}
               onValueChange={setAssignedToId}
-              placeholder="Select a user to assign..."
+              placeholder={copy.tasks.formLabels.assignTo}
             />
           </div>
 
@@ -375,7 +376,7 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
               </Label>
               <Select value={priority} onValueChange={(value: "low" | "medium" | "high") => setPriority(value)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select priority..." />
+                  <SelectValue placeholder={copy.tasks.formLabels.priority} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="high">High</SelectItem>
