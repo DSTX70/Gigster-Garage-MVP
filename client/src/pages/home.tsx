@@ -9,7 +9,7 @@ import { AssignmentFilter } from "@/components/assignment-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -541,31 +541,31 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Collapsible New Task Section */}
+        {/* Modal New Task Section */}
         <div className="mb-6 sm:mb-8">
-          <Collapsible open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
-            <CollapsibleTrigger asChild>
+          <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+            <DialogTrigger asChild>
               <Button 
                 variant="outline" 
                 size="lg"
-                className="w-full justify-between py-4 sm:py-6 text-left hover:bg-blue-50 border-2 border-dashed border-gray-300 hover:border-blue-300"
-                data-testid="button-new-task-collapsible"
+                className="w-full justify-center py-4 sm:py-6 text-left hover:bg-blue-50 border-2 border-dashed border-gray-300 hover:border-blue-300"
+                data-testid="button-new-task-modal"
               >
                 <div className="flex items-center">
                   <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-3 text-blue-600" />
                   <span className="text-base sm:text-lg font-medium">{copy.tasks.createButton}</span>
                 </div>
-                <ChevronDown className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 transition-transform ${isNewTaskOpen ? 'rotate-180' : ''}`} />
               </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-4">
-              <Card className="border-2 border-blue-200">
-                <CardContent className="p-4 sm:p-6">
-                  <TaskForm onSuccess={() => setIsNewTaskOpen(false)} />
-                </CardContent>
-              </Card>
-            </CollapsibleContent>
-          </Collapsible>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-semibold">
+                  {copy.tasks.createButton}
+                </DialogTitle>
+              </DialogHeader>
+              <TaskForm onSuccess={() => setIsNewTaskOpen(false)} />
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Tasks Overview - Desktop optimized views */}
