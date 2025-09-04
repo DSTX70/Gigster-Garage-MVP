@@ -34,6 +34,7 @@ import WorkflowAutomation from "@/pages/workflow-automation";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 import Test404 from "@/pages/test-404";
+import GarageAssistant from "@/pages/garage-assistant";
 
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/bulk-operations" component={BulkOperations} />
       <Route path="/custom-fields" component={CustomFields} />
       <Route path="/workflow-automation" component={WorkflowAutomation} />
+      <Route path="/garage-assistant" component={GarageAssistant} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />
