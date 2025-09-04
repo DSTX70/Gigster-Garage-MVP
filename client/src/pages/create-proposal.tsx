@@ -298,15 +298,18 @@ export default function CreateProposal() {
                   <p className="text-sm text-gray-500">{formData.clientEmail}</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Project Overview</h3>
-                    <p className="text-gray-700">{formData.projectDescription || "No description provided"}</p>
+                {/* Project Overview - Full Width */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Project Overview</h3>
+                  <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {formData.projectDescription || "No description provided"}
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Timeline</h3>
-                    <p className="text-gray-700">{formData.timeline || "Timeline not specified"}</p>
-                  </div>
+                </div>
+
+                {/* Timeline - Separate Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Timeline</h3>
+                  <p className="text-gray-700">{formData.timeline || "Timeline not specified"}</p>
                 </div>
 
                 {/* Services Table */}
