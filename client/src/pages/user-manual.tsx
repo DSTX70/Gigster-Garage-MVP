@@ -10,7 +10,7 @@ import {
   BookOpen, ChevronDown, ChevronUp, Home, CheckSquare, Users, 
   FileText, Mail, Clock, BarChart3, Zap, FolderOpen, Settings,
   Plus, AlertTriangle, Calendar, Folder, Upload, Download,
-  Palette, PenTool, Megaphone, Copy
+  Palette, PenTool, Megaphone, Copy, CreditCard
 } from "lucide-react";
 
 export default function UserManual() {
