@@ -282,10 +282,10 @@
     border-radius: 50%;
   }
   
-  /* Header with Gigster Garage gradient */
+  /* Header with original VSuite HQ darker navy - preserving the original brand */
   .gg-header {
     @apply border-b;
-    background: var(--grad);
+    background: linear-gradient(135deg, var(--garage-navy) 0%, var(--ignition-teal) 100%);
   }
   
   .gg-header-light {
