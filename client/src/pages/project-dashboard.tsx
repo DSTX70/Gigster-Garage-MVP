@@ -133,7 +133,7 @@ export default function ProjectDashboard() {
             data-testid="new-task-button"
           >
             <Plus className="h-4 w-4 mr-1" />
-{copy.tasks.createButton}
+            {copy.tasks.createButton}
           </Button>
         </div>
         
@@ -258,10 +258,10 @@ export default function ProjectDashboard() {
                           )}
                         </div>
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          {task.assignedTo && (
+                          {task.assignedToId && (
                             <span className="flex items-center">
                               <Users className="h-4 w-4 mr-1" />
-                              {task.assignedTo.name}
+                              {task.assignedToId}
                             </span>
                           )}
                           {task.dueDate && (
