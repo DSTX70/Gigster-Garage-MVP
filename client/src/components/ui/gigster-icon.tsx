@@ -374,3 +374,171 @@ export function BellIcon({ variant = 'outline', ...props }: Omit<GigsterIconProp
     </GigsterIcon>
   );
 }
+
+// Final 11 Icons to Complete the 30-Icon Set
+export function IdBadgeIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <g>
+          <rect x="6" y="4" width="12" height="16" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+          <circle cx="12" cy="11" r="2" stroke="currentColor" strokeWidth="2" fill="none" />
+          <path d="M8 16h8" stroke="currentColor" strokeWidth="2" />
+        </g>
+      ) : (
+        <g>
+          <rect x="6" y="4" width="12" height="16" rx="2" fill="url(#gg-gradient-teal-amber)" />
+          <circle cx="12" cy="11" r="2" fill="#fff" />
+          <path d="M8 16h8" stroke="#fff" strokeWidth="2" />
+        </g>
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function PaperIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <g>
+          <path d="M6 4h9l3 3v13H6z" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M15 4v3h3" stroke="currentColor" strokeWidth="2" />
+        </g>
+      ) : (
+        <path d="M6 4h9l3 3v13H6z" fill="url(#gg-gradient-teal-amber)" />
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function ToolboxIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <g>
+          <rect x="4" y="8" width="16" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M9 8V6h6v2" stroke="currentColor" strokeWidth="2" />
+        </g>
+      ) : (
+        <g>
+          <rect x="4" y="8" width="16" height="10" rx="2" fill="url(#gg-gradient-teal-amber)" />
+          <path d="M9 8V6h6v2" stroke="#fff" strokeWidth="2" />
+        </g>
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function LightbulbIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <g>
+          <path d="M9 14c0-3 3-5 3-8a4 4 0 1 1 8 0c0 3-3 5-3 8" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M10 20h8" stroke="currentColor" strokeWidth="2" />
+        </g>
+      ) : (
+        <g>
+          <path d="M9 14c0-3 3-5 3-8a4 4 0 1 1 8 0c0 3-3 5-3 8" fill="url(#gg-gradient-teal-amber)" />
+          <rect x="10" y="19" width="8" height="2" fill="url(#gg-gradient-teal-amber)" />
+        </g>
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function ShieldIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <path d="M12 3l8 3v5c0 5-4 8-8 10C8 19 4 16 4 11V6l8-3Z" fill="none" stroke="currentColor" strokeWidth="2" />
+      ) : (
+        <path d="M12 3l8 3v5c0 5-4 8-8 10C8 19 4 16 4 11V6l8-3Z" fill="url(#gg-gradient-teal-amber)" />
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function TargetIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <g>
+          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+          <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
+        </g>
+      ) : (
+        <g>
+          <circle cx="12" cy="12" r="8" fill="url(#gg-gradient-teal-amber)" />
+          <circle cx="12" cy="12" r="3" fill="#fff" />
+        </g>
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function LinkIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <g>
+          <path d="M10 13a4 4 0 0 1 0-6l2-2a4 4 0 1 1 6 6l-1 1" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M14 11a4 4 0 0 1 0 6l-2 2a4 4 0 1 1-6-6l1-1" fill="none" stroke="currentColor" strokeWidth="2" />
+        </g>
+      ) : (
+        <g>
+          <path d="M10 13a4 4 0 0 1 0-6l2-2a4 4 0 1 1 6 6l-1 1" stroke="url(#gg-gradient-teal-amber)" strokeWidth="2" fill="none" />
+          <path d="M14 11a4 4 0 0 1 0 6l-2 2a4 4 0 1 1-6-6l1-1" stroke="url(#gg-gradient-teal-amber)" strokeWidth="2" fill="none" />
+        </g>
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function InboxIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <path d="M4 6h16v12H4zM4 14h5a3 3 0 0 0 6 0h5" fill="none" stroke="currentColor" strokeWidth="2" />
+      ) : (
+        <path d="M4 6h16v12H4zM4 14h5a3 3 0 0 0 6 0h5" stroke="#fff" strokeWidth="2" fill="url(#gg-gradient-teal-amber)" />
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function BoltIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <path d="M10 2v9H6l8 11-2-9h4L10 2Z" fill="none" stroke="currentColor" strokeWidth="2" />
+      ) : (
+        <path d="M10 2v9H6l8 11-2-9h4L10 2Z" fill="url(#gg-gradient-teal-amber)" />
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function TagIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <path d="M3 12l9-9h6v6l-9 9-6-6Z" fill="none" stroke="currentColor" strokeWidth="2" />
+      ) : (
+        <path d="M3 12l9-9h6v6l-9 9-6-6Z" fill="url(#gg-gradient-teal-amber)" />
+      )}
+    </GigsterIcon>
+  );
+}
+
+export function StarIcon({ variant = 'outline', ...props }: Omit<GigsterIconProps, 'children'>) {
+  return (
+    <GigsterIcon variant={variant} {...props}>
+      {variant === 'outline' ? (
+        <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1 6.1L12 17l-5.5 2.9 1-6.1L3 9.5l6.2-.9L12 3Z" fill="none" stroke="currentColor" strokeWidth="2" />
+      ) : (
+        <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1 6.1L12 17l-5.5 2.9 1-6.1L3 9.5l6.2-.9L12 3Z" fill="url(#gg-gradient-teal-amber)" />
+      )}
+    </GigsterIcon>
+  );
+}
