@@ -104,7 +104,7 @@ export default function TemplateEditor() {
   const [previewContent, setPreviewContent] = useState("");
 
   // Load template data if editing
-  const { data: template, isLoading } = useQuery<Template>({
+  const { data: template, isLoading } = useQuery({
     queryKey: ["/api/templates", id],
     queryFn: async () => {
       return await apiRequest("GET", `/api/templates/${id}`);
@@ -115,16 +115,17 @@ export default function TemplateEditor() {
   // Populate form when template data loads
   useEffect(() => {
     if (template) {
+      const templateData = template as any;
       setFormData({
-        name: template.name,
-        type: template.type,
-        description: template.description || "",
-        content: template.content || "",
-        variables: Array.isArray(template.variables) ? template.variables : [],
-        tags: Array.isArray(template.tags) ? template.tags : [],
-        isSystem: template.isSystem,
-        isPublic: template.isPublic,
-        metadata: template.metadata || {},
+        name: templateData.name,
+        type: templateData.type,
+        description: templateData.description || "",
+        content: templateData.content || "",
+        variables: Array.isArray(templateData.variables) ? templateData.variables : [],
+        tags: Array.isArray(templateData.tags) ? templateData.tags : [],
+        isSystem: templateData.isSystem,
+        isPublic: templateData.isPublic,
+        metadata: templateData.metadata || {},
       });
     }
   }, [template]);
@@ -234,7 +235,7 @@ export default function TemplateEditor() {
 
     setFormData(prev => ({
       ...prev,
-      variables: [...(prev.variables || []), { ...newVariable }]
+      variables: [...(prev.variables || []), { ...newVariable } as any]
     }));
 
     // Reset the form
@@ -451,7 +452,7 @@ export default function TemplateEditor() {
                   <Label htmlFor="type">Type *</Label>
                   <Select 
                     value={formData.type} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as "email" | "proposal" | "contract" | "invoice" | "presentation" }))}
                   >
                     <SelectTrigger data-testid="select-template-type">
                       <SelectValue placeholder="Select type" />

@@ -234,7 +234,13 @@ export default function GarageAssistant() {
               </h2>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {smartNudges.map((nudge) => (
-                  <NudgeCard key={nudge.id} {...nudge} />
+                  <NudgeCard 
+                    key={nudge.id} 
+                    title={nudge.title} 
+                    cta={nudge.cta} 
+                    action={nudge.action} 
+                    priority={nudge.priority as 'high' | 'medium' | 'low'} 
+                  />
                 ))}
                 {smartNudges.length === 0 && (
                   <div className="col-span-full text-center py-8 text-gray-500">

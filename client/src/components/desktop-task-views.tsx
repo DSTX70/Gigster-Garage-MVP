@@ -154,7 +154,7 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {tasks
               .filter(task => task.dueDate && new Date(task.dueDate) < new Date() && !task.completed)
-              .map(task => <TaskCard key={task.id} task={task} />)}
+              .map(task => <TaskCard key={`overdue-${task.id}`} task={task} />)}
           </div>
         </div>
       )}
@@ -166,7 +166,7 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
           All Tasks ({sortedTasks.length})
         </h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {sortedTasks.map(task => <TaskCard key={task.id} task={task} />)}
+          {sortedTasks.map(task => <TaskCard key={`sorted-${task.id}`} task={task} />)}
         </div>
       </div>
     </div>
@@ -179,7 +179,7 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
         <Badge variant="secondary">{tasks.length}</Badge>
       </div>
       <div className="space-y-3">
-        {tasks.map(task => <TaskCard key={task.id} task={task} compact />)}
+        {tasks.map(task => <TaskCard key={`kanban-${task.id}`} task={task} compact />)}
       </div>
     </div>
   );
@@ -365,7 +365,7 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
   }, []);
 
   if (!isDesktop) {
-    return <div className="space-y-4">{sortedTasks.map(task => <TaskCard key={task.id} task={task} />)}</div>;
+    return <div className="space-y-4">{sortedTasks.map(task => <TaskCard key={`mobile-${task.id}`} task={task} />)}</div>;
   }
 
   return (

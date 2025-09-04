@@ -97,7 +97,7 @@ export default function CreateInvoice() {
   // Save invoice mutation
   const saveInvoiceMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/invoices", data),
-    onSuccess: (response) => {
+    onSuccess: (response: any) => {
       // Store the created invoice ID for sending
       const invoiceId = response.id;
       setCreatedInvoiceId(invoiceId);
@@ -119,7 +119,7 @@ export default function CreateInvoice() {
   // Send invoice mutation
   const sendInvoiceMutation = useMutation({
     mutationFn: (invoiceId: string) => apiRequest("POST", `/api/invoices/${invoiceId}/send`, { includePDF: true }),
-    onSuccess: (response) => {
+    onSuccess: (response: any) => {
       toast({
         title: "Invoice sent!",
         description: response.message || "Invoice has been sent successfully",
