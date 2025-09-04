@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow, startOfDay, endOfDay, subDays, subWeeks, subMonths } from "date-fns";
+import { copy } from "@/lib/copy";
 import {
   Activity,
   Clock,
@@ -443,10 +444,10 @@ export function ActivityFeed({
               <h3 className="text-lg font-medium text-gray-900 mb-2">No activity found</h3>
               <p className="text-gray-500">
                 {searchTerm || typeFilter !== 'all' || timeFilter !== 'all'
-                  ? "No activities match your current filters."
+                  ? copy.emptyStates.search.nothingMatches
                   : entityType && entityId 
-                    ? `No activities recorded for this ${entityType} yet.`
-                    : "No activities have been recorded yet."
+                    ? copy.emptyStates.activity.noRecent
+                    : copy.emptyStates.activity.noSparks
                 }
               </p>
             </CardContent>

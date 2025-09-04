@@ -81,5 +81,48 @@ export const copy = {
     deleteError: "We hit a snag. That item is still hanging around.",
     loading: "Firing up the engines...",
     error: "Something didn't spark right. Give it another shot."
+  },
+  emptyStates: {
+    clients: {
+      noClients: "No clients yet — ready to spark your first connection?",
+      growList: "Your client list is waiting to grow — add one to get rolling."
+    },
+    tasks: {
+      noTasks: "No tasks on deck — what's your next move?",
+      firstTask: "Nothing here yet. Set your first task and watch your hustle stack up."
+    },
+    activity: {
+      noSparks: "No sparks yet — your activity will light up once you get moving.",
+      noRecent: "No recent activity found — your hustle story starts here."
+    },
+    proposals: {
+      noProposals: "No proposals yet — pitch your first idea and put it out there.",
+      blankBoard: "Your proposal board is blank — time to spark a new opportunity."
+    },
+    invoices: {
+      noInvoices: "No invoices created — lock in your first payment and keep the flow going.",
+      noBilling: "No billing yet — send an invoice and fuel your hustle."
+    },
+    contracts: {
+      noContracts: "No contracts yet — seal your first deal to make it official.",
+      emptySpace: "This space is empty — lock it in when you're ready."
+    },
+    dashboard: {
+      overdue: "No fires to put out — you're on top of it.",
+      dueSoon: "Nothing looming — keep building momentum.",
+      completed: "No wins yet — wrap a task to see progress shine here."
+    },
+    search: {
+      noResults: "No results found — try another spark.",
+      nothingMatches: "Nothing matches yet — refine your search and keep exploring."
+    },
+    messages: {
+      noNew: "No new messages — your inbox is clear.",
+      nothingWaiting: "Nothing waiting for you — updates will appear here."
+    },
+    utilities: {
+      noTools: "No tools added yet — start customizing your workspace.",
+      emptyKit: "This kit is empty — add integrations to expand your hustle."
+    }
   }
 };

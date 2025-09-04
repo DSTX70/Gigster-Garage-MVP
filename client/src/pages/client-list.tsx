@@ -13,6 +13,7 @@ import { Users, Plus, Mail, Phone, Building, DollarSign, FileText, Search, Arrow
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from "@/components/app-header";
+import { copy } from "@/lib/copy";
 import type { Client } from "@shared/schema";
 
 interface NewClientForm {
@@ -287,7 +288,7 @@ export default function ClientList() {
               <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No clients found</h3>
               <p className="text-gray-600 mb-4">
-                {searchTerm ? "No clients match your search criteria." : "Get started by adding your first client."}
+                {searchTerm ? copy.emptyStates.search.nothingMatches : copy.emptyStates.clients.noClients}
               </p>
               {!searchTerm && (
                 <Button

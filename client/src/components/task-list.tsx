@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { TaskItem } from "./task-item";
+import { copy } from "@/lib/copy";
 import type { Task } from "@shared/schema";
 import { ListTodo } from "lucide-react";
 
@@ -53,8 +54,8 @@ export function TaskList({ filter, assigneeFilter = 'all' }: TaskListProps) {
           {filter === 'all' ? 'No tasks yet' : filter === 'active' ? 'No active tasks' : 'No completed tasks'}
         </h3>
         <p className="text-neutral-600">
-          {filter === 'all' ? 'Create your first task to get started with Gigster Garage' : 
-           filter === 'active' ? 'All tasks are completed!' : 'No tasks have been completed yet'}
+          {filter === 'all' ? copy.emptyStates.tasks.noTasks : 
+           filter === 'active' ? 'All tasks are completed!' : copy.emptyStates.dashboard.completed}
         </p>
       </section>
     );
