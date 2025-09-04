@@ -2,7 +2,7 @@
 
 ## Overview
 
-VSuite HQ is a comprehensive task management application built with a full-stack TypeScript architecture. The application follows the VSuite HQ brand guidelines with exact color specifications (Blue #007BFF, Black #000000, White #FFFFFF) and typography using Helvetica Neue Bold/Inter Bold for headings and Helvetica Neue Regular/Inter Regular for body text. The tagline "Simplified Workflow Hub" appears consistently throughout the application. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
+VSuite HQ is a comprehensive time tracker and workflow management system built with a full-stack TypeScript architecture. The application has evolved to include Custom Fields, Workflow Automation, Team Collaboration, AI-powered content generation, and integrated Garage Assistant UI. The system follows the Garage Navy branding with primary colors including Garage Navy (#004C6D) and Ignition Teal (#0B1D3A) for consistent professional appearance. The application features an enhanced invoice builder with auto-fill functionality, streamlined workflow automation, and reliable AI content generation. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
 
 ## User Preferences
 
@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Invoice Builder Auto-Fill Enhancement** (Completed September 2025): Implemented comprehensive auto-fill functionality where company name and address entered at the top automatically populate invoice previews, streamlining invoice creation workflow
+- **Enhanced Company Information Fields** (Added September 2025): Added dedicated company information section with company name and address fields in invoice builder, organized with blue-styled visual grouping for easy identification
+- **AI Content Generation Optimization** (Fixed September 2025): Resolved AI content generation issues by switching from GPT-5 to stable GPT-4o model, eliminating "Generation Failed" errors and ensuring reliable content creation in proposals
+- **Workflow Automation Page Redesign** (Completed September 2025): Fixed styling issues by adding proper AppHeader component integration and consistent layout structure matching application design standards
+- **Navigation Button Repositioning** (Updated September 2025): Repositioned "Back to Tasks" button to the left of page titles on Workflow Automation page for improved user experience and consistent navigation patterns
+- **Garage Assistant UI Integration** (Enhanced September 2025): Successfully integrated Garage Assistant with real data sources and applied consistent Garage Navy branding throughout the interface
+- **Branding Consistency Updates** (Applied September 2025): Implemented consistent Garage Navy (#004C6D) and Ignition Teal (#0B1D3A) color scheme across all components and pages for professional brand cohesion
+- **Invoice Preview Auto-Population** (Enhanced September 2025): Invoice preview now automatically displays company and client information from top form fields with smart placeholder text for empty fields
 - **Task Relationships & Dependencies** (Completed August 2025): Full subtask and parent-child task hierarchy with circular dependency prevention algorithms
 - **Enhanced Project Dashboards** (Added August 2025): Rich project views with Kanban boards, progress tracking, timeline planning, and comprehensive project stats
 - **Cross-Device Optimization** (Added August 2025): Desktop expanded views with column layout, Kanban board, and Gantt chart timeline views that automatically adapt to screen size
@@ -98,9 +106,10 @@ The project uses a modern development setup:
 ### UI and Styling
 
 - **@radix-ui/***: Comprehensive set of accessible, unstyled UI primitives
-- **tailwindcss**: Utility-first CSS framework
+- **tailwindcss**: Utility-first CSS framework with custom Garage Navy color variables
 - **class-variance-authority**: Utility for creating component variants
 - **lucide-react**: Modern icon library
+- **Custom Branding**: Garage Navy (#004C6D) and Ignition Teal (#0B1D3A) color scheme applied consistently
 
 ### Development Tools
 
@@ -120,3 +129,16 @@ The project uses a modern development setup:
 - **date-fns**: Date manipulation library
 - **clsx** and **tailwind-merge**: Utility functions for conditional classes
 - **wouter**: Lightweight routing library
+
+### AI and Automation
+
+- **openai**: OpenAI API integration for content generation (using GPT-4o model)
+- **Workflow Automation**: Custom workflow rules and automation engine
+- **AI Content Generation**: Reliable proposal and content creation using stable AI models
+
+### Enhanced Features
+
+- **Invoice Builder**: Auto-fill functionality with company and client information population
+- **Garage Assistant**: Integrated UI with real data sources and consistent branding
+- **Workflow Automation**: Visual rule builder with trigger and action management
+- **Time Tracking**: Comprehensive time tracking with project allocation and productivity reporting
