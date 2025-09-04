@@ -293,12 +293,12 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-2">
-                Task Description
+{copy.tasks.formLabels.title}
               </Label>
               <Input
                 id="description"
                 type="text"
-                placeholder="What needs to be done?"
+                placeholder={copy.tasks.formLabels.title}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full"

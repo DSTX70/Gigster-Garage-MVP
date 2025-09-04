@@ -105,7 +105,7 @@ export function ProjectList({ onCreateProject }: ProjectListProps) {
         case "tasks":
           return b.taskCount - a.taskCount;
         case "created":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         default:
           return 0;
       }
@@ -220,15 +220,15 @@ Spark New Project
                 <div className="flex items-center space-x-2 mt-3">
                   <Badge 
                     variant="outline" 
-                    className={`text-xs ${getStatusColor(project.status)}`}
+                    className={`text-xs ${getStatusColor(project.status || '')}`}
                   >
                     {project.status}
                   </Badge>
                   
-                  {project.startDate && (
+                  {project.createdAt && (
                     <span className="text-xs text-gray-500 flex items-center">
                       <Calendar className="h-3 w-3 mr-1" />
-                      {format(new Date(project.startDate), "MMM yyyy")}
+                      {format(new Date(project.createdAt), "MMM yyyy")}
                     </span>
                   )}
                 </div>
@@ -285,7 +285,7 @@ Spark New Project
                     <p className="text-xs font-medium text-gray-700 mb-2">Recent Tasks</p>
                     <div className="space-y-1">
                       {project.tasks
-                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
                         .slice(0, 2)
                         .map((task) => (
                           <div key={task.id} className="flex items-center space-x-2 text-xs">
