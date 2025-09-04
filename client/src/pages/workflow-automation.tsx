@@ -19,6 +19,7 @@ import { z } from "zod";
 import { Plus, Play, Pause, Trash2, Settings, Zap, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { AppHeader } from "@/components/app-header";
 
 interface WorkflowRule {
   id: string;
@@ -591,56 +592,66 @@ export default function WorkflowAutomationPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Link href="/">
-            <Button variant="outline" size="sm" className="flex items-center gap-2" data-testid="button-back-to-dashboard">
-              <ArrowLeft className="w-4 h-4" />
-              Back to My Dashboard
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold text-[#0B1D3A]">Workflow Automation</h1>
-          <p className="text-muted-foreground mt-1">
-            Automate repetitive tasks with intelligent rules and triggers
-          </p>
+    <div className="min-h-screen bg-neutral-50">
+      <AppHeader />
+      
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Link href="/">
+              <Button variant="outline" className="flex items-center" data-testid="button-back-to-dashboard">
+                <ArrowLeft size={16} className="mr-2" />
+                Back to Tasks
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <Zap className="mr-3" size={32} />
+                Workflow Automation
+              </h1>
+              <p className="text-gray-600 mt-1">Automate repetitive tasks with intelligent rules and triggers</p>
+            </div>
+          </div>
+          <Dialog open={showRuleBuilder} onOpenChange={setShowRuleBuilder}>
+            <DialogTrigger asChild>
+              <Button 
+                className="bg-[var(--garage-navy)] text-white hover:bg-[var(--ignition-teal)]"
+                data-testid="button-create-rule"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Rule
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{selectedRule ? "Edit Automation Rule" : "Create Automation Rule"}</DialogTitle>
+                <DialogDescription>
+                  Define triggers and actions to automate your workflow processes.
+                </DialogDescription>
+              </DialogHeader>
+              <RuleBuilder 
+                onClose={() => {
+                  setShowRuleBuilder(false);
+                  setSelectedRule(null);
+                }} 
+                existingRule={selectedRule || undefined}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
-        <Dialog open={showRuleBuilder} onOpenChange={setShowRuleBuilder}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-create-rule">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Rule
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{selectedRule ? "Edit Automation Rule" : "Create Automation Rule"}</DialogTitle>
-              <DialogDescription>
-                Define triggers and actions to automate your workflow processes.
-              </DialogDescription>
-            </DialogHeader>
-            <RuleBuilder 
-              onClose={() => {
-                setShowRuleBuilder(false);
-                setSelectedRule(null);
-              }} 
-              existingRule={selectedRule || undefined}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <Tabs defaultValue="rules" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="rules" data-testid="tab-rules">
-            <Zap className="w-4 h-4 mr-2" />
-            Automation Rules
-          </TabsTrigger>
-          <TabsTrigger value="executions" data-testid="tab-executions">
-            <Clock className="w-4 h-4 mr-2" />
-            Execution History
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="rules" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="rules" data-testid="tab-rules">
+              <Zap className="w-4 h-4 mr-2" />
+              Automation Rules
+            </TabsTrigger>
+            <TabsTrigger value="executions" data-testid="tab-executions">
+              <Clock className="w-4 h-4 mr-2" />
+              Execution History
+            </TabsTrigger>
+          </TabsList>
+
 
         <TabsContent value="rules" className="space-y-4">
           {rulesLoading ? (
@@ -791,7 +802,8 @@ export default function WorkflowAutomationPage() {
             </Card>
           )}
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </div>
   );
 }
