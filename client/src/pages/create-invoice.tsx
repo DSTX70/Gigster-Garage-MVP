@@ -30,6 +30,8 @@ export default function CreateInvoice() {
   const [formData, setFormData] = useState({
     invoiceNumber: `INV-${Date.now()}`,
     projectId: "",
+    companyName: "",
+    companyAddress: "",
     clientName: "",
     clientEmail: "",
     clientAddress: "",
@@ -214,9 +216,10 @@ export default function CreateInvoice() {
                     <p className="text-lg font-medium">#{formData.invoiceNumber}</p>
                   </div>
                   <div className="text-right">
-                    <h2 className="text-xl font-bold mb-2">Your Company</h2>
-                    <p className="text-gray-600">123 Business St</p>
-                    <p className="text-gray-600">City, State 12345</p>
+                    <h2 className="text-xl font-bold mb-2">{formData.companyName || "Your Company Name"}</h2>
+                    <div className="text-gray-600 whitespace-pre-wrap">
+                      {formData.companyAddress || "Your Company Address\nCity, State 12345"}
+                    </div>
                   </div>
                 </div>
 
@@ -339,6 +342,33 @@ export default function CreateInvoice() {
               <CardDescription>Basic invoice details and client information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Company Information */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-900 mb-3">Your Company Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Company Name *</Label>
+                    <Input
+                      id="companyName"
+                      placeholder="Your Company Name"
+                      value={formData.companyName}
+                      onChange={(e) => updateFormData("companyName", e.target.value)}
+                      className="border-blue-200 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyAddress">Company Address</Label>
+                    <Input
+                      id="companyAddress"
+                      placeholder="123 Business St, City, State 12345"
+                      value={formData.companyAddress}
+                      onChange={(e) => updateFormData("companyAddress", e.target.value)}
+                      className="border-blue-200 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="invoiceNumber">Invoice Number</Label>
@@ -372,51 +402,56 @@ export default function CreateInvoice() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clientName">Client Name *</Label>
-                  <Input
-                    id="clientName"
-                    placeholder="Enter client name"
-                    value={formData.clientName}
-                    onChange={(e) => updateFormData("clientName", e.target.value)}
-                    className="border-blue-200 focus:border-blue-500"
-                  />
+              {/* Client Information */}
+              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                <h4 className="font-medium text-orange-900 mb-3">Client Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="clientName">Client Name *</Label>
+                    <Input
+                      id="clientName"
+                      placeholder="Enter client name"
+                      value={formData.clientName}
+                      onChange={(e) => updateFormData("clientName", e.target.value)}
+                      className="border-orange-200 focus:border-orange-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="clientEmail">Client Email</Label>
+                    <Input
+                      id="clientEmail"
+                      type="email"
+                      placeholder="client@company.com"
+                      value={formData.clientEmail}
+                      onChange={(e) => updateFormData("clientEmail", e.target.value)}
+                      className="border-orange-200 focus:border-orange-500"
+                    />
+                  </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="clientEmail">Client Email</Label>
-                  <Input
-                    id="clientEmail"
-                    type="email"
-                    placeholder="client@company.com"
-                    value={formData.clientEmail}
-                    onChange={(e) => updateFormData("clientEmail", e.target.value)}
-                    className="border-blue-200 focus:border-blue-500"
+                  <Label className="flex items-center gap-2">
+                    Client Address
+                    <Badge variant="outline" className="text-xs">textarea</Badge>
+                  </Label>
+                  <Textarea
+                    placeholder="Enter client billing address..."
+                    rows={3}
+                    className="min-h-[80px] resize-y bg-orange-50 border-orange-200 focus:border-orange-500"
+                    maxLength={500}
+                    value={formData.clientAddress}
+                    onChange={(e) => {
+                      updateFormData("clientAddress", e.target.value);
+                      setAddressCount(e.target.value.length);
+                    }}
                   />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>📍 Client's billing address</span>
+                    <span className="font-medium">{addressCount} / 500 characters</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  Client Address
-                  <Badge variant="outline" className="text-xs">textarea</Badge>
-                </Label>
-                <Textarea
-                  placeholder="Enter client billing address..."
-                  rows={3}
-                  className="min-h-[80px] resize-y bg-orange-50 border-orange-200 focus:border-orange-500"
-                  maxLength={500}
-                  value={formData.clientAddress}
-                  onChange={(e) => {
-                    updateFormData("clientAddress", e.target.value);
-                    setAddressCount(e.target.value.length);
-                  }}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>📍 Client's billing address</span>
-                  <span className="font-medium">{addressCount} / 500 characters</span>
-                </div>
-              </div>
 
               <div className="space-y-2">
                 <Label>Project</Label>
