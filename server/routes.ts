@@ -3903,9 +3903,9 @@ Keep it professional but easy to understand.`;
           return res.status(400).json({ message: "Invalid content type" });
       }
 
-      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      // Using gpt-4o as it's reliable and available
       const completion = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
