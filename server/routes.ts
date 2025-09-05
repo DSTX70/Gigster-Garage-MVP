@@ -1,6 +1,8 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
+import ConnectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 import multer from "multer";
 import csvParser from "csv-parser";
 import createCsvWriter from "csv-writer";
@@ -46,8 +48,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
   });
 
-  // Session middleware
+  // PostgreSQL session store
+  const PgSession = ConnectPgSimple(session);
+  
+  // Session middleware with PostgreSQL store
   app.use(session({
+    store: new PgSession({
+      pool: pool,
+      tableName: 'sessions',
+      createTableIfMissing: false // Table already exists in schema
+    }),
     secret: process.env.SESSION_SECRET || 'taskflow-secret-key',
     resave: false,
     saveUninitialized: false,
