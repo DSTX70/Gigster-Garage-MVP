@@ -36,6 +36,10 @@ import NotFound from "@/pages/not-found";
 import Test404 from "@/pages/test-404";
 import GarageAssistant from "@/pages/garage-assistant";
 import Analytics from "@/pages/analytics";
+import AIInsights from "@/pages/ai-insights";
+import TeamCollaboration from "@/pages/team-collaboration";
+import AdvancedReporting from "@/pages/advanced-reporting";
+import APIWebhooks from "@/pages/api-webhooks";
 
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
@@ -100,6 +104,10 @@ function Router() {
       <Route path="/workflow-automation" component={WorkflowAutomation} />
       <Route path="/garage-assistant" component={GarageAssistant} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/ai-insights" component={AIInsights} />
+      <Route path="/team-collaboration" component={TeamCollaboration} />
+      <Route path="/advanced-reporting" component={AdvancedReporting} />
+      <Route path="/api-webhooks" component={APIWebhooks} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

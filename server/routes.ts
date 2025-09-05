@@ -19,6 +19,12 @@ import { invoiceStatusService } from "./invoiceStatusService";
 import { sendProposalResponseNotification, createProposalRevision, getProposalApprovalStats } from "./proposalWorkflowService";
 import { contractManagementService } from "./contractManagementService";
 import { backupRoutes } from "./backup-routes";
+import { aiInsightsService } from "./ai-insights-service";
+import { CollaborationService, collaborationService } from "./collaboration-service";
+import { advancedReportingService } from "./advanced-reporting-service";
+import { webhookService } from "./webhook-service";
+import { mobileApiService } from "./mobile-api-service";
+import { whiteLabelService } from "./white-label-service";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -4655,6 +4661,517 @@ Keep it professional but easy to understand.`;
     }
   });
 
+  // AI-Powered Insights API endpoints
+  app.get('/api/ai-insights', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const insights = await aiInsightsService.generateInsights(userId);
+      res.json(insights);
+    } catch (error) {
+      console.error('Error generating AI insights:', error);
+      res.status(500).json({ message: 'Failed to generate insights' });
+    }
+  });
+
+  app.post('/api/ai-insights/refresh', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const insights = await aiInsightsService.generateInsights(userId);
+      res.json({ message: 'Insights refreshed', insights });
+    } catch (error) {
+      console.error('Error refreshing AI insights:', error);
+      res.status(500).json({ message: 'Failed to refresh insights' });
+    }
+  });
+
+  app.get('/api/ai-insights/recommendations', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const recommendations = await aiInsightsService.generateTaskRecommendations(userId);
+      res.json(recommendations);
+    } catch (error) {
+      console.error('Error generating task recommendations:', error);
+      res.status(500).json({ message: 'Failed to generate recommendations' });
+    }
+  });
+
+  app.get('/api/ai-insights/team', requireAuth, async (req, res) => {
+    try {
+      // Only admins can access team insights
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const teamInsights = await aiInsightsService.generateTeamInsights();
+      res.json(teamInsights);
+    } catch (error) {
+      console.error('Error generating team insights:', error);
+      res.status(500).json({ message: 'Failed to generate team insights' });
+    }
+  });
+
+  // Advanced Reporting API endpoints
+  app.get('/api/reports', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.role === 'admin' ? undefined : req.session.user!.id;
+      const reports = await advancedReportingService.getReports(userId);
+      res.json(reports);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      res.status(500).json({ message: 'Failed to fetch reports' });
+    }
+  });
+
+  app.post('/api/reports/generate', requireAuth, async (req, res) => {
+    try {
+      const { template, timeRange, filters } = req.body;
+      
+      let reportData;
+      
+      switch (template) {
+        case 'productivity':
+          reportData = await advancedReportingService.generateProductivityReport(
+            { start: new Date(timeRange.start), end: new Date(timeRange.end) },
+            filters.userIds
+          );
+          break;
+        case 'financial':
+          reportData = await advancedReportingService.generateFinancialReport(
+            { start: new Date(timeRange.start), end: new Date(timeRange.end) }
+          );
+          break;
+        case 'time':
+          reportData = await advancedReportingService.generateTimeTrackingReport(
+            { start: new Date(timeRange.start), end: new Date(timeRange.end) },
+            filters.userIds
+          );
+          break;
+        case 'project':
+          if (filters.projectIds && filters.projectIds.length > 0) {
+            reportData = await advancedReportingService.generateProjectReport(
+              filters.projectIds[0],
+              { start: new Date(timeRange.start), end: new Date(timeRange.end) }
+            );
+          } else {
+            return res.status(400).json({ message: 'Project ID required for project reports' });
+          }
+          break;
+        default:
+          return res.status(400).json({ message: 'Invalid report template' });
+      }
+      
+      res.json(reportData);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      res.status(500).json({ message: 'Failed to generate report' });
+    }
+  });
+
+  app.post('/api/reports', requireAuth, async (req, res) => {
+    try {
+      const report = await advancedReportingService.createReport({
+        ...req.body,
+        createdBy: req.session.user!.id
+      });
+      res.json(report);
+    } catch (error) {
+      console.error('Error creating report:', error);
+      res.status(500).json({ message: 'Failed to create report' });
+    }
+  });
+
+  app.get('/api/reports/templates', requireAuth, async (req, res) => {
+    try {
+      const templates = advancedReportingService.getReportTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching report templates:', error);
+      res.status(500).json({ message: 'Failed to fetch templates' });
+    }
+  });
+
+  // Webhook & Integration API endpoints
+  app.get('/api/webhooks', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.role === 'admin' ? undefined : req.session.user!.id;
+      const webhooks = await webhookService.getWebhooks(userId);
+      res.json(webhooks);
+    } catch (error) {
+      console.error('Error fetching webhooks:', error);
+      res.status(500).json({ message: 'Failed to fetch webhooks' });
+    }
+  });
+
+  app.post('/api/webhooks', requireAuth, async (req, res) => {
+    try {
+      const webhook = await webhookService.createWebhook({
+        ...req.body,
+        createdBy: req.session.user!.id
+      });
+      res.json(webhook);
+    } catch (error) {
+      console.error('Error creating webhook:', error);
+      res.status(500).json({ message: 'Failed to create webhook' });
+    }
+  });
+
+  app.patch('/api/webhooks/:id', requireAuth, async (req, res) => {
+    try {
+      const webhook = await webhookService.updateWebhook(req.params.id, req.body);
+      res.json(webhook);
+    } catch (error) {
+      console.error('Error updating webhook:', error);
+      res.status(500).json({ message: 'Failed to update webhook' });
+    }
+  });
+
+  app.delete('/api/webhooks/:id', requireAuth, async (req, res) => {
+    try {
+      await webhookService.deleteWebhook(req.params.id);
+      res.json({ message: 'Webhook deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting webhook:', error);
+      res.status(500).json({ message: 'Failed to delete webhook' });
+    }
+  });
+
+  app.post('/api/webhooks/:id/test', requireAuth, async (req, res) => {
+    try {
+      await webhookService.triggerEvent('task.created', {
+        id: 'test-task',
+        title: 'Test Task',
+        description: 'This is a test webhook delivery',
+        status: 'pending',
+        priority: 'medium',
+        assignedTo: req.session.user!.name,
+        createdAt: new Date().toISOString()
+      }, { test: true });
+      
+      res.json({ message: 'Test webhook sent successfully' });
+    } catch (error) {
+      console.error('Error sending test webhook:', error);
+      res.status(500).json({ message: 'Failed to send test webhook' });
+    }
+  });
+
+  app.get('/api/webhooks/deliveries', requireAuth, async (req, res) => {
+    try {
+      const webhookId = req.query.webhookId as string;
+      const deliveries = await webhookService.getDeliveries(webhookId);
+      res.json(deliveries);
+    } catch (error) {
+      console.error('Error fetching deliveries:', error);
+      res.status(500).json({ message: 'Failed to fetch deliveries' });
+    }
+  });
+
+  app.get('/api/integrations', requireAuth, async (req, res) => {
+    try {
+      const integrations = await webhookService.getIntegrations();
+      res.json(integrations);
+    } catch (error) {
+      console.error('Error fetching integrations:', error);
+      res.status(500).json({ message: 'Failed to fetch integrations' });
+    }
+  });
+
+  app.post('/api/integrations', requireAuth, async (req, res) => {
+    try {
+      const integration = await webhookService.createIntegration({
+        ...req.body,
+        createdBy: req.session.user!.id
+      });
+      res.json(integration);
+    } catch (error) {
+      console.error('Error creating integration:', error);
+      res.status(500).json({ message: 'Failed to create integration' });
+    }
+  });
+
+  // Mobile API endpoints (optimized for mobile apps)
+  app.get('/api/mobile/dashboard', requireAuth, async (req, res) => {
+    try {
+      const dashboard = await mobileApiService.getMobileDashboard(req.session.user!.id);
+      const response = mobileApiService.createResponse(dashboard);
+      res.json(response);
+    } catch (error) {
+      console.error('Error generating mobile dashboard:', error);
+      const response = mobileApiService.createResponse(null, 'Failed to load dashboard');
+      res.status(500).json(response);
+    }
+  });
+
+  app.post('/api/mobile/sync', requireAuth, async (req, res) => {
+    try {
+      const syncData = await mobileApiService.syncMobileData(req.session.user!.id, req.body);
+      const response = mobileApiService.createResponse(syncData);
+      res.json(response);
+    } catch (error) {
+      console.error('Error syncing mobile data:', error);
+      const response = mobileApiService.createResponse(null, 'Sync failed');
+      res.status(500).json(response);
+    }
+  });
+
+  app.get('/api/mobile/tasks', requireAuth, async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const filters = {
+        status: req.query.status as string,
+        priority: req.query.priority as string,
+        projectId: req.query.projectId as string,
+        dueDate: req.query.dueDate as 'today' | 'week' | 'overdue'
+      };
+
+      const { tasks, total } = await mobileApiService.getMobileTasks(
+        req.session.user!.id, 
+        page, 
+        limit, 
+        filters
+      );
+      
+      const response = mobileApiService.createPaginatedResponse(tasks, page, limit, total);
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching mobile tasks:', error);
+      const response = mobileApiService.createResponse(null, 'Failed to fetch tasks');
+      res.status(500).json(response);
+    }
+  });
+
+  app.post('/api/mobile/tasks', requireAuth, async (req, res) => {
+    try {
+      const task = await mobileApiService.createMobileTask(req.session.user!.id, req.body);
+      const response = mobileApiService.createResponse(task, undefined, 'Task created successfully');
+      res.json(response);
+    } catch (error) {
+      console.error('Error creating mobile task:', error);
+      const response = mobileApiService.createResponse(null, 'Failed to create task');
+      res.status(500).json(response);
+    }
+  });
+
+  app.post('/api/mobile/time', requireAuth, async (req, res) => {
+    try {
+      const timeLog = await mobileApiService.logMobileTime(req.session.user!.id, req.body);
+      const response = mobileApiService.createResponse(timeLog, undefined, 'Time logged successfully');
+      res.json(response);
+    } catch (error) {
+      console.error('Error logging mobile time:', error);
+      const response = mobileApiService.createResponse(null, 'Failed to log time');
+      res.status(500).json(response);
+    }
+  });
+
+  app.post('/api/mobile/push-token', requireAuth, async (req, res) => {
+    try {
+      await mobileApiService.registerPushToken(req.session.user!.id, req.body);
+      const response = mobileApiService.createResponse(null, undefined, 'Push token registered');
+      res.json(response);
+    } catch (error) {
+      console.error('Error registering push token:', error);
+      const response = mobileApiService.createResponse(null, 'Failed to register push token');
+      res.status(500).json(response);
+    }
+  });
+
+  app.post('/api/mobile/offline-action', requireAuth, async (req, res) => {
+    try {
+      await mobileApiService.queueOfflineAction(req.session.user!.id, req.body);
+      const response = mobileApiService.createResponse(null, undefined, 'Action queued');
+      res.json(response);
+    } catch (error) {
+      console.error('Error queuing offline action:', error);
+      const response = mobileApiService.createResponse(null, 'Failed to queue action');
+      res.status(500).json(response);
+    }
+  });
+
+  app.get('/api/mobile/config', async (req, res) => {
+    try {
+      const config = mobileApiService.getMobileConfig();
+      const response = mobileApiService.createResponse(config);
+      res.json(response);
+    } catch (error) {
+      console.error('Error getting mobile config:', error);
+      const response = mobileApiService.createResponse(null, 'Failed to get config');
+      res.status(500).json(response);
+    }
+  });
+
+  // White-label & Multi-tenant API endpoints
+  app.get('/api/tenants', requireAuth, async (req, res) => {
+    try {
+      // Only allow admins to view all tenants
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const tenants = await whiteLabelService.getTenants();
+      res.json(tenants);
+    } catch (error) {
+      console.error('Error fetching tenants:', error);
+      res.status(500).json({ message: 'Failed to fetch tenants' });
+    }
+  });
+
+  app.post('/api/tenants', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const tenant = await whiteLabelService.createTenant(req.body);
+      res.json(tenant);
+    } catch (error) {
+      console.error('Error creating tenant:', error);
+      res.status(500).json({ message: error.message || 'Failed to create tenant' });
+    }
+  });
+
+  app.get('/api/tenants/:id', requireAuth, async (req, res) => {
+    try {
+      const tenant = await whiteLabelService.getTenant(req.params.id);
+      if (!tenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+      res.json(tenant);
+    } catch (error) {
+      console.error('Error fetching tenant:', error);
+      res.status(500).json({ message: 'Failed to fetch tenant' });
+    }
+  });
+
+  app.patch('/api/tenants/:id', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const tenant = await whiteLabelService.updateTenant(req.params.id, req.body);
+      res.json(tenant);
+    } catch (error) {
+      console.error('Error updating tenant:', error);
+      res.status(500).json({ message: 'Failed to update tenant' });
+    }
+  });
+
+  app.delete('/api/tenants/:id', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      await whiteLabelService.deleteTenant(req.params.id);
+      res.json({ message: 'Tenant deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting tenant:', error);
+      res.status(500).json({ message: 'Failed to delete tenant' });
+    }
+  });
+
+  app.get('/api/tenants/:id/css', async (req, res) => {
+    try {
+      const tenant = await whiteLabelService.getTenant(req.params.id);
+      if (!tenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+      
+      const css = whiteLabelService.generateTenantCSS(tenant);
+      res.setHeader('Content-Type', 'text/css');
+      res.send(css);
+    } catch (error) {
+      console.error('Error generating tenant CSS:', error);
+      res.status(500).json({ message: 'Failed to generate CSS' });
+    }
+  });
+
+  app.get('/api/tenants/:id/usage', requireAuth, async (req, res) => {
+    try {
+      const period = req.query.period as string;
+      const usage = await whiteLabelService.getTenantUsage(req.params.id, period);
+      res.json(usage);
+    } catch (error) {
+      console.error('Error fetching tenant usage:', error);
+      res.status(500).json({ message: 'Failed to fetch usage' });
+    }
+  });
+
+  app.get('/api/tenants/:id/limits', requireAuth, async (req, res) => {
+    try {
+      const limits = await whiteLabelService.checkTenantLimits(req.params.id);
+      res.json(limits);
+    } catch (error) {
+      console.error('Error checking tenant limits:', error);
+      res.status(500).json({ message: 'Failed to check limits' });
+    }
+  });
+
+  app.post('/api/tenants/:id/billing', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const billing = await whiteLabelService.generateBilling(req.params.id, req.body.period);
+      res.json(billing);
+    } catch (error) {
+      console.error('Error generating billing:', error);
+      res.status(500).json({ message: 'Failed to generate billing' });
+    }
+  });
+
+  app.get('/api/white-label/templates', async (req, res) => {
+    try {
+      const templates = whiteLabelService.getWhiteLabelTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      res.status(500).json({ message: 'Failed to fetch templates' });
+    }
+  });
+
+  app.get('/api/white-label/dashboard', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const dashboard = await whiteLabelService.getTenantDashboard();
+      res.json(dashboard);
+    } catch (error) {
+      console.error('Error fetching white-label dashboard:', error);
+      res.status(500).json({ message: 'Failed to fetch dashboard' });
+    }
+  });
+
+  // Tenant resolution middleware for multi-tenant requests
+  app.get('/api/tenant-info', async (req, res) => {
+    try {
+      const host = req.headers.host || '';
+      const domain = host.split(':')[0]; // Remove port if present
+      
+      const tenant = await whiteLabelService.getTenantByDomain(domain);
+      if (!tenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+      
+      // Return public tenant info (no sensitive data)
+      res.json({
+        id: tenant.id,
+        name: tenant.name,
+        subdomain: tenant.subdomain,
+        branding: tenant.branding,
+        settings: tenant.settings,
+        plan: tenant.plan
+      });
+    } catch (error) {
+      console.error('Error resolving tenant:', error);
+      res.status(500).json({ message: 'Failed to resolve tenant' });
+    }
+  });
+
   // Register backup and recovery routes
   app.use('/api', backupRoutes);
 
@@ -4666,5 +5183,19 @@ Keep it professional but easy to understand.`;
   contractManagementService.startContractMonitoring();
 
   const httpServer = createServer(app);
+
+  // Initialize collaboration service with WebSocket support
+  console.log('🚀 Initializing Team Collaboration Service...');
+  const collaboration = new CollaborationService(httpServer);
+  (global as any).collaborationService = collaboration;
+
+  // Initialize webhook service
+  console.log('🔗 Initializing Webhook Service...');
+  (global as any).webhookService = webhookService;
+
+  // Initialize white-label service
+  console.log('🏢 Initializing White-label Service...');
+  (global as any).whiteLabelService = whiteLabelService;
+
   return httpServer;
 }

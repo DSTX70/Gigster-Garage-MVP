@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook } from "lucide-react";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
@@ -247,6 +247,50 @@ export function AppHeader() {
                 title="AI Assistant"
               >
                 <Bot size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/ai-insights")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-ai-insights"
+                title="AI Insights"
+              >
+                <Brain size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/team-collaboration")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-team-collaboration"
+                title="Team Collaboration"
+              >
+                <Users size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/advanced-reporting")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-advanced-reporting"
+                title="Advanced Reporting"
+              >
+                <BarChart3 size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/api-webhooks")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-api-webhooks"
+                title="API Webhooks"
+              >
+                <Webhook size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
               
               {/* Message System */}
