@@ -43,6 +43,8 @@ import APIWebhooks from "@/pages/api-webhooks";
 import SSOManagement from "@/pages/sso-management";
 import PermissionsManagement from "@/pages/permissions-management";
 import AuditLogging from "@/pages/audit-logging";
+import SmartScheduling from "@/pages/smart-scheduling";
+import PredictiveAnalytics from "@/pages/predictive-analytics";
 
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
@@ -114,6 +116,8 @@ function Router() {
       <Route path="/sso-management" component={SSOManagement} />
       <Route path="/permissions-management" component={PermissionsManagement} />
       <Route path="/audit-logging" component={AuditLogging} />
+      <Route path="/smart-scheduling" component={SmartScheduling} />
+      <Route path="/predictive-analytics" component={PredictiveAnalytics} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

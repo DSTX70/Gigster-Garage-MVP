@@ -31,6 +31,8 @@ import { auditService, logAuditEvent } from "./audit-service";
 import { encryptionService } from "./encryption-service";
 import { backupService } from "./backup-service";
 import { i18nService } from "./i18n-service";
+import { smartSchedulingService } from "./smart-scheduling-service";
+import { predictiveAnalyticsService } from "./predictive-analytics-service";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -5775,6 +5777,162 @@ Keep it professional but easy to understand.`;
     } catch (error) {
       console.error('Error exporting translations:', error);
       res.status(500).json({ message: 'Failed to export translations' });
+    }
+  });
+
+  // Smart Scheduling API endpoints
+  app.post('/api/smart-scheduling/generate', requireAuth, async (req, res) => {
+    try {
+      const { tasks, context } = req.body;
+      const result = await smartSchedulingService.generateOptimalSchedule(
+        tasks,
+        context,
+        req.session.user!.id
+      );
+      res.json(result);
+    } catch (error) {
+      console.error('Error generating smart schedule:', error);
+      res.status(500).json({ message: 'Failed to generate smart schedule' });
+    }
+  });
+
+  app.get('/api/smart-scheduling/workload-predictions', requireAuth, async (req, res) => {
+    try {
+      const { userIds } = req.query;
+      const userIdArray = userIds ? (userIds as string).split(',') : undefined;
+      const predictions = await smartSchedulingService.getWorkloadPredictions(userIdArray);
+      res.json(predictions);
+    } catch (error) {
+      console.error('Error fetching workload predictions:', error);
+      res.status(500).json({ message: 'Failed to fetch workload predictions' });
+    }
+  });
+
+  app.get('/api/smart-scheduling/recommendations', requireAuth, async (req, res) => {
+    try {
+      const { projectId, userId } = req.query;
+      const recommendations = await smartSchedulingService.getSchedulingRecommendations(
+        projectId as string,
+        userId as string
+      );
+      res.json(recommendations);
+    } catch (error) {
+      console.error('Error fetching scheduling recommendations:', error);
+      res.status(500).json({ message: 'Failed to fetch scheduling recommendations' });
+    }
+  });
+
+  app.post('/api/smart-scheduling/recommendations/:id/apply', requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await smartSchedulingService.applyRecommendation(id, req.session.user!.id);
+      res.json(result);
+    } catch (error) {
+      console.error('Error applying recommendation:', error);
+      res.status(500).json({ message: 'Failed to apply recommendation' });
+    }
+  });
+
+  app.get('/api/smart-scheduling/statistics', requireAuth, async (req, res) => {
+    try {
+      const statistics = await smartSchedulingService.getSchedulingStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error('Error fetching scheduling statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch scheduling statistics' });
+    }
+  });
+
+  // Predictive Analytics API endpoints
+  app.post('/api/predictive-analytics/generate-predictions', requireAuth, async (req, res) => {
+    try {
+      const { projectIds } = req.body;
+      const predictions = await predictiveAnalyticsService.generateProjectPredictions(projectIds);
+      res.json(predictions);
+    } catch (error) {
+      console.error('Error generating predictions:', error);
+      res.status(500).json({ message: 'Failed to generate predictions' });
+    }
+  });
+
+  app.get('/api/predictive-analytics/project-predictions', requireAuth, async (req, res) => {
+    try {
+      const { projectIds } = req.query;
+      const projectIdArray = projectIds ? (projectIds as string).split(',') : undefined;
+      const predictions = await predictiveAnalyticsService.generateProjectPredictions(projectIdArray);
+      res.json(predictions);
+    } catch (error) {
+      console.error('Error fetching project predictions:', error);
+      res.status(500).json({ message: 'Failed to fetch project predictions' });
+    }
+  });
+
+  app.get('/api/predictive-analytics/project-risks/:projectId', requireAuth, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const risks = await predictiveAnalyticsService.assessProjectRisks(projectId);
+      res.json(risks);
+    } catch (error) {
+      console.error('Error assessing project risks:', error);
+      res.status(500).json({ message: 'Failed to assess project risks' });
+    }
+  });
+
+  app.get('/api/predictive-analytics/team-performance', requireAuth, async (req, res) => {
+    try {
+      const { userIds, period = 'month' } = req.query;
+      const userIdArray = userIds ? (userIds as string).split(',') : undefined;
+      const performance = await predictiveAnalyticsService.analyzeTeamPerformance(
+        userIdArray,
+        period as 'week' | 'month' | 'quarter'
+      );
+      res.json(performance);
+    } catch (error) {
+      console.error('Error analyzing team performance:', error);
+      res.status(500).json({ message: 'Failed to analyze team performance' });
+    }
+  });
+
+  app.get('/api/predictive-analytics/market-intelligence', requireAuth, async (req, res) => {
+    try {
+      const { industry } = req.query;
+      const intelligence = await predictiveAnalyticsService.generateMarketIntelligence(industry as string);
+      res.json(intelligence);
+    } catch (error) {
+      console.error('Error generating market intelligence:', error);
+      res.status(500).json({ message: 'Failed to generate market intelligence' });
+    }
+  });
+
+  app.post('/api/predictive-analytics/generate-report', requireAuth, async (req, res) => {
+    try {
+      const { type, parameters } = req.body;
+      const report = await predictiveAnalyticsService.createPredictiveReport(type, parameters);
+      res.json(report);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      res.status(500).json({ message: 'Failed to generate report' });
+    }
+  });
+
+  app.get('/api/predictive-analytics/reports', requireAuth, async (req, res) => {
+    try {
+      const { type } = req.query;
+      const reports = predictiveAnalyticsService.getReports(type as string);
+      res.json(reports);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      res.status(500).json({ message: 'Failed to fetch reports' });
+    }
+  });
+
+  app.get('/api/predictive-analytics/statistics', requireAuth, async (req, res) => {
+    try {
+      const statistics = await predictiveAnalyticsService.getAnalyticsStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error('Error fetching analytics statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch analytics statistics' });
     }
   });
 

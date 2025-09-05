@@ -325,6 +325,28 @@ export function AppHeader() {
               >
                 <FileText size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/smart-scheduling")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-smart-scheduling"
+                title="Smart Scheduling"
+              >
+                <Bot size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/predictive-analytics")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-predictive-analytics"
+                title="Predictive Analytics"
+              >
+                <BarChart3 size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
               
               {/* Message System */}
               <Button
