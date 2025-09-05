@@ -243,7 +243,7 @@ export default function Admin() {
                         </span>
                       </td>
                       <td className="p-3">
-                        {new Date(user.createdAt).toLocaleDateString()}
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
                       </td>
                       <td className="p-3">
                         <Button

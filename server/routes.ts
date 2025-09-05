@@ -4042,9 +4042,12 @@ Keep it professional but easy to understand.`;
     }
   });
 
-  app.post('/api/workflow-automations', async (req, res) => {
+  app.post('/api/workflow-automations', requireAuth, async (req, res) => {
     try {
-      const workflowData = req.body;
+      const workflowData = {
+        ...req.body,
+        createdById: req.session.user!.id,
+      };
       const workflow = await storage.createWorkflowRule(workflowData);
       res.status(201).json(workflow);
     } catch (error) {

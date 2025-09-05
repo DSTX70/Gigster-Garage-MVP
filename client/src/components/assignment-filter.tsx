@@ -14,14 +14,20 @@ export function AssignmentFilter({ selectedAssignee, onAssigneeChange }: Assignm
     queryKey: ["/api/tasks"],
   });
 
-  // Get unique assignees from tasks
-  const assignees = Array.from(
-    new Set(
-      tasks
-        .filter(task => task.assignedTo)
-        .map(task => task.assignedTo!)
-    )
-  ).sort((a, b) => a.name.localeCompare(b.name));
+  const { data: users = [] } = useQuery({
+    queryKey: ["/api/users"],
+  });
+
+  // Get unique assignees from tasks by matching assignedToId with users
+  const assigneeIds = new Set(
+    tasks
+      .filter(task => task.assignedToId)
+      .map(task => task.assignedToId!)
+  );
+  
+  const assignees = (users as any[])
+    .filter((user: any) => assigneeIds.has(user.id))
+    .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
   if (assignees.length === 0) {
     return null;
@@ -40,7 +46,7 @@ export function AssignmentFilter({ selectedAssignee, onAssigneeChange }: Assignm
         <SelectContent>
           <SelectItem value="all">All assignees</SelectItem>
           <SelectItem value="unassigned">Unassigned</SelectItem>
-          {assignees.map((assignee) => (
+          {assignees.map((assignee: any) => (
             <SelectItem key={assignee.id} value={assignee.id}>
               {assignee.name}
             </SelectItem>
