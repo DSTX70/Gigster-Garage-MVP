@@ -45,6 +45,7 @@ import PermissionsManagement from "@/pages/permissions-management";
 import AuditLogging from "@/pages/audit-logging";
 import SmartScheduling from "@/pages/smart-scheduling";
 import PredictiveAnalytics from "@/pages/predictive-analytics";
+import PerformanceDashboard from "@/pages/performance-dashboard";
 
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
@@ -118,6 +119,7 @@ function Router() {
       <Route path="/audit-logging" component={AuditLogging} />
       <Route path="/smart-scheduling" component={SmartScheduling} />
       <Route path="/predictive-analytics" component={PredictiveAnalytics} />
+      <Route path="/performance-dashboard" component={PerformanceDashboard} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

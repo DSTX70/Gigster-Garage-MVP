@@ -33,6 +33,12 @@ import { backupService } from "./backup-service";
 import { i18nService } from "./i18n-service";
 import { smartSchedulingService } from "./smart-scheduling-service";
 import { predictiveAnalyticsService } from "./predictive-analytics-service";
+import { performanceMonitor } from "./performance-monitor";
+import { AppCache } from "./cache-service";
+import { performanceMiddleware, cacheMiddleware, optimizationMiddleware } from './middleware/performance-middleware';
+import { cdnService } from './cdn-service';
+import { databaseOptimizer } from './database-optimizer';
+import { loadBalancer } from './load-balancer';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -69,6 +75,9 @@ declare global {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply performance monitoring to all routes
+  app.use(performanceMiddleware());
+  app.use(optimizationMiddleware());
   // Configure multer for file uploads
   const upload = multer({ 
     dest: 'uploads/',
@@ -5933,6 +5942,378 @@ Keep it professional but easy to understand.`;
     } catch (error) {
       console.error('Error fetching analytics statistics:', error);
       res.status(500).json({ message: 'Failed to fetch analytics statistics' });
+    }
+  });
+
+  // Performance & Monitoring API endpoints
+  app.get('/api/performance/metrics', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const metrics = performanceMonitor.getCurrentMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching performance metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch performance metrics' });
+    }
+  });
+
+  app.get('/api/performance/metrics/history', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const { minutes = 60 } = req.query;
+      const metrics = performanceMonitor.getHistoricalMetrics(Number(minutes));
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching historical metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch historical metrics' });
+    }
+  });
+
+  app.get('/api/performance/alerts', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const { active = true } = req.query;
+      const alerts = active === 'true' ? 
+        performanceMonitor.getActiveAlerts() : 
+        performanceMonitor.getAllAlerts();
+      res.json(alerts);
+    } catch (error) {
+      console.error('Error fetching performance alerts:', error);
+      res.status(500).json({ message: 'Failed to fetch performance alerts' });
+    }
+  });
+
+  app.post('/api/performance/alerts/:id/resolve', requireAuth, requirePermission('system.admin'), (req, res) => {
+    try {
+      const { id } = req.params;
+      const resolved = performanceMonitor.resolveAlert(id);
+      
+      if (resolved) {
+        res.json({ message: 'Alert resolved successfully' });
+      } else {
+        res.status(404).json({ message: 'Alert not found or already resolved' });
+      }
+    } catch (error) {
+      console.error('Error resolving alert:', error);
+      res.status(500).json({ message: 'Failed to resolve alert' });
+    }
+  });
+
+  app.get('/api/performance/summary', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const summary = performanceMonitor.getPerformanceSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error('Error fetching performance summary:', error);
+      res.status(500).json({ message: 'Failed to fetch performance summary' });
+    }
+  });
+
+  app.get('/api/performance/export', requireAuth, requirePermission('data.export'), (req, res) => {
+    try {
+      const { format = 'json' } = req.query;
+      const metrics = performanceMonitor.exportMetrics(format as 'json' | 'prometheus');
+      
+      const contentType = format === 'prometheus' ? 'text/plain' : 'application/json';
+      const filename = `performance-metrics.${format === 'prometheus' ? 'txt' : 'json'}`;
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(metrics);
+    } catch (error) {
+      console.error('Error exporting performance metrics:', error);
+      res.status(500).json({ message: 'Failed to export performance metrics' });
+    }
+  });
+
+  // Cache Management API endpoints
+  app.get('/api/cache/stats', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const stats = AppCache.getInstance().getStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching cache stats:', error);
+      res.status(500).json({ message: 'Failed to fetch cache stats' });
+    }
+  });
+
+  app.post('/api/cache/flush', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      await AppCache.getInstance().flush();
+      res.json({ message: 'Cache flushed successfully' });
+    } catch (error) {
+      console.error('Error flushing cache:', error);
+      res.status(500).json({ message: 'Failed to flush cache' });
+    }
+  });
+
+  app.post('/api/cache/invalidate', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      const { pattern, tags } = req.body;
+      
+      let invalidated = 0;
+      if (pattern) {
+        invalidated = await AppCache.getInstance().delPattern(pattern);
+      } else if (tags && Array.isArray(tags)) {
+        invalidated = await AppCache.getInstance().delByTags(tags);
+      }
+      
+      res.json({ message: `${invalidated} cache entries invalidated` });
+    } catch (error) {
+      console.error('Error invalidating cache:', error);
+      res.status(500).json({ message: 'Failed to invalidate cache' });
+    }
+  });
+
+  app.get('/api/cache/keys', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const { pattern = '*' } = req.query;
+      const keys = AppCache.getInstance().keys(pattern as string);
+      res.json({ keys: keys.slice(0, 100), total: keys.length }); // Limit to 100 for UI
+    } catch (error) {
+      console.error('Error fetching cache keys:', error);
+      res.status(500).json({ message: 'Failed to fetch cache keys' });
+    }
+  });
+
+  // CDN Management API endpoints
+  app.get('/api/cdn/config', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const config = cdnService.getConfig();
+      res.json(config);
+    } catch (error) {
+      console.error('Error fetching CDN config:', error);
+      res.status(500).json({ message: 'Failed to fetch CDN config' });
+    }
+  });
+
+  app.put('/api/cdn/config', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      await cdnService.updateConfig(req.body);
+      res.json({ message: 'CDN configuration updated successfully' });
+    } catch (error) {
+      console.error('Error updating CDN config:', error);
+      res.status(500).json({ message: 'Failed to update CDN config' });
+    }
+  });
+
+  app.get('/api/cdn/metrics', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const metrics = cdnService.getCurrentMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching CDN metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch CDN metrics' });
+    }
+  });
+
+  app.post('/api/cdn/purge', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      const { urls } = req.body;
+      const result = await cdnService.purgeCache(urls);
+      res.json(result);
+    } catch (error) {
+      console.error('Error purging CDN cache:', error);
+      res.status(500).json({ message: 'Failed to purge CDN cache' });
+    }
+  });
+
+  app.get('/api/cdn/edge-locations', requireAuth, requirePermission('system.monitor'), async (req, res) => {
+    try {
+      const locations = await cdnService.getEdgeLocationPerformance();
+      res.json(locations);
+    } catch (error) {
+      console.error('Error fetching edge locations:', error);
+      res.status(500).json({ message: 'Failed to fetch edge locations' });
+    }
+  });
+
+  app.get('/api/cdn/recommendations', requireAuth, requirePermission('system.monitor'), async (req, res) => {
+    try {
+      const recommendations = await cdnService.getPerformanceRecommendations();
+      res.json(recommendations);
+    } catch (error) {
+      console.error('Error fetching CDN recommendations:', error);
+      res.status(500).json({ message: 'Failed to fetch CDN recommendations' });
+    }
+  });
+
+  app.get('/api/cdn/cost-analysis', requireAuth, requirePermission('system.monitor'), async (req, res) => {
+    try {
+      const analysis = await cdnService.getBandwidthCostAnalysis();
+      res.json(analysis);
+    } catch (error) {
+      console.error('Error fetching cost analysis:', error);
+      res.status(500).json({ message: 'Failed to fetch cost analysis' });
+    }
+  });
+
+  // Database Optimization API endpoints
+  app.get('/api/database/metrics', requireAuth, requirePermission('system.monitor'), async (req, res) => {
+    try {
+      const metrics = await databaseOptimizer.getDatabaseStatistics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching database metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch database metrics' });
+    }
+  });
+
+  app.post('/api/database/optimize', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      const report = await databaseOptimizer.generateOptimizationReport();
+      res.json(report);
+    } catch (error) {
+      console.error('Error generating optimization report:', error);
+      res.status(500).json({ message: 'Failed to generate optimization report' });
+    }
+  });
+
+  app.post('/api/database/auto-optimize', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      const result = await databaseOptimizer.applyAutomaticOptimizations();
+      res.json(result);
+    } catch (error) {
+      console.error('Error applying automatic optimizations:', error);
+      res.status(500).json({ message: 'Failed to apply automatic optimizations' });
+    }
+  });
+
+  app.post('/api/database/create-indexes', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      const { recommendations } = req.body;
+      const result = await databaseOptimizer.createRecommendedIndexes(recommendations);
+      res.json(result);
+    } catch (error) {
+      console.error('Error creating indexes:', error);
+      res.status(500).json({ message: 'Failed to create indexes' });
+    }
+  });
+
+  app.post('/api/database/analyze-query', requireAuth, requirePermission('system.monitor'), async (req, res) => {
+    try {
+      const { query } = req.body;
+      const analysis = await databaseOptimizer.analyzeQuery(query);
+      res.json(analysis);
+    } catch (error) {
+      console.error('Error analyzing query:', error);
+      res.status(500).json({ message: 'Failed to analyze query' });
+    }
+  });
+
+  app.post('/api/database/maintenance', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      const { tables } = req.body;
+      const result = await databaseOptimizer.performMaintenance(tables);
+      res.json(result);
+    } catch (error) {
+      console.error('Error performing database maintenance:', error);
+      res.status(500).json({ message: 'Failed to perform database maintenance' });
+    }
+  });
+
+  app.get('/api/database/unused-indexes', requireAuth, requirePermission('system.monitor'), async (req, res) => {
+    try {
+      const unusedIndexes = await databaseOptimizer.findUnusedIndexes();
+      res.json(unusedIndexes);
+    } catch (error) {
+      console.error('Error finding unused indexes:', error);
+      res.status(500).json({ message: 'Failed to find unused indexes' });
+    }
+  });
+
+  // Load Balancing API endpoints
+  app.get('/api/load-balancer/servers', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const servers = loadBalancer.getServers();
+      res.json(servers);
+    } catch (error) {
+      console.error('Error fetching server instances:', error);
+      res.status(500).json({ message: 'Failed to fetch server instances' });
+    }
+  });
+
+  app.post('/api/load-balancer/servers', requireAuth, requirePermission('system.admin'), (req, res) => {
+    try {
+      const serverId = loadBalancer.addServer(req.body);
+      res.json({ message: 'Server added successfully', serverId });
+    } catch (error) {
+      console.error('Error adding server:', error);
+      res.status(500).json({ message: 'Failed to add server' });
+    }
+  });
+
+  app.delete('/api/load-balancer/servers/:id', requireAuth, requirePermission('system.admin'), (req, res) => {
+    try {
+      const { id } = req.params;
+      const removed = loadBalancer.removeServer(id);
+      
+      if (removed) {
+        res.json({ message: 'Server removed successfully' });
+      } else {
+        res.status(404).json({ message: 'Server not found' });
+      }
+    } catch (error) {
+      console.error('Error removing server:', error);
+      res.status(500).json({ message: 'Failed to remove server' });
+    }
+  });
+
+  app.get('/api/load-balancer/metrics', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const metrics = loadBalancer.getMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching load balancer metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch load balancer metrics' });
+    }
+  });
+
+  app.get('/api/load-balancer/config', requireAuth, requirePermission('system.monitor'), (req, res) => {
+    try {
+      const config = loadBalancer.getConfig();
+      res.json(config);
+    } catch (error) {
+      console.error('Error fetching load balancer config:', error);
+      res.status(500).json({ message: 'Failed to fetch load balancer config' });
+    }
+  });
+
+  app.put('/api/load-balancer/config', requireAuth, requirePermission('system.admin'), (req, res) => {
+    try {
+      loadBalancer.updateConfig(req.body);
+      res.json({ message: 'Load balancer configuration updated successfully' });
+    } catch (error) {
+      console.error('Error updating load balancer config:', error);
+      res.status(500).json({ message: 'Failed to update load balancer config' });
+    }
+  });
+
+  app.post('/api/load-balancer/scale-up', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      const newServerIds = await loadBalancer.scaleUp();
+      res.json({ message: 'Scale up completed', newServerIds, count: newServerIds.length });
+    } catch (error) {
+      console.error('Error scaling up:', error);
+      res.status(500).json({ message: 'Failed to scale up' });
+    }
+  });
+
+  app.post('/api/load-balancer/scale-down', requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      const removedServerIds = await loadBalancer.scaleDown();
+      res.json({ message: 'Scale down completed', removedServerIds, count: removedServerIds.length });
+    } catch (error) {
+      console.error('Error scaling down:', error);
+      res.status(500).json({ message: 'Failed to scale down' });
+    }
+  });
+
+  app.post('/api/load-balancer/servers/:id/drain', requireAuth, requirePermission('system.admin'), (req, res) => {
+    try {
+      const { id } = req.params;
+      loadBalancer.drainServer(id);
+      res.json({ message: 'Server draining initiated' });
+    } catch (error) {
+      console.error('Error draining server:', error);
+      res.status(500).json({ message: 'Failed to drain server' });
     }
   });
 

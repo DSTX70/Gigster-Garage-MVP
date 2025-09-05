@@ -347,6 +347,17 @@ export function AppHeader() {
               >
                 <BarChart3 size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/performance-dashboard")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-performance-dashboard"
+                title="Performance Dashboard"
+              >
+                <Activity size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
               
               {/* Message System */}
               <Button
