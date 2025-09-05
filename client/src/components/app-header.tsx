@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock } from "lucide-react";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
@@ -10,17 +10,55 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import type { Task } from "@shared/schema";
+import type { Task, TimeLog } from "@shared/schema";
 import { startOfDay, addDays } from "date-fns";
+import { useState, useEffect } from "react";
 
 export function AppHeader() {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const [currentTime, setCurrentTime] = useState(0);
 
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
   });
+
+  // Fetch active timer
+  const { data: activeTimer } = useQuery<TimeLog | null>({
+    queryKey: ["/api/timelogs/active"],
+    refetchInterval: 5000, // Update every 5 seconds
+    staleTime: 1000 * 2,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  // Update current time for active timer
+  useEffect(() => {
+    if (activeTimer && activeTimer.isActive) {
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const startTime = new Date(activeTimer.startTime).getTime();
+        setCurrentTime(Math.floor((now - startTime) / 1000));
+      }, 1000);
+
+      return () => clearInterval(interval);
+    } else {
+      setCurrentTime(0);
+    }
+  }, [activeTimer]);
+
+  // Format duration for display
+  const formatDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -42,6 +80,36 @@ export function AppHeader() {
     },
   });
 
+  const stopTimerMutation = useMutation({
+    mutationFn: async (timeLogId: string) => {
+      return apiRequest("POST", "/api/timelogs/stop", { timeLogId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/productivity/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/streaks"] });
+      setCurrentTime(0);
+      toast({
+        title: "Timer stopped",
+        description: "Your work session has been saved",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStopTimer = () => {
+    if (activeTimer) {
+      stopTimerMutation.mutate(activeTimer.id);
+    }
+  };
+
   // Calculate reminder count
   const getReminderCount = () => {
     const now = new Date();
@@ -62,7 +130,7 @@ export function AppHeader() {
     <header className="gg-header border-b sticky top-0 z-50 shadow-lg">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2 sm:py-3">
         <div className="flex flex-col space-y-2 sm:space-y-3">
-          {/* Top line: Shield + Logo + Tagline */}
+          {/* Top line: Shield + Logo + Tagline + Timer */}
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
@@ -71,6 +139,30 @@ export function AppHeader() {
               <h1 className="text-lg sm:text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
                 Gigster Garage
               </h1>
+              
+              {/* Active Timer Display */}
+              {activeTimer && activeTimer.isActive && (
+                <>
+                  <span style={{ color: 'var(--brand-amber-tint)' }} className="font-medium">|</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleStopTimer}
+                    disabled={stopTimerMutation.isPending}
+                    className="flex items-center space-x-1 sm:space-x-2 bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 hover:bg-white/30 transition-colors"
+                    title="Click to stop timer"
+                  >
+                    <Clock size={14} className="text-white animate-pulse" />
+                    <span className="text-sm sm:text-base font-bold text-white" style={{ fontFamily: 'monospace' }}>
+                      {formatDuration(currentTime)}
+                    </span>
+                    <span className="text-xs text-white/80 hidden sm:inline">
+                      {activeTimer.description || "Working"}
+                    </span>
+                  </Button>
+                </>
+              )}
+              
               <span style={{ color: 'var(--brand-amber-tint)' }} className="font-medium hidden sm:inline">|</span>
               <p className="text-xs sm:text-sm font-medium hidden sm:block" style={{ color: 'var(--brand-amber-tint)' }}>Smarter tools for bolder dreams</p>
             </div>
