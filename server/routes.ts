@@ -433,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const invoices = await storage.getInvoices();
         const matchingInvoices = invoices.filter(invoice => 
           invoice.invoiceNumber?.toLowerCase().includes(query) ||
-          invoice.description?.toLowerCase().includes(query)
+          invoice.notes?.toLowerCase().includes(query)
         ).slice(0, 3);
         
         for (const invoice of matchingInvoices) {
@@ -447,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: invoice.id,
             type: "invoice",
             title: invoice.invoiceNumber || `Invoice ${invoice.id}`,
-            description: clientName ? `${clientName} - $${invoice.total}` : `$${invoice.total}`,
+            description: clientName ? `${clientName} - $${invoice.subtotal || 0}` : `$${invoice.subtotal || 0}`,
             url: `/invoices?id=${invoice.id}`,
             metadata: {
               status: invoice.status
@@ -460,11 +460,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Search messages
       try {
-        const messages = await storage.getMessages();
+        const messages = await storage.getMessages("");
         const matchingMessages = messages.filter(message => 
           message.subject?.toLowerCase().includes(query) ||
           message.content?.toLowerCase().includes(query) ||
-          message.recipientEmail?.toLowerCase().includes(query)
+          message.toUser?.email?.toLowerCase().includes(query)
         ).slice(0, 3);
         
         for (const message of matchingMessages) {
@@ -472,10 +472,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: message.id,
             type: "message",
             title: message.subject || "No Subject",
-            description: message.recipientEmail,
+            description: message.toUser?.email || "No recipient",
             url: `/messages?id=${message.id}`,
             metadata: {
-              status: message.status
+              read: message.isRead
             }
           });
         }
@@ -544,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.session.user!;
       const task = await storage.createTask({
         ...result.data,
-        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress : []
+        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress as any : []
       }, user.id);
       
       // Send notifications for high priority tasks
@@ -608,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const task = await storage.updateTask(id, {
         ...result.data,
-        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress : undefined
+        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress as any : undefined
       });
       res.json(task);
     } catch (error) {
@@ -828,7 +828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...result.data,
         parentTaskId: id,
         projectId: parentTask.projectId, // Inherit project from parent
-        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress : []
+        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress as any : []
       }, user.id);
       
       res.status(201).json(subtask);
@@ -1030,9 +1030,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create audit trail entry
       const editHistory = Array.isArray(existingTimeLog.editHistory) ? [...existingTimeLog.editHistory] : [];
       editHistory.push({
-        id: Math.random().toString(36).substr(2, 9),
         timestamp: new Date().toISOString(),
-        previousValues: {
+        changes: {
           startTime: existingTimeLog.startTime,
           endTime: existingTimeLog.endTime,
           duration: existingTimeLog.duration,
@@ -1123,7 +1122,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdById: req.session.user!.id
       };
 
-      const template = await storage.createTemplate(templateData);
+      const template = await storage.createTemplate({
+        ...templateData,
+        variables: templateData.variables as any
+      });
       res.status(201).json(template);
     } catch (error) {
       console.error("Error creating template:", error);
@@ -1251,7 +1253,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
           aiGenerated = true;
         } catch (openaiError) {
-          console.log("OpenAI unavailable, using fallback suggestions:", openaiError.message);
+          console.log("OpenAI unavailable, using fallback suggestions:", (openaiError as Error).message);
           // Fall through to fallback
         }
       }
@@ -1315,7 +1317,10 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         });
       }
 
-      const template = await storage.updateTemplate(req.params.id, result.data);
+      const template = await storage.updateTemplate(req.params.id, {
+        ...result.data,
+        variables: result.data.variables as any
+      });
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
       }
@@ -1506,7 +1511,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         };
 
         // Check if client exists, create if not (template-based)
-        let proposalClientId = proposalData.clientId;
+        let proposalClientId: string | undefined;
         if (!proposalClientId && clientName && clientEmail) {
           // Check if client exists by email
           const existingClients = await storage.getClients();
@@ -1524,7 +1529,6 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           }
           
           proposalClientId = existingClient.id;
-          proposalData.clientId = proposalClientId;
         }
 
         const proposal = await storage.createProposal(proposalData);
@@ -1991,7 +1995,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       }
 
       // Get client information
-      const client = await storage.getClient(invoice.clientId);
+      const client = invoice.clientId ? await storage.getClient(invoice.clientId) : null;
       if (!client || !client.email) {
         return res.status(400).json({ message: "Client email required to send invoice" });
       }
@@ -2900,7 +2904,10 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         });
       }
 
-      const payment = await storage.createPayment(result.data);
+      const payment = await storage.createPayment({
+        ...result.data,
+        paymentDate: result.data.paymentDate.toISOString()
+      });
       
       // Update invoice paid amounts if payment is linked to an invoice
       if (payment.invoiceId) {
@@ -3045,7 +3052,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       console.log(`✅ ${type} PDF generated successfully`);
     } catch (error) {
       console.error(`❌ PDF generation error:`, error);
-      res.status(500).json({ error: `Failed to generate ${req.params.type} PDF: ${error.message}` });
+      res.status(500).json({ error: `Failed to generate ${req.params.type} PDF: ${(error as Error).message}` });
     }
   });
 
@@ -3139,7 +3146,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       for (const id of ids) {
         try {
           // Archive instead of delete to preserve data integrity
-          const success = await storage.updateProject(id, { status: 'archived' });
+          const success = await storage.updateProject(id, { status: 'cancelled' });
           if (success) completed++;
           else errors++;
         } catch (error) {
@@ -3723,7 +3730,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       
       readStream
         .pipe(csvParser())
-        .on('data', (data) => results.push(data))
+        .on('data', (data: any) => results.push(data))
         .on('end', async () => {
           let completed = 0;
           let errors = 0;
@@ -3755,7 +3762,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           }
 
           // Clean up uploaded file
-          fs.unlink(req.file.path, () => {});
+          if (req.file) {
+            fs.unlink(req.file.path, () => {});
+          }
           
           res.json({ total: results.length, completed, errors });
         });
@@ -3779,7 +3788,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       
       readStream
         .pipe(csvParser())
-        .on('data', (data) => results.push(data))
+        .on('data', (data: any) => results.push(data))
         .on('end', async () => {
           let completed = 0;
           let errors = 0;
@@ -3806,7 +3815,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           }
 
           // Clean up uploaded file
-          fs.unlink(req.file.path, () => {});
+          if (req.file) {
+            fs.unlink(req.file.path, () => {});
+          }
           
           res.json({ total: results.length, completed, errors });
         });
@@ -3830,7 +3841,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       
       readStream
         .pipe(csvParser())
-        .on('data', (data) => results.push(data))
+        .on('data', (data: any) => results.push(data))
         .on('end', async () => {
           let completed = 0;
           let errors = 0;
@@ -3860,7 +3871,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           }
 
           // Clean up uploaded file
-          fs.unlink(req.file.path, () => {});
+          if (req.file) {
+            fs.unlink(req.file.path, () => {});
+          }
           
           res.json({ total: results.length, completed, errors });
         });
