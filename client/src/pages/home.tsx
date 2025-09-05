@@ -14,12 +14,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen, Zap, BookOpen, FileCheck, Presentation, Timer, PenTool, Briefcase, Archive } from "lucide-react";
+import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen, Zap, BookOpen, FileCheck, Presentation, Timer, PenTool, Briefcase, Archive, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
+  const { isAdmin } = useAuth();
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
@@ -70,6 +72,20 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Dashboard</h1>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+              {isAdmin && (
+                <Link href="/dashboard">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full sm:w-auto bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+                    data-testid="button-analytics-dashboard"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Analytics Dashboard</span>
+                    <span className="sm:hidden">Analytics</span>
+                  </Button>
+                </Link>
+              )}
               <Link href="/user-manual">
                 <Button 
                   variant="outline" 
