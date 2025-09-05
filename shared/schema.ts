@@ -636,45 +636,142 @@ export const insertProjectSchema = createInsertSchema(projects);
 export const selectProjectSchema = createSelectSchema(projects);
 export const projectSchema = insertProjectSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertClientSchema = createInsertSchema(clients);
+export const insertClientSchema = createInsertSchema(clients, {
+  name: z.string().min(1, "Client name is required").max(100, "Name must be less than 100 characters"),
+  email: z.string().email("Please enter a valid email address").optional().nullable(),
+  company: z.string().max(150, "Company name must be less than 150 characters").optional().nullable(),
+  phone: z.string().regex(/^[\+]?[\d\s\-\(\)]{7,20}$/, "Please enter a valid phone number").optional().nullable(),
+  address: z.string().max(500, "Address must be less than 500 characters").optional().nullable(),
+  website: z.string().url("Please enter a valid website URL").or(z.literal("")).optional().nullable(),
+  status: z.enum(["active", "inactive", "prospect"], {
+    errorMap: () => ({ message: "Please select a valid client status" })
+  }).default("prospect"),
+  notes: z.string().max(1000, "Notes must be less than 1000 characters").optional().nullable(),
+});
 export const selectClientSchema = createSelectSchema(clients);
 export const clientSchema = insertClientSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertProposalSchema = createInsertSchema(proposals);
-export const selectProposalSchema = createSelectSchema(proposals);
-export const proposalSchema = insertProposalSchema.omit({ id: true, createdAt: true, updatedAt: true });
+const baseInsertProposalSchema = createInsertSchema(proposals, {
+  title: z.string().min(1, "Proposal title is required").max(200, "Title must be less than 200 characters"),
+  clientName: z.string().min(1, "Client name is required").max(100, "Client name must be less than 100 characters"),
+  clientEmail: z.string().email("Please enter a valid email address"),
+  content: z.string().min(10, "Proposal content must be at least 10 characters"),
+  status: z.enum(["draft", "sent", "viewed", "accepted", "rejected", "expired"], {
+    errorMap: () => ({ message: "Please select a valid proposal status" })
+  }).default("draft"),
+  totalBudget: z.number().min(0, "Budget cannot be negative").optional().nullable(),
+  timeline: z.string().max(100, "Timeline must be less than 100 characters").optional().nullable(),
+  expirationDate: z.union([
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+    z.date().transform((val) => val.toISOString().split('T')[0]),
+  ]).optional().nullable(),
+  deliverables: z.string().max(2000, "Deliverables must be less than 2000 characters").optional().nullable(),
+  terms: z.string().max(2000, "Terms must be less than 2000 characters").optional().nullable(),
+});
 
-export const insertInvoiceSchema = createInsertSchema(invoices);
+export const insertProposalSchema = baseInsertProposalSchema.refine((data) => {
+  // Custom validation: expiration date must be in the future
+  if (data.expirationDate) {
+    return new Date(data.expirationDate) > new Date();
+  }
+  return true;
+}, {
+  message: "Expiration date must be in the future",
+  path: ["expirationDate"]
+});
+
+export const selectProposalSchema = createSelectSchema(proposals);
+export const proposalSchema = baseInsertProposalSchema.omit({ id: true, createdAt: true, updatedAt: true });
+
+const baseInsertInvoiceSchema = createInsertSchema(invoices, {
+  invoiceNumber: z.string().min(1, "Invoice number is required").max(50, "Invoice number too long"),
+  clientName: z.string().min(1, "Client name is required").max(100, "Client name too long"),
+  clientEmail: z.string().email("Invalid email format").optional().nullable(),
+  clientAddress: z.string().max(500, "Address too long").optional().nullable(),
+  status: z.enum(["draft", "sent", "viewed", "paid", "overdue", "cancelled"], {
+    errorMap: () => ({ message: "Please select a valid invoice status" })
+  }).default("draft"),
+  invoiceDate: z.union([
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+    z.date().transform((val) => val.toISOString().split('T')[0]),
+  ]).optional(),
+  dueDate: z.union([
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+    z.date().transform((val) => val.toISOString().split('T')[0]),
+  ]).optional(),
+  subtotal: z.number().min(0, "Subtotal cannot be negative").optional(),
+  taxRate: z.number().min(0, "Tax rate cannot be negative").max(1, "Tax rate cannot exceed 100%").optional(),
+  taxAmount: z.number().min(0, "Tax amount cannot be negative").optional(),
+  totalAmount: z.number().min(0, "Total amount cannot be negative").optional(),
+  lineItems: z.array(z.object({
+    description: z.string().min(1, "Item description is required"),
+    quantity: z.number().min(0.01, "Quantity must be greater than 0"),
+    rate: z.number().min(0, "Rate cannot be negative"),
+    amount: z.number().min(0, "Amount cannot be negative")
+  })).optional(),
+});
+
+export const insertInvoiceSchema = baseInsertInvoiceSchema.refine((data) => {
+  // Custom validation: due date must be after invoice date
+  if (data.invoiceDate && data.dueDate) {
+    return new Date(data.dueDate) >= new Date(data.invoiceDate);
+  }
+  return true;
+}, {
+  message: "Due date must be on or after invoice date",
+  path: ["dueDate"]
+});
+
 export const selectInvoiceSchema = createSelectSchema(invoices);
-export const invoiceSchema = insertInvoiceSchema.omit({ id: true, createdAt: true, updatedAt: true });
+export const invoiceSchema = baseInsertInvoiceSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
 export const selectPaymentSchema = createSelectSchema(payments);
 export const paymentSchema = insertPaymentSchema.omit({ id: true, createdAt: true });
 
-export const insertContractSchema = createInsertSchema(contracts, {
+const baseInsertContractSchema = createInsertSchema(contracts, {
+  title: z.string().min(1, "Contract title is required").max(200, "Title must be less than 200 characters"),
+  contractNumber: z.string().optional(),
+  clientName: z.string().min(1, "Client name is required").max(100, "Client name must be less than 100 characters"),
+  clientEmail: z.string().email("Invalid email format").optional().nullable(),
+  contractType: z.enum(["service", "product", "recurring", "one_time"], {
+    errorMap: () => ({ message: "Please select a valid contract type" })
+  }).default("service"),
+  contractValue: z.union([
+    z.string().regex(/^\d+\.?\d*$/, "Contract value must be a valid number"),
+    z.number().min(0, "Contract value cannot be negative").transform((val) => val.toString()),
+  ]).optional(),
+  currency: z.string().length(3, "Currency must be a 3-letter code (e.g., USD)").default("USD"),
   effectiveDate: z.union([
-    z.string().transform((val) => val),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
     z.date().transform((val) => val.toISOString().split('T')[0]),
   ]).optional().nullable(),
   expirationDate: z.union([
-    z.string().transform((val) => val),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
     z.date().transform((val) => val.toISOString().split('T')[0]),
   ]).optional().nullable(),
   renewalDate: z.union([
-    z.string().transform((val) => val),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
     z.date().transform((val) => val.toISOString().split('T')[0]),
   ]).optional().nullable(),
   terminationDate: z.union([
-    z.string().transform((val) => val),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
     z.date().transform((val) => val.toISOString().split('T')[0]),
   ]).optional().nullable(),
-  contractValue: z.union([
-    z.string().transform((val) => val),
-    z.number().transform((val) => val.toString()),
-  ]).optional(),
 });
+
+export const insertContractSchema = baseInsertContractSchema.refine((data) => {
+  // Custom validation: expiration date must be after effective date
+  if (data.effectiveDate && data.expirationDate) {
+    return new Date(data.expirationDate) > new Date(data.effectiveDate);
+  }
+  return true;
+}, {
+  message: "Expiration date must be after effective date",
+  path: ["expirationDate"]
+});
+
 export const selectContractSchema = createSelectSchema(contracts);
-export const contractSchema = insertContractSchema.omit({ id: true, createdAt: true, updatedAt: true });
+export const contractSchema = baseInsertContractSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertTemplateSchema = createInsertSchema(templates);
 export const selectTemplateSchema = createSelectSchema(templates);
@@ -703,7 +800,7 @@ export const documentVersionSchema = insertDocumentVersionSchema.omit({ id: true
 // Additional schemas needed by routes
 export const updateTaskSchema = insertTaskSchema.partial();
 export const updateTemplateSchema = insertTemplateSchema.partial();
-export const updateProposalSchema = insertProposalSchema.partial();
+export const updateProposalSchema = baseInsertProposalSchema.partial();
 export const updateTimeLogSchema = z.object({
   endTime: z.date().optional(),
   duration: z.string().optional(),

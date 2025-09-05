@@ -18,6 +18,7 @@ import OpenAI from "openai";
 import { invoiceStatusService } from "./invoiceStatusService";
 import { sendProposalResponseNotification, createProposalRevision, getProposalApprovalStats } from "./proposalWorkflowService";
 import { contractManagementService } from "./contractManagementService";
+import { backupRoutes } from "./backup-routes";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -4653,6 +4654,9 @@ Keep it professional but easy to understand.`;
       res.status(500).json({ message: 'Failed to delete workflow automation' });
     }
   });
+
+  // Register backup and recovery routes
+  app.use('/api', backupRoutes);
 
   // =================== START BACKGROUND SERVICES ===================
   
