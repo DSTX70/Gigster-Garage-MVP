@@ -52,6 +52,11 @@ export class ContractManagementService {
     try {
       console.log("🔍 Checking contract statuses for updates...");
       
+      // Temporarily disabled due to database schema sync issue
+      // TODO: Re-enable after database content column is synced
+      console.log("⚠️ Contract monitoring temporarily disabled - database schema sync in progress");
+      return;
+      
       const contracts = await storage.getContracts();
       const today = startOfDay(new Date());
       let renewalNotifications = 0;

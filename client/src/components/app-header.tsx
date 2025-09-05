@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook, Key, FileText } from "lucide-react";
+import { NavigationMenu } from "./navigation-menu";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
@@ -194,177 +195,41 @@ export function AppHeader() {
             </div>
             
             <div className="flex items-center space-x-2 sm:space-x-3">
-              {/* Home Button */}
+              {/* Home Button - Keep for quick access */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/")}
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
                 data-testid="button-home"
+                title="Dashboard"
               >
                 <Home size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
 
+              {/* Quick Access Tasks Button */}
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate("/bulk-operations")}
+                onClick={() => navigate("/tasks")}
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-bulk-operations"
-                title="Bulk Operations"
+                data-testid="button-tasks"
+                title="Tasks"
               >
-                <Database size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+                <CheckCheck size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/custom-fields")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-custom-fields"
-                title="Custom Fields"
-              >
-                <Settings size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/workflow-automation")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-workflow-automation"
-                title="Workflow Automation"
-              >
-                <Zap size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/garage-assistant")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-garage-assistant"
-                title="AI Assistant"
-              >
-                <Bot size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/ai-insights")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-ai-insights"
-                title="AI Insights"
-              >
-                <Brain size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/team-collaboration")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-team-collaboration"
-                title="Team Collaboration"
-              >
-                <Users size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/advanced-reporting")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-advanced-reporting"
-                title="Advanced Reporting"
-              >
-                <BarChart3 size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/api-webhooks")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-api-webhooks"
-                title="API Webhooks"
-              >
-                <Webhook size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/sso-management")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-sso-management"
-                title="SSO Management"
-              >
-                <Shield size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/permissions-management")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-permissions-management"
-                title="Permissions Management"
-              >
-                <Key size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/audit-logging")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-audit-logging"
-                title="Audit Logging"
-              >
-                <FileText size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/smart-scheduling")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-smart-scheduling"
-                title="Smart Scheduling"
-              >
-                <Bot size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/predictive-analytics")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-predictive-analytics"
-                title="Predictive Analytics"
-              >
-                <BarChart3 size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/performance-dashboard")}
-                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
-                data-testid="button-performance-dashboard"
-                title="Performance Dashboard"
-              >
-                <Activity size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
-              </Button>
+              {/* Organized Navigation Menu - Replaces all the scattered buttons */}
+              <NavigationMenu />
               
-              {/* Message System */}
+              {/* Keep Message System for notifications */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/messages")}
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-messages"
+                title="Messages"
               >
                 <Mail size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
                 {/* Show badge if there are unread messages */}
