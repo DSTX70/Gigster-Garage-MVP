@@ -10,11 +10,14 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF } from "./pdfService";
-import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
+import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
 import OpenAI from "openai";
+import { invoiceStatusService } from "./invoiceStatusService";
+import { sendProposalResponseNotification, createProposalRevision, getProposalApprovalStats } from "./proposalWorkflowService";
+import { contractManagementService } from "./contractManagementService";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -1775,13 +1778,17 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
-  // Proposal response endpoint (for clients)
+  // Enhanced proposal response endpoint (for clients)
   app.post("/api/shared/proposals/:shareableLink/respond", async (req, res) => {
     try {
       const { response, message } = req.body;
       
-      if (!response || !['accepted', 'rejected'].includes(response)) {
-        return res.status(400).json({ message: "Valid response (accepted/rejected) is required" });
+      // Enhanced validation for all response types
+      if (!response || !['accepted', 'rejected', 'revision_requested'].includes(response)) {
+        return res.status(400).json({ 
+          message: "Valid response is required", 
+          validResponses: ['accepted', 'rejected', 'revision_requested'] 
+        });
       }
 
       const proposal = await storage.getProposalByShareableLink(req.params.shareableLink);
@@ -1789,16 +1796,300 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(404).json({ message: "Proposal not found" });
       }
 
-      const updatedProposal = await storage.updateProposal(proposal.id, {
+      // Check if proposal is expired
+      if (proposal.expiresAt && new Date() > new Date(proposal.expiresAt)) {
+        return res.status(400).json({ message: "This proposal has expired and can no longer be responded to" });
+      }
+
+      // Update proposal status based on response
+      const updateData: any = {
         status: response,
         respondedAt: new Date(),
-        responseMessage: message
-      });
+        responseMessage: message || ""
+      };
 
-      res.json({ message: `Proposal ${response} successfully`, proposal: updatedProposal });
+      // Set acceptedAt timestamp for accepted proposals
+      if (response === 'accepted') {
+        updateData.acceptedAt = new Date();
+      }
+
+      const updatedProposal = await storage.updateProposal(proposal.id, updateData);
+
+      // Send notification email to business owner
+      try {
+        await sendProposalResponseNotification(proposal, response, message);
+      } catch (emailError) {
+        console.error("Failed to send response notification:", emailError);
+        // Don't fail the request if email fails
+      }
+
+      // Handle revision requests - create new proposal version
+      if (response === 'revision_requested') {
+        const message_response = `Revision requested successfully. The business team will review your feedback and create an updated proposal.`;
+        res.json({ 
+          message: message_response, 
+          proposal: updatedProposal,
+          nextSteps: "A new proposal version will be created and sent to you for review."
+        });
+      } else {
+        const message_response = `Proposal ${response} successfully${response === 'accepted' ? '. Thank you for your business!' : '. Thank you for your time.'}`;
+        res.json({ message: message_response, proposal: updatedProposal });
+      }
     } catch (error) {
       console.error("Error responding to proposal:", error);
       res.status(500).json({ message: "Failed to respond to proposal" });
+    }
+  });
+
+  // =================== PROPOSAL APPROVAL WORKFLOW MANAGEMENT ===================
+  
+  // Create revision for proposal (admin)
+  app.post("/api/proposals/:id/create-revision", requireAuth, async (req, res) => {
+    try {
+      const { revisionNotes } = req.body;
+      
+      const proposal = await storage.getProposal(req.params.id);
+      if (!proposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+
+      const revisionProposal = await createProposalRevision(proposal, revisionNotes);
+      res.status(201).json({
+        message: "Proposal revision created successfully",
+        revision: revisionProposal,
+        originalProposal: proposal
+      });
+    } catch (error) {
+      console.error("Error creating proposal revision:", error);
+      res.status(500).json({ error: "Failed to create proposal revision" });
+    }
+  });
+
+  // Get proposal approval workflow statistics
+  app.get("/api/proposals/approval-stats", requireAuth, async (req, res) => {
+    try {
+      const stats = await getProposalApprovalStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching proposal approval stats:", error);
+      res.status(500).json({ error: "Failed to fetch approval statistics" });
+    }
+  });
+
+  // Get all proposals that need attention (pending responses, revision requests)
+  app.get("/api/proposals/needs-attention", requireAuth, async (req, res) => {
+    try {
+      const proposals = await storage.getProposals();
+      const needsAttention = proposals.filter(p => 
+        ['sent', 'viewed', 'revision_requested'].includes(p.status)
+      );
+      
+      // Sort by priority: revision_requested first, then by sent date
+      needsAttention.sort((a, b) => {
+        if (a.status === 'revision_requested' && b.status !== 'revision_requested') return -1;
+        if (b.status === 'revision_requested' && a.status !== 'revision_requested') return 1;
+        
+        const aDate = new Date(a.sentAt || a.createdAt).getTime();
+        const bDate = new Date(b.sentAt || b.createdAt).getTime();
+        return bDate - aDate; // Most recent first
+      });
+      
+      res.json(needsAttention);
+    } catch (error) {
+      console.error("Error fetching proposals needing attention:", error);
+      res.status(500).json({ error: "Failed to fetch proposals needing attention" });
+    }
+  });
+
+  // Get proposal revision history
+  app.get("/api/proposals/:id/revisions", requireAuth, async (req, res) => {
+    try {
+      const proposals = await storage.getProposals();
+      const parentProposal = await storage.getProposal(req.params.id);
+      
+      if (!parentProposal) {
+        return res.status(404).json({ message: "Proposal not found" });
+      }
+
+      // Find all revisions (proposals with this ID as parent)
+      const revisions = proposals.filter(p => p.parentProposalId === req.params.id);
+      
+      // Sort by version number
+      revisions.sort((a, b) => (a.version || 1) - (b.version || 1));
+      
+      res.json({
+        originalProposal: parentProposal,
+        revisions: revisions,
+        totalVersions: revisions.length + 1
+      });
+    } catch (error) {
+      console.error("Error fetching proposal revisions:", error);
+      res.status(500).json({ error: "Failed to fetch proposal revisions" });
+    }
+  });
+
+  // =================== CONTRACT MANAGEMENT SYSTEM ===================
+  
+  // Get all contracts
+  app.get("/api/contracts", requireAuth, async (req, res) => {
+    try {
+      const contracts = await storage.getContracts();
+      res.json(contracts);
+    } catch (error) {
+      console.error("Error fetching contracts:", error);
+      res.status(500).json({ error: "Failed to fetch contracts" });
+    }
+  });
+
+  // Get specific contract
+  app.get("/api/contracts/:id", requireAuth, async (req, res) => {
+    try {
+      const contract = await storage.getContract(req.params.id);
+      if (!contract) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+      res.json(contract);
+    } catch (error) {
+      console.error("Error fetching contract:", error);
+      res.status(500).json({ error: "Failed to fetch contract" });
+    }
+  });
+
+  // Create new contract
+  app.post("/api/contracts", requireAuth, async (req, res) => {
+    try {
+      const contractData = insertContractSchema.parse(req.body);
+      
+      const newContract = {
+        ...contractData,
+        contractNumber: `CNT-${Date.now()}`,
+        createdById: req.session.user!.id,
+        lastModifiedById: req.session.user!.id,
+        status: "draft" as const,
+      };
+
+      const contract = await storage.createContract(newContract);
+      console.log(`📋 Created contract "${contract.title}" (${contract.contractNumber})`);
+      res.status(201).json(contract);
+    } catch (error) {
+      console.error("Error creating contract:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid contract data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create contract" });
+    }
+  });
+
+  // Update contract
+  app.put("/api/contracts/:id", requireAuth, async (req, res) => {
+    try {
+      const contract = await storage.getContract(req.params.id);
+      if (!contract) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+
+      const updateData = insertContractSchema.partial().parse(req.body);
+      updateData.lastModifiedById = req.session.user!.id;
+
+      const updatedContract = await storage.updateContract(req.params.id, updateData);
+      res.json(updatedContract);
+    } catch (error) {
+      console.error("Error updating contract:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid contract data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update contract" });
+    }
+  });
+
+  // Delete contract (only drafts)
+  app.delete("/api/contracts/:id", requireAuth, async (req, res) => {
+    try {
+      const contract = await storage.getContract(req.params.id);
+      if (!contract) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+
+      if (contract.status !== "draft") {
+        return res.status(400).json({ error: "Only draft contracts can be deleted" });
+      }
+
+      const deleted = await storage.deleteContract(req.params.id);
+      if (deleted) {
+        res.json({ success: true, message: "Contract deleted successfully" });
+      } else {
+        res.status(500).json({ error: "Failed to delete contract" });
+      }
+    } catch (error) {
+      console.error("Error deleting contract:", error);
+      res.status(500).json({ error: "Failed to delete contract" });
+    }
+  });
+
+  // Get contract management statistics
+  app.get("/api/contracts/stats", requireAuth, async (req, res) => {
+    try {
+      const stats = await contractManagementService.getContractStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching contract statistics:", error);
+      res.status(500).json({ error: "Failed to fetch contract statistics" });
+    }
+  });
+
+  // Manual contract status check
+  app.post("/api/contracts/status-check", requireAuth, async (req, res) => {
+    try {
+      await contractManagementService.checkContractStatuses();
+      res.json({ message: "Contract status check completed successfully" });
+    } catch (error) {
+      console.error("Error during contract status check:", error);
+      res.status(500).json({ error: "Failed to check contract statuses" });
+    }
+  });
+
+  // Get contracts needing attention (expiring, pending signatures, etc.)
+  app.get("/api/contracts/needs-attention", requireAuth, async (req, res) => {
+    try {
+      const contracts = await storage.getContracts();
+      const today = new Date();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+      const needsAttention = contracts.filter(contract => {
+        // Pending signatures
+        if (['sent', 'viewed', 'pending_signature', 'partially_signed'].includes(contract.status || '')) {
+          return true;
+        }
+        
+        // Expiring soon
+        if (contract.expirationDate && 
+            new Date(contract.expirationDate) <= thirtyDaysFromNow && 
+            new Date(contract.expirationDate) > today &&
+            ['fully_signed', 'executed'].includes(contract.status || '')) {
+          return true;
+        }
+        
+        return false;
+      });
+
+      // Sort by priority
+      needsAttention.sort((a, b) => {
+        // Pending signatures first
+        const aPendingSignature = ['sent', 'viewed', 'pending_signature', 'partially_signed'].includes(a.status || '');
+        const bPendingSignature = ['sent', 'viewed', 'pending_signature', 'partially_signed'].includes(b.status || '');
+        
+        if (aPendingSignature && !bPendingSignature) return -1;
+        if (bPendingSignature && !aPendingSignature) return 1;
+        
+        // Then by creation date
+        return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+      });
+
+      res.json(needsAttention);
+    } catch (error) {
+      console.error("Error fetching contracts needing attention:", error);
+      res.status(500).json({ error: "Failed to fetch contracts needing attention" });
     }
   });
 
@@ -2501,6 +2792,46 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error deleting invoice:", error);
       res.status(500).json({ error: "Failed to delete invoice" });
+    }
+  });
+
+  // =================== AUTOMATED INVOICE STATUS TRACKING ===================
+  
+  // Manual trigger for invoice status updates
+  app.post("/api/invoices/status-update", requireAuth, async (req, res) => {
+    try {
+      const result = await invoiceStatusService.manualStatusUpdate();
+      res.json({
+        success: true,
+        message: `Status update complete: ${result.updatedInvoices} invoices updated, ${result.notificationsSent} notifications sent`,
+        ...result
+      });
+    } catch (error) {
+      console.error("Error during manual status update:", error);
+      res.status(500).json({ error: "Failed to update invoice statuses" });
+    }
+  });
+
+  // Get overdue invoice statistics
+  app.get("/api/invoices/overdue-stats", requireAuth, async (req, res) => {
+    try {
+      const stats = await invoiceStatusService.getOverdueStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching overdue stats:", error);
+      res.status(500).json({ error: "Failed to fetch overdue statistics" });
+    }
+  });
+
+  // Get all overdue invoices
+  app.get("/api/invoices/overdue", requireAuth, async (req, res) => {
+    try {
+      const invoices = await storage.getInvoices();
+      const overdueInvoices = invoices.filter(inv => inv.status === "overdue");
+      res.json(overdueInvoices);
+    } catch (error) {
+      console.error("Error fetching overdue invoices:", error);
+      res.status(500).json({ error: "Failed to fetch overdue invoices" });
     }
   });
 
@@ -4322,6 +4653,13 @@ Keep it professional but easy to understand.`;
       res.status(500).json({ message: 'Failed to delete workflow automation' });
     }
   });
+
+  // =================== START BACKGROUND SERVICES ===================
+  
+  // Start automated business logic services
+  console.log("🚀 Starting background services...");
+  invoiceStatusService.startStatusMonitoring();
+  contractManagementService.startContractMonitoring();
 
   const httpServer = createServer(app);
   return httpServer;

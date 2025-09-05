@@ -127,7 +127,7 @@ export const proposals: any = pgTable("proposals", {
   clientId: varchar("client_id").references(() => clients.id),
   clientName: varchar("client_name"),
   clientEmail: varchar("client_email"),
-  status: varchar("status", { enum: ["draft", "sent", "accepted", "rejected", "expired"] }).default("draft"),
+  status: varchar("status", { enum: ["draft", "sent", "viewed", "accepted", "rejected", "revision_requested", "expired"] }).default("draft"),
   content: text("content"),
   variables: jsonb("variables").$type<Record<string, any>>().default({}),
   projectDescription: text("project_description"),
@@ -217,6 +217,85 @@ export const insertPaymentSchema = createInsertSchema(payments, {
     z.number().transform((val) => val.toString()),
   ]),
 });
+
+// Enhanced Contracts with comprehensive legal document management
+export const contracts = pgTable("contracts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractNumber: varchar("contract_number").notNull().unique(),
+  title: varchar("title").notNull(),
+  templateId: varchar("template_id").references(() => templates.id),
+  proposalId: varchar("proposal_id").references(() => proposals.id),
+  projectId: varchar("project_id").references(() => projects.id),
+  clientId: varchar("client_id").references(() => clients.id),
+  clientName: varchar("client_name"),
+  clientEmail: varchar("client_email"),
+  status: varchar("status", { 
+    enum: ["draft", "sent", "viewed", "pending_signature", "partially_signed", "fully_signed", "executed", "expired", "terminated", "amended"] 
+  }).default("draft"),
+  contractType: varchar("contract_type", { 
+    enum: ["service_agreement", "nda", "employment", "vendor", "licensing", "consulting", "maintenance", "custom"] 
+  }).notNull(),
+  content: text("content"),
+  variables: jsonb("variables").$type<Record<string, any>>().default({}),
+  
+  // Financial terms
+  contractValue: decimal("contract_value", { precision: 10, scale: 2 }).default("0.00"),
+  paymentTerms: text("payment_terms"),
+  currency: varchar("currency", { enum: ["USD", "EUR", "GBP", "CAD"] }).default("USD"),
+  
+  // Contract lifecycle dates
+  effectiveDate: date("effective_date"),
+  expirationDate: date("expiration_date"),
+  renewalDate: date("renewal_date"),
+  terminationDate: date("termination_date"),
+  
+  // Signature tracking
+  requiresSignature: boolean("requires_signature").default(true),
+  signatureType: varchar("signature_type", { enum: ["digital", "wet", "both"] }).default("digital"),
+  businessSignedAt: timestamp("business_signed_at"),
+  businessSignedBy: varchar("business_signed_by").references(() => users.id),
+  clientSignedAt: timestamp("client_signed_at"),
+  clientSignedBy: varchar("client_signed_by"), // External client signer
+  witnessRequired: boolean("witness_required").default(false),
+  witnessSignedAt: timestamp("witness_signed_at"),
+  witnessSignedBy: varchar("witness_signed_by"),
+  
+  // Document management
+  shareableLink: varchar("shareable_link").unique(),
+  documentPath: varchar("document_path"), // Object storage path
+  signedDocumentPath: varchar("signed_document_path"), // Final signed version
+  version: integer("version").default(1),
+  parentContractId: varchar("parent_contract_id").references((): any => contracts.id),
+  
+  // Workflow tracking
+  sentAt: timestamp("sent_at"),
+  viewedAt: timestamp("viewed_at"),
+  lastReminderSent: timestamp("last_reminder_sent"),
+  reminderCount: integer("reminder_count").default(0),
+  
+  // Legal and compliance
+  governingLaw: varchar("governing_law").default("United States"),
+  jurisdiction: varchar("jurisdiction"),
+  confidentialityLevel: varchar("confidentiality_level", { enum: ["public", "internal", "confidential", "highly_confidential"] }).default("confidential"),
+  
+  // Business logic fields
+  autoRenewal: boolean("auto_renewal").default(false),
+  renewalPeriod: integer("renewal_period"), // in days
+  noticePeriod: integer("notice_period").default(30), // days before expiration to send notice
+  tags: jsonb("tags").$type<string[]>().default([]),
+  notes: text("notes"),
+  internalNotes: text("internal_notes"), // Private notes not visible to client
+  
+  // Metadata and audit
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdById: varchar("created_by_id").references(() => users.id),
+  lastModifiedById: varchar("last_modified_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Contract = typeof contracts.$inferSelect;
+export type InsertContract = typeof contracts.$inferInsert;
 
 // Tasks table with enhanced features
 export const tasks = pgTable("tasks", {
@@ -571,6 +650,31 @@ export const invoiceSchema = insertInvoiceSchema.omit({ id: true, createdAt: tru
 
 export const selectPaymentSchema = createSelectSchema(payments);
 export const paymentSchema = insertPaymentSchema.omit({ id: true, createdAt: true });
+
+export const insertContractSchema = createInsertSchema(contracts, {
+  effectiveDate: z.union([
+    z.string().transform((val) => val),
+    z.date().transform((val) => val.toISOString().split('T')[0]),
+  ]).optional().nullable(),
+  expirationDate: z.union([
+    z.string().transform((val) => val),
+    z.date().transform((val) => val.toISOString().split('T')[0]),
+  ]).optional().nullable(),
+  renewalDate: z.union([
+    z.string().transform((val) => val),
+    z.date().transform((val) => val.toISOString().split('T')[0]),
+  ]).optional().nullable(),
+  terminationDate: z.union([
+    z.string().transform((val) => val),
+    z.date().transform((val) => val.toISOString().split('T')[0]),
+  ]).optional().nullable(),
+  contractValue: z.union([
+    z.string().transform((val) => val),
+    z.number().transform((val) => val.toString()),
+  ]).optional(),
+});
+export const selectContractSchema = createSelectSchema(contracts);
+export const contractSchema = insertContractSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertTemplateSchema = createInsertSchema(templates);
 export const selectTemplateSchema = createSelectSchema(templates);
