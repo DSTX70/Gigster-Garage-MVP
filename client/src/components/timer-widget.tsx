@@ -98,9 +98,9 @@ export function TimerWidget() {
 
   const handleStartTimer = () => {
     startTimerMutation.mutate({
-      taskId: selectedTaskId || undefined,
-      projectId: selectedProjectId || undefined,
-      description: description || undefined,
+      taskId: selectedTaskId === "no-task" ? undefined : selectedTaskId || undefined,
+      projectId: selectedProjectId === "no-project" ? undefined : selectedProjectId || undefined,
+      description: description.trim() || "Working",
     });
   };
 
@@ -212,13 +212,13 @@ export function TimerWidget() {
                     
                     <div>
                       <Label htmlFor="timer-description" className="text-sm font-medium">
-                        Description (Optional)
+                        What are you working on?
                       </Label>
                       <Input
                         id="timer-description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="What are you working on?"
+                        placeholder="Enter description (optional)"
                         data-testid="input-timer-description"
                       />
                     </div>
@@ -237,7 +237,7 @@ export function TimerWidget() {
                         className="bg-orange-600 hover:bg-orange-700"
                         data-testid="button-confirm-start-timer"
                       >
-                        {startTimerMutation.isPending ? "Starting..." : "Start Timer"}
+                        {startTimerMutation.isPending ? "Starting..." : "Get to Work"}
                       </Button>
                     </div>
                   </div>

@@ -611,7 +611,7 @@ export const updateTimeLogSchema = z.object({
 export const startTimerSchema = z.object({
   taskId: z.string().optional(),
   projectId: z.string().optional(),
-  description: z.string().min(1, "Description is required")
+  description: z.string().optional()
 });
 
 export const stopTimerSchema = z.object({
