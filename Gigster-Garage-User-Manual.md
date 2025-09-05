@@ -1,4 +1,4 @@
-# SymbiosoAi User Manual
+# Gigster Garage User Manual
 **Simplified Workflow Hub - Smarter tools for bolder dreams**
 
 ---
@@ -17,7 +17,7 @@
 
 ## Overview
 
-SymbiosoAi is a comprehensive time tracker and workflow management system designed for ambitious creators and teams. Built with personality-driven design and engaging copy, SymbiosoAi transforms mundane task management into an inspiring productivity experience.
+Gigster Garage is a comprehensive time tracker and workflow management system designed for ambitious creators and teams. Built with personality-driven design and engaging copy, Gigster Garage transforms mundane task management into an inspiring productivity experience.
 
 ### Key Philosophy
 - **"Spark the hustle"** - Everything is designed to motivate and energize
@@ -79,7 +79,7 @@ SymbiosoAi is a comprehensive time tracker and workflow management system design
 ## User Interface Guide
 
 ### Navigation Structure
-- **Header Bar** - SymbiosoAi logo and "Simplified Workflow Hub" tagline in signature blue
+- **Header Bar** - Gigster Garage logo and "Simplified Workflow Hub" tagline in signature blue
 - **Action Buttons** - "Spark New Task" prominently positioned for quick access
 - **Page Titles** - Clear hierarchy with functional buttons on the same line
 - **Back Navigation** - Consistent "Back to Tasks" buttons across admin pages
@@ -88,7 +88,7 @@ SymbiosoAi is a comprehensive time tracker and workflow management system design
 - **Primary Teal** (#008272) - Main brand color for CTAs and accents
 - **Secondary Amber** (#FFB200) - Highlighting and secondary actions
 - **Gradient Backgrounds** - Teal to amber gradients for visual interest
-- **Professional Navy** (#004C6D) - Header bar maintains SymbiosoAi identity
+- **Professional Navy** (#004C6D) - Header bar maintains Gigster Garage identity
 - **Neutral Grays** - Supporting text and backgrounds
 
 ### Interactive Elements
@@ -202,9 +202,9 @@ SymbiosoAi is a comprehensive time tracker and workflow management system design
 
 ## Feature Highlights
 
-### What Makes SymbiosoAi Special
+### What Makes Gigster Garage Special
 
-1. **Personality-Driven Design** - Unlike generic task managers, SymbiosoAi has character and motivation built into every interaction
+1. **Personality-Driven Design** - Unlike generic task managers, Gigster Garage has character and motivation built into every interaction
 
 2. **Comprehensive Workflow Solution** - Not just task management, but complete business workflow automation
 
@@ -226,4 +226,4 @@ SymbiosoAi is a comprehensive time tracker and workflow management system design
 
 ---
 
-*SymbiosoAi - Where productivity meets personality. Spark your hustle today.*
+*Gigster Garage - Where productivity meets personality. Spark your hustle today.*

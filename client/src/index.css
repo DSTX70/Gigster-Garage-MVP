@@ -282,7 +282,7 @@
     border-radius: 50%;
   }
   
-  /* Header with original SymbiosoAi darker navy - preserving the original brand */
+  /* Header with original Gigster Garage darker navy - preserving the original brand */
   .gg-header {
     @apply border-b;
     background: linear-gradient(135deg, var(--garage-navy) 0%, var(--ignition-teal) 100%);

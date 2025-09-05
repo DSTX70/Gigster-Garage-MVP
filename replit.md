@@ -1,8 +1,8 @@
-# SymbiosoAi - Simplified Workflow Hub
+# Gigster Garage - Simplified Workflow Hub
 
 ## Overview
 
-SymbiosoAi is a comprehensive time tracker and workflow management system built with a full-stack TypeScript architecture. The application has evolved to include Custom Fields, Workflow Automation, Team Collaboration, AI-powered content generation, and integrated Garage Assistant UI. The system follows the Garage Navy branding with primary colors including Garage Navy (#004C6D) and Ignition Teal (#0B1D3A) for consistent professional appearance. The application features an enhanced invoice builder with auto-fill functionality, streamlined workflow automation, and reliable AI content generation. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
+Gigster Garage is a comprehensive time tracker and workflow management system built with a full-stack TypeScript architecture. The application has evolved to include Custom Fields, Workflow Automation, Team Collaboration, AI-powered content generation, and integrated Garage Assistant UI. The system follows the Garage Navy branding with primary colors including Garage Navy (#004C6D) and Ignition Teal (#0B1D3A) for consistent professional appearance. The application features an enhanced invoice builder with auto-fill functionality, streamlined workflow automation, and reliable AI content generation. The application provides a clean, intuitive interface for creating, managing, and tracking tasks with advanced features including priority levels, due dates, task assignments, notes, file attachments, URL links, and intelligent reminder notifications. It follows a monorepo structure with a React frontend, Express.js backend, and in-memory storage using a clean storage abstraction pattern.
 
 ## User Preferences
 
@@ -23,8 +23,8 @@ Preferred communication style: Simple, everyday language.
 - **Cross-Device Optimization** (Added August 2025): Desktop expanded views with column layout, Kanban board, and Gantt chart timeline views that automatically adapt to screen size
 - **Project Cards on Home Page** (Added August 2025): Interactive project cards showing progress indicators, task counts, and direct dashboard access with visual status badges
 - **Database Schema Enhancement** (Completed August 2025): Added parentTaskId field to tasks table and taskDependencies relationship table with proper foreign key constraints
-- **Consistent Layout Structure** (Updated August 2025): Restructured all page layouts to have SymbiosoAi logo and "Simplified Workflow Hub" tagline isolated in blue header bar across all screens, with functional buttons (+ New Task) positioned below on same line as page titles for professional hierarchy and brand consistency
-- **Marketing Landing Page** (Added January 2025): Professional welcome page showcasing SymbiosoAi features, demo access, and clear call-to-action for new visitors
+- **Consistent Layout Structure** (Updated August 2025): Restructured all page layouts to have Gigster Garage logo and "Simplified Workflow Hub" tagline isolated in blue header bar across all screens, with functional buttons (+ New Task) positioned below on same line as page titles for professional hierarchy and brand consistency
+- **Marketing Landing Page** (Added January 2025): Professional welcome page showcasing Gigster Garage features, demo access, and clear call-to-action for new visitors
 - **Enhanced Due Date Functionality** (Added January 2025): Time input added to task form with 24-hour and 1-hour advance reminder notifications
 - **Advanced Reminder System** (Enhanced January 2025): Precise time-based triggers with yellow notifications for 24-hour advance and urgent red notifications for 1-hour advance
 - **Improved Navigation** (Added January 2025): "Back to Tasks" buttons on all admin pages and consistent navigation between admin functions and main task management
