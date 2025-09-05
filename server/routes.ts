@@ -171,22 +171,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/auth/user", (req, res) => {
+  app.get("/api/auth/user", async (req, res) => {
     if (req.session.user) {
-      res.json({ 
-        user: { 
-          id: req.session.user.id, 
-          username: req.session.user.username, 
-          name: req.session.user.name, 
-          email: req.session.user.email, 
-          role: req.session.user.role,
-          hasCompletedOnboarding: req.session.user.hasCompletedOnboarding,
-          notificationEmail: req.session.user.notificationEmail,
-          phone: req.session.user.phone,
-          emailOptIn: req.session.user.emailOptIn,
-          smsOptIn: req.session.user.smsOptIn
-        } 
-      });
+      // Fetch fresh user data from database to ensure accuracy
+      const freshUser = await storage.getUser(req.session.user.id);
+      if (freshUser) {
+        res.json({ 
+          user: { 
+            id: freshUser.id, 
+            username: freshUser.username, 
+            name: freshUser.name, 
+            email: freshUser.email, 
+            role: freshUser.role,
+            hasCompletedOnboarding: freshUser.hasCompletedOnboarding,
+            notificationEmail: freshUser.notificationEmail,
+            phone: freshUser.phone,
+            emailOptIn: freshUser.emailOptIn,
+            smsOptIn: freshUser.smsOptIn
+          } 
+        });
+      } else {
+        res.status(401).json({ message: "User not found" });
+      }
     } else {
       res.status(401).json({ message: "Not authenticated" });
     }
@@ -234,13 +240,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const userId = req.session.user!.id;
       const updateData = {
-        hasCompletedOnboarding: result.data.hasCompletedOnboarding,
+        hasCompletedOnboarding: true, // Always set to true when onboarding is completed
         emailOptIn: result.data.emailOptIn,
         smsOptIn: result.data.smsOptIn,
         notificationEmail: result.data.notificationEmail || '',
         phone: result.data.phone
       };
       const user = await storage.updateUserOnboarding(userId, updateData);
+      
+      // Update session with the latest user data
+      req.session.user = user;
+      
+      // Explicitly save the session
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+        }
+      });
+      
       res.json(user);
     } catch (error) {
       console.error("Error updating user onboarding:", error);

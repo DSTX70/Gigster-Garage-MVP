@@ -11,6 +11,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(insertUser: InsertUser): Promise<User>;
   updateUserOnboarding(userId: string, onboardingData: {
+    hasCompletedOnboarding?: boolean;
     notificationEmail?: string;
     phone?: string;
     emailOptIn: boolean;
@@ -205,7 +206,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserOnboarding(userId: string, onboardingData: {
-    notificationEmail: string;
+    hasCompletedOnboarding?: boolean;
+    notificationEmail?: string;
     phone?: string;
     emailOptIn: boolean;
     smsOptIn: boolean;
@@ -217,7 +219,7 @@ export class DatabaseStorage implements IStorage {
         phone: onboardingData.phone || null,
         emailOptIn: onboardingData.emailOptIn,
         smsOptIn: onboardingData.smsOptIn,
-        hasCompletedOnboarding: true,
+        hasCompletedOnboarding: onboardingData.hasCompletedOnboarding !== undefined ? onboardingData.hasCompletedOnboarding : true,
       })
       .where(eq(users.id, userId))
       .returning();
