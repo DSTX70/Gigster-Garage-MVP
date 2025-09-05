@@ -86,7 +86,7 @@ export function AppHeader() {
           {/* Bottom line: User + Messages */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-3 text-xs sm:text-sm text-white/80">
-              <User size={14} className="sm:w-4 sm:h-4 text-white" style={{ color: 'white', fill: 'white' }} />
+              <User size={14} className="sm:w-4 sm:h-4 text-white" />
               <Button
                 variant="ghost"
                 size="sm"
@@ -112,7 +112,7 @@ export function AppHeader() {
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
                 data-testid="button-home"
               >
-                <Home size={16} className="sm:w-[18px] sm:h-[18px] text-white" style={{ color: 'white', fill: 'white' }} />
+                <Home size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
 
               <Button
@@ -123,7 +123,7 @@ export function AppHeader() {
                 data-testid="button-bulk-operations"
                 title="Bulk Operations"
               >
-                <Database size={16} className="sm:w-[18px] sm:h-[18px] text-white" style={{ color: 'white', fill: 'white' }} />
+                <Database size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
 
               <Button
@@ -134,7 +134,7 @@ export function AppHeader() {
                 data-testid="button-custom-fields"
                 title="Custom Fields"
               >
-                <Settings size={16} className="sm:w-[18px] sm:h-[18px] text-white" style={{ color: 'white', fill: 'white' }} />
+                <Settings size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
 
               <Button
@@ -145,7 +145,7 @@ export function AppHeader() {
                 data-testid="button-workflow-automation"
                 title="Workflow Automation"
               >
-                <Zap size={16} className="sm:w-[18px] sm:h-[18px] text-white" style={{ color: 'white', fill: 'white' }} />
+                <Zap size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
 
               <Button
@@ -156,7 +156,7 @@ export function AppHeader() {
                 data-testid="button-garage-assistant"
                 title="AI Assistant"
               >
-                <Bot size={16} className="sm:w-[18px] sm:h-[18px] text-white" style={{ color: 'white', fill: 'white' }} />
+                <Bot size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
               
               {/* Message System */}
@@ -166,7 +166,7 @@ export function AppHeader() {
                 onClick={() => navigate("/messages")}
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
               >
-                <Mail size={16} className="sm:w-[18px] sm:h-[18px] text-white" style={{ color: 'white', fill: 'white' }} />
+                <Mail size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
                 {/* Show badge if there are unread messages */}
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-bold">
                   0
