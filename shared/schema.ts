@@ -855,14 +855,14 @@ export const workflowExecutions = pgTable("workflow_executions", {
 export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
 export type InsertWorkflowExecution = typeof workflowExecutions.$inferInsert;
 
-// Comments - Team collaboration on entities
+// Comments - Team collaboration on entities  
 export const comments = pgTable("comments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   entityType: varchar("entity_type", { enum: ["task", "project", "client"] }).notNull(),
   entityId: varchar("entity_id").notNull(),
   content: text("content").notNull(),
   authorId: varchar("author_id").references(() => users.id).notNull(),
-  parentId: varchar("parent_id").references(() => comments.id), // For threaded comments
+  parentId: varchar("parent_id"), // Self-reference for threaded comments
   mentions: jsonb("mentions").$type<string[]>().default([]), // User IDs mentioned in comment
   attachments: jsonb("attachments").$type<Array<{
     id: string;

@@ -41,6 +41,15 @@ declare module "express-session" {
   }
 }
 
+// Extend Express Request type to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+    }
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads
   const upload = multer({ 
@@ -2311,7 +2320,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         ...invoiceData,
         status: "draft" as const,
         invoiceNumber: `INV-${Date.now()}`,
-        createdById: req.user!.id,
+        createdById: req.session.user!.id,
       };
 
       const invoice = await storage.createInvoice(draftInvoice);
@@ -2367,7 +2376,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       
       // Calculate totals if line items are updated
       if (updateData.lineItems) {
-        const subtotal = updateData.lineItems.reduce((sum, item) => sum + item.amount, 0);
+        const subtotal = (updateData.lineItems as any[]).reduce((sum: number, item: any) => sum + Number(item.amount), 0);
         const taxAmount = subtotal * Number(updateData.taxRate || invoice.taxRate || 0) / 100;
         const totalAmount = subtotal + taxAmount - Number(updateData.discountAmount || 0);
         
@@ -2485,12 +2494,12 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       
       const message = await storage.createMessage({
         ...messageData,
-        fromUserId: req.user!.id,
+        fromUserId: req.session.user!.id,
       });
 
       // Send email if recipient is external (has email but no internal user)
       if (messageData.toEmail && !messageData.toUserId) {
-        const fromUser = await storage.getUser(req.user!.id);
+        const fromUser = await storage.getUser(req.session.user!.id);
         if (fromUser) {
           const emailSent = await sendMessageAsEmail(
             message,
@@ -2518,7 +2527,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
   app.get("/api/messages", requireAuth, async (req, res) => {
     try {
-      const messages = await storage.getMessages(req.user!.id);
+      const messages = await storage.getMessages(req.session.user!.id);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -2529,7 +2538,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   app.put("/api/messages/:id/read", requireAuth, async (req, res) => {
     try {
       const messageId = req.params.id;
-      const message = await storage.markMessageAsRead(messageId, req.user!.id);
+      const message = await storage.markMessageAsRead(messageId, req.session.user!.id);
       
       if (!message) {
         return res.status(404).json({ error: "Message not found" });
@@ -2544,7 +2553,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
   app.get("/api/messages/unread-count", requireAuth, async (req, res) => {
     try {
-      const count = await storage.getUnreadMessageCount(req.user!.id);
+      const count = await storage.getUnreadMessageCount(req.session.user!.id);
       res.json({ count });
     } catch (error) {
       console.error("Error fetching unread message count:", error);
@@ -2555,7 +2564,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Email configuration info endpoint
   app.get("/api/messages/email-config", requireAuth, async (req, res) => {
     const sendGridConfigured = !!(process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY_2);
-    const webhookUrl = `${APP_URL}/api/inbound-email`;
+    const webhookUrl = `${process.env.APP_URL || 'http://localhost:5000'}/api/inbound-email`;
     
     res.json({
       emailIntegration: {
@@ -2828,7 +2837,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         quality: "standard",
       });
 
-      const imageUrl = response.data[0].url;
+      const imageUrl = response.data?.[0]?.url;
       console.log("✅ Image generated successfully");
       res.json({ imageUrl });
     } catch (error: any) {
