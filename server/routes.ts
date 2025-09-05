@@ -25,6 +25,12 @@ import { advancedReportingService } from "./advanced-reporting-service";
 import { webhookService } from "./webhook-service";
 import { mobileApiService } from "./mobile-api-service";
 import { whiteLabelService } from "./white-label-service";
+import { ssoService } from "./sso-service";
+import { permissionsService, requirePermission } from "./permissions-service";
+import { auditService, logAuditEvent } from "./audit-service";
+import { encryptionService } from "./encryption-service";
+import { backupService } from "./backup-service";
+import { i18nService } from "./i18n-service";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -5169,6 +5175,606 @@ Keep it professional but easy to understand.`;
     } catch (error) {
       console.error('Error resolving tenant:', error);
       res.status(500).json({ message: 'Failed to resolve tenant' });
+    }
+  });
+
+  // SSO & Authentication API endpoints
+  app.get('/api/sso/providers', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const providers = await ssoService.getProviders();
+      res.json(providers);
+    } catch (error) {
+      console.error('Error fetching SSO providers:', error);
+      res.status(500).json({ message: 'Failed to fetch SSO providers' });
+    }
+  });
+
+  app.post('/api/sso/providers', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const provider = await ssoService.registerProvider(req.body);
+      res.json(provider);
+    } catch (error) {
+      console.error('Error creating SSO provider:', error);
+      res.status(500).json({ message: error.message || 'Failed to create SSO provider' });
+    }
+  });
+
+  app.patch('/api/sso/providers/:id', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const provider = await ssoService.updateProvider(req.params.id, req.body);
+      res.json(provider);
+    } catch (error) {
+      console.error('Error updating SSO provider:', error);
+      res.status(500).json({ message: 'Failed to update SSO provider' });
+    }
+  });
+
+  app.get('/api/sso/providers/active', async (req, res) => {
+    try {
+      const providers = await ssoService.getActiveProviders();
+      // Return only public information for login page
+      const publicProviders = providers.map(p => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        protocol: p.protocol
+      }));
+      res.json(publicProviders);
+    } catch (error) {
+      console.error('Error fetching active SSO providers:', error);
+      res.status(500).json({ message: 'Failed to fetch active SSO providers' });
+    }
+  });
+
+  app.get('/api/sso/templates', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const templates = ssoService.getProviderTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching SSO templates:', error);
+      res.status(500).json({ message: 'Failed to fetch SSO templates' });
+    }
+  });
+
+  app.get('/api/sso/statistics', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const statistics = await ssoService.getStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error('Error fetching SSO statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch SSO statistics' });
+    }
+  });
+
+  app.get('/api/sso/audit-logs', requireAuth, async (req, res) => {
+    try {
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const filters = {
+        event: req.query.event as any,
+        providerId: req.query.providerId as string,
+        userId: req.query.userId as string,
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string
+      };
+      
+      const logs = await ssoService.getAuditLogs(filters);
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching SSO audit logs:', error);
+      res.status(500).json({ message: 'Failed to fetch SSO audit logs' });
+    }
+  });
+
+  // SSO Authentication routes
+  app.get('/sso/:providerId/login', (req, res, next) => {
+    const strategyName = `sso-${req.params.providerId}`;
+    passport.authenticate(strategyName)(req, res, next);
+  });
+
+  app.post('/sso/:providerId/callback', (req, res, next) => {
+    const strategyName = `sso-${req.params.providerId}`;
+    passport.authenticate(strategyName, {
+      successRedirect: '/',
+      failureRedirect: '/login?error=sso_failed'
+    })(req, res, next);
+  });
+
+  // SAML metadata endpoint
+  app.get('/sso/saml/metadata', (req, res) => {
+    try {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const metadata = ssoService.generateSAMLMetadata(baseUrl);
+      res.set('Content-Type', 'application/xml');
+      res.send(metadata);
+    } catch (error) {
+      console.error('Error generating SAML metadata:', error);
+      res.status(500).json({ message: 'Failed to generate SAML metadata' });
+    }
+  });
+
+  // Advanced Permissions API endpoints
+  app.get('/api/permissions', requireAuth, async (req, res) => {
+    try {
+      const permissions = await permissionsService.getPermissions();
+      res.json(permissions);
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+      res.status(500).json({ message: 'Failed to fetch permissions' });
+    }
+  });
+
+  app.get('/api/permissions/by-category', requireAuth, async (req, res) => {
+    try {
+      const permissionsByCategory = await permissionsService.getPermissionsByCategory();
+      res.json(permissionsByCategory);
+    } catch (error) {
+      console.error('Error fetching permissions by category:', error);
+      res.status(500).json({ message: 'Failed to fetch permissions by category' });
+    }
+  });
+
+  app.post('/api/permissions', requireAuth, requirePermission('permissions.manage'), async (req, res) => {
+    try {
+      const permission = await permissionsService.createPermission(req.body);
+      res.json(permission);
+    } catch (error) {
+      console.error('Error creating permission:', error);
+      res.status(500).json({ message: 'Failed to create permission' });
+    }
+  });
+
+  app.get('/api/roles', requireAuth, async (req, res) => {
+    try {
+      const roles = await permissionsService.getRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      res.status(500).json({ message: 'Failed to fetch roles' });
+    }
+  });
+
+  app.post('/api/roles', requireAuth, requirePermission('permissions.manage'), async (req, res) => {
+    try {
+      const role = await permissionsService.createRole(req.body);
+      res.json(role);
+    } catch (error) {
+      console.error('Error creating role:', error);
+      res.status(500).json({ message: 'Failed to create role' });
+    }
+  });
+
+  app.patch('/api/roles/:id', requireAuth, requirePermission('permissions.manage'), async (req, res) => {
+    try {
+      const role = await permissionsService.updateRole(req.params.id, req.body);
+      res.json(role);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      res.status(500).json({ message: 'Failed to update role' });
+    }
+  });
+
+  app.post('/api/users/:userId/roles/:roleId', requireAuth, requirePermission('users.update'), async (req, res) => {
+    try {
+      await permissionsService.assignRole(req.params.userId, req.params.roleId, req.session.user!.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error assigning role:', error);
+      res.status(500).json({ message: 'Failed to assign role' });
+    }
+  });
+
+  app.delete('/api/users/:userId/roles/:roleId', requireAuth, requirePermission('users.update'), async (req, res) => {
+    try {
+      await permissionsService.removeRole(req.params.userId, req.params.roleId, req.session.user!.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error removing role:', error);
+      res.status(500).json({ message: 'Failed to remove role' });
+    }
+  });
+
+  app.get('/api/users/:userId/permissions', requireAuth, async (req, res) => {
+    try {
+      const userPermissions = await permissionsService.getUserPermissions(req.params.userId);
+      res.json(userPermissions);
+    } catch (error) {
+      console.error('Error fetching user permissions:', error);
+      res.status(500).json({ message: 'Failed to fetch user permissions' });
+    }
+  });
+
+  app.post('/api/permissions/check', requireAuth, async (req, res) => {
+    try {
+      const { permission, resource, context } = req.body;
+      const hasPermission = await permissionsService.checkPermission({
+        userId: req.session.user!.id,
+        permission,
+        resource,
+        context
+      });
+      res.json({ hasPermission });
+    } catch (error) {
+      console.error('Error checking permission:', error);
+      res.status(500).json({ message: 'Failed to check permission' });
+    }
+  });
+
+  app.get('/api/permissions/statistics', requireAuth, requirePermission('admin.audit'), async (req, res) => {
+    try {
+      const statistics = await permissionsService.getStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error('Error fetching permission statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch permission statistics' });
+    }
+  });
+
+  app.get('/api/permissions/audit-logs', requireAuth, requirePermission('admin.audit'), async (req, res) => {
+    try {
+      const filters = {
+        action: req.query.action as string,
+        userId: req.query.userId as string,
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string
+      };
+      
+      const logs = await permissionsService.getAuditLogs(filters);
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching permission audit logs:', error);
+      res.status(500).json({ message: 'Failed to fetch permission audit logs' });
+    }
+  });
+
+  // Comprehensive Audit Logging API endpoints
+  app.get('/api/audit/events', requireAuth, requirePermission('admin.audit'), async (req, res) => {
+    try {
+      const query = {
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+        source: req.query.source ? [req.query.source as string] : undefined,
+        category: req.query.category ? [req.query.category as string] : undefined,
+        action: req.query.action ? [req.query.action as string] : undefined,
+        outcome: req.query.outcome ? [req.query.outcome as string] : undefined,
+        severity: req.query.severity ? [req.query.severity as string] : undefined,
+        searchTerm: req.query.searchTerm as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+        sortBy: req.query.sortBy as any,
+        sortOrder: req.query.sortOrder as any
+      };
+      
+      const result = await auditService.queryEvents(query);
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching audit events:', error);
+      res.status(500).json({ message: 'Failed to fetch audit events' });
+    }
+  });
+
+  app.get('/api/audit/statistics', requireAuth, requirePermission('admin.audit'), async (req, res) => {
+    try {
+      const period = req.query.startDate && req.query.endDate ? {
+        start: req.query.startDate as string,
+        end: req.query.endDate as string
+      } : undefined;
+      
+      const statistics = await auditService.getStatistics(period);
+      res.json(statistics);
+    } catch (error) {
+      console.error('Error fetching audit statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch audit statistics' });
+    }
+  });
+
+  app.post('/api/audit/export', requireAuth, requirePermission('data.export'), async (req, res) => {
+    try {
+      const query = {
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+        source: req.query.source ? [req.query.source as string] : undefined,
+        category: req.query.category ? [req.query.category as string] : undefined,
+        outcome: req.query.outcome ? [req.query.outcome as string] : undefined,
+        severity: req.query.severity ? [req.query.severity as string] : undefined,
+        searchTerm: req.query.searchTerm as string,
+        limit: 10000 // Large limit for export
+      };
+      
+      const format = req.query.format as 'json' | 'csv' | 'pdf';
+      const includePersonalData = req.query.includePersonalData === 'true';
+      
+      const exportData = await auditService.exportAuditData(query, format, includePersonalData);
+      res.json(exportData);
+    } catch (error) {
+      console.error('Error exporting audit data:', error);
+      res.status(500).json({ message: 'Failed to export audit data' });
+    }
+  });
+
+  app.get('/api/audit/compliance-reports', requireAuth, requirePermission('admin.audit'), async (req, res) => {
+    try {
+      const reports = await auditService.getComplianceReports();
+      res.json(reports);
+    } catch (error) {
+      console.error('Error fetching compliance reports:', error);
+      res.status(500).json({ message: 'Failed to fetch compliance reports' });
+    }
+  });
+
+  app.post('/api/audit/compliance-reports', requireAuth, requirePermission('admin.audit'), async (req, res) => {
+    try {
+      const { regulation, startDate, endDate } = req.body;
+      const report = await auditService.generateComplianceReport(
+        regulation,
+        startDate,
+        endDate,
+        req.session.user!.id
+      );
+      res.json(report);
+    } catch (error) {
+      console.error('Error generating compliance report:', error);
+      res.status(500).json({ message: 'Failed to generate compliance report' });
+    }
+  });
+
+  app.get('/api/audit/retention-policies', requireAuth, requirePermission('admin.audit'), async (req, res) => {
+    try {
+      const policies = await auditService.getRetentionPolicies();
+      res.json(policies);
+    } catch (error) {
+      console.error('Error fetching retention policies:', error);
+      res.status(500).json({ message: 'Failed to fetch retention policies' });
+    }
+  });
+
+  app.post('/api/audit/retention-policies', requireAuth, requirePermission('admin.audit'), async (req, res) => {
+    try {
+      const policy = await auditService.createRetentionPolicy(req.body);
+      res.json(policy);
+    } catch (error) {
+      console.error('Error creating retention policy:', error);
+      res.status(500).json({ message: 'Failed to create retention policy' });
+    }
+  });
+
+  // Data Encryption API endpoints
+  app.get('/api/encryption/keys', requireAuth, requirePermission('admin.security'), async (req, res) => {
+    try {
+      const keys = await encryptionService.getKeys();
+      res.json(keys);
+    } catch (error) {
+      console.error('Error fetching encryption keys:', error);
+      res.status(500).json({ message: 'Failed to fetch encryption keys' });
+    }
+  });
+
+  app.post('/api/encryption/keys', requireAuth, requirePermission('admin.security'), async (req, res) => {
+    try {
+      const { purpose, algorithm, complianceLevel } = req.body;
+      const key = await encryptionService.generateKey(
+        purpose,
+        algorithm,
+        req.session.user!.id,
+        complianceLevel
+      );
+      res.json(key);
+    } catch (error) {
+      console.error('Error generating encryption key:', error);
+      res.status(500).json({ message: 'Failed to generate encryption key' });
+    }
+  });
+
+  app.post('/api/encryption/keys/:keyId/rotate', requireAuth, requirePermission('admin.security'), async (req, res) => {
+    try {
+      const rotatedKey = await encryptionService.rotateKey(req.params.keyId, req.session.user!.id);
+      res.json(rotatedKey);
+    } catch (error) {
+      console.error('Error rotating encryption key:', error);
+      res.status(500).json({ message: 'Failed to rotate encryption key' });
+    }
+  });
+
+  app.get('/api/encryption/policies', requireAuth, requirePermission('admin.security'), async (req, res) => {
+    try {
+      const policies = await encryptionService.getPolicies();
+      res.json(policies);
+    } catch (error) {
+      console.error('Error fetching encryption policies:', error);
+      res.status(500).json({ message: 'Failed to fetch encryption policies' });
+    }
+  });
+
+  app.post('/api/encryption/policies', requireAuth, requirePermission('admin.security'), async (req, res) => {
+    try {
+      const policy = await encryptionService.createPolicy(req.body);
+      res.json(policy);
+    } catch (error) {
+      console.error('Error creating encryption policy:', error);
+      res.status(500).json({ message: 'Failed to create encryption policy' });
+    }
+  });
+
+  app.get('/api/encryption/statistics', requireAuth, requirePermission('admin.security'), async (req, res) => {
+    try {
+      const statistics = await encryptionService.getStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error('Error fetching encryption statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch encryption statistics' });
+    }
+  });
+
+  app.post('/api/encryption/encrypt', requireAuth, requirePermission('data.export'), async (req, res) => {
+    try {
+      const { data, purpose, dataType } = req.body;
+      const encrypted = await encryptionService.encryptData(data, purpose, dataType, req.session.user!.id);
+      res.json(encrypted);
+    } catch (error) {
+      console.error('Error encrypting data:', error);
+      res.status(500).json({ message: 'Failed to encrypt data' });
+    }
+  });
+
+  app.post('/api/encryption/decrypt', requireAuth, requirePermission('data.export'), async (req, res) => {
+    try {
+      const { encryptedData } = req.body;
+      const decrypted = await encryptionService.decryptData(encryptedData, req.session.user!.id);
+      res.json({ data: decrypted });
+    } catch (error) {
+      console.error('Error decrypting data:', error);
+      res.status(500).json({ message: 'Failed to decrypt data' });
+    }
+  });
+
+  // Backup & Recovery API endpoints
+  app.get('/api/backup/configurations', requireAuth, requirePermission('admin.backup'), async (req, res) => {
+    try {
+      const configurations = await backupService.getConfigurations();
+      res.json(configurations);
+    } catch (error) {
+      console.error('Error fetching backup configurations:', error);
+      res.status(500).json({ message: 'Failed to fetch backup configurations' });
+    }
+  });
+
+  app.get('/api/backup/records', requireAuth, requirePermission('admin.backup'), async (req, res) => {
+    try {
+      const backups = await backupService.getBackups();
+      res.json(backups);
+    } catch (error) {
+      console.error('Error fetching backup records:', error);
+      res.status(500).json({ message: 'Failed to fetch backup records' });
+    }
+  });
+
+  app.post('/api/backup/create', requireAuth, requirePermission('admin.backup'), async (req, res) => {
+    try {
+      const { configId } = req.body;
+      const backup = await backupService.performBackup(configId || 'default', req.session.user!.id);
+      res.json(backup);
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      res.status(500).json({ message: 'Failed to create backup' });
+    }
+  });
+
+  app.get('/api/backup/statistics', requireAuth, requirePermission('admin.backup'), async (req, res) => {
+    try {
+      const statistics = await backupService.getStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error('Error fetching backup statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch backup statistics' });
+    }
+  });
+
+  // Multi-language Support API endpoints
+  app.get('/api/i18n/languages', requireAuth, async (req, res) => {
+    try {
+      const languages = await i18nService.getLanguages();
+      res.json(languages);
+    } catch (error) {
+      console.error('Error fetching languages:', error);
+      res.status(500).json({ message: 'Failed to fetch languages' });
+    }
+  });
+
+  app.post('/api/i18n/languages', requireAuth, requirePermission('admin.settings'), async (req, res) => {
+    try {
+      const language = await i18nService.addLanguage(req.body);
+      res.json(language);
+    } catch (error) {
+      console.error('Error adding language:', error);
+      res.status(500).json({ message: 'Failed to add language' });
+    }
+  });
+
+  app.get('/api/i18n/translations/:language', requireAuth, async (req, res) => {
+    try {
+      const { language } = req.params;
+      const { namespace } = req.query;
+      
+      let translations;
+      if (namespace) {
+        translations = await i18nService.getNamespaceTranslations(namespace as string, language);
+      } else {
+        const allKeys = Array.from((await i18nService.getStatistics()).totalKeys || []);
+        translations = await i18nService.getTranslations(allKeys, language);
+      }
+      
+      res.json(translations);
+    } catch (error) {
+      console.error('Error fetching translations:', error);
+      res.status(500).json({ message: 'Failed to fetch translations' });
+    }
+  });
+
+  app.post('/api/i18n/translations', requireAuth, requirePermission('admin.settings'), async (req, res) => {
+    try {
+      const { key, language, value, pluralForms } = req.body;
+      const translation = await i18nService.setTranslation(
+        key,
+        language,
+        value,
+        req.session.user!.id,
+        pluralForms
+      );
+      res.json(translation);
+    } catch (error) {
+      console.error('Error setting translation:', error);
+      res.status(500).json({ message: 'Failed to set translation' });
+    }
+  });
+
+  app.get('/api/i18n/statistics', requireAuth, requirePermission('admin.settings'), async (req, res) => {
+    try {
+      const statistics = await i18nService.getStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error('Error fetching i18n statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch i18n statistics' });
+    }
+  });
+
+  app.get('/api/i18n/export/:language', requireAuth, requirePermission('data.export'), async (req, res) => {
+    try {
+      const { language } = req.params;
+      const { format = 'json' } = req.query;
+      
+      const exportData = await i18nService.exportTranslations(language, format as 'json' | 'csv');
+      
+      const contentType = format === 'csv' ? 'text/csv' : 'application/json';
+      const filename = `translations_${language}.${format}`;
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(exportData);
+    } catch (error) {
+      console.error('Error exporting translations:', error);
+      res.status(500).json({ message: 'Failed to export translations' });
     }
   });
 

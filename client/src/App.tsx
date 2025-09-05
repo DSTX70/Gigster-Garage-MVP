@@ -40,6 +40,9 @@ import AIInsights from "@/pages/ai-insights";
 import TeamCollaboration from "@/pages/team-collaboration";
 import AdvancedReporting from "@/pages/advanced-reporting";
 import APIWebhooks from "@/pages/api-webhooks";
+import SSOManagement from "@/pages/sso-management";
+import PermissionsManagement from "@/pages/permissions-management";
+import AuditLogging from "@/pages/audit-logging";
 
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
@@ -108,6 +111,9 @@ function Router() {
       <Route path="/team-collaboration" component={TeamCollaboration} />
       <Route path="/advanced-reporting" component={AdvancedReporting} />
       <Route path="/api-webhooks" component={APIWebhooks} />
+      <Route path="/sso-management" component={SSOManagement} />
+      <Route path="/permissions-management" component={PermissionsManagement} />
+      <Route path="/audit-logging" component={AuditLogging} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

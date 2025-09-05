@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook, Key, FileText } from "lucide-react";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
@@ -291,6 +291,39 @@ export function AppHeader() {
                 title="API Webhooks"
               >
                 <Webhook size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/sso-management")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-sso-management"
+                title="SSO Management"
+              >
+                <Shield size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/permissions-management")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-permissions-management"
+                title="Permissions Management"
+              >
+                <Key size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/audit-logging")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-audit-logging"
+                title="Audit Logging"
+              >
+                <FileText size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
               
               {/* Message System */}
