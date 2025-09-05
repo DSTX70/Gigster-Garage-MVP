@@ -9,9 +9,10 @@
 3. [Core Features](#core-features)
 4. [User Interface Guide](#user-interface-guide)
 5. [Advanced Features](#advanced-features)
-6. [Team Collaboration](#team-collaboration)
-7. [Brand Identity](#brand-identity)
-8. [Technical Specifications](#technical-specifications)
+6. [Business Automation Systems](#business-automation-systems)
+7. [Team Collaboration](#team-collaboration)
+8. [Brand Identity](#brand-identity)
+9. [Technical Specifications](#technical-specifications)
 
 ---
 
@@ -113,17 +114,57 @@ Gigster Garage is a comprehensive time tracker and workflow management system de
 - **Smart Suggestions** - AI recommendations for task optimization
 - **Reliable Processing** - Stable AI integration with error handling
 
-### Invoice Builder
+### Invoice Builder & Automation
 - **Auto-Fill Functionality** - Company information automatically populates
 - **Professional Templates** - Clean, branded invoice designs
 - **Client Integration** - Pull client data directly into invoices
 - **Export Options** - PDF generation and email delivery
+- **Automated Status Tracking** - Background monitoring of invoice lifecycle
+- **Overdue Management** - Automatic detection and notification of past-due invoices
+- **Payment Processing Integration** - Ready for Stripe payment processing (when configured)
 
 ### Garage Assistant UI
 - **Integrated Assistant** - Built-in AI helper with consistent branding
 - **Real Data Sources** - Connected to actual project and task data
 - **Contextual Help** - Smart assistance based on current user actions
 - **Garage Navy Branding** - Consistent visual identity throughout
+
+---
+
+## Business Automation Systems
+
+### Automated Invoice Management
+- **Smart Status Tracking** - Automatic monitoring of sent/paid/overdue statuses
+- **Background Processing** - Scheduled status checks every 6 hours with manual triggers
+- **Overdue Detection** - Intelligent identification of past-due invoices
+- **Automated Notifications** - Email alerts for overdue invoices with complete details
+- **Status Updates** - Real-time invoice lifecycle management
+- **Manual Controls** - Force status checks and updates when needed
+
+### Proposal Approval Workflow
+- **Client Response Handling** - Accept, reject, or request revision workflows
+- **Automated Notifications** - Email alerts for all proposal status changes
+- **Revision Tracking** - Complete history of proposal modifications and feedback
+- **Approval Statistics** - Analytics on proposal success rates and timing
+- **Status Management** - Real-time tracking from draft to final approval
+- **Client Communication** - Streamlined feedback and revision request system
+
+### Contract Management System
+- **Legal Document Handling** - Comprehensive contract lifecycle management
+- **E-Signature Workflow** - Digital signature integration and tracking
+- **Expiration Monitoring** - Automated alerts for contracts nearing expiration
+- **Status Automation** - Intelligent contract status updates and transitions
+- **Renewal Management** - Proactive renewal reminders and processing
+- **Compliance Tracking** - Monitor contract obligations and milestones
+- **Background Services** - Continuous monitoring of contract statuses and deadlines
+
+### Business Logic Integration
+- **Unified Monitoring** - All automation systems run as coordinated background services
+- **Email Orchestration** - Consistent SendGrid-powered notifications across all systems
+- **Real-Time Updates** - Live status changes reflected immediately in the interface
+- **Manual Override** - Admin controls for forcing updates and status checks
+- **Analytics Dashboard** - Comprehensive insights into business automation performance
+- **Error Handling** - Robust error detection and recovery for all automated processes
 
 ---
 
@@ -206,23 +247,27 @@ Gigster Garage is a comprehensive time tracker and workflow management system de
 
 1. **Personality-Driven Design** - Unlike generic task managers, Gigster Garage has character and motivation built into every interaction
 
-2. **Comprehensive Workflow Solution** - Not just task management, but complete business workflow automation
+2. **Complete Business Automation** - Full lifecycle management for invoices, proposals, and contracts with intelligent automation
 
-3. **Team-Ready from Day One** - Built for collaboration with sophisticated user management and assignment systems
+3. **Advanced Legal & Financial Tools** - Automated invoice tracking, proposal workflows, and contract management with e-signature integration
 
-4. **AI-Enhanced Productivity** - Intelligent content generation and automated workflow suggestions
+4. **Team-Ready from Day One** - Built for collaboration with sophisticated user management and assignment systems
 
-5. **Professional Polish** - Enterprise-grade features with consumer-friendly design
+5. **AI-Enhanced Productivity** - Intelligent content generation and automated workflow suggestions
 
-6. **Gigster Garage Branding** - Distinctive visual identity that stands out in the productivity space
+6. **Professional Polish** - Enterprise-grade features with consumer-friendly design
 
-7. **Cross-Platform Optimization** - Seamless experience across all devices and screen sizes
+7. **Automated Business Logic** - Background services handle invoice tracking, proposal workflows, and contract management automatically
 
-8. **Real-Time Collaboration** - Live updates and notifications keep teams synchronized
+8. **Gigster Garage Branding** - Distinctive visual identity that stands out in the productivity space
 
-9. **Extensible Architecture** - Built to scale and add new features as businesses grow
+9. **Cross-Platform Optimization** - Seamless experience across all devices and screen sizes
 
-10. **No-Compromise Functionality** - Full-featured solution that doesn't sacrifice power for simplicity
+10. **Real-Time Collaboration** - Live updates and notifications keep teams synchronized
+
+11. **Extensible Architecture** - Built to scale and add new features as businesses grow
+
+12. **No-Compromise Functionality** - Full-featured solution that doesn't sacrifice power for simplicity
 
 ---
 
