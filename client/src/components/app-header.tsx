@@ -133,9 +133,7 @@ export function AppHeader() {
           {/* Top line: Shield + Logo + Tagline + Timer */}
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
-                <GigsterLogo size="small" showText={false} />
-              </div>
+              <GigsterLogo size="small" showText={false} />
               <h1 className="text-lg sm:text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
                 Gigster Garage
               </h1>
