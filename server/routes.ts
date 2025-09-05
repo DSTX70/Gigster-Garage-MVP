@@ -542,10 +542,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.session.user!;
-      const task = await storage.createTask({
-        ...result.data,
-        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress as any : []
-      }, user.id);
+      const { progress, ...taskData } = result.data;
+      const task = await storage.createTask(taskData, user.id);
       
       // Send notifications for high priority tasks
       if (task.priority === 'high' && task.assignedToId) {
@@ -606,10 +604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      const task = await storage.updateTask(id, {
-        ...result.data,
-        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress as any : undefined
-      });
+      const { progress, ...updateData } = result.data;
+      const task = await storage.updateTask(id, updateData);
       res.json(task);
     } catch (error) {
       console.error("Error updating task:", error);
@@ -828,7 +824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...result.data,
         parentTaskId: id,
         projectId: parentTask.projectId, // Inherit project from parent
-        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress as any : []
+        progress: result.data.progress && Array.isArray(result.data.progress) ? result.data.progress : undefined
       }, user.id);
       
       res.status(201).json(subtask);
@@ -1124,7 +1120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const template = await storage.createTemplate({
         ...templateData,
-        variables: templateData.variables as any
+        variables: templateData.variables || []
       });
       res.status(201).json(template);
     } catch (error) {
@@ -1319,7 +1315,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
       const template = await storage.updateTemplate(req.params.id, {
         ...result.data,
-        variables: result.data.variables as any
+        variables: result.data.variables || []
       });
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
@@ -1978,7 +1974,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   app.get("/api/attachments/:entityType/:entityId", requireAuth, async (req, res) => {
     try {
       const { entityType, entityId } = req.params;
-      const attachments = await storage.getFileAttachments(entityType as any, entityId);
+      const attachments = await storage.getFileAttachments(entityType as 'task' | 'project' | 'client', entityId);
       res.json(attachments);
     } catch (error) {
       console.error("Error getting file attachments:", error);
@@ -2397,7 +2393,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       
       // Calculate totals if line items are updated
       if (updateData.lineItems) {
-        const subtotal = (updateData.lineItems as any[]).reduce((sum: number, item: any) => sum + Number(item.amount), 0);
+        const subtotal = Array.isArray(updateData.lineItems) ? updateData.lineItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0) : 0;
         const taxAmount = subtotal * Number(updateData.taxRate || invoice.taxRate || 0) / 100;
         const totalAmount = subtotal + taxAmount - Number(updateData.discountAmount || 0);
         
