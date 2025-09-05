@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { copy } from "@/lib/copy";
+import { AnalyticsCharts } from "@/components/analytics-charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Users, 
   ChevronDown, 
@@ -19,7 +21,9 @@ import {
   Paperclip,
   ExternalLink,
   ArrowLeft,
-  Plus
+  Plus,
+  BarChart3,
+  TrendingUp
 } from "lucide-react";
 import { format, isAfter, startOfDay } from "date-fns";
 import { useState } from "react";
@@ -266,7 +270,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <Button
@@ -282,51 +286,70 @@ export default function Dashboard() {
                 <Users className="mr-3" size={32} />
                 Admin Dashboard
               </h1>
-              <p className="text-gray-600 mt-1">Overview of all users and their assigned tasks</p>
+              <p className="text-gray-600 mt-1">Overview of analytics, users and task assignments</p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
-            onClick={() => navigate("/")}
-            data-testid="button-new-task-dashboard"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {copy.tasks.createButton}
-          </Button>
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="text-sm text-gray-600">
-              <div><strong>{users.length}</strong> total users</div>
-              <div><strong>{allTasks.length}</strong> total tasks</div>
-              <div><strong>{unassignedTasks.length}</strong> unassigned tasks</div>
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+              onClick={() => navigate("/")}
+              data-testid="button-new-task-dashboard"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {copy.tasks.createButton}
+            </Button>
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="text-sm text-gray-600">
+                <div><strong>{users.length}</strong> total users</div>
+                <div><strong>{allTasks.length}</strong> total tasks</div>
+                <div><strong>{unassignedTasks.length}</strong> unassigned tasks</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {usersWithTasks.map((user) => (
-            <UserSection key={`dashboard-user-${user.id}`} user={user} />
-          ))}
+        <Tabs defaultValue="analytics" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="analytics" className="flex items-center space-x-2">
+              <BarChart3 className="h-4 w-4" />
+              <span>Analytics & Insights</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span>User Management</span>
+            </TabsTrigger>
+          </TabsList>
 
-          {unassignedTasks.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <AlertTriangle className="mr-2" size={20} />
-                  Unassigned Tasks ({unassignedTasks.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {unassignedTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+          <TabsContent value="analytics" className="space-y-6">
+            <AnalyticsCharts />
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6">
+            {usersWithTasks.map((user) => (
+              <UserSection key={`dashboard-user-${user.id}`} user={user} />
+            ))}
+
+            {unassignedTasks.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <AlertTriangle className="mr-2" size={20} />
+                    Unassigned Tasks ({unassignedTasks.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {unassignedTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

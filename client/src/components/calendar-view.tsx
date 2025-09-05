@@ -4,7 +4,8 @@ import moment from "moment";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, AlertCircle } from "lucide-react";
+import { Clock, Users, AlertCircle, Download, Calendar as CalendarIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@shared/schema";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
@@ -26,6 +27,8 @@ interface CalendarEvent {
 }
 
 export function CalendarView({ tasks, onTaskClick, onSlotSelect }: CalendarViewProps) {
+  const { toast } = useToast();
+
   const events: CalendarEvent[] = useMemo(() => {
     return tasks
       .filter(task => task.dueDate)
@@ -33,14 +36,47 @@ export function CalendarView({ tasks, onTaskClick, onSlotSelect }: CalendarViewP
         const dueDate = new Date(task.dueDate!);
         return {
           id: task.id,
-          title: task.description,
+          title: task.description || task.title || 'Untitled Task',
           start: dueDate,
           end: dueDate,
           resource: task,
-          allDay: !task.dueDate!.includes('T'), // Check if time is included
+          allDay: !task.dueDate!.toString().includes('T'), // Check if time is included
         };
       });
   }, [tasks]);
+
+  const handleExportCalendar = async () => {
+    try {
+      const response = await fetch('/api/calendar/export', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'gigster-garage-tasks.ics';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Calendar Export Successful",
+          description: "Your tasks have been exported as a calendar file. Import it into your preferred calendar app.",
+        });
+      } else {
+        throw new Error('Failed to export calendar');
+      }
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export calendar. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const eventStyleGetter = (event: CalendarEvent) => {
     const task = event.resource;
@@ -84,16 +120,21 @@ export function CalendarView({ tasks, onTaskClick, onSlotSelect }: CalendarViewP
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center space-x-1 min-w-0 flex-1">
           {isOverdue && <AlertCircle className="h-3 w-3 flex-shrink-0" />}
-          <span className="truncate text-xs">{task.description}</span>
+          <span className="truncate text-xs">{task.description || task.title}</span>
         </div>
-        {task.assignedTo && (
-          <Users className="h-3 w-3 flex-shrink-0 ml-1" title={`Assigned to ${task.assignedTo.name}`} />
+        {task.assignedToId && (
+          <Users className="h-3 w-3 flex-shrink-0 ml-1" />
         )}
       </div>
     );
   };
 
-  const ToolbarComponent = ({ label, onNavigate, onView, view }: any) => {
+  const ToolbarComponent = ({ label, onNavigate, onView, view }: {
+    label: string;
+    onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
+    onView: (view: any) => void;
+    view: any;
+  }) => {
     return (
       <div className="flex items-center justify-between mb-4 p-4 bg-white rounded-lg border">
         <div className="flex items-center space-x-2">
@@ -126,6 +167,16 @@ export function CalendarView({ tasks, onTaskClick, onSlotSelect }: CalendarViewP
         <h2 className="text-lg font-semibold text-gray-900">{label}</h2>
         
         <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportCalendar}
+            data-testid="calendar-export"
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
           <Button 
             variant={view === Views.MONTH ? "default" : "outline"} 
             size="sm" 
@@ -198,8 +249,8 @@ export function CalendarView({ tasks, onTaskClick, onSlotSelect }: CalendarViewP
               startAccessor="start"
               endAccessor="end"
               titleAccessor="title"
-              onSelectEvent={(event) => onTaskClick(event.resource)}
-              onSelectSlot={(slotInfo) => onSlotSelect({
+              onSelectEvent={(event: any) => onTaskClick(event.resource)}
+              onSelectSlot={(slotInfo: any) => onSlotSelect({
                 start: slotInfo.start as Date,
                 end: slotInfo.end as Date,
               })}

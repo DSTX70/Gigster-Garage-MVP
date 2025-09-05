@@ -3130,6 +3130,169 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Calendar Integration Routes
+  
+  // Export tasks as iCal for calendar sync
+  app.get("/api/calendar/export", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user?.role === 'admin' ? undefined : req.session.user?.id;
+      const tasks = await storage.getTasks(userId);
+      
+      // Generate iCal content
+      const icalLines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Gigster Garage//Task Calendar//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH'
+      ];
+
+      for (const task of tasks) {
+        if (task.dueDate) {
+          const dueDate = new Date(task.dueDate);
+          const uid = `task-${task.id}@gigster-garage.com`;
+          const dtstart = dueDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+          
+          icalLines.push(
+            'BEGIN:VEVENT',
+            `UID:${uid}`,
+            `DTSTART:${dtstart}`,
+            `DTEND:${dtstart}`,
+            `SUMMARY:${task.title}`,
+            `DESCRIPTION:${task.description || ''}`,
+            `STATUS:${task.completed ? 'COMPLETED' : 'CONFIRMED'}`,
+            `PRIORITY:${task.priority === 'high' ? '1' : task.priority === 'medium' ? '5' : '9'}`,
+            'END:VEVENT'
+          );
+        }
+      }
+
+      icalLines.push('END:VCALENDAR');
+      
+      res.setHeader('Content-Type', 'text/calendar');
+      res.setHeader('Content-Disposition', 'attachment; filename="gigster-garage-tasks.ics"');
+      res.send(icalLines.join('\r\n'));
+    } catch (error) {
+      console.error("Error exporting calendar:", error);
+      res.status(500).json({ error: "Failed to export calendar" });
+    }
+  });
+
+  // Analytics and Reporting Routes
+  
+  // Get productivity analytics data
+  app.get("/api/analytics/productivity", requireAuth, async (req, res) => {
+    try {
+      const { days = 30 } = req.query;
+      const userId = req.session.user?.role === 'admin' ? undefined : req.session.user?.id;
+      
+      const timeLogs = await storage.getTimeLogs(userId);
+      const tasks = await storage.getTasks(userId);
+      
+      const dayCount = parseInt(days as string);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - dayCount);
+      
+      const recentLogs = timeLogs.filter(log => new Date(log.createdAt) >= cutoffDate);
+      const recentTasks = tasks.filter(task => new Date(task.createdAt) >= cutoffDate);
+      
+      // Calculate daily productivity data
+      const dailyData = [];
+      for (let i = dayCount - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const dayLogs = recentLogs.filter(log => 
+          log.createdAt.split('T')[0] === dateStr
+        );
+        const dayTasks = recentTasks.filter(task => 
+          task.createdAt.split('T')[0] === dateStr
+        );
+        const completedTasks = dayTasks.filter(task => 
+          task.completed && task.updatedAt && task.updatedAt.split('T')[0] === dateStr
+        );
+        
+        const totalMinutes = dayLogs.reduce((sum, log) => {
+          if (log.endTime) {
+            const duration = new Date(log.endTime).getTime() - new Date(log.startTime).getTime();
+            return sum + Math.floor(duration / 60000);
+          }
+          return sum;
+        }, 0);
+        
+        dailyData.push({
+          date: dateStr,
+          hours: Math.round(totalMinutes / 60 * 100) / 100,
+          tasksCreated: dayTasks.length,
+          tasksCompleted: completedTasks.length,
+          productivity: completedTasks.length > 0 ? Math.round((completedTasks.length / Math.max(dayTasks.length, 1)) * 100) : 0
+        });
+      }
+      
+      // Calculate summary statistics
+      const totalHours = dailyData.reduce((sum, day) => sum + day.hours, 0);
+      const totalTasksCompleted = dailyData.reduce((sum, day) => sum + day.tasksCompleted, 0);
+      const averageProductivity = Math.round(dailyData.reduce((sum, day) => sum + day.productivity, 0) / dailyData.length);
+      
+      res.json({
+        dailyData,
+        summary: {
+          totalHours: Math.round(totalHours * 100) / 100,
+          averageDailyHours: Math.round((totalHours / dayCount) * 100) / 100,
+          totalTasksCompleted,
+          averageProductivity,
+          periodDays: dayCount
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching productivity analytics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics data" });
+    }
+  });
+
+  // Get task completion trends
+  app.get("/api/analytics/tasks", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user?.role === 'admin' ? undefined : req.session.user?.id;
+      const tasks = await storage.getTasks(userId);
+      
+      // Group tasks by priority and status
+      const priorityBreakdown = {
+        high: { total: 0, completed: 0 },
+        medium: { total: 0, completed: 0 },
+        low: { total: 0, completed: 0 }
+      };
+      
+      tasks.forEach(task => {
+        const priority = task.priority || 'medium';
+        if (priorityBreakdown[priority as keyof typeof priorityBreakdown]) {
+          priorityBreakdown[priority as keyof typeof priorityBreakdown].total++;
+          if (task.completed) {
+            priorityBreakdown[priority as keyof typeof priorityBreakdown].completed++;
+          }
+        }
+      });
+      
+      // Calculate overdue tasks
+      const now = new Date();
+      const overdueTasks = tasks.filter(task => 
+        !task.completed && task.dueDate && new Date(task.dueDate) < now
+      );
+      
+      res.json({
+        priorityBreakdown,
+        totalTasks: tasks.length,
+        completedTasks: tasks.filter(t => t.completed).length,
+        overdueTasks: overdueTasks.length,
+        completionRate: Math.round((tasks.filter(t => t.completed).length / Math.max(tasks.length, 1)) * 100)
+      });
+    } catch (error) {
+      console.error("Error fetching task analytics:", error);
+      res.status(500).json({ error: "Failed to fetch task analytics" });
+    }
+  });
+
   // Bulk Operations Routes
   
   // Bulk delete tasks
