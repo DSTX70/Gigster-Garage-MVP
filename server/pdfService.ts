@@ -56,7 +56,7 @@ export async function generateProposalPDF(proposal: any): Promise<Buffer> {
             @page {
                 margin: 1in 0.75in;
                 @top-center {
-                    content: "VSuite HQ - Simplified Workflow Hub";
+                    content: "SymbiosoAi - Simplified Workflow Hub";
                     font-size: 10px;
                     color: #666;
                 }
@@ -174,7 +174,7 @@ export async function generateProposalPDF(proposal: any): Promise<Buffer> {
     </head>
     <body>
         <div class="header">
-            <h1>VSuite HQ</h1>
+            <h1>SymbiosoAi</h1>
             <div class="tagline">Simplified Workflow Hub</div>
         </div>
         
@@ -193,7 +193,7 @@ export async function generateProposalPDF(proposal: any): Promise<Buffer> {
         </div>
         
         <div class="footer">
-            <p><strong>VSuite HQ - Simplified Workflow Hub</strong></p>
+            <p><strong>SymbiosoAi - Simplified Workflow Hub</strong></p>
             <p>Professional Project Management & Client Collaboration Platform</p>
             <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
         </div>
@@ -218,7 +218,7 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
             @page {
                 margin: 1in 0.75in;
                 @top-center {
-                    content: "VSuite HQ - Invoice";
+                    content: "SymbiosoAi - Invoice";
                     font-size: 10px;
                     color: #666;
                 }
@@ -352,7 +352,7 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
     <body>
         <div class="header">
             <div class="company-info">
-                <h1>VSuite HQ</h1>
+                <h1>SymbiosoAi</h1>
                 <div class="tagline">Simplified Workflow Hub</div>
             </div>
             <div class="invoice-info">
@@ -433,7 +433,7 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
         </div>
         
         <div class="footer">
-            <p><strong>VSuite HQ - Simplified Workflow Hub</strong></p>
+            <p><strong>SymbiosoAi - Simplified Workflow Hub</strong></p>
             <p>Professional Project Management & Client Collaboration Platform</p>
             <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
         </div>

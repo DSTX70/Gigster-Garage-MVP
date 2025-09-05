@@ -31,7 +31,7 @@ export default function UserManual() {
       icon: <Home className="h-5 w-5 text-blue-600" />,
       description: 'Basic setup and navigation',
       content: {
-        overview: 'VSuite HQ is your simplified workflow hub for comprehensive task management, client relations, and business operations.',
+        overview: 'SymbiosoAi is your simplified workflow hub for comprehensive task management, client relations, and business operations.',
         sections: [
           {
             title: 'Dashboard Overview',
@@ -525,7 +525,7 @@ export default function UserManual() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">User Manual</h1>
-                <p className="text-gray-600">Complete guide to VSuite HQ features and functionality</p>
+                <p className="text-gray-600">Complete guide to SymbiosoAi features and functionality</p>
               </div>
             </div>
             <Link href="/">

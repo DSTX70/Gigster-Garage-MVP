@@ -138,7 +138,7 @@ This proposal link will remain active and you can review it at any time. The pro
 If you have any questions or would like to discuss this proposal, please don't hesitate to reach out.
 
 Best regards,
-VSuite HQ Team
+SymbiosoAi Team
   `.trim();
 
   const htmlContent = `
@@ -175,7 +175,7 @@ VSuite HQ Team
     <body>
         <div class="container">
             <div class="header">
-                <h1>VSuite HQ</h1>
+                <h1>SymbiosoAi</h1>
                 <p>Simplified Workflow Hub</p>
             </div>
             <div class="content">
@@ -201,10 +201,10 @@ VSuite HQ Team
                 <p>Thank you for considering our services.</p>
                 
                 <p>Best regards,<br>
-                VSuite HQ Team</p>
+                SymbiosoAi Team</p>
             </div>
             <div class="footer">
-                <p>This email was sent from VSuite HQ - Simplified Workflow Hub</p>
+                <p>This email was sent from SymbiosoAi - Simplified Workflow Hub</p>
                 <p>Professional project management and client collaboration platform</p>
             </div>
         </div>
@@ -261,7 +261,7 @@ If you have any questions about this invoice, please don't hesitate to contact u
 Thank you for your business!
 
 Best regards,
-VSuite HQ Team
+SymbiosoAi Team
   `.trim();
 
   const htmlContent = `
@@ -287,7 +287,7 @@ VSuite HQ Team
     <body>
         <div class="container">
             <div class="header">
-                <h1>VSuite HQ</h1>
+                <h1>SymbiosoAi</h1>
                 <p>Simplified Workflow Hub</p>
             </div>
             <div class="content">
@@ -332,10 +332,10 @@ VSuite HQ Team
                 <p>Thank you for your business!</p>
                 
                 <p>Best regards,<br>
-                VSuite HQ Team</p>
+                SymbiosoAi Team</p>
             </div>
             <div class="footer">
-                <p>This invoice was sent from VSuite HQ - Simplified Workflow Hub</p>
+                <p>This invoice was sent from SymbiosoAi - Simplified Workflow Hub</p>
                 <p>Professional project management and client collaboration platform</p>
             </div>
         </div>
@@ -406,10 +406,10 @@ ${task.attachments && task.attachments.length > 0 ? `Attachments: ${task.attachm
 
 ${task.links && task.links.length > 0 ? `Links:\n${task.links.map(link => `- ${link}`).join('\n')}` : ''}
 
-Click here to view your tasks in VSuite HQ: ${taskUrl}
+Click here to view your tasks in SymbiosoAi: ${taskUrl}
 
 Best regards,
-VSuite HQ Team
+SymbiosoAi Team
   `.trim();
 
   const htmlContent = `
@@ -434,7 +434,7 @@ VSuite HQ Team
         <div class="container">
             <div class="header">
                 <h1>🚨 High Priority Task Assigned</h1>
-                <p>You've received a new high priority task in VSuite HQ</p>
+                <p>You've received a new high priority task in SymbiosoAi</p>
             </div>
             
             <div class="content">
@@ -468,18 +468,18 @@ VSuite HQ Team
                 </div>
                 
                 <div style="text-align: center;">
-                    <a href="${taskUrl}" class="cta-button">📋 View in VSuite HQ</a>
+                    <a href="${taskUrl}" class="cta-button">📋 View in SymbiosoAi</a>
                 </div>
                 
                 <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                    This is an automated notification from VSuite HQ. You're receiving this because you have email notifications enabled for high priority tasks.
+                    This is an automated notification from SymbiosoAi. You're receiving this because you have email notifications enabled for high priority tasks.
                 </p>
             </div>
             
             <div class="footer">
-                <p>VSuite HQ - Simplified Workflow Hub</p>
+                <p>SymbiosoAi - Simplified Workflow Hub</p>
                 <p style="font-size: 12px; opacity: 0.8;">
-                    To manage your notification preferences, log in to VSuite HQ and visit your account settings.
+                    To manage your notification preferences, log in to SymbiosoAi and visit your account settings.
                 </p>
             </div>
         </div>
@@ -506,7 +506,7 @@ export async function sendSMSNotification(
     return false;
   }
 
-  const message = `High priority task '${task.description}' assigned to you. Check VSuite HQ for details.`;
+  const message = `High priority task '${task.description}' assigned to you. Check SymbiosoAi for details.`;
   
   if (!twilioClient || !fromPhoneNumber) {
     console.log(`📱 SMS notification would be sent to ${assignedUser.phone}:`);
@@ -548,7 +548,7 @@ Priority: ${message.priority?.toUpperCase() || 'MEDIUM'}
 ${message.content}
 
 ---
-Sent via VSuite HQ Messaging System
+Sent via SymbiosoAi Messaging System
 Reply to this email to respond directly.
   `;
 
@@ -572,7 +572,7 @@ Reply to this email to respond directly.
     <body>
         <div class="container">
             <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">VSuite HQ</h1>
+                <h1 style="margin: 0; font-size: 24px;">SymbiosoAi</h1>
                 <p style="margin: 5px 0 0 0; opacity: 0.9;">Simplified Workflow Hub</p>
             </div>
             
@@ -589,7 +589,7 @@ Reply to this email to respond directly.
             </div>
             
             <div class="footer">
-                <p>VSuite HQ - Simplified Workflow Hub</p>
+                <p>SymbiosoAi - Simplified Workflow Hub</p>
                 <p style="font-size: 12px; margin-top: 10px;">
                     Reply to this email to respond directly through the messaging system.
                 </p>
