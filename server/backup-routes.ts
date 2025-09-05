@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import { backupService } from './backup-service';
-import { isAuthenticated } from './replitAuth';
+// Authentication middleware
+const isAuthenticated = (req: any, res: any, next: any) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  req.user = req.session.user;
+  next();
+};
 
 /**
  * API routes for database backup and restore operations
