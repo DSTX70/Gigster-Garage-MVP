@@ -5,7 +5,7 @@ import ConnectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 import multer from "multer";
 import csvParser from "csv-parser";
-import createCsvWriter from "csv-writer";
+import * as createCsvWriter from "csv-writer";
 import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
@@ -3969,6 +3969,120 @@ Keep it professional but easy to understand.`;
         message: "Failed to generate content",
         error: error.message 
       });
+    }
+  });
+
+  // Time Logs API endpoints
+  app.get('/api/time-logs', async (req, res) => {
+    try {
+      const { userId, projectId } = req.query;
+      const timeLogs = await storage.getTimeLogs(
+        userId as string | undefined,
+        projectId as string | undefined
+      );
+      res.json(timeLogs);
+    } catch (error) {
+      console.error('Error fetching time logs:', error);
+      res.status(500).json({ message: 'Failed to fetch time logs' });
+    }
+  });
+
+  app.post('/api/time-logs', async (req, res) => {
+    try {
+      const timeLogData = req.body;
+      const timeLog = await storage.createTimeLog(timeLogData);
+      res.status(201).json(timeLog);
+    } catch (error) {
+      console.error('Error creating time log:', error);
+      res.status(500).json({ message: 'Failed to create time log' });
+    }
+  });
+
+  app.put('/api/time-logs/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      const timeLog = await storage.updateTimeLog(id, updateData);
+      
+      if (!timeLog) {
+        return res.status(404).json({ message: 'Time log not found' });
+      }
+      
+      res.json(timeLog);
+    } catch (error) {
+      console.error('Error updating time log:', error);
+      res.status(500).json({ message: 'Failed to update time log' });
+    }
+  });
+
+  app.delete('/api/time-logs/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteTimeLog(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: 'Time log not found' });
+      }
+      
+      res.json({ message: 'Time log deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting time log:', error);
+      res.status(500).json({ message: 'Failed to delete time log' });
+    }
+  });
+
+  // Workflow Automation API endpoints
+  app.get('/api/workflow-automations', async (req, res) => {
+    try {
+      const workflows = await storage.getWorkflowRules();
+      res.json(workflows);
+    } catch (error) {
+      console.error('Error fetching workflow automations:', error);
+      res.status(500).json({ message: 'Failed to fetch workflow automations' });
+    }
+  });
+
+  app.post('/api/workflow-automations', async (req, res) => {
+    try {
+      const workflowData = req.body;
+      const workflow = await storage.createWorkflowRule(workflowData);
+      res.status(201).json(workflow);
+    } catch (error) {
+      console.error('Error creating workflow automation:', error);
+      res.status(500).json({ message: 'Failed to create workflow automation' });
+    }
+  });
+
+  app.put('/api/workflow-automations/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      const workflow = await storage.updateWorkflowRule(id, updateData);
+      
+      if (!workflow) {
+        return res.status(404).json({ message: 'Workflow automation not found' });
+      }
+      
+      res.json(workflow);
+    } catch (error) {
+      console.error('Error updating workflow automation:', error);
+      res.status(500).json({ message: 'Failed to update workflow automation' });
+    }
+  });
+
+  app.delete('/api/workflow-automations/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteWorkflowRule(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: 'Workflow automation not found' });
+      }
+      
+      res.json({ message: 'Workflow automation deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting workflow automation:', error);
+      res.status(500).json({ message: 'Failed to delete workflow automation' });
     }
   });
 
