@@ -166,7 +166,7 @@ export function TaskItem({ task }: TaskItemProps) {
     const isTomorrow = dueDate.getTime() === today.getTime() + 24 * 60 * 60 * 1000;
 
     if (task.completed) {
-      return `Completed ${formatDistanceToNow(task.createdAt, { addSuffix: true })}`;
+      return `Completed ${formatDistanceToNow(task.createdAt || new Date(), { addSuffix: true })}`;
     }
 
     if (isOverdue) {
@@ -237,7 +237,7 @@ export function TaskItem({ task }: TaskItemProps) {
                   {statusInfo.label}
                 </Badge>
               ) : (
-                <StatusBadge status={mapToStatusKey(task.status || task.priority)} size={16} />
+                <StatusBadge status={mapToStatusKey(task.status || task.priority || 'medium')} size={16} />
               )}
               <Button
                 variant="ghost"
@@ -279,21 +279,21 @@ export function TaskItem({ task }: TaskItemProps) {
                 <span>{getDueDateText()}</span>
               </div>
             )}
-            {task.project && (
+            {task.projectId && (
               <div className="flex items-center space-x-1 text-green-600">
                 <FileText size={16} />
-                <span>Project: {task.project.name}</span>
+                <span>Project: {task.projectId}</span>
               </div>
             )}
-            {task.assignedTo && (
+            {task.assignedToId && (
               <div className="flex items-center space-x-1 text-blue-600">
                 <User size={16} />
-                <span>Assigned to: {task.assignedTo.name}</span>
+                <span>Assigned to: {task.assignedToId}</span>
               </div>
             )}
             <div className="flex items-center space-x-1 text-neutral-600">
               <Clock className="text-neutral-400" size={16} />
-              <span>Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+              <span>Created {formatDistanceToNow(new Date(task.createdAt || new Date()), { addSuffix: true })}</span>
             </div>
             {hasExtendedContent && (
               <div className="flex items-center space-x-1 text-neutral-500">
