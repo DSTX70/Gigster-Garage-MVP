@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
 import { ReminderModal } from "@/components/reminder-modal";
 import { GlobalSearch } from "@/components/global-search";
+import { MoodPaletteSwitcher } from "@/components/MoodPaletteSwitcher";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -221,6 +222,9 @@ export function AppHeader() {
 
               {/* Organized Navigation Menu - Replaces all the scattered buttons */}
               <NavigationMenu />
+              
+              {/* Mood Palette Switcher */}
+              <MoodPaletteSwitcher size="sm" className="text-white border-white/20 hover:bg-white/10" />
               
               {/* Keep Message System for notifications */}
               <Button
