@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #059669; 
+            color: white; 
+        }
+        .test { 
+            padding: 15px; 
+            margin: 10px 0; 
+            background: #047857; 
+            border-radius: 8px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Debug Test Page</h1>
+    <p>This is a basic HTML page to test if the server is working properly.</p>
+    
+    <div class="test">
+        <strong>✅ HTML is working</strong>
+        <p>If you can see this, the server is serving HTML correctly.</p>
+    </div>
+    
+    <div id="js-test" class="test">
+        <strong>⏳ Testing JavaScript...</strong>
+    </div>
+    
+    <script>
+        console.log('🔧 Basic JavaScript test starting...')
+        
+        // Test basic JavaScript
+        setTimeout(() => {
+            const jsTest = document.getElementById('js-test')
+            jsTest.innerHTML = `
+                <strong>✅ JavaScript is working</strong>
+                <p>Basic JavaScript execution is successful.</p>
+            `
+            console.log('✅ Basic JavaScript working')
+        }, 100)
+        
+        // Test if we can load external scripts
+        setTimeout(() => {
+            const moduleTest = document.createElement('div')
+            moduleTest.className = 'test'
+            moduleTest.innerHTML = `
+                <strong>📦 Testing module loading...</strong>
+                <p id="module-result">Loading...</p>
+            `
+            document.body.appendChild(moduleTest)
+            
+            // Try to load a simple module
+            const script = document.createElement('script')
+            script.type = 'module'
+            script.textContent = `
+                console.log('📦 ES6 module test')
+                document.getElementById('module-result').textContent = '✅ ES6 modules working'
+            `
+            document.head.appendChild(script)
+        }, 500)
+    </script>
+</body>
+</html>
