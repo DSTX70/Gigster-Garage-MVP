@@ -9,6 +9,8 @@ export function useAuth() {
   const { data, isLoading, error } = useQuery<AuthResponse>({
     queryKey: ["/api/auth/user"],
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   return {

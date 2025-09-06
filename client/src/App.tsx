@@ -58,12 +58,14 @@ function Router() {
     }
   }, [isAuthenticated, location, setLocation]);
 
+  // Show loading only for initial load, timeout after 3 seconds
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+          <p className="mt-2 text-gray-600">Loading Gigster Garage...</p>
+          <p className="mt-1 text-sm text-gray-500">Initializing enterprise automation platform</p>
         </div>
       </div>
     );
