@@ -1,4 +1,3 @@
-import React from "react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +15,7 @@ import type { UploadResult } from "@uppy/core";
  */
 export function FileUploadExample() {
   const { toast } = useToast();
-  const [uploadedFiles, setUploadedFiles] = React.useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
   // Get upload parameters (presigned URL)
   const handleGetUploadParameters = async () => {
