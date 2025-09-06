@@ -954,7 +954,8 @@ export class WorkflowTemplatesService {
     
     // Add advanced enterprise templates first
     try {
-      this.addTemplate({
+      this.templates.set('enterprise_risk_assessment', {
+        id: 'enterprise_risk_assessment',
         name: "Enterprise Risk Assessment Workflow",
         description: "Comprehensive risk assessment and mitigation workflow for enterprise projects",
         category: 'risk_management',
@@ -963,6 +964,7 @@ export class WorkflowTemplatesService {
         author: 'Gigster Enterprise',
         isPublic: true,
         isSystemTemplate: true,
+        popularity: 0,
         workflow: {
           nodes: [
             {
@@ -1011,8 +1013,10 @@ export class WorkflowTemplatesService {
         }
       });
 
-      this.addTemplate({
+      this.templates.set('ai_customer_success', {
+        id: 'ai_customer_success',
         name: "AI-Powered Customer Success Pipeline",
+        popularity: 0,
         description: "Intelligent customer success workflow with predictive analytics",
         category: 'customer_success',
         tags: ['ai', 'customer', 'retention'],
