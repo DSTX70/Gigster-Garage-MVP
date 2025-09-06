@@ -826,68 +826,7 @@ export class SmartNotificationsService {
         batchingWindow: 60
       });
 
-      // Advanced personalization rules
-      this.addNotificationRule({
-        name: "Smart Personal Productivity Assistant",
-        description: "AI-powered personalized productivity insights and recommendations",
-        trigger: {
-          type: 'time_based',
-          schedule: '0 8 * * 1-5' // Weekdays at 8 AM
-        },
-        conditions: [
-          { field: 'active_tasks', operator: 'greater_than', value: 0, entityType: 'user' }
-        ],
-        actions: [
-          {
-            type: 'email',
-            recipients: [{ type: 'user', identifier: 'self' }],
-            template: 'personal_productivity_digest',
-            customMessage: "Your personalized productivity insights are ready! 📊",
-            urgent: false
-          }
-        ],
-        isActive: true,
-        priority: 'low',
-        batchingEnabled: false,
-        batchingWindow: 0
-      });
-
-      // Dynamic workload balancing alert
-      this.addNotificationRule({
-        name: "Intelligent Workload Distribution Alert",
-        description: "Smart detection of workload imbalances across team members",
-        trigger: {
-          type: 'threshold_based',
-          thresholds: [
-            { field: 'workload_variance', operator: 'greater_than', value: 30 }
-          ]
-        },
-        conditions: [
-          { field: 'team_size', operator: 'greater_than', value: 2, entityType: 'project' }
-        ],
-        actions: [
-          {
-            type: 'email',
-            recipients: [{ type: 'role', identifier: 'project_manager' }, { type: 'role', identifier: 'team_lead' }],
-            template: 'workload_balancing_alert',
-            customMessage: "Team workload imbalance detected. Redistribution recommended.",
-            urgent: false
-          }
-        ],
-        isActive: true,
-        priority: 'medium',
-        escalationRules: [
-          {
-            delayMinutes: 120,
-            escalateTo: [{ type: 'role', identifier: 'department_head' }],
-            condition: "workload_variance > 50"
-          }
-        ],
-        batchingEnabled: true,
-        batchingWindow: 180
-      });
-
-      console.log("✨ Added 5 enterprise smart notification rules with AI-powered personalization");
+      console.log("✨ Added 3 enterprise smart notification rules");
     } catch (error) {
       console.error('Error adding notification rules:', error);
     }
