@@ -30,7 +30,8 @@ export type MoodPalette = {
   }
 }
 
-export const MOOD_PALETTES: Record<string, MoodPalette> = {
+// All 6 mood palettes with cleaner structure
+export const MOOD_PALETTES = {
   professional: {
     name: 'professional',
     label: 'Professional',
@@ -199,9 +200,9 @@ export const MOOD_PALETTES: Record<string, MoodPalette> = {
       card: 'linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%)',
     },
   },
-}
+} satisfies Record<string, MoodPalette>
 
-type MoodPaletteContextType = {
+export type MoodPaletteContextType = {
   currentMood: string
   palette: MoodPalette
   changeMood: (mood: string) => void
@@ -215,19 +216,24 @@ const STORAGE_KEY = 'gigster-garage-mood-palette'
 export function MoodPaletteProvider({ children }: { children: ReactNode }) {
   const [currentMood, setCurrentMood] = useState<string>('professional')
 
+  // restore saved mood with better error handling
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved && MOOD_PALETTES[saved]) {
-      setCurrentMood(saved)
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
+      if (saved && MOOD_PALETTES[saved]) {
+        setCurrentMood(saved)
+      }
+    } catch {
+      // avoid crashing if storage is not accessible
     }
   }, [])
 
+  // apply CSS variables + persist with SSR safety
   useEffect(() => {
-    const palette = MOOD_PALETTES[currentMood]
-    if (!palette) return
+    const palette = MOOD_PALETTES[currentMood] ?? MOOD_PALETTES.professional
+    const root = typeof document !== 'undefined' ? document.documentElement : undefined
+    if (!root) return
 
-    const root = document.documentElement
-    
     root.style.setProperty('--primary', palette.colors.primary)
     root.style.setProperty('--secondary', palette.colors.secondary)
     root.style.setProperty('--accent', palette.colors.accent)
@@ -240,35 +246,38 @@ export function MoodPaletteProvider({ children }: { children: ReactNode }) {
     root.style.setProperty('--border', palette.colors.border)
     root.style.setProperty('--input', palette.colors.input)
     root.style.setProperty('--ring', palette.colors.ring)
-    
+
     root.style.setProperty('--garage-navy', palette.colors.gigsterPrimary)
     root.style.setProperty('--ignition-teal', palette.colors.gigsterSecondary)
     root.style.setProperty('--workshop-amber', palette.colors.gigsterAccent)
-    
+
     root.style.setProperty('--gigster-gradient', palette.gradients.primary)
     root.style.setProperty('--gigster-gradient-navy', palette.gradients.hero)
     root.style.setProperty('--mood-card-gradient', palette.gradients.card)
-    
-    localStorage.setItem(STORAGE_KEY, currentMood)
+
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, currentMood)
+      }
+    } catch {
+      // avoid crashing if storage is not accessible
+    }
   }, [currentMood])
 
   const changeMood = (mood: string) => {
-    if (MOOD_PALETTES[mood]) {
-      setCurrentMood(mood)
-    }
+    if (MOOD_PALETTES[mood]) setCurrentMood(mood)
   }
 
-  const value = {
+  const palette = MOOD_PALETTES[currentMood] ?? MOOD_PALETTES.professional
+  const value: MoodPaletteContextType = {
     currentMood,
-    palette: MOOD_PALETTES[currentMood],
+    palette,
     changeMood,
-    availableMoods: Object.values(MOOD_PALETTES),
+    availableMoods: Object.values(MOOD_PALETTES) as MoodPalette[],
   }
 
   return (
-    <MoodPaletteContext.Provider value={value}>
-      {children}
-    </MoodPaletteContext.Provider>
+    <MoodPaletteContext.Provider value={value}>{children}</MoodPaletteContext.Provider>
   )
 }
 

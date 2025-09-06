@@ -1,0 +1,152 @@
+import { useState, useEffect, createContext, useContext } from 'react'
+import type { ReactNode } from 'react'
+
+export type MoodPalette = {
+  name: string
+  label: string
+  emoji: string
+  description: string
+  colors: {
+    primary: string
+    secondary: string
+    accent: string
+    background: string
+    foreground: string
+    card: string
+    cardForeground: string
+    muted: string
+    mutedForeground: string
+    border: string
+    input: string
+    ring: string
+    gigsterPrimary: string
+    gigsterSecondary: string
+    gigsterAccent: string
+  }
+  gradients: {
+    primary: string
+    hero: string
+    card: string
+  }
+}
+
+// Ensure the record satisfies the expected shape for strong typing
+export const MOOD_PALETTES = {
+  professional: {
+    name: 'professional',
+    label: 'Professional',
+    emoji: '💼',
+    description: 'Classic Gigster Garage brand colors for focused productivity',
+    colors: {
+      primary: '#004C6D',
+      secondary: '#0B1D3A',
+      accent: '#FFB200',
+      background: 'hsl(0 0% 100%)',
+      foreground: 'hsl(0 0% 0%)',
+      card: 'hsl(248 10% 97%)',
+      cardForeground: 'hsl(0 0% 0%)',
+      muted: 'hsl(220 14.3% 95.9%)',
+      mutedForeground: 'hsl(220 8.9% 46.1%)',
+      border: 'hsl(220 13% 91%)',
+      input: 'hsl(220 13% 91%)',
+      ring: '#004C6D',
+      gigsterPrimary: '#004C6D',
+      gigsterSecondary: '#0B1D3A',
+      gigsterAccent: '#FFB200',
+    },
+    gradients: {
+      primary: 'linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%)',
+      hero: 'linear-gradient(135deg, #004C6D 0%, #003d5a 100%)',
+      card: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
+    },
+  },
+  // TODO: add more moods here
+} satisfies Record<string, MoodPalette>
+
+/**
+ * Context typing
+ */
+export type MoodPaletteContextType = {
+  currentMood: string
+  palette: MoodPalette
+  changeMood: (mood: string) => void
+  availableMoods: MoodPalette[]
+}
+
+const MoodPaletteContext = createContext<MoodPaletteContextType | undefined>(undefined)
+
+const STORAGE_KEY = 'gigster-garage-mood-palette'
+
+export function MoodPaletteProvider({ children }: { children: ReactNode }) {
+  const [currentMood, setCurrentMood] = useState<string>('professional')
+
+  // restore saved mood
+  useEffect(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
+      if (saved && MOOD_PALETTES[saved]) {
+        setCurrentMood(saved)
+      }
+    } catch {
+      // why: avoid crashing if storage is not accessible
+    }
+  }, [])
+
+  // apply CSS variables + persist
+  useEffect(() => {
+    const palette = MOOD_PALETTES[currentMood] ?? MOOD_PALETTES.professional
+    const root = typeof document !== 'undefined' ? document.documentElement : undefined
+    if (!root) return
+
+    root.style.setProperty('--primary', palette.colors.primary)
+    root.style.setProperty('--secondary', palette.colors.secondary)
+    root.style.setProperty('--accent', palette.colors.accent)
+    root.style.setProperty('--background', palette.colors.background)
+    root.style.setProperty('--foreground', palette.colors.foreground)
+    root.style.setProperty('--card', palette.colors.card)
+    root.style.setProperty('--card-foreground', palette.colors.cardForeground)
+    root.style.setProperty('--muted', palette.colors.muted)
+    root.style.setProperty('--muted-foreground', palette.colors.mutedForeground)
+    root.style.setProperty('--border', palette.colors.border)
+    root.style.setProperty('--input', palette.colors.input)
+    root.style.setProperty('--ring', palette.colors.ring)
+
+    root.style.setProperty('--garage-navy', palette.colors.gigsterPrimary)
+    root.style.setProperty('--ignition-teal', palette.colors.gigsterSecondary)
+    root.style.setProperty('--workshop-amber', palette.colors.gigsterAccent)
+
+    root.style.setProperty('--gigster-gradient', palette.gradients.primary)
+    root.style.setProperty('--gigster-gradient-navy', palette.gradients.hero)
+    root.style.setProperty('--mood-card-gradient', palette.gradients.card)
+
+    try {
+      localStorage.setItem(STORAGE_KEY, currentMood)
+    } catch {
+      // why: avoid crashing if storage is not accessible
+    }
+  }, [currentMood])
+
+  const changeMood = (mood: string) => {
+    if (MOOD_PALETTES[mood]) setCurrentMood(mood)
+  }
+
+  const palette = MOOD_PALETTES[currentMood] ?? MOOD_PALETTES.professional
+  const value: MoodPaletteContextType = {
+    currentMood,
+    palette,
+    changeMood,
+    availableMoods: Object.values(MOOD_PALETTES) as MoodPalette[],
+  }
+
+  return (
+    <MoodPaletteContext.Provider value={value}>{children}</MoodPaletteContext.Provider>
+  )
+}
+
+export function useMoodPalette() {
+  const context = useContext(MoodPaletteContext)
+  if (!context) {
+    throw new Error('useMoodPalette must be used within a MoodPaletteProvider')
+  }
+  return context
+}
