@@ -203,35 +203,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/user", async (req, res) => {
     if (req.session.user) {
-      const cacheKey = `user:${req.session.user.id}`;
-      
-      // Try cache first
-      let userData = await AppCache.get(cacheKey);
-      if (!userData) {
-        // Fetch fresh user data from database
-        const freshUser = await storage.getUser(req.session.user.id);
-        if (freshUser) {
-          userData = { 
-            user: { 
-              id: freshUser.id, 
-              username: freshUser.username, 
-              name: freshUser.name, 
-              email: freshUser.email, 
-              role: freshUser.role,
-              hasCompletedOnboarding: freshUser.hasCompletedOnboarding,
-              notificationEmail: freshUser.notificationEmail,
-              phone: freshUser.phone,
-              emailOptIn: freshUser.emailOptIn,
-              smsOptIn: freshUser.smsOptIn
-            } 
-          };
-          // Cache for 10 minutes with user-data tag
-          await AppCache.set(cacheKey, userData, 600, ['user-data']);
-        }
-      }
-      
-      if (userData) {
-        res.json(userData);
+      // Fetch fresh user data from database to ensure accuracy
+      const freshUser = await storage.getUser(req.session.user.id);
+      if (freshUser) {
+        res.json({ 
+          user: { 
+            id: freshUser.id, 
+            username: freshUser.username, 
+            name: freshUser.name, 
+            email: freshUser.email, 
+            role: freshUser.role,
+            hasCompletedOnboarding: freshUser.hasCompletedOnboarding,
+            notificationEmail: freshUser.notificationEmail,
+            phone: freshUser.phone,
+            emailOptIn: freshUser.emailOptIn,
+            smsOptIn: freshUser.smsOptIn
+          } 
+        });
       } else {
         res.status(401).json({ message: "User not found" });
       }
@@ -243,16 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project routes
   app.get("/api/projects", requireAuth, async (req, res) => {
     try {
-      const cacheKey = 'projects:all';
-      
-      // Try cache first
-      let projects = await AppCache.get(cacheKey);
-      if (!projects) {
-        projects = await storage.getProjects();
-        // Cache for 15 minutes with project-data tag
-        await AppCache.set(cacheKey, projects, 900, ['project-data']);
-      }
-      
+      const projects = await storage.getProjects();
       res.json(projects);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -272,8 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const project = await storage.getOrCreateProject(result.data.name);
       
-      // Invalidate project cache after creation
-      await AppCache.invalidateByTags(['project-data']);
+      // Cache invalidation temporarily disabled
       
       res.json(project);
     } catch (error) {
@@ -556,16 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tasks", requireAuth, async (req, res) => {
     try {
       const user = req.session.user!;
-      const cacheKey = `tasks:${user.role}:${user.id}`;
-      
-      // Try cache first
-      let tasks = await AppCache.get(cacheKey);
-      if (!tasks) {
-        tasks = await storage.getTasks(user.role === 'admin' ? undefined : user.id);
-        // Cache for 5 minutes with task-data tag
-        await AppCache.set(cacheKey, tasks, 300, ['task-data']);
-      }
-      
+      const tasks = await storage.getTasks(user.role === 'admin' ? undefined : user.id);
       res.json(tasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -609,8 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { progress, ...taskData } = result.data;
       const task = await storage.createTask(taskData, user.id);
       
-      // Invalidate cache after task creation
-      await AppCache.invalidateByTags(['task-data']);
+      // Cache invalidation temporarily disabled
       
       // Send notifications for high priority tasks
       if (task.priority === 'high' && task.assignedToId) {
