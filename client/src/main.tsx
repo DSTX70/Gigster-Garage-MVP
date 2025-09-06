@@ -1,75 +1,50 @@
-// Force immediate HTML fallback for debugging mobile issues
-const root = document.getElementById('root')
-if (root) {
-  root.innerHTML = `
-    <div style="padding: 20px; background: #3B82F6; color: white; font-family: Arial, sans-serif; min-height: 100vh;">
-      <h1>🔧 Emergency Debug Mode</h1>
-      <p>If you can see this, JavaScript is loading on your device.</p>
-      <div style="background: #1E40AF; padding: 15px; margin: 15px 0; border-radius: 8px;">
-        <h2>Device Test:</h2>
-        <p>User Agent: <code style="background: #1E3A8A; padding: 2px 5px;">${navigator.userAgent}</code></p>
-        <p>Screen: ${screen.width}x${screen.height}</p>
-        <p>Viewport: ${window.innerWidth}x${window.innerHeight}</p>
-      </div>
-      <div id="react-test" style="background: #059669; padding: 15px; margin: 15px 0; border-radius: 8px;">
-        <strong>Testing React loading...</strong>
-      </div>
+import { createRoot } from 'react-dom/client'
+import App from './App'
+import './index.css'
+
+// Mobile browser compatibility checks
+const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|Opera Mini/i.test(navigator.userAgent)
+const isIOSSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent)
+
+// Add mobile-specific error handling
+if (isMobile) {
+  window.addEventListener('error', (e) => {
+    console.error('📱 Mobile error:', e.error)
+    const root = document.getElementById('root')
+    if (root && root.innerHTML === '') {
+      root.innerHTML = `
+        <div style="padding: 20px; background: #EF4444; color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+          <h2>📱 Mobile Error Detected</h2>
+          <p><strong>Device:</strong> ${navigator.userAgent}</p>
+          <p><strong>Error:</strong> ${e.error?.message || 'Unknown error'}</p>
+          <a href="/mobile" style="display: inline-block; background: #DC2626; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; margin-top: 15px;">
+            🔄 Try Mobile Version
+          </a>
+        </div>
+      `
+    }
+  })
+}
+
+try {
+  console.log('🚀 Starting React app...')
+  
+  // For iOS Safari, add extra safety checks
+  if (isIOSSafari) {
+    console.log('📱 iOS Safari detected - using compatibility mode')
+  }
+  
+  createRoot(document.getElementById('root')!).render(<App />)
+  console.log('✅ React app rendered successfully')
+} catch (error) {
+  console.error('💥 React render error:', error)
+  document.getElementById('root')!.innerHTML = `
+    <div style="padding: 20px; background: #DC2626; color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+      <h2>💥 React Render Error</h2>
+      <p><strong>Error:</strong> ${error}</p>
+      <a href="/mobile" style="display: inline-block; background: #B91C1C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; margin-top: 15px;">
+        📱 Try Mobile Version
+      </a>
     </div>
   `
 }
-
-// Test React loading after a delay
-setTimeout(async () => {
-  try {
-    console.log('🎨 Testing React import...')
-    const { createRoot } = await import('react-dom/client')
-    const reactTest = document.getElementById('react-test')
-    if (reactTest) {
-      reactTest.innerHTML = '<strong>✅ React modules loaded! Testing render...</strong>'
-    }
-    
-    // Now try to render React
-    setTimeout(async () => {
-      try {
-        const { default: App } = await import('./App')
-        
-        const React = await import('react')
-        
-        const TestApp = () => {
-          return React.default.createElement('div', {
-            style: { padding: '20px', background: '#10B981', color: 'white', borderRadius: '8px' }
-          }, [
-            React.default.createElement('h1', { key: 'h1' }, '🎉 React Working!'),
-            React.default.createElement('p', { key: 'p' }, 'React is rendering successfully on your device.'),
-            React.default.createElement('div', { 
-              key: 'div',
-              style: { marginTop: '15px', padding: '10px', background: '#047857', borderRadius: '4px' }
-            }, 'Loading full app...')
-          ])
-        }
-        
-        const newRoot = createRoot(document.getElementById('root')!)
-        newRoot.render(React.default.createElement(TestApp))
-        
-        // If that works, load the full app after 2 seconds
-        setTimeout(() => {
-          newRoot.render(React.default.createElement(App))
-        }, 2000)
-        
-      } catch (appError: any) {
-        console.error('App loading error:', appError)
-        const reactTest = document.getElementById('react-test')
-        if (reactTest) {
-          reactTest.innerHTML = `<strong>❌ App Error:</strong> ${appError?.message || appError}`
-        }
-      }
-    }, 1000)
-    
-  } catch (reactError: any) {
-    console.error('React import error:', reactError)
-    const reactTest = document.getElementById('react-test')
-    if (reactTest) {
-      reactTest.innerHTML = `<strong>❌ React Import Error:</strong> ${reactError?.message || reactError}`
-    }
-  }
-}, 500)
