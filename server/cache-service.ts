@@ -150,7 +150,7 @@ export class CacheService {
     const regex = this.patternToRegex(pattern);
     let deletedCount = 0;
 
-    for (const key of this.cache.keys()) {
+    for (const key of Array.from(this.cache.keys())) {
       if (regex.test(key)) {
         this.cache.delete(key);
         deletedCount++;
@@ -168,7 +168,7 @@ export class CacheService {
   async delByTags(tags: string[]): Promise<number> {
     let deletedCount = 0;
 
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (entry.tags && tags.some(tag => entry.tags!.includes(tag))) {
         this.cache.delete(key);
         deletedCount++;
@@ -326,7 +326,7 @@ export class CacheService {
     
     await logAuditEvent(
       'system',
-      'system_maintenance',
+      'system_config',
       'cache_flush',
       {
         id: 'system',
@@ -391,7 +391,7 @@ export class CacheService {
   async export(): Promise<Array<{ key: string; value: any; meta: any }>> {
     const exports = [];
     
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (!this.isExpired(entry)) {
         exports.push({
           key,
@@ -470,7 +470,7 @@ export class CacheService {
     // Estimate memory usage based on cache size
     let totalSize = 0;
     
-    for (const entry of this.cache.values()) {
+    for (const entry of Array.from(this.cache.values())) {
       totalSize += entry.value.length + JSON.stringify(entry).length;
     }
     
@@ -565,7 +565,7 @@ export class CacheService {
   }
 
   private applyAutoTags(key: string, entry: CacheEntry): void {
-    for (const [pattern, config] of this.patterns.entries()) {
+    for (const [pattern, config] of Array.from(this.patterns.entries())) {
       const regex = this.patternToRegex(pattern);
       if (regex.test(key)) {
         entry.tags = [...(entry.tags || []), ...config.dependentTags];
@@ -596,7 +596,7 @@ export class CacheService {
   private cleanupExpiredEntries(): void {
     let cleanedCount = 0;
     
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (this.isExpired(entry)) {
         this.cache.delete(key);
         cleanedCount++;

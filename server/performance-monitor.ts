@@ -429,7 +429,7 @@ export class PerformanceMonitor {
     // Log to audit system
     logAuditEvent(
       'system',
-      'system_alert',
+      'system_config',
       'performance_alert_triggered',
       {
         id: 'system',
@@ -442,7 +442,7 @@ export class PerformanceMonitor {
         id: alert.id,
         name: alert.title
       },
-      'warning',
+      'failure',
       {
         description: `Performance alert: ${alert.title}`,
         metadata: {
