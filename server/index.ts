@@ -82,9 +82,17 @@ app.get('/mobile', (req, res) => {
 // Detect iOS Safari and redirect to mobile fallback
 app.use((req, res, next) => {
   const userAgent = req.get('User-Agent') || '';
-  const isIOSSafari = /iPhone|iPad|iPod/.test(userAgent) && /Safari/.test(userAgent);
   
-  if (isIOSSafari && req.path === '/' && !req.query.desktop) {
+  // Enhanced iOS detection - catch more iOS Safari variants
+  const isIOS = /iPhone|iPad|iPod/.test(userAgent);
+  const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS/.test(userAgent);
+  const isIOSSafari = isIOS && isSafari;
+  
+  // Also redirect any mobile browser that might have gzip issues
+  const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|Opera Mini/i.test(userAgent);
+  
+  if ((isIOSSafari || isMobile) && req.path === '/' && !req.query.desktop) {
+    console.log(`📱 Redirecting mobile browser to /mobile - UA: ${userAgent.substring(0, 100)}...`);
     return res.redirect('/mobile');
   }
   
