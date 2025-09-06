@@ -48,8 +48,9 @@ app.get('/mobile', (req, res) => {
         <div class="card">
             <h2>📱 Mobile App Loading...</h2>
             <p>If the app doesn't load automatically, try:</p>
-            <a href="/" class="btn">🔄 Try Main App</a>
-            <a href="/test.html" class="btn">🧪 Test Page</a>
+            <a href="/mobile/tasks" class="btn">📋 View Tasks</a>
+            <a href="/mobile/projects" class="btn">📁 Projects</a>
+            <a href="/mobile/invoices" class="btn">💰 Invoices</a>
         </div>
         <div id="status" class="card">
             <strong>⚙️ Initializing...</strong>
@@ -60,11 +61,11 @@ app.get('/mobile', (req, res) => {
         console.log('📱 Mobile fallback page loaded')
         document.getElementById('status').innerHTML = '<strong>✅ JavaScript Working!</strong><p>Mobile compatibility mode active.</p>'
         
-        // Try to load the main app after 2 seconds
+        // Don't auto-redirect to avoid the Error -1015 issue
+        // Instead, provide manual options for users
         setTimeout(() => {
-            document.getElementById('status').innerHTML = '<strong>🔄 Loading main app...</strong>'
-            window.location.href = '/'
-        }, 3000)
+            document.getElementById('status').innerHTML = '<strong>📱 Mobile Version Ready!</strong><p>This mobile version bypasses iOS Safari compatibility issues.</p><p style="margin-top: 10px;"><a href="/?desktop=1" style="color: #60A5FA; text-decoration: underline;">🖥️ Try Desktop Version (Advanced)</a></p>'
+        }, 1000)
     </script>
 </body>
 </html>`
