@@ -46,24 +46,10 @@ export function cacheMiddleware(ttl: number = 300) {
     }
 
     try {
-      // Try to get cached response
-      const cachedResponse = await AppCache.getApiResponse(req.path, req.query);
-      
-      if (cachedResponse) {
-        console.log(`🚀 Cache HIT for ${req.path}`);
-        return res.json(cachedResponse);
-      }
+      // Cache operations temporarily disabled to prevent data corruption
+      // TODO: Redesign cache implementation for complex data structures
 
-      // Override res.json to cache the response
-      const originalJson = res.json.bind(res);
-      res.json = function(data: any) {
-        // Cache successful responses
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          AppCache.cacheApiResponse(req.path, req.query, data, ttl)
-            .catch(error => console.error('Cache error:', error));
-        }
-        return originalJson(data);
-      };
+      // Response caching temporarily disabled
 
       next();
     } catch (error) {
