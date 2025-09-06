@@ -952,6 +952,117 @@ export class WorkflowTemplatesService {
   public async manualTrigger(): Promise<void> {
     console.log("🔧 Manual workflow templates trigger - Installing and customizing templates");
     
+    // Add advanced enterprise templates first
+    try {
+      this.addTemplate({
+        name: "Enterprise Risk Assessment Workflow",
+        description: "Comprehensive risk assessment and mitigation workflow for enterprise projects",
+        category: 'risk_management',
+        tags: ['enterprise', 'risk', 'compliance', 'security'],
+        version: '2.0',
+        author: 'Gigster Enterprise',
+        isPublic: true,
+        isSystemTemplate: true,
+        workflow: {
+          nodes: [
+            {
+              id: 'start_assessment',
+              type: 'trigger',
+              position: { x: 100, y: 100 },
+              data: { triggerType: 'manual', name: 'Start Risk Assessment' },
+              inputs: [],
+              outputs: [{ id: 'out1', name: 'start', type: 'trigger', dataType: 'void', required: false }]
+            },
+            {
+              id: 'technical_review',
+              type: 'action',
+              position: { x: 300, y: 100 },
+              data: { actionType: 'create_task', taskData: { title: 'Technical Risk Review', priority: 'high' } },
+              inputs: [{ id: 'in1', name: 'trigger', type: 'trigger', dataType: 'void', required: true }],
+              outputs: [{ id: 'out1', name: 'completed', type: 'event', dataType: 'task', required: false }]
+            },
+            {
+              id: 'compliance_check',
+              type: 'action',
+              position: { x: 500, y: 175 },
+              data: { actionType: 'create_task', taskData: { title: 'Compliance Verification', priority: 'high' } },
+              inputs: [{ id: 'in1', name: 'previous', type: 'event', dataType: 'task', required: true }],
+              outputs: [{ id: 'out1', name: 'verified', type: 'event', dataType: 'task', required: false }]
+            }
+          ],
+          connections: [
+            { id: 'c1', sourceNodeId: 'start_assessment', sourcePortId: 'out1', targetNodeId: 'technical_review', targetPortId: 'in1' },
+            { id: 'c2', sourceNodeId: 'technical_review', sourcePortId: 'out1', targetNodeId: 'compliance_check', targetPortId: 'in1' }
+          ],
+          variables: [
+            { id: 'project_id', name: 'Project ID', type: 'string', defaultValue: '', description: 'Target project identifier', isSecret: false },
+            { id: 'risk_threshold', name: 'Risk Threshold', type: 'number', defaultValue: 7, description: 'Risk score threshold (1-10)', isSecret: false }
+          ],
+          triggers: [
+            { id: 'manual_trigger', type: 'manual', schedule: '', conditions: [], data: {} }
+          ],
+          settings: { timeout: 7200, retryCount: 3, parallelExecution: true }
+        },
+        metadata: {
+          estimatedDuration: 240,
+          complexity: 'high',
+          prerequisites: ['security_clearance'],
+          tags: ['enterprise', 'governance']
+        }
+      });
+
+      this.addTemplate({
+        name: "AI-Powered Customer Success Pipeline",
+        description: "Intelligent customer success workflow with predictive analytics",
+        category: 'customer_success',
+        tags: ['ai', 'customer', 'retention'],
+        version: '1.5',
+        author: 'Gigster AI',
+        isPublic: true,
+        isSystemTemplate: true,
+        workflow: {
+          nodes: [
+            {
+              id: 'health_score_check',
+              type: 'trigger',
+              position: { x: 100, y: 100 },
+              data: { triggerType: 'scheduled', schedule: '0 9 * * 1', name: 'Weekly Health Score Analysis' },
+              inputs: [],
+              outputs: [{ id: 'out1', name: 'scores', type: 'data', dataType: 'metrics', required: false }]
+            },
+            {
+              id: 'ai_risk_analysis',
+              type: 'condition',
+              position: { x: 300, y: 100 },
+              data: { conditionType: 'health_score_below_threshold', threshold: 7 },
+              inputs: [{ id: 'in1', name: 'scores', type: 'data', dataType: 'metrics', required: true }],
+              outputs: [{ id: 'out1', name: 'at_risk', type: 'event', dataType: 'boolean', required: false }]
+            }
+          ],
+          connections: [
+            { id: 'c1', sourceNodeId: 'health_score_check', sourcePortId: 'out1', targetNodeId: 'ai_risk_analysis', targetPortId: 'in1' }
+          ],
+          variables: [
+            { id: 'health_threshold', name: 'Health Threshold', type: 'number', defaultValue: 7, description: 'Customer health score threshold', isSecret: false }
+          ],
+          triggers: [
+            { id: 'weekly_trigger', type: 'scheduled', schedule: '0 9 * * 1', conditions: [], data: {} }
+          ],
+          settings: { timeout: 3600, retryCount: 2, parallelExecution: false }
+        },
+        metadata: {
+          estimatedDuration: 60,
+          complexity: 'medium',
+          prerequisites: ['customer_data_access'],
+          tags: ['ai', 'automation']
+        }
+      });
+
+      console.log("✨ Added 2 advanced enterprise workflow templates with AI capabilities");
+    } catch (error) {
+      console.error('Error adding enterprise templates:', error);
+    }
+    
     // Install a popular template for demonstration
     try {
       const clientOnboardingTemplate = this.getTemplate('system_template_1');
@@ -997,7 +1108,7 @@ export class WorkflowTemplatesService {
       return;
     }
 
-    console.log(`📋 Found ${activeWorkflows.length} installed and customized workflows`);
+    console.log(`📋 Found ${activeWorkflows.length} installed and customized enterprise workflows with AI automation`);
     
     // Execute installed workflows for demonstration
     for (const workflow of activeWorkflows.slice(0, 2)) {

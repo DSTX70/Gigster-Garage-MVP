@@ -628,12 +628,8 @@ export class AutomatedInvoicingService {
         name: "Enterprise Client Monthly Billing",
         clientId: "enterprise_clients",
         templateData: {
-          description: "Enterprise Monthly Billing - Net 15 Terms",
-          notes: "Includes 2% early payment discount, 1.5% late fee",
-          customData: {
-            include_time_breakdown: true,
-            include_milestone_progress: true
-          }
+          notes: "Enterprise Monthly Billing - Net 15 Terms. Includes 2% early payment discount, 1.5% late fee",
+          status: "draft"
         },
         frequency: 'monthly',
         interval: 1,
@@ -648,12 +644,8 @@ export class AutomatedInvoicingService {
         name: "Milestone-Based Billing for Premium Projects",
         clientId: "premium_projects",
         templateData: {
-          description: "Premium Project Milestone Billing - Net 10 Terms",
-          notes: "Requires approval, includes deliverable summary",
-          customData: {
-            require_approval: true,
-            include_deliverable_summary: true
-          }
+          notes: "Premium Project Milestone Billing - Net 10 Terms. Requires approval, includes deliverable summary",
+          status: "draft"
         },
         frequency: 'monthly',
         interval: 1,
