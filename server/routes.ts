@@ -16,6 +16,7 @@ import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
 import OpenAI from "openai";
 import { invoiceStatusService } from "./invoiceStatusService";
+import { automatedInvoicingService } from "./automatedInvoicingService";
 import { sendProposalResponseNotification, createProposalRevision, getProposalApprovalStats } from "./proposalWorkflowService";
 import { contractManagementService } from "./contractManagementService";
 import { backupRoutes } from "./backup-routes";
@@ -2856,6 +2857,93 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error fetching overdue invoices:", error);
       res.status(500).json({ error: "Failed to fetch overdue invoices" });
+    }
+  });
+
+  // =================== AUTOMATED INVOICING API ===================
+  
+  // Get all automation rules
+  app.get("/api/invoices/automation/rules", requireAuth, async (req, res) => {
+    try {
+      const rules = automatedInvoicingService.getAllRules();
+      res.json(rules);
+    } catch (error) {
+      console.error("Error fetching automation rules:", error);
+      res.status(500).json({ error: "Failed to fetch automation rules" });
+    }
+  });
+
+  // Create recurring invoice rule
+  app.post("/api/invoices/automation/recurring", requireAuth, async (req, res) => {
+    try {
+      const { name, clientId, templateData, frequency, interval, autoSend, reminderDays } = req.body;
+      
+      if (!name || !clientId || !frequency || !interval) {
+        return res.status(400).json({ error: "Missing required fields: name, clientId, frequency, interval" });
+      }
+
+      const ruleId = automatedInvoicingService.addRecurringRule({
+        name,
+        clientId,
+        templateData: templateData || {},
+        frequency,
+        interval: parseInt(interval),
+        nextGenerationDate: new Date(),
+        isActive: true,
+        autoSend: autoSend || false,
+        reminderDays: reminderDays || [7, 3, 0]
+      });
+
+      res.json({ 
+        success: true, 
+        ruleId, 
+        message: `Recurring invoice rule "${name}" created successfully` 
+      });
+    } catch (error) {
+      console.error("Error creating recurring rule:", error);
+      res.status(500).json({ error: "Failed to create recurring invoice rule" });
+    }
+  });
+
+  // Create payment reminder rule
+  app.post("/api/invoices/automation/reminder", requireAuth, async (req, res) => {
+    try {
+      const { name, triggerDays, reminderType, customMessage } = req.body;
+      
+      if (!name || triggerDays === undefined || !reminderType) {
+        return res.status(400).json({ error: "Missing required fields: name, triggerDays, reminderType" });
+      }
+
+      const ruleId = automatedInvoicingService.addReminderRule({
+        name,
+        triggerDays: parseInt(triggerDays),
+        reminderType,
+        isActive: true,
+        customMessage
+      });
+
+      res.json({ 
+        success: true, 
+        ruleId, 
+        message: `Payment reminder rule "${name}" created successfully` 
+      });
+    } catch (error) {
+      console.error("Error creating reminder rule:", error);
+      res.status(500).json({ error: "Failed to create payment reminder rule" });
+    }
+  });
+
+  // Manual trigger for automation testing
+  app.post("/api/invoices/automation/trigger", requireAuth, async (req, res) => {
+    try {
+      await automatedInvoicingService.manualTrigger();
+      res.json({ 
+        success: true, 
+        message: "Manual automation trigger completed successfully" 
+      });
+    } catch (error) {
+      console.error("Error during manual automation trigger:", error);
+      res.status(500).json({ error: "Failed to trigger automation" });
     }
   });
 
@@ -6325,6 +6413,7 @@ Keep it professional but easy to understand.`;
   // Start automated business logic services
   console.log("🚀 Starting background services...");
   invoiceStatusService.startStatusMonitoring();
+  automatedInvoicingService.startAutomatedInvoicing();
   contractManagementService.startContractMonitoring();
 
   const httpServer = createServer(app);
