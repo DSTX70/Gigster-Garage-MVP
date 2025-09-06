@@ -1,4 +1,5 @@
-import { useState, useEffect, createContext, useContext, type ReactNode } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
+import type { ReactNode } from 'react'
 
 export type MoodPalette = {
   name: string
@@ -18,7 +19,6 @@ export type MoodPalette = {
     border: string
     input: string
     ring: string
-    // Gigster Garage brand integration
     gigsterPrimary: string
     gigsterSecondary: string
     gigsterAccent: string
@@ -37,9 +37,9 @@ export const MOOD_PALETTES: Record<string, MoodPalette> = {
     emoji: '💼',
     description: 'Classic Gigster Garage brand colors for focused productivity',
     colors: {
-      primary: '#004C6D', // Garage Navy
-      secondary: '#0B1D3A', // Ignition Teal
-      accent: '#FFB200', // Workshop Amber
+      primary: '#004C6D',
+      secondary: '#0B1D3A',
+      accent: '#FFB200',
       background: 'hsl(0 0% 100%)',
       foreground: 'hsl(0 0% 0%)',
       card: 'hsl(248 10% 97%)',
@@ -65,9 +65,9 @@ export const MOOD_PALETTES: Record<string, MoodPalette> = {
     emoji: '⚡',
     description: 'Vibrant orange and red tones for high-energy work sessions',
     colors: {
-      primary: '#EA4C89', // Vibrant Pink
-      secondary: '#FF6B35', // Energetic Orange
-      accent: '#F7931E', // Golden Orange
+      primary: '#EA4C89',
+      secondary: '#FF6B35',
+      accent: '#F7931E',
       background: 'hsl(0 0% 100%)',
       foreground: 'hsl(0 0% 0%)',
       card: 'hsl(14 30% 98%)',
@@ -93,9 +93,9 @@ export const MOOD_PALETTES: Record<string, MoodPalette> = {
     emoji: '🌿',
     description: 'Soothing green and blue tones for peaceful focused work',
     colors: {
-      primary: '#10B981', // Emerald Green
-      secondary: '#059669', // Deep Green
-      accent: '#34D399', // Light Green
+      primary: '#10B981',
+      secondary: '#059669',
+      accent: '#34D399',
       background: 'hsl(0 0% 100%)',
       foreground: 'hsl(0 0% 0%)',
       card: 'hsl(151 30% 98%)',
@@ -121,9 +121,9 @@ export const MOOD_PALETTES: Record<string, MoodPalette> = {
     emoji: '🎨',
     description: 'Purple and magenta palette to inspire creativity',
     colors: {
-      primary: '#8B5CF6', // Purple
-      secondary: '#A855F7', // Light Purple
-      accent: '#C084FC', // Lavender
+      primary: '#8B5CF6',
+      secondary: '#A855F7',
+      accent: '#C084FC',
       background: 'hsl(0 0% 100%)',
       foreground: 'hsl(0 0% 0%)',
       card: 'hsl(269 30% 98%)',
@@ -149,9 +149,9 @@ export const MOOD_PALETTES: Record<string, MoodPalette> = {
     emoji: '🎯',
     description: 'Deep blue tones for maximum concentration',
     colors: {
-      primary: '#1E40AF', // Deep Blue
-      secondary: '#3B82F6', // Blue
-      accent: '#60A5FA', // Light Blue
+      primary: '#1E40AF',
+      secondary: '#3B82F6',
+      accent: '#60A5FA',
       background: 'hsl(0 0% 100%)',
       foreground: 'hsl(0 0% 0%)',
       card: 'hsl(221 30% 98%)',
@@ -177,9 +177,9 @@ export const MOOD_PALETTES: Record<string, MoodPalette> = {
     emoji: '☀️',
     description: 'Golden amber tones for a cozy productive atmosphere',
     colors: {
-      primary: '#D97706', // Amber
-      secondary: '#F59E0B', // Golden
-      accent: '#FCD34D', // Light Amber
+      primary: '#D97706',
+      secondary: '#F59E0B',
+      accent: '#FCD34D',
       background: 'hsl(0 0% 100%)',
       foreground: 'hsl(0 0% 0%)',
       card: 'hsl(45 30% 98%)',
@@ -215,7 +215,6 @@ const STORAGE_KEY = 'gigster-garage-mood-palette'
 export function MoodPaletteProvider({ children }: { children: ReactNode }) {
   const [currentMood, setCurrentMood] = useState<string>('professional')
 
-  // Load saved mood from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved && MOOD_PALETTES[saved]) {
@@ -223,14 +222,12 @@ export function MoodPaletteProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Apply mood colors to CSS variables
   useEffect(() => {
     const palette = MOOD_PALETTES[currentMood]
     if (!palette) return
 
     const root = document.documentElement
     
-    // Apply theme colors
     root.style.setProperty('--primary', palette.colors.primary)
     root.style.setProperty('--secondary', palette.colors.secondary)
     root.style.setProperty('--accent', palette.colors.accent)
@@ -244,17 +241,14 @@ export function MoodPaletteProvider({ children }: { children: ReactNode }) {
     root.style.setProperty('--input', palette.colors.input)
     root.style.setProperty('--ring', palette.colors.ring)
     
-    // Apply Gigster Garage brand integration
     root.style.setProperty('--garage-navy', palette.colors.gigsterPrimary)
     root.style.setProperty('--ignition-teal', palette.colors.gigsterSecondary)
     root.style.setProperty('--workshop-amber', palette.colors.gigsterAccent)
     
-    // Apply gradients
     root.style.setProperty('--gigster-gradient', palette.gradients.primary)
     root.style.setProperty('--gigster-gradient-navy', palette.gradients.hero)
     root.style.setProperty('--mood-card-gradient', palette.gradients.card)
     
-    // Save to localStorage
     localStorage.setItem(STORAGE_KEY, currentMood)
   }, [currentMood])
 
