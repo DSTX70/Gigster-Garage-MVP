@@ -737,7 +737,100 @@ export class SmartNotificationsService {
    * Manual trigger for testing
    */
   public async manualTrigger(): Promise<void> {
-    console.log("🔧 Manual smart notifications trigger");
+    console.log("🔧 Manual smart notifications trigger - Adding enterprise notification rules");
+    
+    // Add custom enterprise notification rules
+    try {
+      // Enterprise client risk alert
+      this.addNotificationRule({
+        name: "Enterprise Client Risk Alert",
+        description: "Alert when high-value clients haven't been contacted in 72 hours",
+        trigger: {
+          type: 'time_based',
+          schedule: '0 */4 * * *' // Every 4 hours
+        },
+        conditions: [
+          { field: 'value', operator: 'greater_than', value: 50000, entityType: 'project' },
+          { field: 'last_contact', operator: 'less_than', value: '72h', entityType: 'project' }
+        ],
+        actions: [
+          {
+            type: 'email',
+            recipients: [{ type: 'role', identifier: 'account_manager' }, { type: 'role', identifier: 'sales_director' }],
+            template: 'enterprise_client_risk',
+            urgent: true
+          }
+        ],
+        isActive: true,
+        priority: 'critical',
+        escalationRules: [
+          {
+            delayMinutes: 30,
+            escalateTo: [{ type: 'role', identifier: 'executive_team' }]
+          }
+        ],
+        batchingEnabled: false,
+        batchingWindow: 0
+      });
+
+      // Performance degradation alert
+      this.addNotificationRule({
+        name: "Performance Degradation Alert",
+        description: "Alert when system performance drops below enterprise SLA",
+        trigger: {
+          type: 'threshold_based',
+          thresholds: [
+            { field: 'response_time', operator: 'greater_than', value: 2000 },
+            { field: 'error_rate', operator: 'greater_than', value: 1 }
+          ]
+        },
+        conditions: [],
+        actions: [
+          {
+            type: 'email',
+            recipients: [{ type: 'role', identifier: 'devops' }, { type: 'role', identifier: 'tech_lead' }],
+            template: 'performance_alert',
+            urgent: true
+          }
+        ],
+        isActive: true,
+        priority: 'high',
+        batchingEnabled: false,
+        batchingWindow: 0
+      });
+
+      // Budget threshold notification
+      this.addNotificationRule({
+        name: "Project Budget Threshold Alert",
+        description: "Smart alert when project budget reaches 80% utilization",
+        trigger: {
+          type: 'threshold_based',
+          thresholds: [
+            { field: 'budget_utilized_percent', operator: 'greater_than', value: 80 }
+          ]
+        },
+        conditions: [
+          { field: 'status', operator: 'in', value: ['active', 'in_progress'], entityType: 'project' }
+        ],
+        actions: [
+          {
+            type: 'email',
+            recipients: [{ type: 'user', identifier: 'project_manager' }, { type: 'role', identifier: 'finance' }],
+            template: 'budget_threshold_warning',
+            urgent: false
+          }
+        ],
+        isActive: true,
+        priority: 'medium',
+        batchingEnabled: true,
+        batchingWindow: 60
+      });
+
+      console.log("✨ Added 3 enterprise smart notification rules");
+    } catch (error) {
+      console.error('Error adding notification rules:', error);
+    }
+    
     await this.processSmartNotifications();
   }
 

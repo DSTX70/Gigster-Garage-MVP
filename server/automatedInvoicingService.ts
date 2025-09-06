@@ -616,10 +616,67 @@ export class AutomatedInvoicingService {
   }
 
   /**
-   * Manual trigger for testing
+   * Manual trigger for testing and configuration
    */
   public async manualTrigger(): Promise<void> {
-    console.log("🔧 Manual automated invoicing trigger");
+    console.log("🔧 Manual automated invoicing trigger - Configuring enterprise invoice automation");
+    
+    // Add enterprise-grade recurring billing rules
+    try {
+      // Monthly enterprise client billing
+      this.addRecurringRule({
+        name: "Enterprise Client Monthly Billing",
+        clientId: "enterprise_clients",
+        templateData: {
+          description: "Enterprise Monthly Billing - Net 15 Terms",
+          notes: "Includes 2% early payment discount, 1.5% late fee",
+          customData: {
+            include_time_breakdown: true,
+            include_milestone_progress: true
+          }
+        },
+        frequency: 'monthly',
+        interval: 1,
+        nextGenerationDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        isActive: true,
+        autoSend: true,
+        reminderDays: [7, 3, 0, 3, 7] // Pre and post due date
+      });
+
+      // High-value project milestone billing
+      this.addRecurringRule({
+        name: "Milestone-Based Billing for Premium Projects",
+        clientId: "premium_projects",
+        templateData: {
+          description: "Premium Project Milestone Billing - Net 10 Terms",
+          notes: "Requires approval, includes deliverable summary",
+          customData: {
+            require_approval: true,
+            include_deliverable_summary: true
+          }
+        },
+        frequency: 'monthly',
+        interval: 1,
+        nextGenerationDate: new Date(),
+        isActive: true,
+        autoSend: false, // Requires manual review for high-value
+        reminderDays: [5, 2, 0, 1]
+      });
+
+      // Enhanced payment reminder with escalation
+      this.addReminderRule({
+        name: "Enterprise Payment Escalation Protocol",
+        triggerDays: 10, // 10 days overdue
+        reminderType: 'urgent',
+        isActive: true,
+        customMessage: "URGENT: Payment overdue. Account may be suspended. Please contact our finance team immediately."
+      });
+
+      console.log("✨ Configured enterprise automated invoice generation with premium billing rules");
+    } catch (error) {
+      console.error('Error configuring invoice automation:', error);
+    }
+    
     await this.processAutomatedInvoicing();
   }
 }

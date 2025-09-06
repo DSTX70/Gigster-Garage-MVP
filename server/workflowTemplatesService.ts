@@ -950,7 +950,44 @@ export class WorkflowTemplatesService {
    * Manual workflow execution trigger
    */
   public async manualTrigger(): Promise<void> {
-    console.log("🔧 Manual workflow templates trigger");
+    console.log("🔧 Manual workflow templates trigger - Installing and customizing templates");
+    
+    // Install a popular template for demonstration
+    try {
+      const clientOnboardingTemplate = this.getTemplate('system_template_1');
+      if (clientOnboardingTemplate) {
+        const workflowId = await this.installTemplate(
+          'system_template_1', 
+          'demo_admin', 
+          {
+            name: 'Custom Client Onboarding - Enterprise',
+            project_manager: 'enterprise_pm',
+            welcome_delay_hours: 2,
+            follow_up_days: [1, 3, 7]
+          }
+        );
+        console.log(`✨ Installed and customized "Client Onboarding" template as workflow: ${workflowId}`);
+      }
+
+      // Install project completion template with customizations
+      const projectTemplate = this.getTemplate('system_template_2');
+      if (projectTemplate) {
+        const workflowId = await this.installTemplate(
+          'system_template_2',
+          'demo_admin',
+          {
+            name: 'Enterprise Project Completion Suite',
+            auto_invoice: true,
+            feedback_delay_days: 5,
+            include_performance_report: true,
+            stakeholder_notification: true
+          }
+        );
+        console.log(`✨ Installed and customized "Project Completion" template as workflow: ${workflowId}`);
+      }
+    } catch (error) {
+      console.error('Error installing templates:', error);
+    }
     
     const activeWorkflows = Array.from(this.installedWorkflows.values())
       .filter(workflow => workflow.isActive);
@@ -960,11 +997,11 @@ export class WorkflowTemplatesService {
       return;
     }
 
-    console.log(`Found ${activeWorkflows.length} active workflows`);
+    console.log(`📋 Found ${activeWorkflows.length} installed and customized workflows`);
     
-    // Execute a few workflows for demonstration
+    // Execute installed workflows for demonstration
     for (const workflow of activeWorkflows.slice(0, 2)) {
-      await this.executeWorkflow(workflow.id, { trigger: 'manual' });
+      await this.executeWorkflow(workflow.id, { trigger: 'manual', source: 'enterprise_demo' });
     }
   }
 }
