@@ -671,7 +671,7 @@ const baseInsertProposalSchema = createInsertSchema(proposals, {
 
 export const insertProposalSchema = baseInsertProposalSchema.refine((data) => {
   // Custom validation: expiration date must be in the future
-  if (data.expirationDate) {
+  if (data.expirationDate && typeof data.expirationDate === 'string') {
     return new Date(data.expirationDate) > new Date();
   }
   return true;
