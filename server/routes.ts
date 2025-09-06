@@ -17,6 +17,8 @@ import type { User } from "@shared/schema";
 import OpenAI from "openai";
 import { invoiceStatusService } from "./invoiceStatusService";
 import { automatedInvoicingService } from "./automatedInvoicingService";
+import { smartNotificationsService } from "./smartNotificationsService";
+import { workflowTemplatesService } from "./workflowTemplatesService";
 import { sendProposalResponseNotification, createProposalRevision, getProposalApprovalStats } from "./proposalWorkflowService";
 import { contractManagementService } from "./contractManagementService";
 import { backupRoutes } from "./backup-routes";
@@ -2944,6 +2946,318 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error during manual automation trigger:", error);
       res.status(500).json({ error: "Failed to trigger automation" });
+    }
+  });
+
+  // =================== SMART NOTIFICATIONS API ===================
+  
+  // Get all notification rules
+  app.get("/api/notifications/rules", requireAuth, async (req, res) => {
+    try {
+      const rules = smartNotificationsService.getAllRules();
+      res.json(rules);
+    } catch (error) {
+      console.error("Error fetching notification rules:", error);
+      res.status(500).json({ error: "Failed to fetch notification rules" });
+    }
+  });
+
+  // Create custom notification rule
+  app.post("/api/notifications/rules", requireAuth, async (req, res) => {
+    try {
+      const { name, description, trigger, conditions, actions, priority, batchingEnabled, batchingWindow } = req.body;
+      
+      if (!name || !trigger || !actions || !Array.isArray(actions)) {
+        return res.status(400).json({ error: "Missing required fields: name, trigger, actions" });
+      }
+
+      const ruleId = smartNotificationsService.addNotificationRule({
+        name,
+        description: description || '',
+        trigger,
+        conditions: conditions || [],
+        actions,
+        isActive: true,
+        priority: priority || 'medium',
+        batchingEnabled: batchingEnabled || false,
+        batchingWindow: batchingWindow || 30
+      });
+
+      res.json({ 
+        success: true, 
+        ruleId, 
+        message: `Smart notification rule "${name}" created successfully` 
+      });
+    } catch (error) {
+      console.error("Error creating notification rule:", error);
+      res.status(500).json({ error: "Failed to create notification rule" });
+    }
+  });
+
+  // Update notification rule
+  app.patch("/api/notifications/rules/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      const success = smartNotificationsService.updateNotificationRule(id, updates);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Notification rule not found" });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Notification rule updated successfully" 
+      });
+    } catch (error) {
+      console.error("Error updating notification rule:", error);
+      res.status(500).json({ error: "Failed to update notification rule" });
+    }
+  });
+
+  // Get notification statistics
+  app.get("/api/notifications/stats", requireAuth, async (req, res) => {
+    try {
+      const stats = smartNotificationsService.getNotificationStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching notification stats:", error);
+      res.status(500).json({ error: "Failed to fetch notification statistics" });
+    }
+  });
+
+  // Manual trigger for smart notifications
+  app.post("/api/notifications/trigger", requireAuth, async (req, res) => {
+    try {
+      await smartNotificationsService.manualTrigger();
+      res.json({ 
+        success: true, 
+        message: "Manual smart notifications trigger completed successfully" 
+      });
+    } catch (error) {
+      console.error("Error during manual notifications trigger:", error);
+      res.status(500).json({ error: "Failed to trigger smart notifications" });
+    }
+  });
+
+  // Trigger event-based notification
+  app.post("/api/notifications/event", requireAuth, async (req, res) => {
+    try {
+      const { eventType, entityType, entityId, metadata } = req.body;
+      
+      if (!eventType || !entityType || !entityId) {
+        return res.status(400).json({ error: "Missing required fields: eventType, entityType, entityId" });
+      }
+
+      await smartNotificationsService.triggerEventNotification(eventType, entityType, entityId, metadata);
+      
+      res.json({ 
+        success: true, 
+        message: `Event notification triggered: ${eventType} for ${entityType}:${entityId}` 
+      });
+    } catch (error) {
+      console.error("Error triggering event notification:", error);
+      res.status(500).json({ error: "Failed to trigger event notification" });
+    }
+  });
+
+  // =================== WORKFLOW TEMPLATES API ===================
+  
+  // Get all workflow templates
+  app.get("/api/workflows/templates", requireAuth, async (req, res) => {
+    try {
+      const templates = workflowTemplatesService.getAllTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching workflow templates:", error);
+      res.status(500).json({ error: "Failed to fetch workflow templates" });
+    }
+  });
+
+  // Search workflow templates
+  app.get("/api/workflows/templates/search", requireAuth, async (req, res) => {
+    try {
+      const { q, category, complexity, tags, minRating } = req.query;
+      
+      const filters: any = {};
+      if (category) filters.category = category as string;
+      if (complexity) filters.complexity = complexity as string;
+      if (tags) filters.tags = (tags as string).split(',');
+      if (minRating) filters.minRating = parseFloat(minRating as string);
+
+      const templates = workflowTemplatesService.searchTemplates(q as string || '', filters);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error searching workflow templates:", error);
+      res.status(500).json({ error: "Failed to search workflow templates" });
+    }
+  });
+
+  // Get templates by category
+  app.get("/api/workflows/templates/category/:category", requireAuth, async (req, res) => {
+    try {
+      const { category } = req.params;
+      const templates = workflowTemplatesService.getTemplatesByCategory(category as any);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching templates by category:", error);
+      res.status(500).json({ error: "Failed to fetch templates by category" });
+    }
+  });
+
+  // Get popular templates
+  app.get("/api/workflows/templates/popular", requireAuth, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const templates = workflowTemplatesService.getPopularTemplates(limit);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching popular templates:", error);
+      res.status(500).json({ error: "Failed to fetch popular templates" });
+    }
+  });
+
+  // Get specific template
+  app.get("/api/workflows/templates/:id", requireAuth, async (req, res) => {
+    try {
+      const template = workflowTemplatesService.getTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching template:", error);
+      res.status(500).json({ error: "Failed to fetch template" });
+    }
+  });
+
+  // Install template as workflow
+  app.post("/api/workflows/templates/:id/install", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { customizations } = req.body;
+      const userId = req.session.user!.id;
+
+      const workflowId = await workflowTemplatesService.installTemplate(id, userId, customizations);
+      
+      res.json({ 
+        success: true, 
+        workflowId, 
+        message: "Template installed successfully as workflow" 
+      });
+    } catch (error) {
+      console.error("Error installing template:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to install template" });
+    }
+  });
+
+  // Create custom template
+  app.post("/api/workflows/templates", requireAuth, async (req, res) => {
+    try {
+      const templateData = req.body;
+      templateData.author = req.session.user!.username;
+      
+      const templateId = workflowTemplatesService.createCustomTemplate(templateData);
+      
+      res.json({ 
+        success: true, 
+        templateId, 
+        message: "Custom template created successfully" 
+      });
+    } catch (error) {
+      console.error("Error creating custom template:", error);
+      res.status(500).json({ error: "Failed to create custom template" });
+    }
+  });
+
+  // Export template
+  app.get("/api/workflows/templates/:id/export", requireAuth, async (req, res) => {
+    try {
+      const templateJson = workflowTemplatesService.exportTemplate(req.params.id);
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="workflow-template-${req.params.id}.json"`);
+      res.send(templateJson);
+    } catch (error) {
+      console.error("Error exporting template:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to export template" });
+    }
+  });
+
+  // Import template
+  app.post("/api/workflows/templates/import", requireAuth, async (req, res) => {
+    try {
+      const { templateJson } = req.body;
+      const userId = req.session.user!.id;
+      
+      const templateId = workflowTemplatesService.importTemplate(templateJson, userId);
+      
+      res.json({ 
+        success: true, 
+        templateId, 
+        message: "Template imported successfully" 
+      });
+    } catch (error) {
+      console.error("Error importing template:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to import template" });
+    }
+  });
+
+  // Get user's installed workflows
+  app.get("/api/workflows/installed", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const workflows = workflowTemplatesService.getUserWorkflows(userId);
+      res.json(workflows);
+    } catch (error) {
+      console.error("Error fetching user workflows:", error);
+      res.status(500).json({ error: "Failed to fetch user workflows" });
+    }
+  });
+
+  // Execute workflow
+  app.post("/api/workflows/:id/execute", requireAuth, async (req, res) => {
+    try {
+      const { trigger } = req.body;
+      const success = await workflowTemplatesService.executeWorkflow(req.params.id, trigger);
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: "Workflow executed successfully" 
+        });
+      } else {
+        res.status(500).json({ error: "Workflow execution failed" });
+      }
+    } catch (error) {
+      console.error("Error executing workflow:", error);
+      res.status(500).json({ error: "Failed to execute workflow" });
+    }
+  });
+
+  // Get workflow statistics
+  app.get("/api/workflows/stats", requireAuth, async (req, res) => {
+    try {
+      const stats = workflowTemplatesService.getWorkflowStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching workflow stats:", error);
+      res.status(500).json({ error: "Failed to fetch workflow statistics" });
+    }
+  });
+
+  // Manual trigger for workflow templates
+  app.post("/api/workflows/trigger", requireAuth, async (req, res) => {
+    try {
+      await workflowTemplatesService.manualTrigger();
+      res.json({ 
+        success: true, 
+        message: "Manual workflow templates trigger completed successfully" 
+      });
+    } catch (error) {
+      console.error("Error during manual workflow trigger:", error);
+      res.status(500).json({ error: "Failed to trigger workflow templates" });
     }
   });
 
@@ -6414,6 +6728,7 @@ Keep it professional but easy to understand.`;
   console.log("🚀 Starting background services...");
   invoiceStatusService.startStatusMonitoring();
   automatedInvoicingService.startAutomatedInvoicing();
+  smartNotificationsService.startSmartNotifications();
   contractManagementService.startContractMonitoring();
 
   const httpServer = createServer(app);
