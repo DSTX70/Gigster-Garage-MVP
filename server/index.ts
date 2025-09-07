@@ -51,9 +51,27 @@ app.get('/mobile', (req, res) => {
             <h2>📱 Mobile App Ready!</h2>
             <p>Choose your section to get started:</p>
             <a href="/mobile/dashboard" class="btn">📊 Dashboard</a>
-            <a href="/mobile/tasks" class="btn">📋 View Tasks</a>
+            <a href="/mobile/tasks" class="btn">📋 Tasks</a>
             <a href="/mobile/projects" class="btn">📁 Projects</a>
             <a href="/mobile/invoices" class="btn">💰 Invoices</a>
+        </div>
+        <div class="card">
+            <h3>⚡ Automation & AI</h3>
+            <a href="/mobile/workflows" class="btn">🔄 Workflows</a>
+            <a href="/mobile/assistant" class="btn">🤖 AI Assistant</a>
+            <a href="/mobile/templates" class="btn">📋 Templates</a>
+        </div>
+        <div class="card">
+            <h3>📊 Analytics & Reports</h3>
+            <a href="/mobile/reports" class="btn">📈 Reports</a>
+            <a href="/mobile/time-tracking" class="btn">⏱️ Time Tracking</a>
+            <a href="/mobile/analytics" class="btn">📊 Analytics</a>
+        </div>
+        <div class="card">
+            <h3>👥 Team & Admin</h3>
+            <a href="/mobile/team" class="btn">👥 Team</a>
+            <a href="/mobile/settings" class="btn">⚙️ Settings</a>
+            <a href="/mobile/admin" class="btn">🔐 Admin</a>
         </div>
         <div id="status" class="card">
             <strong>⚙️ Initializing...</strong>
