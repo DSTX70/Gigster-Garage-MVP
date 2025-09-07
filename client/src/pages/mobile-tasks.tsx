@@ -271,7 +271,7 @@ export default function MobileTasks() {
             <Card key={task.id} className="bg-white/95 backdrop-blur border-0 shadow-lg cursor-pointer" data-testid={`card-task-${index}`}>
               <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
-                  <div className={`w-3 h-3 rounded-full mt-1 ${getPriorityColor(task.priority)}`}></div>
+                  <div className={`w-3 h-3 rounded-full mt-1 ${getPriorityColor(task.priority || 'medium')}`}></div>
                   <div className="flex-1 min-w-0" onClick={() => openTaskDetail(task)}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -284,19 +284,19 @@ export default function MobileTasks() {
                           </p>
                         )}
                         <div className="flex items-center space-x-2 mt-2">
-                          {task.projectName && (
+                          {task.projectId && (
                             <Badge variant="secondary" className="text-xs">
-                              {task.projectName}
+                              Project
                             </Badge>
                           )}
                           <Badge 
                             variant="outline" 
-                            className={`text-xs ${task.priority === 'urgent' ? 'border-red-500 text-red-700' : 
-                                                   task.priority === 'high' ? 'border-orange-500 text-orange-700' :
-                                                   task.priority === 'medium' ? 'border-yellow-500 text-yellow-700' :
+                            className={`text-xs ${task.priority === 'high' ? 'border-red-500 text-red-700' : 
+                                                   task.priority === 'medium' ? 'border-orange-500 text-orange-700' :
+                                                   task.priority === 'low' ? 'border-yellow-500 text-yellow-700' :
                                                    'border-green-500 text-green-700'}`}
                           >
-                            {task.priority}
+                            {task.priority || 'medium'}
                           </Badge>
                         </div>
                       </div>
@@ -314,7 +314,7 @@ export default function MobileTasks() {
                           {task.completed ? (
                             <CheckCircle2 className="h-5 w-5 text-green-500" />
                           ) : (
-                            <Clock className={`h-5 w-5 ${getStatusColor(task.status, task.completed)}`} />
+                            <Clock className={`h-5 w-5 ${getStatusColor(task.status || 'pending', task.completed || false)}`} />
                           )}
                         </Button>
                         <Button
@@ -546,12 +546,12 @@ export default function MobileTasks() {
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full ${getPriorityColor(selectedTask.priority)}`}></div>
+                  <div className={`w-3 h-3 rounded-full ${getPriorityColor(selectedTask.priority || 'medium')}`}></div>
                   <Badge variant="outline" className="text-xs">
-                    {selectedTask.priority} priority
+                    {selectedTask.priority || 'medium'} priority
                   </Badge>
                   <Badge variant="secondary" className="text-xs">
-                    {selectedTask.status}
+                    {selectedTask.status || 'pending'}
                   </Badge>
                   {selectedTask.completed && (
                     <Badge className="text-xs bg-green-100 text-green-800">
@@ -567,10 +567,10 @@ export default function MobileTasks() {
                   </div>
                 )}
 
-                {selectedTask.projectName && (
+                {selectedTask.projectId && (
                   <div>
                     <Label className="text-sm font-medium">Project</Label>
-                    <p className="text-sm text-gray-600 mt-1">{selectedTask.projectName}</p>
+                    <p className="text-sm text-gray-600 mt-1">Project ID: {selectedTask.projectId}</p>
                   </div>
                 )}
 

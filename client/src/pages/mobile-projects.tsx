@@ -156,7 +156,7 @@ export default function MobileProjects() {
                         </p>
                       )}
                     </div>
-                    <Badge className={`text-xs ${getStatusColor(project.status)}`}>
+                    <Badge className={`text-xs ${getStatusColor(project.status || 'active')}`}>
                       {project.status}
                     </Badge>
                   </div>
