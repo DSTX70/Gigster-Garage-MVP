@@ -79,6 +79,97 @@ app.get('/mobile', (req, res) => {
   res.send(mobileHTML)
 });
 
+// Mobile sub-pages for Tasks, Projects, Invoices
+app.get('/mobile/:page', (req, res) => {
+  const page = req.params.page;
+  const pageTitle = page.charAt(0).toUpperCase() + page.slice(1);
+  
+  const mobilePageHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - ${pageTitle}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
+        .page-title { font-size: 2rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+        }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 12px 24px; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            margin: 10px 10px 10px 0;
+            font-weight: bold;
+        }
+        .btn:hover { background: #047857; }
+        .btn-secondary { background: #374151; }
+        .btn-secondary:hover { background: #1F2937; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">📋 ${pageTitle}</div>
+        </div>
+        
+        <div class="card">
+            <h3>📱 Mobile ${pageTitle} Interface</h3>
+            <p>This mobile-optimized ${pageTitle.toLowerCase()} page bypasses iOS Safari compatibility issues.</p>
+            <p style="margin-top: 15px;">Choose an option:</p>
+            
+            <a href="/mobile" class="btn btn-secondary">🏠 Back to Home</a>
+            <a href="/?desktop=1" class="btn">🖥️ Try Desktop Version</a>
+        </div>
+        
+        <div class="card">
+            <h3>🔧 ${pageTitle} Features</h3>
+            <p><strong>Available in this mobile interface:</strong></p>
+            <ul style="margin: 15px 0; padding-left: 20px;">
+                <li>View all ${pageTitle.toLowerCase()}</li>
+                <li>Create new ${pageTitle.toLowerCase()}</li>
+                <li>Edit existing ${pageTitle.toLowerCase()}</li>
+                <li>Mobile-optimized interface</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h3>🔗 Quick Navigation</h3>
+            <a href="/mobile/tasks" class="btn ${page === 'tasks' ? '' : 'btn-secondary'}">📋 Tasks</a>
+            <a href="/mobile/projects" class="btn ${page === 'projects' ? '' : 'btn-secondary'}">📁 Projects</a>
+            <a href="/mobile/invoices" class="btn ${page === 'invoices' ? '' : 'btn-secondary'}">💰 Invoices</a>
+        </div>
+    </div>
+</body>
+</html>`
+  
+  res.set({
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  })
+  res.send(mobilePageHTML)
+});
+
 // Detect iOS Safari and redirect to mobile fallback
 app.use((req, res, next) => {
   const userAgent = req.get('User-Agent') || '';
