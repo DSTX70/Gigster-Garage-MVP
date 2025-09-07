@@ -357,6 +357,24 @@ export default function MobileTasks() {
           )}
         </div>
 
+        {/* Switch to Desktop */}
+        <Card className="bg-white/95 backdrop-blur border-0 shadow-lg" data-testid="card-switch-desktop">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-3">
+                Need the full platform?
+              </p>
+              <a 
+                href="/?desktop=true"
+                className="inline-block bg-[#004C6D] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#003A52] transition-colors"
+                data-testid="link-desktop-version"
+              >
+                🖥️ Switch to Desktop Version
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Add bottom padding for floating button */}
         <div className="h-20"></div>
       </div>
