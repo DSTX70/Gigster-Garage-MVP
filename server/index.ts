@@ -171,7 +171,7 @@ app.get('/mobile/:page', (req, res) => {
   res.send(mobilePageHTML)
 });
 
-// Detect iOS Safari and redirect to mobile fallback
+// Detect iOS Safari and redirect to mobile fallback (only for root path)
 app.use((req, res, next) => {
   const userAgent = req.get('User-Agent') || '';
   
@@ -183,7 +183,8 @@ app.use((req, res, next) => {
   // Also redirect any mobile browser that might have gzip issues
   const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|Opera Mini/i.test(userAgent);
   
-  if ((isIOSSafari || isMobile) && req.path === '/' && !req.query.desktop) {
+  // Only redirect root path, not mobile sub-pages
+  if ((isIOSSafari || isMobile) && req.path === '/' && !req.query.desktop && !req.path.startsWith('/mobile')) {
     console.log(`📱 Redirecting mobile browser to /mobile - UA: ${userAgent.substring(0, 100)}...`);
     return res.redirect('/mobile');
   }
