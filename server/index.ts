@@ -75,9 +75,9 @@ app.get('/mobile', (req, res) => {
         </div>
         <div class="card">
             <h3>🎨 Creative Agency</h3>
-            <a href="/creative-assets" class="btn">🎨 Creative Assets</a>
-            <a href="/campaigns" class="btn">📢 Campaigns</a>
-            <a href="/brand-studio" class="btn">🎯 Brand Studio</a>
+            <a href="/mobile/creative-assets" class="btn">🎨 Creative Assets</a>
+            <a href="/mobile/campaigns" class="btn">📢 Campaigns</a>
+            <a href="/mobile/brand-studio" class="btn">🎯 Brand Studio</a>
         </div>
         <div class="card">
             <h3>👤 Client Management</h3>
@@ -439,6 +439,169 @@ app.get('/mobile/time-tracking', async (req, res) => {
     console.error('Error loading time tracking page:', error);
     res.status(500).send('Error loading page');
   }
+});
+
+// Mobile Creative Assets page
+app.get('/mobile/creative-assets', async (req, res) => {
+  const mobileCreativeHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - Creative Assets</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-secondary { background: #374151; }
+        .coming-soon { 
+            text-align: center; 
+            padding: 30px 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">🎨 Creative Assets</div>
+        </div>
+        
+        <div class="coming-soon">
+            <h2>🚧 Coming Soon!</h2>
+            <p style="margin: 15px 0; opacity: 0.9;">Creative Assets management is being integrated with your comprehensive design system.</p>
+            <p style="margin: 15px 0; opacity: 0.8;">This will include:</p>
+            <ul style="text-align: left; margin: 15px 0; opacity: 0.8;">
+                <li>📸 Brand photography library</li>
+                <li>🎨 Logo and brand asset management</li>
+                <li>📐 Template library</li>
+                <li>🎯 Campaign asset organization</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <a href="/mobile" class="btn btn-secondary">🏠 Back to Home</a>
+            <a href="/mobile/brand-studio" class="btn">🎯 Brand Studio</a>
+            <a href="/mobile/campaigns" class="btn">📢 Campaigns</a>
+        </div>
+    </div>
+</body>
+</html>`
+  
+  res.set({
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  })
+  res.send(mobileCreativeHTML)
+});
+
+// Generic mobile "coming soon" handler for routes being integrated
+const createComingSoonPage = (title, emoji, features) => {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - ${title}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-secondary { background: #374151; }
+        .coming-soon { 
+            text-align: center; 
+            padding: 30px 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">${emoji} ${title}</div>
+        </div>
+        
+        <div class="coming-soon">
+            <h2>🚧 Coming Soon!</h2>
+            <p style="margin: 15px 0; opacity: 0.9;">${title} is being integrated with your comprehensive enterprise system.</p>
+            ${features ? `<p style="margin: 15px 0; opacity: 0.8;">This will include:</p><ul style="text-align: left; margin: 15px 0; opacity: 0.8;">${features.map(f => `<li>${f}</li>`).join('')}</ul>` : ''}
+        </div>
+        
+        <div class="card">
+            <a href="/mobile" class="btn btn-secondary">🏠 Back to Home</a>
+        </div>
+    </div>
+</body>
+</html>`;
+};
+
+// Mobile coming soon pages
+app.get('/mobile/campaigns', (req, res) => {
+  res.send(createComingSoonPage('Campaigns', '📢', ['📊 Campaign performance tracking', '🎯 Audience targeting tools', '📱 Multi-channel management', '📈 ROI analytics']));
+});
+
+app.get('/mobile/brand-studio', (req, res) => {
+  res.send(createComingSoonPage('Brand Studio', '🎯', ['🎨 Brand guidelines management', '🖼️ Visual identity tools', '📐 Design templates', '🔄 Brand consistency checker']));
 });
 
 // Mobile Tasks page with real functionality
