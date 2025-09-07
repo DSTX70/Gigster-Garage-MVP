@@ -83,8 +83,8 @@ export function cacheMiddleware(ttl: number = 300) {
  */
 export function optimizationMiddleware() {
   return (req: Request, res: Response, next: NextFunction) => {
-    // Enable compression
-    res.set('Content-Encoding', 'gzip');
+    // REMOVED: Content-Encoding: gzip header that was causing iOS Safari -1015 errors
+    // This was setting gzip header without actually compressing content
     
     // Set cache headers for static assets
     if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg)$/)) {
