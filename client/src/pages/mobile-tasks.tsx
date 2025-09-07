@@ -71,11 +71,11 @@ export default function MobileTasks() {
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
+                          (task.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     if (filterStatus === 'all') return matchesSearch;
-    if (filterStatus === 'completed') return matchesSearch && task.completed;
-    if (filterStatus === 'pending') return matchesSearch && !task.completed;
+    if (filterStatus === 'completed') return matchesSearch && (task.completed || false);
+    if (filterStatus === 'pending') return matchesSearch && !(task.completed || false);
     
     return matchesSearch;
   });
@@ -173,7 +173,7 @@ export default function MobileTasks() {
   };
 
   const toggleTaskCompletion = (task: Task) => {
-    toggleTaskMutation.mutate({ id: task.id, completed: task.completed });
+    toggleTaskMutation.mutate({ id: task.id, completed: task.completed || false });
   };
 
   if (isLoading) {

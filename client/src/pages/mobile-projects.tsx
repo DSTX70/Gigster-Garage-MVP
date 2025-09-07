@@ -184,7 +184,7 @@ export default function MobileProjects() {
                       </div>
                       <div className="flex items-center text-gray-600">
                         <Calendar className="h-3 w-3 mr-1" />
-                        Created {project.createdAt ? format(new Date(project.createdAt), 'MMM d') : 'Recently'}
+                        Created {project.createdAt ? format(new Date(project.createdAt.toString()), 'MMM d') : 'Recently'}
                       </div>
                     </div>
                     <Link href={`/project/${project.id}`}>
