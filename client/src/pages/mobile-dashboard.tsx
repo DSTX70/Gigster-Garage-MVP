@@ -48,9 +48,61 @@ export default function MobileDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  const { data: dashboard, isLoading } = useQuery<{ success: boolean; data: MobileDashboard }>({
-    queryKey: ["/api/mobile/dashboard"],
+  const { data: tasks = [] } = useQuery<any[]>({
+    queryKey: ["/api/tasks"],
   });
+
+  const { data: projects = [] } = useQuery<any[]>({
+    queryKey: ["/api/projects"],
+  });
+
+  const { data: timeLogs = [] } = useQuery<any[]>({
+    queryKey: ["/api/timelogs"],
+  });
+
+  // Calculate dashboard data from existing endpoints
+  const dashboardData = {
+    quickStats: {
+      todayTasks: tasks.filter(task => {
+        const today = new Date().toISOString().split('T')[0];
+        return task.dueDate && task.dueDate.startsWith(today);
+      }).length,
+      activeProjects: projects.filter(p => p.status === 'active').length,
+      hoursLogged: Math.round(timeLogs.reduce((sum: number, log: any) => {
+        const today = new Date().toISOString().split('T')[0];
+        return log.date === today ? sum + (log.duration || 0) / 60 : sum;
+      }, 0) * 10) / 10,
+      overdueItems: tasks.filter(task => {
+        const today = new Date();
+        return task.dueDate && new Date(task.dueDate) < today && !task.completed;
+      }).length
+    },
+    recentTasks: tasks.slice(0, 4),
+    activeTimers: timeLogs.filter(log => !log.endTime),
+    upcomingDeadlines: tasks.filter(task => {
+      const today = new Date();
+      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      return task.dueDate && new Date(task.dueDate) >= today && new Date(task.dueDate) <= nextWeek;
+    }).slice(0, 3),
+    quickActions: [
+      { id: 'start_timer', type: 'startTimer', label: 'Start Timer', icon: 'play-circle', shortcut: 'ST' },
+      { id: 'log_time', type: 'logTime', label: 'Log Time', icon: 'clock', shortcut: 'LT' },
+      { id: 'create_task', type: 'createTask', label: 'New Task', icon: 'plus-circle', shortcut: 'NT' },
+      { id: 'voice_note', type: 'voiceNote', label: 'Voice Note', icon: 'mic', shortcut: 'VN' }
+    ],
+    notifications: tasks.filter(task => {
+      const today = new Date();
+      return task.dueDate && new Date(task.dueDate) < today && !task.completed;
+    }).slice(0, 3).map(task => ({
+      id: `overdue_${task.id}`,
+      type: 'task_due',
+      title: 'Overdue Task',
+      body: `"${task.title}" is overdue`,
+      data: { taskId: task.id }
+    }))
+  };
+
+  const isLoading = false;
 
   if (isLoading) {
     return (
@@ -63,24 +115,7 @@ export default function MobileDashboard() {
     );
   }
 
-  const dashboardData = dashboard?.data;
   
-  if (!dashboardData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#004C6D] to-[#0B1D3A] flex items-center justify-center p-4">
-        <div className="text-center text-white">
-          <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-orange-300" />
-          <p className="text-lg font-medium mb-4">Unable to load dashboard</p>
-          <Button 
-            onClick={() => window.location.reload()} 
-            className="bg-white text-[#004C6D] hover:bg-gray-100"
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -291,12 +326,16 @@ export default function MobileDashboard() {
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               {dashboardData.quickActions.map((action: any) => {
-                const IconComponent = {
-                  'play-circle': Play,
-                  'clock': Clock,
-                  'plus-circle': Plus,
-                  'mic': Mic
-                }[action.icon] || Plus;
+                const getIconComponent = (iconName: string) => {
+                  switch (iconName) {
+                    case 'play-circle': return Play;
+                    case 'clock': return Clock;
+                    case 'plus-circle': return Plus;
+                    case 'mic': return Mic;
+                    default: return Plus;
+                  }
+                };
+                const IconComponent = getIconComponent(action.icon);
 
                 return (
                   <Button

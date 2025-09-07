@@ -33,11 +33,9 @@ export default function MobileTasks() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'completed'>('all');
 
-  const { data: tasksResponse, isLoading } = useQuery<{ success: boolean; data: Task[]; pagination?: any }>({
-    queryKey: ["/api/mobile/tasks"],
+  const { data: tasks = [], isLoading } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
   });
-
-  const tasks = tasksResponse?.data || [];
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
