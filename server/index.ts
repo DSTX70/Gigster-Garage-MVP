@@ -463,6 +463,21 @@ app.get('/mobile/invoices', async (req, res) => {
         .status-overdue { color: #FCA5A5; }
         .amount { font-weight: 600; color: #34D399; }
         .amount-overdue { color: #F87171; }
+        .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .invoice-actions { display: flex; gap: 5px; flex-shrink: 0; }
+        .btn-small { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 4px 8px; 
+            text-decoration: none; 
+            border-radius: 4px; 
+            font-weight: 500;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .btn-small.btn-secondary { background: #6B7280; }
+        .btn-small:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -489,12 +504,25 @@ app.get('/mobile/invoices', async (req, res) => {
             </div>
         </div>
         
+        <div class="card">
+            <h3>⚡ Quick Actions</h3>
+            <a href="/mobile/invoice/create" class="btn">📄 Create New Invoice</a>
+            <a href="/mobile/invoices/templates" class="btn btn-secondary">📋 Use Template</a>
+            <a href="/mobile/invoices/reports" class="btn btn-secondary">📊 View Reports</a>
+        </div>
+        
         ${overdueInvoices.length > 0 ? `
         <div class="card">
             <h3>⚠️ Overdue Invoices</h3>
             ${overdueInvoices.map((invoice: Invoice) => `
                 <div class="invoice-item invoice-overdue">
-                    <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                    <div class="invoice-header">
+                        <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                        <div class="invoice-actions">
+                            <a href="/mobile/invoice/${invoice.id}/edit" class="btn-small">✏️ Edit</a>
+                            <a href="/mobile/invoice/${invoice.id}/send" class="btn-small btn-secondary">📤 Send</a>
+                        </div>
+                    </div>
                     <div class="invoice-meta">
                         <span class="status-overdue">●</span> OVERDUE
                         • 👤 ${invoice.clientName || 'Unknown Client'}
@@ -510,7 +538,13 @@ app.get('/mobile/invoices', async (req, res) => {
             <h3>📤 Sent Invoices</h3>
             ${sentInvoices.map((invoice: Invoice) => `
                 <div class="invoice-item invoice-sent">
-                    <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                    <div class="invoice-header">
+                        <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                        <div class="invoice-actions">
+                            <a href="/mobile/invoice/${invoice.id}/view" class="btn-small">👁️ View</a>
+                            <a href="/mobile/invoice/${invoice.id}/mark-paid" class="btn-small btn-secondary">💰 Mark Paid</a>
+                        </div>
+                    </div>
                     <div class="invoice-meta">
                         <span class="status-sent">●</span> SENT
                         • 👤 ${invoice.clientName || 'Unknown Client'}
@@ -526,7 +560,13 @@ app.get('/mobile/invoices', async (req, res) => {
             <h3>✅ Recently Paid</h3>
             ${paidInvoices.slice(-3).map((invoice: Invoice) => `
                 <div class="invoice-item invoice-paid">
-                    <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                    <div class="invoice-header">
+                        <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                        <div class="invoice-actions">
+                            <a href="/mobile/invoice/${invoice.id}/view" class="btn-small">👁️ View</a>
+                            <a href="/mobile/invoice/${invoice.id}/duplicate" class="btn-small btn-secondary">📋 Copy</a>
+                        </div>
+                    </div>
                     <div class="invoice-meta">
                         <span class="status-paid">●</span> PAID
                         • 👤 ${invoice.clientName || 'Unknown Client'}
@@ -542,7 +582,13 @@ app.get('/mobile/invoices', async (req, res) => {
             <h3>📝 Draft Invoices</h3>
             ${draftInvoices.map((invoice: Invoice) => `
                 <div class="invoice-item invoice-draft">
-                    <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                    <div class="invoice-header">
+                        <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                        <div class="invoice-actions">
+                            <a href="/mobile/invoice/${invoice.id}/edit" class="btn-small">✏️ Edit</a>
+                            <a href="/mobile/invoice/${invoice.id}/send" class="btn-small btn-secondary">📤 Send</a>
+                        </div>
+                    </div>
                     <div class="invoice-meta">
                         <span class="status-draft">●</span> DRAFT
                         • 👤 ${invoice.clientName || 'Unknown Client'}
