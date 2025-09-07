@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
+import type { Task, Project, User } from "@shared/schema";
 
 const app = express();
 
@@ -80,7 +82,314 @@ app.get('/mobile', (req, res) => {
   res.send(mobileHTML)
 });
 
-// Mobile sub-pages for Tasks, Projects, Invoices
+// Mobile Tasks page with real functionality
+app.get('/mobile/tasks', async (req, res) => {
+  try {
+    // Fetch real tasks data
+    const tasks = await storage.getAllTasks();
+    const users = await storage.getAllUsers();
+    const projects = await storage.getAllProjects();
+    
+    const activeTasks = tasks.filter((task: Task) => !task.completed);
+    const completedTasks = tasks.filter((task: Task) => task.completed);
+    
+    const mobileTasksHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - Tasks</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .task-item { 
+            background: rgba(255,255,255,0.15); 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            border-left: 4px solid #059669;
+        }
+        .task-completed { border-left-color: #10B981; opacity: 0.7; }
+        .task-high { border-left-color: #EF4444; }
+        .task-overdue { border-left-color: #F59E0B; }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+        .btn-secondary { background: #374151; }
+        .stats { display: flex; justify-content: space-between; margin: 10px 0; }
+        .stat { text-align: center; }
+        .stat-number { font-size: 1.5rem; font-weight: bold; }
+        .stat-label { font-size: 0.8rem; opacity: 0.8; }
+        .task-title { font-weight: 600; margin-bottom: 5px; }
+        .task-meta { font-size: 0.85rem; opacity: 0.9; }
+        .priority-high { color: #FCA5A5; }
+        .priority-medium { color: #FDE68A; }
+        .priority-low { color: #A7F3D0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">📋 Tasks</div>
+        </div>
+        
+        <div class="card">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number">${activeTasks.length}</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${completedTasks.length}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${tasks.length}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>🎯 Active Tasks</h3>
+            ${activeTasks.length === 0 ? '<p style="margin-top: 10px; opacity: 0.8;">No active tasks! Great job! 🎉</p>' : 
+              activeTasks.map((task: Task) => {
+                const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
+                const project = projects.find((p: Project) => p.id === task.projectId);
+                const assignedUser = users.find((u: User) => u.id === task.assignedToId);
+                return `
+                  <div class="task-item ${task.priority === 'high' ? 'task-high' : ''} ${isOverdue ? 'task-overdue' : ''}">
+                    <div class="task-title">${task.description}</div>
+                    <div class="task-meta">
+                      ${task.priority ? `<span class="priority-${task.priority}">●</span> ${task.priority.toUpperCase()}` : ''}
+                      ${project ? ` • 📁 ${project.name}` : ''}
+                      ${assignedUser ? ` • 👤 ${assignedUser.name}` : ''}
+                      ${task.dueDate ? ` • 📅 ${new Date(task.dueDate).toLocaleDateString()}` : ''}
+                      ${isOverdue ? ' • ⚠️ OVERDUE' : ''}
+                    </div>
+                  </div>
+                `;
+              }).join('')
+            }
+        </div>
+        
+        <div class="card">
+            <h3>✅ Recently Completed</h3>
+            ${completedTasks.slice(-3).map((task: Task) => {
+              const project = projects.find((p: Project) => p.id === task.projectId);
+              return `
+                <div class="task-item task-completed">
+                  <div class="task-title">${task.description}</div>
+                  <div class="task-meta">
+                    ✅ Completed ${project ? `• 📁 ${project.name}` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+        </div>
+        
+        <div class="card">
+            <h3>🔗 Quick Navigation</h3>
+            <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
+            <a href="/mobile/dashboard" class="btn btn-secondary">📊 Dashboard</a>
+            <a href="/mobile/projects" class="btn btn-secondary">📁 Projects</a>
+            <a href="/mobile/invoices" class="btn btn-secondary">💰 Invoices</a>
+        </div>
+    </div>
+</body>
+</html>`
+    
+    res.set({
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    })
+    res.send(mobileTasksHTML)
+  } catch (error) {
+    console.error('Error loading mobile tasks:', error);
+    res.status(500).send('Error loading tasks');
+  }
+});
+
+// Mobile Projects page with real functionality  
+app.get('/mobile/projects', async (req, res) => {
+  try {
+    const projects = await storage.getAllProjects();
+    const tasks = await storage.getAllTasks();
+    
+    const projectsWithStats = projects.map((project: Project) => {
+      const projectTasks = tasks.filter((task: Task) => task.projectId === project.id);
+      const completedTasks = projectTasks.filter((task: Task) => task.completed);
+      const progress = projectTasks.length > 0 ? Math.round((completedTasks.length / projectTasks.length) * 100) : 0;
+      
+      return {
+        ...project,
+        taskCount: projectTasks.length,
+        completedTasks: completedTasks.length,
+        progress
+      };
+    });
+    
+    const mobileProjectsHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - Projects</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .project-item { 
+            background: rgba(255,255,255,0.15); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+        }
+        .project-title { font-weight: 600; margin-bottom: 8px; font-size: 1.1rem; }
+        .project-meta { font-size: 0.85rem; opacity: 0.9; margin-bottom: 10px; }
+        .progress-bar { 
+            background: rgba(255,255,255,0.2); 
+            height: 6px; 
+            border-radius: 3px; 
+            overflow: hidden;
+        }
+        .progress-fill { 
+            background: #10B981; 
+            height: 100%; 
+            transition: width 0.3s ease;
+        }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-secondary { background: #374151; }
+        .stats { display: flex; justify-content: space-between; margin: 10px 0; }
+        .stat { text-align: center; }
+        .stat-number { font-size: 1.5rem; font-weight: bold; }
+        .stat-label { font-size: 0.8rem; opacity: 0.8; }
+        .status-badge { 
+            display: inline-block; 
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            font-size: 0.75rem; 
+            background: rgba(59, 130, 246, 0.2); 
+            color: #93C5FD;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">📁 Projects</div>
+        </div>
+        
+        <div class="card">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number">${projectsWithStats.length}</div>
+                    <div class="stat-label">Projects</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${projectsWithStats.filter((p: any) => p.status === 'active').length}</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${Math.round(projectsWithStats.reduce((acc: number, p: any) => acc + p.progress, 0) / Math.max(projectsWithStats.length, 1))}%</div>
+                    <div class="stat-label">Avg Progress</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>📊 Your Projects</h3>
+            ${projectsWithStats.length === 0 ? '<p style="margin-top: 10px; opacity: 0.8;">No projects yet. Create your first project!</p>' : 
+              projectsWithStats.map((project: any) => `
+                <div class="project-item">
+                  <div class="project-title">${project.name}</div>
+                  <div class="project-meta">
+                    <span class="status-badge">${project.status || 'active'}</span>
+                    ${project.description ? ` • ${project.description}` : ''}
+                    <br>📋 ${project.taskCount} tasks • ✅ ${project.completedTasks} completed
+                  </div>
+                  <div style="margin-bottom: 5px; font-size: 0.9rem; font-weight: 500;">${project.progress}% complete</div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${project.progress}%"></div>
+                  </div>
+                </div>
+              `).join('')
+            }
+        </div>
+        
+        <div class="card">
+            <h3>🔗 Quick Navigation</h3>
+            <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
+            <a href="/mobile/dashboard" class="btn btn-secondary">📊 Dashboard</a>
+            <a href="/mobile/tasks" class="btn btn-secondary">📋 Tasks</a>
+            <a href="/mobile/invoices" class="btn btn-secondary">💰 Invoices</a>
+        </div>
+    </div>
+</body>
+</html>`
+    
+    res.send(mobileProjectsHTML)
+  } catch (error) {
+    console.error('Error loading mobile projects:', error);
+    res.status(500).send('Error loading projects');
+  }
+});
+
+// Mobile placeholder pages for other sections
 app.get('/mobile/:page', (req, res) => {
   const page = req.params.page;
   const pageTitle = page.charAt(0).toUpperCase() + page.slice(1);
