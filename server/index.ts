@@ -50,28 +50,28 @@ app.get('/mobile', (req, res) => {
         <div class="card">
             <h2>📱 Mobile App Ready!</h2>
             <p>Choose your section to get started:</p>
-            <a href="/dashboard" class="btn">📊 Dashboard</a>
-            <a href="/tasks" class="btn">📋 Tasks</a>
-            <a href="/projects" class="btn">📁 Projects</a>
-            <a href="/invoices" class="btn">💰 Invoices</a>
+            <a href="/mobile/dashboard" class="btn">📊 Dashboard</a>
+            <a href="/mobile/tasks" class="btn">📋 Tasks</a>
+            <a href="/mobile/projects" class="btn">📁 Projects</a>
+            <a href="/mobile/invoices" class="btn">💰 Invoices</a>
         </div>
         <div class="card">
             <h3>⚡ Automation & AI</h3>
-            <a href="/workflows" class="btn">🔄 Workflows</a>
-            <a href="/garage-assistant" class="btn">🤖 AI Assistant</a>
+            <a href="/mobile/workflows" class="btn">🔄 Workflows</a>
+            <a href="/mobile/garage-assistant" class="btn">🤖 AI Assistant</a>
             <a href="/mobile/templates" class="btn">📋 Templates</a>
         </div>
         <div class="card">
             <h3>📊 Analytics & Reports</h3>
             <a href="/mobile/reports" class="btn">📈 Reports</a>
             <a href="/mobile/time-tracking" class="btn">⏱️ Time Tracking</a>
-            <a href="/analytics" class="btn">📊 Analytics</a>
+            <a href="/mobile/analytics" class="btn">📊 Analytics</a>
         </div>
         <div class="card">
             <h3>👥 Team & Admin</h3>
             <a href="/mobile/team" class="btn">👥 Team</a>
             <a href="/mobile/settings" class="btn">⚙️ Settings</a>
-            <a href="/admin" class="btn">🔐 Admin</a>
+            <a href="/mobile/admin" class="btn">🔐 Admin</a>
         </div>
         <div class="card">
             <h3>🎨 Creative Agency</h3>
@@ -83,7 +83,7 @@ app.get('/mobile', (req, res) => {
             <h3>👤 Client Management</h3>
             <a href="/mobile/clients" class="btn">👥 Clients</a>
             <a href="/mobile/contracts" class="btn">📝 Contracts</a>
-            <a href="/create-proposal" class="btn">💼 Proposals</a>
+            <a href="/mobile/create-proposal" class="btn">💼 Proposals</a>
         </div>
         <div class="card">
             <h3>💰 Finance & Billing</h3>
@@ -663,6 +663,31 @@ app.get('/mobile/resources', (req, res) => {
 
 app.get('/mobile/integrations', (req, res) => {
   res.send(createComingSoonPage('Integrations', '🔗', ['🔗 API connections', '🔄 Data sync', '📊 Third-party tools', '⚙️ Webhook management']));
+});
+
+// Additional primary mobile pages
+app.get('/mobile/dashboard', (req, res) => {
+  res.send(createComingSoonPage('Dashboard', '📊', ['📈 Performance metrics', '📊 Activity overview', '🎯 Key indicators', '📋 Quick actions']));
+});
+
+app.get('/mobile/workflows', (req, res) => {
+  res.send(createComingSoonPage('Workflows', '🔄', ['🔄 Automation rules', '⚡ Trigger setup', '📋 Process templates', '🤖 Smart scheduling']));
+});
+
+app.get('/mobile/garage-assistant', (req, res) => {
+  res.send(createComingSoonPage('AI Assistant', '🤖', ['🤖 Smart recommendations', '💬 Chat interface', '📊 Data insights', '⚡ Quick actions']));
+});
+
+app.get('/mobile/analytics', (req, res) => {
+  res.send(createComingSoonPage('Analytics', '📊', ['📈 Performance charts', '📊 Business metrics', '🎯 Goal tracking', '📋 Custom reports']));
+});
+
+app.get('/mobile/admin', (req, res) => {
+  res.send(createComingSoonPage('Admin', '🔐', ['👥 User management', '🔐 Permissions', '⚙️ System settings', '📋 Audit logs']));
+});
+
+app.get('/mobile/create-proposal', (req, res) => {
+  res.send(createComingSoonPage('Proposals', '💼', ['💼 AI-powered proposal generation', '📋 Custom templates', '📊 Proposal analytics', '✍️ Digital signatures']));
 });
 
 // Mobile Tasks page with real functionality
