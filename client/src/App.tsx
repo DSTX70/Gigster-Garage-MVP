@@ -60,12 +60,30 @@ function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
   const [location, setLocation] = useLocation();
 
+  // Check if we're on a mobile route
+  const isMobileRoute = location.startsWith('/mobile');
+
   // Redirect authenticated users away from login/signup pages
   useEffect(() => {
     if (isAuthenticated && (location === '/login' || location === '/signup')) {
       setLocation('/');
     }
   }, [isAuthenticated, location, setLocation]);
+
+  // For mobile routes, show them immediately without authentication
+  if (isMobileRoute) {
+    return (
+      <Switch>
+        <Route path="/mobile" component={MobileHome} />
+        <Route path="/mobile/dashboard" component={MobileDashboard} />
+        <Route path="/mobile/tasks" component={MobileTasks} />
+        <Route path="/mobile/projects" component={MobileProjects} />
+        <Route path="/mobile/time-tracking" component={MobileTimeTracking} />
+        <Route path="/mobile/workflows" component={MobileWorkflows} />
+        <Route component={MobileHome} />
+      </Switch>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -95,15 +113,7 @@ function Router() {
   }
 
   return (
-    <Switch>
-      {/* Mobile Routes */}
-      <Route path="/mobile" component={MobileHome} />
-      <Route path="/mobile/dashboard" component={MobileDashboard} />
-      <Route path="/mobile/tasks" component={MobileTasks} />
-      <Route path="/mobile/projects" component={MobileProjects} />
-      <Route path="/mobile/time-tracking" component={MobileTimeTracking} />
-      <Route path="/mobile/workflows" component={MobileWorkflows} />
-      
+    <Switch>      
       {/* Desktop Routes */}
       <Route path="/" component={Home} />
       <Route path="/tasks" component={Tasks} />
