@@ -73,6 +73,36 @@ app.get('/mobile', (req, res) => {
             <a href="/mobile/settings" class="btn">⚙️ Settings</a>
             <a href="/mobile/admin" class="btn">🔐 Admin</a>
         </div>
+        <div class="card">
+            <h3>🎨 Creative Agency</h3>
+            <a href="/mobile/creative-assets" class="btn">🎨 Creative Assets</a>
+            <a href="/mobile/campaigns" class="btn">📢 Campaigns</a>
+            <a href="/mobile/brand-studio" class="btn">🎯 Brand Studio</a>
+        </div>
+        <div class="card">
+            <h3>👤 Client Management</h3>
+            <a href="/mobile/clients" class="btn">👥 Clients</a>
+            <a href="/mobile/contracts" class="btn">📝 Contracts</a>
+            <a href="/mobile/proposals" class="btn">💼 Proposals</a>
+        </div>
+        <div class="card">
+            <h3>💰 Finance & Billing</h3>
+            <a href="/mobile/payments" class="btn">💳 Payments</a>
+            <a href="/mobile/expenses" class="btn">🧾 Expenses</a>
+            <a href="/mobile/budgets" class="btn">💰 Budgets</a>
+        </div>
+        <div class="card">
+            <h3>📈 Marketing & Sales</h3>
+            <a href="/mobile/leads" class="btn">🎯 Leads</a>
+            <a href="/mobile/marketing" class="btn">📧 Marketing</a>
+            <a href="/mobile/sales-pipeline" class="btn">🔄 Sales Pipeline</a>
+        </div>
+        <div class="card">
+            <h3>🚀 Operations</h3>
+            <a href="/mobile/calendar" class="btn">📅 Calendar</a>
+            <a href="/mobile/resources" class="btn">📦 Resources</a>
+            <a href="/mobile/integrations" class="btn">🔗 Integrations</a>
+        </div>
         <div id="status" class="card">
             <strong>⚙️ Initializing...</strong>
         </div>
