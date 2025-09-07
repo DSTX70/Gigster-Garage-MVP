@@ -59,18 +59,18 @@ app.get('/mobile', (req, res) => {
             <h3>⚡ Automation & AI</h3>
             <a href="/workflows" class="btn">🔄 Workflows</a>
             <a href="/garage-assistant" class="btn">🤖 AI Assistant</a>
-            <a href="/templates" class="btn">📋 Templates</a>
+            <a href="/mobile/templates" class="btn">📋 Templates</a>
         </div>
         <div class="card">
             <h3>📊 Analytics & Reports</h3>
-            <a href="/reports" class="btn">📈 Reports</a>
-            <a href="/time-tracking" class="btn">⏱️ Time Tracking</a>
+            <a href="/mobile/reports" class="btn">📈 Reports</a>
+            <a href="/mobile/time-tracking" class="btn">⏱️ Time Tracking</a>
             <a href="/analytics" class="btn">📊 Analytics</a>
         </div>
         <div class="card">
             <h3>👥 Team & Admin</h3>
-            <a href="/team" class="btn">👥 Team</a>
-            <a href="/settings" class="btn">⚙️ Settings</a>
+            <a href="/mobile/team" class="btn">👥 Team</a>
+            <a href="/mobile/settings" class="btn">⚙️ Settings</a>
             <a href="/admin" class="btn">🔐 Admin</a>
         </div>
         <div class="card">
@@ -81,27 +81,27 @@ app.get('/mobile', (req, res) => {
         </div>
         <div class="card">
             <h3>👤 Client Management</h3>
-            <a href="/clients" class="btn">👥 Clients</a>
-            <a href="/contracts" class="btn">📝 Contracts</a>
+            <a href="/mobile/clients" class="btn">👥 Clients</a>
+            <a href="/mobile/contracts" class="btn">📝 Contracts</a>
             <a href="/create-proposal" class="btn">💼 Proposals</a>
         </div>
         <div class="card">
             <h3>💰 Finance & Billing</h3>
-            <a href="/payments" class="btn">💳 Payments</a>
-            <a href="/expenses" class="btn">🧾 Expenses</a>
-            <a href="/budgets" class="btn">💰 Budgets</a>
+            <a href="/mobile/payments" class="btn">💳 Payments</a>
+            <a href="/mobile/expenses" class="btn">🧾 Expenses</a>
+            <a href="/mobile/budgets" class="btn">💰 Budgets</a>
         </div>
         <div class="card">
             <h3>📈 Marketing & Sales</h3>
-            <a href="/leads" class="btn">🎯 Leads</a>
-            <a href="/marketing" class="btn">📧 Marketing</a>
-            <a href="/sales-pipeline" class="btn">🔄 Sales Pipeline</a>
+            <a href="/mobile/leads" class="btn">🎯 Leads</a>
+            <a href="/mobile/marketing" class="btn">📧 Marketing</a>
+            <a href="/mobile/sales-pipeline" class="btn">🔄 Sales Pipeline</a>
         </div>
         <div class="card">
             <h3>🚀 Operations</h3>
-            <a href="/calendar" class="btn">📅 Calendar</a>
-            <a href="/resources" class="btn">📦 Resources</a>
-            <a href="/integrations" class="btn">🔗 Integrations</a>
+            <a href="/mobile/calendar" class="btn">📅 Calendar</a>
+            <a href="/mobile/resources" class="btn">📦 Resources</a>
+            <a href="/mobile/integrations" class="btn">🔗 Integrations</a>
         </div>
         <div id="status" class="card">
             <strong>⚙️ Initializing...</strong>
@@ -527,7 +527,7 @@ app.get('/mobile/creative-assets', async (req, res) => {
 });
 
 // Generic mobile "coming soon" handler for routes being integrated
-const createComingSoonPage = (title, emoji, features) => {
+const createComingSoonPage = (title: string, emoji: string, features?: string[]) => {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -602,6 +602,67 @@ app.get('/mobile/campaigns', (req, res) => {
 
 app.get('/mobile/brand-studio', (req, res) => {
   res.send(createComingSoonPage('Brand Studio', '🎯', ['🎨 Brand guidelines management', '🖼️ Visual identity tools', '📐 Design templates', '🔄 Brand consistency checker']));
+});
+
+// Additional mobile coming soon pages
+app.get('/mobile/templates', (req, res) => {
+  res.send(createComingSoonPage('Templates', '📋', ['📄 Document templates', '💼 Proposal templates', '📧 Email templates', '🎨 Design templates']));
+});
+
+app.get('/mobile/reports', (req, res) => {
+  res.send(createComingSoonPage('Reports', '📈', ['📊 Performance dashboards', '💰 Financial reports', '⏱️ Time tracking reports', '📋 Project summaries']));
+});
+
+app.get('/mobile/team', (req, res) => {
+  res.send(createComingSoonPage('Team Management', '👥', ['👤 User management', '🔐 Role assignments', '📊 Team performance', '💬 Team collaboration']));
+});
+
+app.get('/mobile/settings', (req, res) => {
+  res.send(createComingSoonPage('Settings', '⚙️', ['🔧 System configuration', '🔔 Notifications', '🎨 UI customization', '🔐 Security settings']));
+});
+
+app.get('/mobile/clients', (req, res) => {
+  res.send(createComingSoonPage('Client Management', '👥', ['📇 Client directory', '📞 Contact management', '📋 Client projects', '💼 Client communications']));
+});
+
+app.get('/mobile/contracts', (req, res) => {
+  res.send(createComingSoonPage('Contracts', '📝', ['📋 Contract templates', '✍️ Digital signatures', '📅 Contract tracking', '💰 Payment terms']));
+});
+
+app.get('/mobile/payments', (req, res) => {
+  res.send(createComingSoonPage('Payments', '💳', ['💰 Payment processing', '🧾 Invoice payments', '📊 Payment analytics', '🔄 Recurring payments']));
+});
+
+app.get('/mobile/expenses', (req, res) => {
+  res.send(createComingSoonPage('Expenses', '🧾', ['💰 Expense tracking', '📷 Receipt capture', '📊 Expense reports', '🔄 Reimbursements']));
+});
+
+app.get('/mobile/budgets', (req, res) => {
+  res.send(createComingSoonPage('Budgets', '💰', ['📊 Budget planning', '💰 Expense tracking', '📈 Budget analytics', '⚠️ Budget alerts']));
+});
+
+app.get('/mobile/leads', (req, res) => {
+  res.send(createComingSoonPage('Lead Management', '🎯', ['📞 Lead tracking', '💬 Lead nurturing', '📊 Lead analytics', '🔄 Lead conversion']));
+});
+
+app.get('/mobile/marketing', (req, res) => {
+  res.send(createComingSoonPage('Marketing', '📧', ['📧 Email marketing', '📱 Social media', '📊 Campaign analytics', '🎯 Audience targeting']));
+});
+
+app.get('/mobile/sales-pipeline', (req, res) => {
+  res.send(createComingSoonPage('Sales Pipeline', '🔄', ['💰 Deal tracking', '📊 Sales analytics', '📅 Follow-up scheduling', '💼 Opportunity management']));
+});
+
+app.get('/mobile/calendar', (req, res) => {
+  res.send(createComingSoonPage('Calendar', '📅', ['📅 Event scheduling', '⏰ Meeting reminders', '📋 Task deadlines', '🔄 Calendar sync']));
+});
+
+app.get('/mobile/resources', (req, res) => {
+  res.send(createComingSoonPage('Resources', '📦', ['📚 Knowledge base', '🔧 Tool library', '📋 Documentation', '💡 Best practices']));
+});
+
+app.get('/mobile/integrations', (req, res) => {
+  res.send(createComingSoonPage('Integrations', '🔗', ['🔗 API connections', '🔄 Data sync', '📊 Third-party tools', '⚙️ Webhook management']));
 });
 
 // Mobile Tasks page with real functionality
