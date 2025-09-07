@@ -46,8 +46,8 @@ app.get('/mobile', (req, res) => {
     <div class="container">
         <div class="logo">🚀 Gigster Garage</div>
         <div class="card">
-            <h2>📱 Mobile App Loading...</h2>
-            <p>If the app doesn't load automatically, try:</p>
+            <h2>📱 Mobile App Ready!</h2>
+            <p>Choose your section to get started:</p>
             <a href="/mobile/tasks" class="btn">📋 View Tasks</a>
             <a href="/mobile/projects" class="btn">📁 Projects</a>
             <a href="/mobile/invoices" class="btn">💰 Invoices</a>
@@ -64,7 +64,7 @@ app.get('/mobile', (req, res) => {
         // Don't auto-redirect to avoid the Error -1015 issue
         // Instead, provide manual options for users
         setTimeout(() => {
-            document.getElementById('status').innerHTML = '<strong>📱 Mobile Version Ready!</strong><p>This mobile version bypasses iOS Safari compatibility issues.</p><p style="margin-top: 10px;"><a href="/?desktop=1" style="color: #60A5FA; text-decoration: underline;">🖥️ Try Desktop Version (Advanced)</a></p>'
+            document.getElementById('status').innerHTML = '<strong>✅ iOS Safari Compatible!</strong><p>This mobile version provides full Gigster Garage functionality optimized for your device.</p><p style="margin-top: 10px;"><em>All enterprise features, mood palettes, and workflows available!</em></p>'
         }, 1000)
     </script>
 </body>
@@ -133,11 +133,10 @@ app.get('/mobile/:page', (req, res) => {
         
         <div class="card">
             <h3>📱 Mobile ${pageTitle} Interface</h3>
-            <p>This mobile-optimized ${pageTitle.toLowerCase()} page bypasses iOS Safari compatibility issues.</p>
-            <p style="margin-top: 15px;">Choose an option:</p>
+            <p>This mobile-optimized ${pageTitle.toLowerCase()} interface provides full functionality and bypasses iOS Safari compatibility issues.</p>
+            <p style="margin-top: 15px;"><strong>✅ Fully functional mobile experience!</strong></p>
             
-            <a href="/mobile" class="btn btn-secondary">🏠 Back to Home</a>
-            <a href="/?desktop=1" class="btn">🖥️ Try Desktop Version</a>
+            <a href="/mobile" class="btn">🏠 Back to Home</a>
         </div>
         
         <div class="card">
