@@ -17,13 +17,10 @@ app.use((req, _res, next) => {  // why: consistent UTF-8; avoid stray encodings
   next();
 });
 
-// --- Compression (safe, standards-compliant) ---
-// why: Avoid custom content-encoding; ensures Safari sees body that matches header
-app.use(
-  compression({
-    threshold: 1024,
-  })
-);
+// --- Compression disabled for iOS Safari compatibility ---
+// why: iOS Safari -1015 errors are caused by compression issues
+// Temporarily disable all compression to fix mobile access
+// app.use(compression());
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
