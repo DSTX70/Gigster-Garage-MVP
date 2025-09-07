@@ -81,6 +81,22 @@ export default function MobileHome() {
                 </Button>
               </Link>
             </div>
+            
+            <div className="grid grid-cols-1 gap-4 mt-4">
+              <Link href="/mobile/workflows">
+                <Button
+                  variant="outline"
+                  className="w-full h-20 flex items-center space-x-3 text-[#004C6D] border-[#004C6D]/20 hover:bg-[#004C6D]/5"
+                  data-testid="button-workflows"
+                >
+                  <Zap className="h-6 w-6" />
+                  <div className="text-left">
+                    <div className="text-sm font-medium">Workflows & Automation</div>
+                    <div className="text-xs text-gray-600">Manage automation rules</div>
+                  </div>
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 

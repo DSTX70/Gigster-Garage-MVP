@@ -54,6 +54,7 @@ import MobileDashboard from "@/pages/mobile-dashboard";
 import MobileTasks from "@/pages/mobile-tasks";
 import MobileProjects from "@/pages/mobile-projects";
 import MobileTimeTracking from "@/pages/mobile-time-tracking";
+import MobileWorkflows from "@/pages/mobile-workflows";
 
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
@@ -101,6 +102,7 @@ function Router() {
       <Route path="/mobile/tasks" component={MobileTasks} />
       <Route path="/mobile/projects" component={MobileProjects} />
       <Route path="/mobile/time-tracking" component={MobileTimeTracking} />
+      <Route path="/mobile/workflows" component={MobileWorkflows} />
       
       {/* Desktop Routes */}
       <Route path="/" component={Home} />

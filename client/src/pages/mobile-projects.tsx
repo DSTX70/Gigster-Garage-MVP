@@ -182,12 +182,10 @@ export default function MobileProjects() {
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         {project.completedTasks}/{project.taskCount} tasks
                       </div>
-                      {project.createdAt && (
-                        <div className="flex items-center text-gray-600">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          Created {format(new Date(project.createdAt), 'MMM d')}
-                        </div>
-                      )}
+                      <div className="flex items-center text-gray-600">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Created {project.createdAt ? format(new Date(project.createdAt), 'MMM d') : 'Recently'}
+                      </div>
                     </div>
                     <Link href={`/project/${project.id}`}>
                       <Button
