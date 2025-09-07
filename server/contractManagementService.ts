@@ -52,11 +52,6 @@ export class ContractManagementService {
     try {
       console.log("🔍 Checking contract statuses for updates...");
       
-      // Temporarily disabled due to database schema sync issue
-      // TODO: Re-enable after database content column is synced
-      console.log("⚠️ Contract monitoring temporarily disabled - database schema sync in progress");
-      return;
-      
       const contracts = await storage.getContracts();
       const today = startOfDay(new Date());
       let renewalNotifications = 0;
@@ -89,7 +84,7 @@ export class ContractManagementService {
     let autoRenewal = false;
 
     // Skip if contract is not active
-    if (!['fully_signed', 'executed'].includes(contract.status)) {
+    if (!contract.status || !['fully_signed', 'executed'].includes(contract.status)) {
       return { renewalNotification, expirationWarning, autoRenewal };
     }
 
@@ -157,7 +152,7 @@ Contract Number: ${contract.contractNumber}
 Client: ${contract.clientName || 'Unknown Client'}
 Days Remaining: ${daysRemaining}
 Expiration Date: ${format(new Date(contract.expirationDate!), 'MMMM d, yyyy')}
-Status: ${contract.status.replace('_', ' ').toUpperCase()}
+Status: ${contract.status ? contract.status.replace('_', ' ').toUpperCase() : 'UNKNOWN'}
 
 ${contract.autoRenewal ? 'This contract is set for automatic renewal.' : 'ACTION REQUIRED: Review this contract for renewal or termination.'}
 
@@ -346,18 +341,18 @@ Gigster Garage Legal System
 
       const stats = {
         totalContracts: contracts.length,
-        activeContracts: contracts.filter(c => ['fully_signed', 'executed'].includes(c.status)).length,
+        activeContracts: contracts.filter(c => c.status && ['fully_signed', 'executed'].includes(c.status)).length,
         expiringContracts: contracts.filter(c => 
           c.expirationDate && 
           new Date(c.expirationDate) <= thirtyDaysFromNow && 
           new Date(c.expirationDate) > today &&
-          ['fully_signed', 'executed'].includes(c.status)
+          c.status && ['fully_signed', 'executed'].includes(c.status)
         ).length,
-        expiredContracts: contracts.filter(c => c.status === 'expired').length,
-        pendingSignatures: contracts.filter(c => ['sent', 'viewed', 'pending_signature', 'partially_signed'].includes(c.status)).length,
-        autoRenewals: contracts.filter(c => c.autoRenewal && ['fully_signed', 'executed'].includes(c.status)).length,
+        expiredContracts: contracts.filter(c => c.status && c.status === 'expired').length,
+        pendingSignatures: contracts.filter(c => c.status && ['sent', 'viewed', 'pending_signature', 'partially_signed'].includes(c.status)).length,
+        autoRenewals: contracts.filter(c => c.autoRenewal && c.status && ['fully_signed', 'executed'].includes(c.status)).length,
         contractValue: contracts
-          .filter(c => ['fully_signed', 'executed'].includes(c.status))
+          .filter(c => c.status && ['fully_signed', 'executed'].includes(c.status))
           .reduce((sum, c) => sum + parseFloat(c.contractValue || "0"), 0)
       };
 
