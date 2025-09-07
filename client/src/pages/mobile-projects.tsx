@@ -15,21 +15,38 @@ import {
   Home
 } from "lucide-react";
 import { format } from "date-fns";
+import type { Project, Task } from "@shared/schema";
 
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
+interface ProjectWithMetrics extends Project {
   progress: number;
   taskCount: number;
   completedTasks: number;
-  dueDate?: string;
 }
 
 export default function MobileProjects() {
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
+  });
+
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
+  const isLoading = projectsLoading || tasksLoading;
+
+  // Calculate metrics for each project
+  const projectsWithMetrics: ProjectWithMetrics[] = projects.map(project => {
+    const projectTasks = tasks.filter(task => task.projectId === project.id);
+    const completedTasks = projectTasks.filter(task => task.completed).length;
+    const taskCount = projectTasks.length;
+    const progress = taskCount > 0 ? Math.round((completedTasks / taskCount) * 100) : 0;
+
+    return {
+      ...project,
+      progress,
+      taskCount,
+      completedTasks
+    };
   });
 
   const getStatusColor = (status: string) => {
@@ -78,7 +95,7 @@ export default function MobileProjects() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-white">📁 Projects</h1>
-              <p className="text-blue-100 text-sm">{projects.length} projects</p>
+              <p className="text-blue-100 text-sm">{projectsWithMetrics.length} projects</p>
             </div>
           </div>
           <Link href="/mobile">
@@ -101,19 +118,19 @@ export default function MobileProjects() {
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-[#004C6D]">
-                  {projects.filter(p => p.status === 'active').length}
+                  {projectsWithMetrics.filter(p => p.status === 'active').length}
                 </div>
                 <div className="text-xs text-gray-600">Active</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-[#004C6D]">
-                  {projects.filter(p => p.status === 'completed').length}
+                  {projectsWithMetrics.filter(p => p.status === 'completed').length}
                 </div>
                 <div className="text-xs text-gray-600">Completed</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-[#004C6D]">
-                  {Math.round(projects.reduce((acc, p) => acc + p.progress, 0) / projects.length) || 0}%
+                  {Math.round(projectsWithMetrics.reduce((acc, p) => acc + p.progress, 0) / projectsWithMetrics.length) || 0}%
                 </div>
                 <div className="text-xs text-gray-600">Avg Progress</div>
               </div>
@@ -123,7 +140,7 @@ export default function MobileProjects() {
 
         {/* Projects List */}
         <div className="space-y-3">
-          {projects.map((project, index) => (
+          {projectsWithMetrics.map((project, index) => (
             <Card key={project.id} className="bg-white/95 backdrop-blur border-0 shadow-lg" data-testid={`card-project-${index}`}>
               <CardContent className="p-4">
                 <div className="space-y-3">
@@ -165,10 +182,10 @@ export default function MobileProjects() {
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         {project.completedTasks}/{project.taskCount} tasks
                       </div>
-                      {project.dueDate && (
+                      {project.createdAt && (
                         <div className="flex items-center text-gray-600">
                           <Calendar className="h-3 w-3 mr-1" />
-                          Due {format(new Date(project.dueDate), 'MMM d')}
+                          Created {format(new Date(project.createdAt), 'MMM d')}
                         </div>
                       )}
                     </div>
@@ -188,7 +205,7 @@ export default function MobileProjects() {
             </Card>
           ))}
 
-          {projects.length === 0 && (
+          {projectsWithMetrics.length === 0 && (
             <Card className="bg-white/95 backdrop-blur border-0 shadow-lg">
               <CardContent className="py-12 text-center">
                 <Folder className="h-12 w-12 mx-auto text-gray-400 mb-4" />
