@@ -861,18 +861,80 @@ app.get('/mobile/invoice/create', (req, res) => {
             border-radius: 12px; 
             margin: 15px 0; 
         }
+        .form-group { margin-bottom: 15px; }
+        .form-label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .form-input { 
+            width: 100%; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 8px; 
+            background: rgba(255,255,255,0.9);
+            color: #000;
+            font-size: 16px;
+        }
+        .form-textarea { 
+            width: 100%; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 8px; 
+            background: rgba(255,255,255,0.9);
+            color: #000;
+            font-size: 16px;
+            min-height: 80px;
+            resize: vertical;
+        }
+        .form-select {
+            width: 100%; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 8px; 
+            background: rgba(255,255,255,0.9);
+            color: #000;
+            font-size: 16px;
+        }
         .btn { 
             display: inline-block;
             background: #059669; 
             color: white; 
-            padding: 10px 16px; 
+            padding: 12px 20px; 
+            border: none;
             text-decoration: none; 
-            border-radius: 6px; 
+            border-radius: 8px; 
             margin: 5px 5px 5px 0;
             font-weight: 500;
-            font-size: 14px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
         }
         .btn-secondary { background: #374151; }
+        .btn-small { 
+            padding: 8px 12px; 
+            font-size: 14px; 
+            width: auto;
+            display: inline-block;
+        }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        .line-item { 
+            background: rgba(255,255,255,0.05); 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin: 10px 0; 
+        }
+        .success-message { 
+            background: rgba(16, 185, 129, 0.2); 
+            border: 1px solid #10B981; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -880,24 +942,219 @@ app.get('/mobile/invoice/create', (req, res) => {
         <div class="header">
             <div class="logo">🚀 Gigster Garage</div>
             <div class="page-title">📄 Create Invoice</div>
+            ${template && typeof template === 'string' ? `<p style="opacity: 0.8; font-size: 14px;">Template: ${template.charAt(0).toUpperCase() + template.slice(1)}</p>` : ''}
         </div>
         
-        <div class="card">
-            <h3>📱 Mobile Invoice Creation</h3>
-            <p style="margin: 15px 0; opacity: 0.9;">
-                For the best invoice creation experience, use the desktop version at:
-                <br><br>
-                <strong style="color: #34D399;">https://your-domain.replit.app/invoices</strong>
-            </p>
-            ${template ? `<p style="margin: 10px 0; opacity: 0.8;">Template: ${template.charAt(0).toUpperCase() + template.slice(1)}</p>` : ''}
-        </div>
-        
-        <div class="card">
-            <h3>🔗 Navigation</h3>
-            <a href="/mobile/invoices" class="btn btn-secondary">← Back to Invoices</a>
-            <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
-        </div>
+        <form id="invoiceForm" onsubmit="createInvoice(event)">
+            <div class="card">
+                <h3>👤 Client Information</h3>
+                <div class="form-group">
+                    <label class="form-label">Client Name *</label>
+                    <input type="text" class="form-input" name="clientName" required placeholder="Enter client name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Client Email</label>
+                    <input type="email" class="form-input" name="clientEmail" placeholder="client@example.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Client Address</label>
+                    <textarea class="form-textarea" name="clientAddress" placeholder="Enter client address"></textarea>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>📄 Invoice Details</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Invoice Number</label>
+                        <input type="text" class="form-input" name="invoiceNumber" value="INV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}" placeholder="INV-001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status">
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent</option>
+                            <option value="paid">Paid</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Issue Date</label>
+                        <input type="date" class="form-input" name="issueDate" value="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-input" name="dueDate" value="${new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]}">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>💰 Invoice Items</h3>
+                <div id="lineItems">
+                    <div class="line-item">
+                        <div class="form-group">
+                            <label class="form-label">Description *</label>
+                            <input type="text" class="form-input" name="items[0][description]" required placeholder="Service or product description">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Quantity</label>
+                                <input type="number" class="form-input" name="items[0][quantity]" value="1" min="1" onchange="calculateTotal()">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Rate ($)</label>
+                                <input type="number" class="form-input" name="items[0][rate]" step="0.01" placeholder="0.00" onchange="calculateTotal()">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Amount ($)</label>
+                                <input type="number" class="form-input" name="items[0][amount]" step="0.01" readonly style="background: rgba(200,200,200,0.3);">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-small" onclick="addLineItem()">+ Add Item</button>
+                
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: bold;">
+                        <span>Total Amount:</span>
+                        <span id="totalAmount" style="color: #34D399;">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>📝 Additional Information</h3>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-textarea" name="notes" placeholder="Payment terms, thank you message, etc."></textarea>
+                </div>
+            </div>
+            
+            <div class="success-message" id="successMessage">
+                ✅ Invoice created successfully!
+            </div>
+            
+            <div class="card">
+                <button type="submit" class="btn">📄 Create Invoice</button>
+                <a href="/mobile/invoices" class="btn btn-secondary">← Back to Invoices</a>
+                <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
+            </div>
+        </form>
     </div>
+    
+    <script>
+        let itemCount = 1;
+        
+        function addLineItem() {
+            const lineItems = document.getElementById('lineItems');
+            const newItem = document.createElement('div');
+            newItem.className = 'line-item';
+            newItem.innerHTML = \`
+                <div class="form-group">
+                    <label class="form-label">Description *</label>
+                    <input type="text" class="form-input" name="items[\${itemCount}][description]" required placeholder="Service or product description">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-input" name="items[\${itemCount}][quantity]" value="1" min="1" onchange="calculateTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rate ($)</label>
+                        <input type="number" class="form-input" name="items[\${itemCount}][rate]" step="0.01" placeholder="0.00" onchange="calculateTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Amount ($)</label>
+                        <input type="number" class="form-input" name="items[\${itemCount}][amount]" step="0.01" readonly style="background: rgba(200,200,200,0.3);">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-small" onclick="removeLineItem(this)" style="margin-top: 10px;">🗑️ Remove</button>
+            \`;
+            lineItems.appendChild(newItem);
+            itemCount++;
+        }
+        
+        function removeLineItem(button) {
+            button.parentElement.remove();
+            calculateTotal();
+        }
+        
+        function calculateTotal() {
+            let total = 0;
+            const lineItems = document.querySelectorAll('.line-item');
+            lineItems.forEach((item, index) => {
+                const quantity = parseFloat(item.querySelector(\`input[name="items[\${index}][quantity]"]\`)?.value) || 0;
+                const rate = parseFloat(item.querySelector(\`input[name="items[\${index}][rate]"]\`)?.value) || 0;
+                const amount = quantity * rate;
+                const amountField = item.querySelector(\`input[name="items[\${index}][amount]"]\`);
+                if (amountField) {
+                    amountField.value = amount.toFixed(2);
+                }
+                total += amount;
+            });
+            document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
+        }
+        
+        async function createInvoice(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Collect line items
+            const items = [];
+            let i = 0;
+            while (formData.get(\`items[\${i}][description]\`)) {
+                items.push({
+                    description: formData.get(\`items[\${i}][description]\`),
+                    quantity: parseFloat(formData.get(\`items[\${i}][quantity]\`)) || 1,
+                    rate: parseFloat(formData.get(\`items[\${i}][rate]\`)) || 0,
+                    amount: parseFloat(formData.get(\`items[\${i}][amount]\`)) || 0
+                });
+                i++;
+            }
+            
+            const invoiceData = {
+                invoiceNumber: formData.get('invoiceNumber'),
+                clientName: formData.get('clientName'),
+                clientEmail: formData.get('clientEmail'),
+                clientAddress: formData.get('clientAddress'),
+                status: formData.get('status'),
+                issueDate: formData.get('issueDate'),
+                dueDate: formData.get('dueDate'),
+                items: items,
+                notes: formData.get('notes'),
+                totalAmount: items.reduce((sum, item) => sum + item.amount, 0).toFixed(2),
+                balanceDue: items.reduce((sum, item) => sum + item.amount, 0).toFixed(2)
+            };
+            
+            try {
+                const response = await fetch('/api/invoices', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(invoiceData)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('successMessage').style.display = 'block';
+                    form.reset();
+                    setTimeout(() => {
+                        window.location.href = '/mobile/invoices';
+                    }, 2000);
+                } else {
+                    alert('Error creating invoice. Please try again.');
+                }
+            } catch (error) {
+                alert('Error creating invoice. Please try again.');
+            }
+        }
+        
+        // Calculate total on page load
+        calculateTotal();
+    </script>
 </body>
 </html>`
   
