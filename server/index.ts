@@ -1705,9 +1705,18 @@ app.use((req, res, next) => {
   // Also redirect any mobile browser that might have gzip issues
   const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|Opera Mini/i.test(userAgent);
   
-  // Only redirect root path, not mobile sub-pages
-  if ((isIOSSafari || isMobile) && req.path === '/' && !req.query.desktop && !req.path.startsWith('/mobile')) {
-    console.log(`📱 Redirecting mobile browser to /mobile - UA: ${userAgent.substring(0, 100)}...`);
+  // Define all routes that should redirect mobile users to /mobile
+  const mobileRedirectRoutes = [
+    '/', '/dashboard', '/tasks', '/projects', '/invoices', '/time-tracking', '/analytics',
+    '/workflows', '/garage-assistant', '/templates', '/reports', '/team', '/settings', '/admin',
+    '/creative-assets', '/campaigns', '/brand-studio', '/clients', '/contracts', '/create-proposal',
+    '/payments', '/expenses', '/budgets', '/leads', '/marketing', '/sales-pipeline',
+    '/calendar', '/resources', '/integrations'
+  ];
+  
+  // Redirect mobile browsers from React routes to mobile-compatible version
+  if ((isIOSSafari || isMobile) && mobileRedirectRoutes.includes(req.path) && !req.query.desktop && !req.path.startsWith('/mobile')) {
+    console.log(`📱 Redirecting mobile browser from ${req.path} to /mobile - UA: ${userAgent.substring(0, 100)}...`);
     return res.redirect('/mobile');
   }
   
