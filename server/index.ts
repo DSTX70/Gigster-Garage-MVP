@@ -86,9 +86,9 @@ app.get('/mobile', (req, res) => {
 app.get('/mobile/tasks', async (req, res) => {
   try {
     // Fetch real tasks data
-    const tasks = await storage.getAllTasks();
-    const users = await storage.getAllUsers();
-    const projects = await storage.getAllProjects();
+    const tasks = await storage.getTasks();
+    const users = await storage.getUsers();
+    const projects = await storage.getProjects();
     
     const activeTasks = tasks.filter((task: Task) => !task.completed);
     const completedTasks = tasks.filter((task: Task) => task.completed);
@@ -241,8 +241,8 @@ app.get('/mobile/tasks', async (req, res) => {
 // Mobile Projects page with real functionality  
 app.get('/mobile/projects', async (req, res) => {
   try {
-    const projects = await storage.getAllProjects();
-    const tasks = await storage.getAllTasks();
+    const projects = await storage.getProjects();
+    const tasks = await storage.getTasks();
     
     const projectsWithStats = projects.map((project: Project) => {
       const projectTasks = tasks.filter((task: Task) => task.projectId === project.id);
