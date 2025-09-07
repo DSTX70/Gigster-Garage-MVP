@@ -48,6 +48,13 @@ import SmartScheduling from "@/pages/smart-scheduling";
 import PredictiveAnalytics from "@/pages/predictive-analytics";
 import PerformanceDashboard from "@/pages/performance-dashboard";
 
+// Mobile Pages
+import MobileHome from "@/pages/mobile-home";
+import MobileDashboard from "@/pages/mobile-dashboard";
+import MobileTasks from "@/pages/mobile-tasks";
+import MobileProjects from "@/pages/mobile-projects";
+import MobileTimeTracking from "@/pages/mobile-time-tracking";
+
 function Router() {
   const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
   const [location, setLocation] = useLocation();
@@ -88,6 +95,14 @@ function Router() {
 
   return (
     <Switch>
+      {/* Mobile Routes */}
+      <Route path="/mobile" component={MobileHome} />
+      <Route path="/mobile/dashboard" component={MobileDashboard} />
+      <Route path="/mobile/tasks" component={MobileTasks} />
+      <Route path="/mobile/projects" component={MobileProjects} />
+      <Route path="/mobile/time-tracking" component={MobileTimeTracking} />
+      
+      {/* Desktop Routes */}
       <Route path="/" component={Home} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/productivity" component={Productivity} />
