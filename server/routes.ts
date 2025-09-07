@@ -6735,6 +6735,12 @@ Keep it professional but easy to understand.`;
   automatedInvoicingService.startAutomatedInvoicing();
   smartNotificationsService.startSmartNotifications();
   contractManagementService.startContractMonitoring();
+  
+  // Start cache warming service
+  console.log("🚀 Starting cache warming service...");
+  const { cacheWarmingService } = await import("./cache-warming-service");
+  await cacheWarmingService.startCacheWarming();
+  cacheWarmingService.scheduleCacheWarming();
 
   const httpServer = createServer(app);
 

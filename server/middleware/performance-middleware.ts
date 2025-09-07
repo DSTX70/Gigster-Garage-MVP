@@ -46,10 +46,29 @@ export function cacheMiddleware(ttl: number = 300) {
     }
 
     try {
-      // Cache operations temporarily disabled to prevent data corruption
-      // TODO: Redesign cache implementation for complex data structures
+      const { AppCache } = await import('../cache-service');
+      const cache = AppCache.getInstance();
+      const cacheKey = `api:${req.method}:${req.path}:${JSON.stringify(req.query)}`;
 
-      // Response caching temporarily disabled
+      // Try to get cached response
+      const cachedResponse = await cache.get(cacheKey);
+      if (cachedResponse) {
+        console.log(`🚀 Cache HIT for: ${req.path}`);
+        return res.json(cachedResponse);
+      }
+
+      // Store the original res.json method
+      const originalJson = res.json.bind(res);
+
+      // Override res.json to cache the response
+      res.json = function(data: any) {
+        // Cache the response data
+        cache.set(cacheKey, data, ttl, ['api-response']).catch(err => {
+          console.error('Failed to cache response:', err);
+        });
+        console.log(`🚀 Cache MISS - Stored: ${req.path}`);
+        return originalJson(data);
+      };
 
       next();
     } catch (error) {
