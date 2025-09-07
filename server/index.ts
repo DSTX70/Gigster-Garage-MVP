@@ -628,6 +628,364 @@ app.get('/mobile/invoices', async (req, res) => {
   }
 });
 
+// Mobile Invoice Reports page
+app.get('/mobile/invoices/reports', async (req, res) => {
+  try {
+    const invoices = await storage.getInvoices();
+    
+    const totalRevenue = invoices
+      .filter((invoice: Invoice) => invoice.status === 'paid')
+      .reduce((sum: number, invoice: Invoice) => sum + parseFloat(invoice.totalAmount || '0'), 0);
+    
+    const pendingRevenue = invoices
+      .filter((invoice: Invoice) => invoice.status !== 'paid' && invoice.status !== 'cancelled')
+      .reduce((sum: number, invoice: Invoice) => sum + parseFloat(invoice.balanceDue || '0'), 0);
+    
+    const overdueCount = invoices.filter((invoice: Invoice) => invoice.status === 'overdue').length;
+    
+    const mobileReportsHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - Invoice Reports</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-secondary { background: #374151; }
+        .stats { display: flex; justify-content: space-between; margin: 10px 0; }
+        .stat { text-align: center; }
+        .stat-number { font-size: 1.5rem; font-weight: bold; }
+        .stat-label { font-size: 0.8rem; opacity: 0.8; }
+        .big-stat { text-align: center; margin: 20px 0; }
+        .big-number { font-size: 2.5rem; font-weight: bold; color: #34D399; }
+        .big-label { font-size: 1rem; opacity: 0.9; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">📊 Invoice Reports</div>
+        </div>
+        
+        <div class="card">
+            <div class="big-stat">
+                <div class="big-number">$${totalRevenue.toFixed(0)}</div>
+                <div class="big-label">Total Revenue (Paid)</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number">$${pendingRevenue.toFixed(0)}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${overdueCount}</div>
+                    <div class="stat-label">Overdue</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${invoices.length}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>📈 Quick Insights</h3>
+            <p style="margin: 10px 0; opacity: 0.9;">• ${invoices.filter((i: Invoice) => i.status === 'paid').length} invoices paid</p>
+            <p style="margin: 10px 0; opacity: 0.9;">• ${invoices.filter((i: Invoice) => i.status === 'sent').length} invoices sent and pending</p>
+            <p style="margin: 10px 0; opacity: 0.9;">• ${invoices.filter((i: Invoice) => i.status === 'draft').length} drafts waiting to be sent</p>
+        </div>
+        
+        <div class="card">
+            <h3>🔗 Navigation</h3>
+            <a href="/mobile/invoices" class="btn btn-secondary">← Back to Invoices</a>
+            <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
+        </div>
+    </div>
+</body>
+</html>`
+    
+    res.send(mobileReportsHTML)
+  } catch (error) {
+    console.error('Error loading mobile invoice reports:', error);
+    res.status(500).send('Error loading reports');
+  }
+});
+
+// Mobile Invoice Templates page  
+app.get('/mobile/invoices/templates', (req, res) => {
+  const mobileTemplatesHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - Invoice Templates</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-secondary { background: #374151; }
+        .template-item { 
+            background: rgba(255,255,255,0.15); 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            border-left: 4px solid #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">📋 Invoice Templates</div>
+        </div>
+        
+        <div class="card">
+            <h3>🎨 Available Templates</h3>
+            
+            <div class="template-item">
+                <h4>💼 Standard Business Invoice</h4>
+                <p style="margin: 8px 0; opacity: 0.9;">Professional template for general business services</p>
+                <a href="/mobile/invoice/create?template=standard" class="btn">Use Template</a>
+            </div>
+            
+            <div class="template-item">
+                <h4>⚡ Consulting Invoice</h4>
+                <p style="margin: 8px 0; opacity: 0.9;">Hourly billing template for consulting work</p>
+                <a href="/mobile/invoice/create?template=consulting" class="btn">Use Template</a>
+            </div>
+            
+            <div class="template-item">
+                <h4>🚀 Project-Based Invoice</h4>
+                <p style="margin: 8px 0; opacity: 0.9;">Fixed-price template for project deliverables</p>
+                <a href="/mobile/invoice/create?template=project" class="btn">Use Template</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>🔗 Navigation</h3>
+            <a href="/mobile/invoices" class="btn btn-secondary">← Back to Invoices</a>
+            <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
+        </div>
+    </div>
+</body>
+</html>`
+  
+  res.send(mobileTemplatesHTML)
+});
+
+// Mobile Create Invoice page
+app.get('/mobile/invoice/create', (req, res) => {
+  const template = req.query.template || '';
+  
+  const mobileCreateHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - Create Invoice</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-secondary { background: #374151; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">📄 Create Invoice</div>
+        </div>
+        
+        <div class="card">
+            <h3>📱 Mobile Invoice Creation</h3>
+            <p style="margin: 15px 0; opacity: 0.9;">
+                For the best invoice creation experience, use the desktop version at:
+                <br><br>
+                <strong style="color: #34D399;">https://your-domain.replit.app/invoices</strong>
+            </p>
+            ${template ? `<p style="margin: 10px 0; opacity: 0.8;">Template: ${template.charAt(0).toUpperCase() + template.slice(1)}</p>` : ''}
+        </div>
+        
+        <div class="card">
+            <h3>🔗 Navigation</h3>
+            <a href="/mobile/invoices" class="btn btn-secondary">← Back to Invoices</a>
+            <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
+        </div>
+    </div>
+</body>
+</html>`
+  
+  res.send(mobileCreateHTML)
+});
+
+// Mobile Invoice Actions (view, edit, send, etc.)
+app.get('/mobile/invoice/:id/:action', (req, res) => {
+  const { id, action } = req.params;
+  const actionTitles: { [key: string]: string } = {
+    'view': '👁️ View Invoice',
+    'edit': '✏️ Edit Invoice', 
+    'send': '📤 Send Invoice',
+    'mark-paid': '💰 Mark as Paid',
+    'duplicate': '📋 Duplicate Invoice'
+  };
+  
+  const title = actionTitles[action] || '📄 Invoice Action';
+  
+  const mobileActionHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - ${title}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-secondary { background: #374151; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">${title}</div>
+        </div>
+        
+        <div class="card">
+            <h3>📱 Mobile Invoice Management</h3>
+            <p style="margin: 15px 0; opacity: 0.9;">
+                Invoice ID: <strong>${id}</strong>
+                <br><br>
+                For full invoice management features, use the desktop version at:
+                <br><br>
+                <strong style="color: #34D399;">https://your-domain.replit.app/invoices</strong>
+            </p>
+        </div>
+        
+        <div class="card">
+            <h3>🔗 Navigation</h3>
+            <a href="/mobile/invoices" class="btn btn-secondary">← Back to Invoices</a>
+            <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
+        </div>
+    </div>
+</body>
+</html>`
+  
+  res.send(mobileActionHTML)
+});
+
 // Mobile placeholder pages for other sections
 app.get('/mobile/:page', (req, res) => {
   const page = req.params.page;
