@@ -130,6 +130,317 @@ app.get('/mobile', (req, res) => {
   res.send(mobileHTML)
 });
 
+// Mobile Time Tracking page with start/stop timers
+app.get('/mobile/time-tracking', async (req, res) => {
+  try {
+    const projects = await storage.getProjects();
+    const tasks = await storage.getTasks();
+    
+    const mobileTimeTrackingHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - Time Tracking</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .timer-display { 
+            text-align: center; 
+            font-size: 3rem; 
+            font-weight: bold; 
+            color: #34D399; 
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        .timer-controls { text-align: center; margin: 20px 0; }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 12px 20px; 
+            border: none;
+            text-decoration: none; 
+            border-radius: 8px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .btn-stop { background: #EF4444; }
+        .btn-pause { background: #F59E0B; }
+        .btn-secondary { background: #374151; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .form-input, .form-select { 
+            width: 100%; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 8px; 
+            background: rgba(255,255,255,0.9);
+            color: #000;
+            font-size: 16px;
+        }
+        .time-entry { 
+            background: rgba(255,255,255,0.05); 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            border-left: 4px solid #059669;
+        }
+        .time-entry-active { border-left-color: #34D399; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">⏱️ Time Tracking</div>
+        </div>
+        
+        <div class="card">
+            <h3>⏰ Active Timer</h3>
+            <div class="timer-display" id="timerDisplay">00:00:00</div>
+            <div class="timer-controls">
+                <button id="startBtn" class="btn" onclick="startTimer()">▶️ Start</button>
+                <button id="pauseBtn" class="btn btn-pause" onclick="pauseTimer()" style="display: none;">⏸️ Pause</button>
+                <button id="stopBtn" class="btn btn-stop" onclick="stopTimer()" style="display: none;">⏹️ Stop</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Project</label>
+                <select class="form-select" id="activeProject">
+                    <option value="">Select Project</option>
+                    ${projects.map(project => `<option value="${project.id}">${project.name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Task</label>
+                <select class="form-select" id="activeTask">
+                    <option value="">Select Task</option>
+                    ${tasks.map(task => `<option value="${task.id}">${task.title}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-input" id="timerDescription" placeholder="What are you working on?">
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>⌨️ Manual Entry</h3>
+            <form id="manualEntryForm" onsubmit="addManualEntry(event)">
+                <div class="form-group">
+                    <label class="form-label">Project *</label>
+                    <select class="form-select" name="project" required>
+                        <option value="">Select Project</option>
+                        ${projects.map(project => `<option value="${project.id}">${project.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Task</label>
+                    <select class="form-select" name="task">
+                        <option value="">Select Task</option>
+                        ${tasks.map(task => `<option value="${task.id}">${task.title}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description *</label>
+                    <input type="text" class="form-input" name="description" required placeholder="Describe the work done">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Hours</label>
+                        <input type="number" class="form-input" name="hours" step="0.5" min="0" placeholder="0">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-input" name="date" value="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                </div>
+                <button type="submit" class="btn">✅ Add Entry</button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h3>📊 Recent Entries</h3>
+            <div id="recentEntries">
+                <div class="time-entry">
+                    <strong>Web Development</strong> - 2.5 hours<br>
+                    <small>Project: Client Website | Task: Homepage Design</small><br>
+                    <small>January 15, 2025</small>
+                </div>
+                <div class="time-entry">
+                    <strong>Meeting with Client</strong> - 1.0 hours<br>
+                    <small>Project: Marketing Campaign | Task: Strategy Planning</small><br>
+                    <small>January 15, 2025</small>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <strong style="color: #34D399; font-size: 18px;">Today's Total: 8.5 hours</strong>
+            </div>
+        </div>
+        
+        <div class="card">
+            <a href="/mobile" class="btn btn-secondary">🏠 Back to Home</a>
+            <a href="/mobile/reports" class="btn">📈 View Reports</a>
+        </div>
+    </div>
+    
+    <script>
+        let startTime = null;
+        let elapsedTime = 0;
+        let timerInterval = null;
+        let isRunning = false;
+        
+        function updateDisplay() {
+            const totalSeconds = Math.floor(elapsedTime / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            document.getElementById('timerDisplay').textContent = 
+                \`\${hours.toString().padStart(2, '0')}:\${minutes.toString().padStart(2, '0')}:\${seconds.toString().padStart(2, '0')}\`;
+        }
+        
+        function startTimer() {
+            if (!isRunning) {
+                startTime = Date.now() - elapsedTime;
+                timerInterval = setInterval(() => {
+                    elapsedTime = Date.now() - startTime;
+                    updateDisplay();
+                }, 1000);
+                isRunning = true;
+                
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('pauseBtn').style.display = 'inline-block';
+                document.getElementById('stopBtn').style.display = 'inline-block';
+            }
+        }
+        
+        function pauseTimer() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('pauseBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'inline-block';
+            }
+        }
+        
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            
+            if (elapsedTime > 0) {
+                // Save the time entry
+                saveTimeEntry();
+            }
+            
+            elapsedTime = 0;
+            updateDisplay();
+            
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+        
+        async function saveTimeEntry() {
+            const hours = elapsedTime / (1000 * 60 * 60);
+            const project = document.getElementById('activeProject').value;
+            const task = document.getElementById('activeTask').value;
+            const description = document.getElementById('timerDescription').value || 'Timer-tracked work';
+            
+            try {
+                const response = await fetch('/api/time-entries', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        projectId: project,
+                        taskId: task,
+                        description: description,
+                        hours: parseFloat(hours.toFixed(2)),
+                        date: new Date().toISOString().split('T')[0]
+                    })
+                });
+                
+                if (response.ok) {
+                    alert(\`Time entry saved: \${hours.toFixed(2)} hours\`);
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error saving time entry:', error);
+            }
+        }
+        
+        async function addManualEntry(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            
+            const entryData = {
+                projectId: formData.get('project'),
+                taskId: formData.get('task'),
+                description: formData.get('description'),
+                hours: parseFloat(formData.get('hours')),
+                date: formData.get('date')
+            };
+            
+            try {
+                const response = await fetch('/api/time-entries', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(entryData)
+                });
+                
+                if (response.ok) {
+                    alert('Manual time entry added successfully!');
+                    event.target.reset();
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error adding manual entry:', error);
+            }
+        }
+        
+        updateDisplay();
+    </script>
+</body>
+</html>`
+    
+    res.send(mobileTimeTrackingHTML)
+  } catch (error) {
+    console.error('Error loading time tracking page:', error);
+    res.status(500).send('Error loading page');
+  }
+});
+
 // Mobile Tasks page with real functionality
 app.get('/mobile/tasks', async (req, res) => {
   try {
