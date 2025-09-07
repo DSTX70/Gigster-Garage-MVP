@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
-import type { Task, Project, User } from "@shared/schema";
+import type { Task, Project, User, Invoice } from "@shared/schema";
 
 const app = express();
 
@@ -386,6 +386,199 @@ app.get('/mobile/projects', async (req, res) => {
   } catch (error) {
     console.error('Error loading mobile projects:', error);
     res.status(500).send('Error loading projects');
+  }
+});
+
+// Mobile Invoices page with real functionality
+app.get('/mobile/invoices', async (req, res) => {
+  try {
+    const invoices = await storage.getInvoices();
+    
+    const draftInvoices = invoices.filter((invoice: Invoice) => invoice.status === 'draft');
+    const sentInvoices = invoices.filter((invoice: Invoice) => invoice.status === 'sent');
+    const paidInvoices = invoices.filter((invoice: Invoice) => invoice.status === 'paid');
+    const overdueInvoices = invoices.filter((invoice: Invoice) => invoice.status === 'overdue');
+    
+    const totalOutstanding = invoices
+      .filter((invoice: Invoice) => invoice.status !== 'paid' && invoice.status !== 'cancelled')
+      .reduce((sum: number, invoice: Invoice) => sum + parseFloat(invoice.balanceDue || '0'), 0);
+    
+    const mobileInvoicesHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gigster Garage - Invoices</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .page-title { font-size: 1.8rem; font-weight: bold; }
+        .card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+        }
+        .invoice-item { 
+            background: rgba(255,255,255,0.15); 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            border-left: 4px solid #059669;
+        }
+        .invoice-draft { border-left-color: #6B7280; }
+        .invoice-sent { border-left-color: #3B82F6; }
+        .invoice-paid { border-left-color: #10B981; }
+        .invoice-overdue { border-left-color: #EF4444; }
+        .btn { 
+            display: inline-block;
+            background: #059669; 
+            color: white; 
+            padding: 10px 16px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin: 5px 5px 5px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-secondary { background: #374151; }
+        .stats { display: flex; justify-content: space-between; margin: 10px 0; }
+        .stat { text-align: center; }
+        .stat-number { font-size: 1.5rem; font-weight: bold; }
+        .stat-label { font-size: 0.8rem; opacity: 0.8; }
+        .invoice-title { font-weight: 600; margin-bottom: 5px; }
+        .invoice-meta { font-size: 0.85rem; opacity: 0.9; }
+        .status-draft { color: #D1D5DB; }
+        .status-sent { color: #93C5FD; }
+        .status-paid { color: #A7F3D0; }
+        .status-overdue { color: #FCA5A5; }
+        .amount { font-weight: 600; color: #34D399; }
+        .amount-overdue { color: #F87171; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Gigster Garage</div>
+            <div class="page-title">💰 Invoices</div>
+        </div>
+        
+        <div class="card">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number">${invoices.length}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${sentInvoices.length + overdueInvoices.length}</div>
+                    <div class="stat-label">Outstanding</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">$${totalOutstanding.toFixed(0)}</div>
+                    <div class="stat-label">Amount Due</div>
+                </div>
+            </div>
+        </div>
+        
+        ${overdueInvoices.length > 0 ? `
+        <div class="card">
+            <h3>⚠️ Overdue Invoices</h3>
+            ${overdueInvoices.map((invoice: Invoice) => `
+                <div class="invoice-item invoice-overdue">
+                    <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                    <div class="invoice-meta">
+                        <span class="status-overdue">●</span> OVERDUE
+                        • 👤 ${invoice.clientName || 'Unknown Client'}
+                        • 📅 Due: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'No date'}
+                        <br><span class="amount amount-overdue">$${parseFloat(invoice.balanceDue || '0').toFixed(2)}</span> outstanding
+                    </div>
+                </div>
+            `).join('')}
+        </div>` : ''}
+        
+        ${sentInvoices.length > 0 ? `
+        <div class="card">
+            <h3>📤 Sent Invoices</h3>
+            ${sentInvoices.map((invoice: Invoice) => `
+                <div class="invoice-item invoice-sent">
+                    <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                    <div class="invoice-meta">
+                        <span class="status-sent">●</span> SENT
+                        • 👤 ${invoice.clientName || 'Unknown Client'}
+                        • 📅 Due: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'No date'}
+                        <br><span class="amount">$${parseFloat(invoice.balanceDue || '0').toFixed(2)}</span> outstanding
+                    </div>
+                </div>
+            `).join('')}
+        </div>` : ''}
+        
+        ${paidInvoices.length > 0 ? `
+        <div class="card">
+            <h3>✅ Recently Paid</h3>
+            ${paidInvoices.slice(-3).map((invoice: Invoice) => `
+                <div class="invoice-item invoice-paid">
+                    <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                    <div class="invoice-meta">
+                        <span class="status-paid">●</span> PAID
+                        • 👤 ${invoice.clientName || 'Unknown Client'}
+                        • 💰 $${parseFloat(invoice.totalAmount || '0').toFixed(2)}
+                        ${invoice.paidAt ? `• 📅 Paid: ${new Date(invoice.paidAt).toLocaleDateString()}` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        </div>` : ''}
+        
+        ${draftInvoices.length > 0 ? `
+        <div class="card">
+            <h3>📝 Draft Invoices</h3>
+            ${draftInvoices.map((invoice: Invoice) => `
+                <div class="invoice-item invoice-draft">
+                    <div class="invoice-title">#${invoice.invoiceNumber}</div>
+                    <div class="invoice-meta">
+                        <span class="status-draft">●</span> DRAFT
+                        • 👤 ${invoice.clientName || 'Unknown Client'}
+                        • 💰 $${parseFloat(invoice.totalAmount || '0').toFixed(2)}
+                    </div>
+                </div>
+            `).join('')}
+        </div>` : ''}
+        
+        ${invoices.length === 0 ? `
+        <div class="card">
+            <h3>📄 No Invoices Yet</h3>
+            <p style="margin-top: 10px; opacity: 0.8;">You haven't created any invoices yet. Start creating invoices to track your business!</p>
+        </div>` : ''}
+        
+        <div class="card">
+            <h3>🔗 Quick Navigation</h3>
+            <a href="/mobile" class="btn btn-secondary">🏠 Home</a>
+            <a href="/mobile/dashboard" class="btn btn-secondary">📊 Dashboard</a>
+            <a href="/mobile/tasks" class="btn btn-secondary">📋 Tasks</a>
+            <a href="/mobile/projects" class="btn btn-secondary">📁 Projects</a>
+        </div>
+    </div>
+</body>
+</html>`
+    
+    res.set({
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    })
+    res.send(mobileInvoicesHTML)
+  } catch (error) {
+    console.error('Error loading mobile invoices:', error);
+    res.status(500).send('Error loading invoices');
   }
 });
 
