@@ -48,6 +48,7 @@ app.get('/mobile', (req, res) => {
         <div class="card">
             <h2>📱 Mobile App Ready!</h2>
             <p>Choose your section to get started:</p>
+            <a href="/mobile/dashboard" class="btn">📊 Dashboard</a>
             <a href="/mobile/tasks" class="btn">📋 View Tasks</a>
             <a href="/mobile/projects" class="btn">📁 Projects</a>
             <a href="/mobile/invoices" class="btn">💰 Invoices</a>
@@ -152,6 +153,7 @@ app.get('/mobile/:page', (req, res) => {
         
         <div class="card">
             <h3>🔗 Quick Navigation</h3>
+            <a href="/mobile/dashboard" class="btn ${page === 'dashboard' ? '' : 'btn-secondary'}">📊 Dashboard</a>
             <a href="/mobile/tasks" class="btn ${page === 'tasks' ? '' : 'btn-secondary'}">📋 Tasks</a>
             <a href="/mobile/projects" class="btn ${page === 'projects' ? '' : 'btn-secondary'}">📁 Projects</a>
             <a href="/mobile/invoices" class="btn ${page === 'invoices' ? '' : 'btn-secondary'}">💰 Invoices</a>
