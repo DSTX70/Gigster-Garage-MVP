@@ -60,7 +60,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
       { from: /^\/assets\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" },
       { from: /^\/src\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite source files
       { from: /^\/node_modules\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite dependencies
-      { from: /^\/\@.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite special routes (@vite/client, @fs, etc.)
+      { from: /^\/@.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite special routes (@vite/client, @fs, etc.)
       { from: /^\/health$/, to: (ctx: any) => ctx.parsedUrl.path || "" },
       { from: /.*\.(js|jsx|ts|tsx|css|json|woff|woff2|eot|ttf|otf|png|jpg|jpeg|gif|svg|ico)$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Static file extensions
     ],
