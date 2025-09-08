@@ -50,26 +50,21 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   // --- API routes (mounted BEFORE SPA fallback) ---
   const server = await registerRoutes(app);
 
-  // --- SPA History Fallback for client routes ---
-  // why: Ensure /mobile and deep links render index.html via Vite (dev) or dist (prod)
+  // --- Vite middleware (dev) + static (prod) FIRST ---
+  await setupVite(app, server);
+  serveStatic(app);
+
+  // --- SPA History Fallback for client routes (AFTER Vite) ---
+  // why: Ensure /mobile and deep links render index.html, but only if Vite didn't handle it
   const historyMiddleware = history({
     verbose: false,
-    // preserve API, static assets, and Vite dev server requests
+    // Only need to preserve API routes since Vite handles its own routes now
     rewrites: [
       { from: /^\/api\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" },
-      { from: /^\/assets\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" },
-      { from: /^\/src\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite source files
-      { from: /^\/node_modules\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite dependencies
-      { from: /^\/@.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite special routes (@vite/client, @fs, etc.)
       { from: /^\/health$/, to: (ctx: any) => ctx.parsedUrl.path || "" },
-      { from: /.*\.(js|jsx|ts|tsx|css|json|woff|woff2|eot|ttf|otf|png|jpg|jpeg|gif|svg|ico)$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Static file extensions
     ],
   });
   app.use(historyMiddleware);
-
-  // --- Vite middleware (dev) + static (prod) ---
-  await setupVite(app, server);
-  serveStatic(app);
 
   // start the server
   const port = 5000;
