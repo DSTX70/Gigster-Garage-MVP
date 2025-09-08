@@ -704,6 +704,7 @@ const baseInsertInvoiceSchema = createInsertSchema(invoices, {
   taxAmount: z.number().min(0, "Tax amount cannot be negative").optional(),
   totalAmount: z.number().min(0, "Total amount cannot be negative").optional(),
   lineItems: z.array(z.object({
+    id: z.number().min(1, "Line item id is required"),
     description: z.string().min(1, "Item description is required"),
     quantity: z.number().min(0.01, "Quantity must be greater than 0"),
     rate: z.number().min(0, "Rate cannot be negative"),
