@@ -33,7 +33,9 @@ function isMobileDevice(userAgent: string): boolean {
 // --- Redirect mobile root -> /mobile (do NOT touch other paths) ---
 app.use((req: Request, res: Response, next: NextFunction) => {
   const userAgent = req.headers["user-agent"] || "";
-  if (req.method === "GET" && req.path === "/" && isMobileDevice(userAgent)) {
+  const desktopForced = req.query.desktop === "true";
+  
+  if (req.method === "GET" && req.path === "/" && isMobileDevice(userAgent) && !desktopForced) {
     log(`📱 Redirecting mobile browser from ${req.path} to /mobile`);
     return res.redirect(302, "/mobile");
   }

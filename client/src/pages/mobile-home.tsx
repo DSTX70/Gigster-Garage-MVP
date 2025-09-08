@@ -177,7 +177,7 @@ export default function MobileHome() {
                 Need more features?
               </p>
               <a 
-                href="/"
+                href="/?desktop=true"
                 className="inline-block bg-[#004C6D] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#003A52] transition-colors"
                 data-testid="link-desktop-version"
               >
