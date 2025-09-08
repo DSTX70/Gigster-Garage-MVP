@@ -64,21 +64,7 @@ const sessionSchema = z.object({
   lastActivity: z.string().optional(),
 });
 
-// Extend session interface
-declare module 'express-session' {
-  interface SessionData {
-    user?: {
-      id: string;
-      username: string;
-      name: string;
-      email: string;
-      role: string;
-      hasCompletedOnboarding: boolean;
-    };
-    createdAt?: string;
-    lastActivity?: string;
-  }
-}
+// Use existing session interface - removing conflicting declaration
 
 // Enhanced authentication middleware with comprehensive error handling
 export function enhancedRequireAuth(options: {
