@@ -3371,8 +3371,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     });
   });
 
-  // Inbound email webhook for SendGrid
+  // Inbound email webhook for SendGrid (with basic validation)
   app.post("/api/inbound-email", express.raw({ type: 'text/plain' }), async (req, res) => {
+    // Basic webhook validation - check for expected headers
+    const userAgent = req.get('User-Agent') || '';
+    if (!userAgent.includes('SendGrid')) {
+      console.warn('📧 Suspicious webhook request without SendGrid User-Agent');
+      return res.status(401).json({ error: "Unauthorized webhook source" });
+    }
     try {
       console.log('📧 Received inbound email webhook');
       
