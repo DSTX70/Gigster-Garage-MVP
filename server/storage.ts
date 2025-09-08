@@ -285,79 +285,49 @@ export class DatabaseStorage implements IStorage {
     const query = db
       .select({
         id: tasks.id,
+        title: tasks.title,
         description: tasks.description,
-        completed: tasks.completed,
-        dueDate: tasks.dueDate,
-        priority: tasks.priority,
         status: tasks.status,
+        priority: tasks.priority,
+        dueDate: tasks.dueDate,
+        dueTime: tasks.dueTime,
+        completed: tasks.completed,
+        completedAt: tasks.completedAt,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        projectId: tasks.projectId,
         assignedToId: tasks.assignedToId,
         createdById: tasks.createdById,
-        projectId: tasks.projectId,
-        parentTaskId: tasks.parentTaskId,
         notes: tasks.notes,
         attachments: tasks.attachments,
         links: tasks.links,
+        parentTaskId: tasks.parentTaskId,
+        progress: tasks.progress,
         progressNotes: tasks.progressNotes,
-        createdAt: tasks.createdAt,
-        assignedTo: users,
-        project: projects,
+        estimatedHours: tasks.estimatedHours,
+        actualHours: tasks.actualHours,
       })
       .from(tasks)
-      .leftJoin(users, eq(tasks.assignedToId, users.id))
-      .leftJoin(projects, eq(tasks.projectId, projects.id));
+      .orderBy(tasks.createdAt);
 
     // If userId is provided, filter tasks to only those assigned to the user
     if (userId) {
       const results = await query.where(eq(tasks.assignedToId, userId));
-      return results.map(row => ({
-        ...row,
-        assignedTo: row.assignedTo || undefined,
-        project: row.project || undefined,
-      }));
+      return results;
     } else {
       // Admin can see all tasks
       const results = await query;
-      return results.map(row => ({
-        ...row,
-        assignedTo: row.assignedTo || undefined,
-        project: row.project || undefined,
-      }));
+      return results;
     }
   }
 
   async getTask(id: string): Promise<Task | undefined> {
     const [result] = await db
-      .select({
-        id: tasks.id,
-        description: tasks.description,
-        completed: tasks.completed,
-        dueDate: tasks.dueDate,
-        priority: tasks.priority,
-        status: tasks.status,
-        assignedToId: tasks.assignedToId,
-        createdById: tasks.createdById,
-        projectId: tasks.projectId,
-        parentTaskId: tasks.parentTaskId,
-        notes: tasks.notes,
-        attachments: tasks.attachments,
-        links: tasks.links,
-        progressNotes: tasks.progressNotes,
-        createdAt: tasks.createdAt,
-        assignedTo: users,
-        project: projects,
-      })
+      .select()
       .from(tasks)
-      .leftJoin(users, eq(tasks.assignedToId, users.id))
-      .leftJoin(projects, eq(tasks.projectId, projects.id))
       .where(eq(tasks.id, id));
 
-    if (!result) return undefined;
-
-    return {
-      ...result,
-      assignedTo: result.assignedTo || undefined,
-      project: result.project || undefined,
-    };
+    return result || undefined;
   }
 
   async createTask(insertTask: InsertTask, createdById: string): Promise<Task> {
@@ -539,7 +509,9 @@ export class DatabaseStorage implements IStorage {
         .where(eq(taskDependencies.dependentTaskId, current));
 
       for (const dep of dependencies) {
-        toCheck.push(dep.dependsOnTaskId);
+        if (dep.dependsOnTaskId) {
+          toCheck.push(dep.dependsOnTaskId);
+        }
       }
     }
 
