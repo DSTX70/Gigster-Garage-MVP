@@ -16,19 +16,19 @@ const screenshots: Screenshot[] = [
   {
     id: "dashboard",
     title: "My Dashboard",
-    description: "Clean, intuitive task overview with priority badges and project organization",
+    description: "Your command center — see every spark, track every win, fuel your hustle",
     image: dashboardImage
   },
   {
     id: "task-form",
     title: "Task Creation",
-    description: "Simple form to create tasks with due dates, priorities, and project assignment",
+    description: "Spark new tasks with precision — deadlines, priorities, and project assignments locked in",
     image: taskFormImage
   },
   {
     id: "kanban",
     title: "Project Board",
-    description: "Kanban-style project management with drag-and-drop task organization",
+    description: "Drag, drop, dominate — visual project flow that keeps your momentum rolling",
     image: kanbanImage
   }
 ];

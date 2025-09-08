@@ -22,7 +22,7 @@ export default function MobileHome() {
           <h1 className="text-3xl font-bold text-white mb-2">
             🚀 Gigster Garage
           </h1>
-          <p className="text-blue-100">Simplified Workflow Hub</p>
+          <p className="text-blue-100">Smarter tools for bolder dreams</p>
         </div>
       </div>
 
