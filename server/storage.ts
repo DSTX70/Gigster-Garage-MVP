@@ -453,7 +453,7 @@ export class DatabaseStorage implements IStorage {
     
     // First pass: create task map and identify parent tasks
     for (const task of allTasks) {
-      taskMap.set(task.id, { ...task, subtasks: [] });
+      taskMap.set(task.id, { ...task });
       if (!task.parentTaskId) {
         parentTasks.push(taskMap.get(task.id)!);
       }
@@ -464,8 +464,7 @@ export class DatabaseStorage implements IStorage {
       if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
         const parent = taskMap.get(task.parentTaskId)!;
         const child = taskMap.get(task.id)!;
-        parent.subtasks = parent.subtasks || [];
-        parent.subtasks.push(child);
+        // Note: subtasks relationship handled via parentTaskId
       }
     }
     
@@ -617,7 +616,7 @@ export class DatabaseStorage implements IStorage {
       .delete(timeLogs)
       .where(eq(timeLogs.id, id));
     
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async stopActiveTimer(userId: string): Promise<TimeLog | undefined> {
@@ -1357,7 +1356,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(fileAttachments)
       .where(eq(fileAttachments.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Document Version operations
@@ -1385,7 +1384,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(documentVersions)
       .where(eq(documentVersions.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Custom Field Definitions operations
