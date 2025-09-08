@@ -203,7 +203,7 @@ export function AdminAuditLogging() {
             <CardTitle className="text-base">Total Events</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{auditStats?.totalEvents || auditEvents.length}</div>
+            <div className="text-2xl font-bold">{(auditStats as any)?.totalEvents || auditEvents.length}</div>
           </CardContent>
         </Card>
         
