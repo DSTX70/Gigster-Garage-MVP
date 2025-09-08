@@ -47,6 +47,8 @@ import AuditLogging from "@/pages/audit-logging";
 import WhiteLabel from "@/pages/white-label";
 import SmartScheduling from "@/pages/smart-scheduling";
 import PredictiveAnalytics from "@/pages/predictive-analytics";
+import EmailManagement from "@/pages/email-management";
+import SlackIntegration from "@/pages/slack-integration";
 import PerformanceDashboard from "@/pages/performance-dashboard";
 
 // Mobile Pages
@@ -151,6 +153,8 @@ function Router() {
       <Route path="/white-label" component={WhiteLabel} />
       <Route path="/smart-scheduling" component={SmartScheduling} />
       <Route path="/predictive-analytics" component={PredictiveAnalytics} />
+      <Route path="/email-management" component={EmailManagement} />
+      <Route path="/slack-integration" component={SlackIntegration} />
       <Route path="/performance-dashboard" component={PerformanceDashboard} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
