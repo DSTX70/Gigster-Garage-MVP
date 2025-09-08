@@ -42,6 +42,7 @@ import { performanceMiddleware, cacheMiddleware, optimizationMiddleware } from '
 import { cdnService } from './cdn-service';
 import { databaseOptimizer } from './database-optimizer';
 import { loadBalancer } from './load-balancer';
+import passport from 'passport';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -575,8 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.session.user!;
-      const { progress, ...taskData } = result.data;
-      const task = await storage.createTask(taskData, user.id);
+      const task = await storage.createTask(result.data, user.id);
       
       // Cache invalidation temporarily disabled
       
@@ -2020,8 +2020,11 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(404).json({ error: "Contract not found" });
       }
 
-      const updateData = insertContractSchema.partial().parse(req.body);
-      updateData.lastModifiedById = req.session.user!.id;
+      const updateResult = insertContractSchema.safeParse(req.body);
+      if (!updateResult.success) {
+        return res.status(400).json({ error: "Invalid contract data", details: updateResult.error.errors });
+      }
+      const updateData = { ...updateResult.data, lastModifiedById: req.session.user!.id };
 
       const updatedContract = await storage.updateContract(req.params.id, updateData);
       res.json(updatedContract);
