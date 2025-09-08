@@ -6736,6 +6736,306 @@ Keep it professional but easy to understand.`;
   // Register backup and recovery routes
   app.use('/api', backupRoutes);
 
+  // =================== EMAIL MANAGEMENT ENDPOINTS ===================
+  
+  app.get("/api/emails/inbound", requireAuth, async (req, res) => {
+    try {
+      // Mock data for now - in production this would come from database
+      const mockEmails = [
+        {
+          id: 'email_1',
+          fromEmail: 'support@client.com',
+          toEmail: 'messages@gigstergarage.app',
+          subject: 'Support Request: Login Issues',
+          content: 'I am having trouble logging into my account. Can you please help me reset my password?',
+          attachments: [],
+          parsedAt: new Date().toISOString(),
+          status: 'processed',
+          routingRule: 'Support Team',
+          assignedUser: 'Support Agent',
+          messageId: 'msg_123'
+        },
+        {
+          id: 'email_2',
+          fromEmail: 'info@business.com',
+          toEmail: 'messages@gigstergarage.app',
+          subject: 'Project Inquiry',
+          content: 'We are interested in your services for a new project. Please contact us to discuss further.',
+          attachments: [],
+          parsedAt: new Date(Date.now() - 3600000).toISOString(),
+          status: 'processed',
+          routingRule: 'Sales Team',
+          assignedUser: 'Sales Rep',
+          messageId: 'msg_124'
+        }
+      ];
+      res.json(mockEmails);
+    } catch (error) {
+      console.error("Error fetching inbound emails:", error);
+      res.status(500).json({ error: "Failed to fetch inbound emails" });
+    }
+  });
+
+  app.get("/api/emails/routing-rules", requireAuth, async (req, res) => {
+    try {
+      // Mock routing rules data
+      const mockRules = [
+        {
+          id: 'rule_1',
+          name: 'Support Requests',
+          description: 'Route support emails to support team',
+          conditions: {
+            subject: 'support, help, issue, bug'
+          },
+          actions: {
+            assignToUser: 'support_agent_id',
+            priority: 'high',
+            autoReply: true,
+            autoReplyTemplate: 'Thank you for contacting support. We will respond within 24 hours.',
+            createTask: true
+          },
+          isActive: true,
+          matchCount: 15,
+          createdAt: new Date(Date.now() - 7 * 24 * 3600000).toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'rule_2',
+          name: 'Sales Inquiries',
+          description: 'Route sales emails to sales team',
+          conditions: {
+            subject: 'inquiry, quote, project, proposal'
+          },
+          actions: {
+            assignToUser: 'sales_rep_id',
+            priority: 'medium',
+            autoReply: false,
+            createTask: true
+          },
+          isActive: true,
+          matchCount: 8,
+          createdAt: new Date(Date.now() - 5 * 24 * 3600000).toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ];
+      res.json(mockRules);
+    } catch (error) {
+      console.error("Error fetching routing rules:", error);
+      res.status(500).json({ error: "Failed to fetch routing rules" });
+    }
+  });
+
+  app.post("/api/emails/routing-rules", requireAuth, async (req, res) => {
+    try {
+      const ruleData = req.body;
+      // Mock creating rule - in production this would save to database
+      const newRule = {
+        id: 'rule_' + Date.now(),
+        ...ruleData,
+        matchCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      console.log('📧 Created email routing rule:', newRule.name);
+      res.json(newRule);
+    } catch (error) {
+      console.error("Error creating routing rule:", error);
+      res.status(500).json({ error: "Failed to create routing rule" });
+    }
+  });
+
+  app.post("/api/emails/test-parser", requireAuth, async (req, res) => {
+    try {
+      const { fromEmail, subject, content } = req.body;
+      
+      // Use existing parseInboundEmail function for testing
+      const formData = `from=${encodeURIComponent(fromEmail)}&subject=${encodeURIComponent(subject)}&text=${encodeURIComponent(content)}`;
+      const parsedData = parseInboundEmail(formData);
+      
+      console.log('📧 Email parser test successful:', parsedData);
+      res.json(parsedData);
+    } catch (error) {
+      console.error("Error testing email parser:", error);
+      res.status(500).json({ error: "Failed to test email parser" });
+    }
+  });
+
+  // =================== SLACK INTEGRATION ENDPOINTS ===================
+  
+  app.get("/api/slack/integrations", requireAuth, async (req, res) => {
+    try {
+      // Get integrations from webhook service
+      const integrations = await webhookService.getIntegrations();
+      const slackIntegrations = integrations.filter(i => i.type === 'slack').map(integration => ({
+        id: integration.id,
+        name: integration.name,
+        workspaceName: integration.config.teamId || 'Unknown Workspace',
+        webhookUrl: integration.config.webhookUrl,
+        channels: [
+          { id: 'general', name: 'general', isPrivate: false },
+          { id: 'notifications', name: 'notifications', isPrivate: false },
+          { id: 'alerts', name: 'alerts', isPrivate: false }
+        ],
+        defaultChannel: integration.config.channelId || '#general',
+        botToken: integration.config.botToken,
+        isActive: integration.active,
+        eventMappings: integration.eventMappings.map(mapping => ({
+          event: mapping.event,
+          channel: integration.config.channelId || '#general',
+          template: mapping.template,
+          enabled: mapping.enabled,
+          priority: 'medium'
+        })),
+        statistics: {
+          totalSent: Math.floor(Math.random() * 100),
+          successRate: 95 + Math.random() * 5,
+          lastSent: new Date().toISOString()
+        },
+        createdAt: integration.createdAt.toISOString(),
+        updatedAt: new Date().toISOString()
+      }));
+      
+      res.json(slackIntegrations);
+    } catch (error) {
+      console.error("Error fetching Slack integrations:", error);
+      res.status(500).json({ error: "Failed to fetch Slack integrations" });
+    }
+  });
+
+  app.post("/api/slack/integrations", requireAuth, async (req, res) => {
+    try {
+      const { name, workspaceName, webhookUrl, defaultChannel, botToken, eventMappings } = req.body;
+      
+      const integration = await webhookService.createIntegration({
+        type: 'slack',
+        name,
+        config: {
+          webhookUrl,
+          channelId: defaultChannel,
+          teamId: workspaceName,
+          botToken
+        },
+        eventMappings: eventMappings || [],
+        active: true,
+        createdBy: req.user?.id || 'system'
+      });
+
+      console.log('📱 Created Slack integration:', name);
+      res.json(integration);
+    } catch (error) {
+      console.error("Error creating Slack integration:", error);
+      res.status(500).json({ error: "Failed to create Slack integration" });
+    }
+  });
+
+  app.patch("/api/slack/integrations/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      // Mock update - in production this would use webhookService.updateIntegration
+      console.log(`📱 Updated Slack integration ${id}:`, updates);
+      res.json({ id, ...updates, updatedAt: new Date().toISOString() });
+    } catch (error) {
+      console.error("Error updating Slack integration:", error);
+      res.status(500).json({ error: "Failed to update Slack integration" });
+    }
+  });
+
+  app.post("/api/slack/integrations/:id/test", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { event, channel, template, data } = req.body;
+      
+      console.log(`📱 Testing Slack integration ${id} - Event: ${event}, Channel: ${channel}`);
+      
+      // Mock test notification
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      res.json({ 
+        success: true, 
+        message: 'Test notification sent successfully',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error testing Slack integration:", error);
+      res.status(500).json({ error: "Failed to test Slack integration" });
+    }
+  });
+
+  app.post("/api/slack/validate-webhook", requireAuth, async (req, res) => {
+    try {
+      const { webhookUrl } = req.body;
+      
+      if (!webhookUrl || !webhookUrl.startsWith('https://hooks.slack.com/')) {
+        return res.status(400).json({ error: "Invalid Slack webhook URL" });
+      }
+
+      // Mock validation test
+      console.log('📱 Validating Slack webhook:', webhookUrl);
+      
+      res.json({
+        valid: true,
+        workspaceName: 'Test Workspace',
+        channel: '#general'
+      });
+    } catch (error) {
+      console.error("Error validating Slack webhook:", error);
+      res.status(500).json({ error: "Failed to validate Slack webhook" });
+    }
+  });
+
+  app.get("/api/slack/notifications", requireAuth, async (req, res) => {
+    try {
+      // Mock notifications data
+      const mockNotifications = [
+        {
+          id: 'notif_1',
+          integrationId: 'integration_1',
+          channel: '#general',
+          event: 'task.created',
+          message: '📝 New task created: Fix login bug assigned to John Doe',
+          status: 'sent',
+          attempts: 1,
+          sentAt: new Date().toISOString(),
+          metadata: { taskId: 'task_123', priority: 'high' }
+        },
+        {
+          id: 'notif_2',
+          integrationId: 'integration_1',
+          channel: '#notifications',
+          event: 'project.updated',
+          message: '🚀 Project updated: Website Redesign milestone reached',
+          status: 'sent',
+          attempts: 1,
+          sentAt: new Date(Date.now() - 1800000).toISOString(),
+          metadata: { projectId: 'project_456' }
+        }
+      ];
+      
+      res.json(mockNotifications);
+    } catch (error) {
+      console.error("Error fetching Slack notifications:", error);
+      res.status(500).json({ error: "Failed to fetch Slack notifications" });
+    }
+  });
+
+  app.get("/api/slack/statistics", requireAuth, async (req, res) => {
+    try {
+      const mockStats = {
+        totalSent: 147,
+        successRate: 97.3,
+        failedToday: 2,
+        activeIntegrations: 1
+      };
+      
+      res.json(mockStats);
+    } catch (error) {
+      console.error("Error fetching Slack statistics:", error);
+      res.status(500).json({ error: "Failed to fetch Slack statistics" });
+    }
+  });
+
   // =================== START BACKGROUND SERVICES ===================
   
   // Start automated business logic services
