@@ -44,6 +44,7 @@ import APIWebhooks from "@/pages/api-webhooks";
 import SSOManagement from "@/pages/sso-management";
 import PermissionsManagement from "@/pages/permissions-management";
 import AuditLogging from "@/pages/audit-logging";
+import WhiteLabel from "@/pages/white-label";
 import SmartScheduling from "@/pages/smart-scheduling";
 import PredictiveAnalytics from "@/pages/predictive-analytics";
 import PerformanceDashboard from "@/pages/performance-dashboard";
@@ -147,6 +148,7 @@ function Router() {
       <Route path="/sso-management" component={SSOManagement} />
       <Route path="/permissions-management" component={PermissionsManagement} />
       <Route path="/audit-logging" component={AuditLogging} />
+      <Route path="/white-label" component={WhiteLabel} />
       <Route path="/smart-scheduling" component={SmartScheduling} />
       <Route path="/predictive-analytics" component={PredictiveAnalytics} />
       <Route path="/performance-dashboard" component={PerformanceDashboard} />
