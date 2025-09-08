@@ -57,20 +57,12 @@ import MobileTimeTracking from "@/pages/mobile-time-tracking";
 import MobileWorkflows from "@/pages/mobile-workflows";
 
 function Router() {
-  const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
   const [location, setLocation] = useLocation();
 
-  // Check if we're on a mobile route
+  // Check if we're on a mobile route - handle these first without authentication
   const isMobileRoute = location.startsWith('/mobile');
 
-  // Redirect authenticated users away from login/signup pages
-  useEffect(() => {
-    if (isAuthenticated && (location === '/login' || location === '/signup')) {
-      setLocation('/');
-    }
-  }, [isAuthenticated, location, setLocation]);
-
-  // For mobile routes, show them immediately without authentication
+  // For mobile routes, show them immediately without any authentication checks
   if (isMobileRoute) {
     return (
       <Switch>
@@ -84,6 +76,16 @@ function Router() {
       </Switch>
     );
   }
+
+  // Only call useAuth for non-mobile routes
+  const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
+
+  // Redirect authenticated users away from login/signup pages
+  useEffect(() => {
+    if (isAuthenticated && (location === '/login' || location === '/signup')) {
+      setLocation('/');
+    }
+  }, [isAuthenticated, location, setLocation]);
 
   if (isLoading) {
     return (

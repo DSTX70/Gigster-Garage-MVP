@@ -54,11 +54,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   // why: Ensure /mobile and deep links render index.html via Vite (dev) or dist (prod)
   const historyMiddleware = history({
     verbose: false,
-    // preserve API and static asset requests
+    // preserve API, static assets, and Vite dev server requests
     rewrites: [
       { from: /^\/api\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" },
       { from: /^\/assets\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" },
+      { from: /^\/src\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite source files
+      { from: /^\/node_modules\/.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite dependencies
+      { from: /^\/\@.*$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Vite special routes (@vite/client, @fs, etc.)
       { from: /^\/health$/, to: (ctx: any) => ctx.parsedUrl.path || "" },
+      { from: /.*\.(js|jsx|ts|tsx|css|json|woff|woff2|eot|ttf|otf|png|jpg|jpeg|gif|svg|ico)$/, to: (ctx: any) => ctx.parsedUrl.path || "" }, // Static file extensions
     ],
   });
   app.use(historyMiddleware);
