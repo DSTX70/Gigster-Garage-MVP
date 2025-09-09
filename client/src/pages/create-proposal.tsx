@@ -733,7 +733,7 @@ export default function CreateProposal() {
                   Preview
                 </Button>
                 <Button onClick={handleSave} disabled={saveProposalMutation.isPending}>
-                  <Send className="h-4 w-4 mr-2" />
+                  <FileText className="h-4 w-4 mr-2" />
                   Save Proposal
                 </Button>
                 <Button variant="default" className="bg-green-600 hover:bg-green-700">
