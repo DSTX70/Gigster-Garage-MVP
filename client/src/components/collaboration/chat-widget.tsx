@@ -154,7 +154,7 @@ export function ChatWidget({
 
       case 'typing_start':
         if (message.data.channelId === channelId && message.data.userId !== user?.id) {
-          setTyping(prev => new Set([...prev, message.data.userName]));
+          setTyping(prev => new Set(Array.from(prev).concat(message.data.userName)));
         }
         break;
 

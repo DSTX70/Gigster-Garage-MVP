@@ -14,6 +14,8 @@ export interface BackupMetadata {
   totalRecords: number;
   fileSize: number;
   description?: string;
+  filename?: string;
+  filepath?: string;
 }
 
 export interface BackupOptions {
@@ -109,7 +111,7 @@ export class BackupService {
               data = await this.storage.getTimeLogs();
               break;
             case 'file_attachments':
-              data = await this.storage.getFileAttachments();
+              data = await this.storage.getAllFileAttachments();
               break;
             default:
               console.warn(`⚠️  Skipping unknown table: ${table}`);
@@ -144,7 +146,7 @@ export class BackupService {
       return filepath;
     } catch (error) {
       console.error('❌ Backup creation failed:', error);
-      throw new Error(`Backup failed: ${error.message}`);
+      throw new Error(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -244,7 +246,7 @@ export class BackupService {
                   await this.storage.createProject(record);
                   break;
                 case 'tasks':
-                  await this.storage.createTask(record);
+                  await this.storage.createTask(record, record.createdById || 'system');
                   break;
                 case 'clients':
                   await this.storage.createClient(record);
@@ -265,7 +267,7 @@ export class BackupService {
                   console.warn(`⚠️  No restore method for table: ${table}`);
               }
             } catch (recordError) {
-              console.warn(`⚠️  Failed to restore record in ${table}:`, recordError.message);
+              console.warn(`⚠️  Failed to restore record in ${table}:`, recordError instanceof Error ? recordError.message : String(recordError));
             }
           }
 
@@ -282,7 +284,7 @@ export class BackupService {
       }
     } catch (error) {
       console.error('❌ Restore failed:', error);
-      throw new Error(`Restore failed: ${error.message}`);
+      throw new Error(`Restore failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -334,6 +336,126 @@ export class BackupService {
         console.error('❌ Scheduled backup failed:', error);
       }
     }, intervalHours * 60 * 60 * 1000);
+  }
+
+  /**
+   * Get backup configurations (required by routes.ts)
+   */
+  async getConfigurations(): Promise<any[]> {
+    return [
+      {
+        id: 'default',
+        name: 'Default Backup Configuration',
+        description: 'Standard backup of all tables',
+        includeTables: ['users', 'projects', 'tasks', 'clients', 'proposals', 'contracts', 'invoices', 'templates', 'time_logs', 'file_attachments'],
+        excludeTables: [],
+        schedule: '0 2 * * *', // Daily at 2 AM
+        retention: 30, // Keep 30 backups
+        compress: true,
+        isActive: true
+      },
+      {
+        id: 'minimal',
+        name: 'Minimal Backup Configuration', 
+        description: 'Backup of essential data only',
+        includeTables: ['users', 'projects', 'tasks'],
+        excludeTables: ['templates', 'file_attachments'],
+        schedule: '0 6 * * *', // Daily at 6 AM
+        retention: 7, // Keep 7 backups
+        compress: true,
+        isActive: false
+      }
+    ];
+  }
+
+  /**
+   * Get list of backups (alias for listBackups, required by routes.ts)
+   */
+  async getBackups(): Promise<BackupMetadata[]> {
+    return await this.listBackups();
+  }
+
+  /**
+   * Perform backup (alias for createBackup, required by routes.ts)
+   */
+  async performBackup(configId: string = 'default', userId: string): Promise<string> {
+    const configurations = await this.getConfigurations();
+    const config = configurations.find(c => c.id === configId);
+    
+    if (!config) {
+      throw new Error(`Backup configuration '${configId}' not found`);
+    }
+
+    const options: BackupOptions = {
+      includeTables: config.includeTables,
+      excludeTables: config.excludeTables,
+      description: `${config.description} (initiated by user: ${userId})`,
+      compress: config.compress
+    };
+
+    console.log(`🚀 Starting backup with configuration: ${config.name}`);
+    return await this.createBackup(options);
+  }
+
+  /**
+   * Get backup statistics (required by routes.ts)
+   */
+  async getStatistics(): Promise<any> {
+    try {
+      const backups = await this.listBackups();
+      const totalBackups = backups.length;
+      
+      if (totalBackups === 0) {
+        return {
+          totalBackups: 0,
+          totalSize: 0,
+          averageSize: 0,
+          oldestBackup: null,
+          newestBackup: null,
+          totalRecords: 0,
+          averageRecords: 0,
+          storageUsed: '0 MB'
+        };
+      }
+
+      const totalSize = backups.reduce((sum, backup) => sum + (backup.fileSize || 0), 0);
+      const totalRecords = backups.reduce((sum, backup) => sum + (backup.totalRecords || 0), 0);
+      const averageSize = totalSize / totalBackups;
+      const averageRecords = totalRecords / totalBackups;
+
+      // Sort by timestamp to find oldest and newest
+      const sortedBackups = [...backups].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      
+      return {
+        totalBackups,
+        totalSize,
+        averageSize,
+        oldestBackup: sortedBackups[0]?.timestamp || null,
+        newestBackup: sortedBackups[sortedBackups.length - 1]?.timestamp || null,
+        totalRecords,
+        averageRecords,
+        storageUsed: `${(totalSize / 1024 / 1024).toFixed(2)} MB`,
+        backupSizes: backups.map(b => ({
+          filename: b.filename,
+          size: b.fileSize,
+          records: b.totalRecords,
+          timestamp: b.timestamp
+        }))
+      };
+    } catch (error) {
+      console.error('❌ Failed to get backup statistics:', error);
+      return {
+        totalBackups: 0,
+        totalSize: 0,
+        averageSize: 0,
+        oldestBackup: null,
+        newestBackup: null,
+        totalRecords: 0,
+        averageRecords: 0,
+        storageUsed: '0 MB',
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
   }
 }
 

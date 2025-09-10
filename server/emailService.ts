@@ -395,9 +395,9 @@ You've Received a High Priority Task
 
 Task Details:
 - Description: ${task.description}
-- Priority: ${task.priority.toUpperCase()}
+- Priority: ${task.priority ? task.priority.toUpperCase() : 'Not set'}
 - Due Date: ${formatDate(task.dueDate)}
-- Project: ${task.project?.name || 'No project assigned'}
+- Project: ${task.projectId || 'No project assigned'}
 - Status: ${task.completed ? 'Completed' : 'Pending'}
 
 ${task.notes ? `Notes: ${task.notes}` : ''}
@@ -440,9 +440,9 @@ Gigster Garage Team
             <div class="content">
                 <div class="task-details">
                     <h2>${task.description}</h2>
-                    <p><strong>Priority:</strong> <span class="priority-badge">${task.priority.toUpperCase()}</span></p>
+                    <p><strong>Priority:</strong> <span class="priority-badge">${task.priority ? task.priority.toUpperCase() : 'NOT SET'}</span></p>
                     <p><strong>Due Date:</strong> ${formatDate(task.dueDate)}</p>
-                    <p><strong>Project:</strong> ${task.project?.name || 'No project assigned'}</p>
+                    <p><strong>Project:</strong> ${task.projectId || 'No project assigned'}</p>
                     <p><strong>Status:</strong> ${task.completed ? '✅ Completed' : '⏳ Pending'}</p>
                     
                     ${task.notes ? `

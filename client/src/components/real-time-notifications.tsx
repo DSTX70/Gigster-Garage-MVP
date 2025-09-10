@@ -59,7 +59,8 @@ export function useRealtimeService() {
       return;
     }
 
-    const wsUrl = `ws://localhost:5000/ws/collaboration?userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/collaboration?userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {

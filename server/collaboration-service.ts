@@ -260,7 +260,7 @@ export class CollaborationService {
 
     // Notify task assignee and creator
     try {
-      const task = await storage.getTaskById(data.taskId);
+      const task = await storage.getTask(data.taskId);
       if (task) {
         const notifyUsers = new Set([task.assignedToId, task.createdById]);
         notifyUsers.delete(userId); // Don't notify the sender
