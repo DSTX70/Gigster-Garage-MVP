@@ -4549,6 +4549,61 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Route aliases for backward compatibility - workflow routes
+  app.get("/api/workflow/rules", requireAuth, async (req, res) => {
+    try {
+      const { entityType, isActive } = req.query;
+      const rules = await storage.getWorkflowRules(
+        entityType as string,
+        isActive ? isActive === 'true' : undefined
+      );
+      res.json(rules);
+    } catch (error) {
+      console.error("Error fetching workflow rules:", error);
+      res.status(500).json({ message: "Failed to fetch workflow rules" });
+    }
+  });
+
+  app.post("/api/workflow/rules", requireAuth, async (req, res) => {
+    try {
+      const ruleData = {
+        ...req.body,
+        createdById: req.session.user!.id,
+      };
+      const rule = await storage.createWorkflowRule(ruleData);
+      res.status(201).json(rule);
+    } catch (error) {
+      console.error("Error creating workflow rule:", error);
+      res.status(500).json({ message: "Failed to create workflow rule" });
+    }
+  });
+
+  app.put("/api/workflow/rules/:id", requireAuth, async (req, res) => {
+    try {
+      const rule = await storage.updateWorkflowRule(req.params.id, req.body);
+      if (!rule) {
+        return res.status(404).json({ message: "Workflow rule not found" });
+      }
+      res.json(rule);
+    } catch (error) {
+      console.error("Error updating workflow rule:", error);
+      res.status(500).json({ message: "Failed to update workflow rule" });
+    }
+  });
+
+  app.delete("/api/workflow/rules/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteWorkflowRule(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Workflow rule not found" });
+      }
+      res.json({ message: "Workflow rule deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting workflow rule:", error);
+      res.status(500).json({ message: "Failed to delete workflow rule" });
+    }
+  });
+
   // Get workflow executions
   app.get("/api/workflow-executions", requireAuth, async (req, res) => {
     try {
@@ -4872,6 +4927,84 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error importing clients:", error);
       res.status(500).json({ message: "Failed to import clients" });
+    }
+  });
+
+  // AI Proposal Generation Route
+  app.post("/api/ai/generate-proposal", requireAuth, async (req, res) => {
+    try {
+      const { projectTitle, clientName, projectDescription, totalBudget, timeline, scope, requirements } = req.body;
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ 
+          message: "AI proposal generation is not available",
+          error: "OpenAI API key not configured" 
+        });
+      }
+
+      if (!projectTitle) {
+        return res.status(400).json({ 
+          message: "Project title is required for proposal generation" 
+        });
+      }
+
+      const prompt = `Generate a professional business proposal for the following project:
+
+Project Title: ${projectTitle}
+${clientName ? `Client: ${clientName}` : ''}
+${projectDescription ? `Description: ${projectDescription}` : ''}
+${totalBudget ? `Budget: $${totalBudget}` : ''}
+${timeline ? `Timeline: ${timeline}` : ''}
+${scope ? `Scope: ${scope}` : ''}
+${requirements ? `Requirements: ${requirements}` : ''}
+
+Create a comprehensive proposal that includes:
+1. Executive Summary
+2. Project Overview and Objectives  
+3. Scope of Work and Deliverables
+4. Timeline and Milestones
+5. Investment and Payment Terms
+6. Our Approach and Methodology
+7. Why Choose Us / Value Proposition
+8. Next Steps
+
+Make it professional, persuasive, and tailored to the client's needs. Use clear sections and bullet points where appropriate. The tone should be confident but not overly sales-oriented.`;
+
+      // Using gpt-4o as it's reliable and available
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional business consultant specializing in creating compelling project proposals. Generate well-structured, professional proposals that clearly communicate value and build client confidence."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_completion_tokens: 1500,
+      });
+
+      const content = completion.choices[0].message.content?.trim();
+
+      if (!content) {
+        throw new Error("No proposal content generated");
+      }
+
+      res.json({ 
+        content,
+        projectTitle,
+        clientName,
+        generatedAt: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      console.error("AI proposal generation error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate proposal",
+        error: error.message 
+      });
     }
   });
 
@@ -6115,6 +6248,17 @@ Keep it professional but easy to understand.`;
     } catch (error) {
       console.error('Error fetching backup statistics:', error);
       res.status(500).json({ message: 'Failed to fetch backup statistics' });
+    }
+  });
+
+  // Route aliases for backward compatibility - backup routes
+  app.get('/api/backup/list', requireAuth, requirePermission('admin.backup'), async (req, res) => {
+    try {
+      const backups = await backupService.getBackups();
+      res.json(backups);
+    } catch (error) {
+      console.error('Error fetching backup records:', error);
+      res.status(500).json({ message: 'Failed to fetch backup records' });
     }
   });
 

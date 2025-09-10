@@ -310,9 +310,14 @@ export class DatabaseStorage implements IStorage {
       .from(tasks)
       .orderBy(tasks.createdAt);
 
-    // If userId is provided, filter tasks to only those assigned to the user
+    // If userId is provided, filter tasks to only those assigned to or created by the user
     if (userId) {
-      const results = await query.where(eq(tasks.assignedToId, userId));
+      const results = await query.where(
+        or(
+          eq(tasks.assignedToId, userId),
+          eq(tasks.createdById, userId)
+        )
+      );
       return results;
     } else {
       // Admin can see all tasks
@@ -394,7 +399,15 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(projects, eq(tasks.projectId, projects.id));
 
     if (userId) {
-      const results = await query.where(and(eq(tasks.projectId, projectId), eq(tasks.assignedToId, userId)));
+      const results = await query.where(
+        and(
+          eq(tasks.projectId, projectId), 
+          or(
+            eq(tasks.assignedToId, userId),
+            eq(tasks.createdById, userId)
+          )
+        )
+      );
       return results.map((row: any) => ({
         ...row,
         assignedTo: row.assignedTo || undefined,
