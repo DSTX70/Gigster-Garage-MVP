@@ -143,6 +143,14 @@ export default function CreateInvoice() {
   const handleSave = () => {
     const invoiceData = {
       ...formData,
+      // Convert empty strings to undefined for optional date fields
+      invoiceDate: formData.invoiceDate || undefined,
+      dueDate: formData.dueDate || undefined,
+      // Convert empty strings to undefined for optional text fields
+      clientName: formData.clientName || undefined,
+      clientEmail: formData.clientEmail || undefined,
+      clientAddress: formData.clientAddress || undefined,
+      notes: formData.notes || undefined,
       taxRate: formData.taxRate, // Keep as number
       discountAmount: formData.discountAmount, // Keep as number
       lineItems,
@@ -151,6 +159,7 @@ export default function CreateInvoice() {
       totalAmount: getTotalAmount(), // Keep as number
       status: "draft" // Save as draft initially
     };
+    console.log("Saving invoice data:", invoiceData);
     saveInvoiceMutation.mutate(invoiceData);
   };
 

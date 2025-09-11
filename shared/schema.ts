@@ -695,10 +695,12 @@ const baseInsertInvoiceSchema = createInsertSchema(invoices, {
   invoiceDate: z.union([
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
     z.date().transform((val) => val.toISOString().split('T')[0]),
+    z.literal("").transform(() => undefined),
   ]).optional(),
   dueDate: z.union([
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
     z.date().transform((val) => val.toISOString().split('T')[0]),
+    z.literal("").transform(() => undefined),
   ]).optional(),
   subtotal: z.union([
     z.string().regex(/^\d+\.?\d*$/, "Subtotal must be a valid number"),
