@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save } from "lucide-react";
+import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -100,13 +100,23 @@ export default function CreateInvoice() {
     onSuccess: (response: any) => {
       // Store the created invoice ID for sending
       console.log("Save response:", response);
-      const invoiceId = response.id;
-      setCreatedInvoiceId(invoiceId);
-      
-      toast({
-        title: "Invoice saved",
-        description: `Your invoice has been saved successfully. ID: ${invoiceId}`,
-      });
+      if (response && response.id) {
+        const invoiceId = response.id;
+        setCreatedInvoiceId(invoiceId);
+        setCreatedInvoiceData(response);
+        
+        toast({
+          title: "Invoice saved",
+          description: `Invoice saved successfully! Payment link generated.`,
+        });
+      } else {
+        console.error("Invalid response format:", response);
+        toast({
+          title: "Error",
+          description: "Invoice save failed - invalid response format",
+          variant: "destructive",
+        });
+      }
     },
     onError: () => {
       toast({
@@ -137,8 +147,9 @@ export default function CreateInvoice() {
     },
   });
 
-  // State to track created invoice ID
+  // State to track created invoice ID and data
   const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
+  const [createdInvoiceData, setCreatedInvoiceData] = useState<any>(null);
 
   const handleSave = () => {
     const invoiceData = {
@@ -218,14 +229,30 @@ export default function CreateInvoice() {
                   Save Invoice
                 </Button>
               ) : (
-                <Button onClick={handleSend} disabled={sendInvoiceMutation.isPending}>
-                  {sendInvoiceMutation.isPending ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  ) : (
-                    <Send className="h-4 w-4 mr-2" />
+                <div className="flex gap-3 items-center">
+                  <Button onClick={handleSend} disabled={sendInvoiceMutation.isPending}>
+                    {sendInvoiceMutation.isPending ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    Send Invoice
+                  </Button>
+                  {createdInvoiceData?.paymentUrl && (
+                    <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <CreditCard className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-700">Payment link generated!</span>
+                      <Button
+                        onClick={() => navigator.clipboard.writeText(createdInvoiceData.paymentUrl)}
+                        variant="ghost" 
+                        size="sm"
+                        className="text-green-600 hover:text-green-700"
+                      >
+                        Copy Link
+                      </Button>
+                    </div>
                   )}
-                  Send Invoice
-                </Button>
+                </div>
               )}
             </div>
           </div>

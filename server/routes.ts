@@ -2674,28 +2674,32 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       // Log what we are about to send (server-side)
       console.info("[invoices#create] created row:", created);
 
+      // Re-fetch to get the payment link that was just generated
+      const createdWithPaymentLink = await storage.getInvoice(created.id, req.session.user!.id);
+      const finalInvoice = createdWithPaymentLink || created;
+
       // Normalize the response for JSON serialization
       const payload = {
-        id: created.id ? String(created.id) : undefined,
-        invoiceNumber: created.invoiceNumber,
-        projectId: created.projectId,
-        clientName: created.clientName,
-        clientEmail: created.clientEmail,
-        clientAddress: created.clientAddress,
-        status: created.status,
-        invoiceDate: created.invoiceDate,
-        dueDate: created.dueDate,
-        subtotal: created.subtotal ? String(created.subtotal) : "0.00",
-        taxRate: created.taxRate ? String(created.taxRate) : "0.00",
-        taxAmount: created.taxAmount ? String(created.taxAmount) : "0.00",
-        discountAmount: created.discountAmount ? String(created.discountAmount) : "0.00",
-        totalAmount: created.totalAmount ? String(created.totalAmount) : "0.00",
-        lineItems: created.lineItems || [],
-        notes: created.notes,
-        paymentLink: paymentLink,
-        paymentUrl: `${req.protocol}://${req.get('host')}/pay-invoice?link=${paymentLink}`,
-        createdAt: created.createdAt ? created.createdAt.toISOString() : undefined,
-        updatedAt: created.updatedAt ? created.updatedAt.toISOString() : undefined,
+        id: finalInvoice.id ? String(finalInvoice.id) : undefined,
+        invoiceNumber: finalInvoice.invoiceNumber,
+        projectId: finalInvoice.projectId,
+        clientName: finalInvoice.clientName,
+        clientEmail: finalInvoice.clientEmail,
+        clientAddress: finalInvoice.clientAddress,
+        status: finalInvoice.status,
+        invoiceDate: finalInvoice.invoiceDate,
+        dueDate: finalInvoice.dueDate,
+        subtotal: finalInvoice.subtotal ? String(finalInvoice.subtotal) : "0.00",
+        taxRate: finalInvoice.taxRate ? String(finalInvoice.taxRate) : "0.00",
+        taxAmount: finalInvoice.taxAmount ? String(finalInvoice.taxAmount) : "0.00",
+        discountAmount: finalInvoice.discountAmount ? String(finalInvoice.discountAmount) : "0.00",
+        totalAmount: finalInvoice.totalAmount ? String(finalInvoice.totalAmount) : "0.00",
+        lineItems: finalInvoice.lineItems || [],
+        notes: finalInvoice.notes,
+        paymentLink: finalInvoice.paymentLink || paymentLink,
+        paymentUrl: `${req.protocol}://${req.get('host')}/pay-invoice?link=${finalInvoice.paymentLink || paymentLink}`,
+        createdAt: finalInvoice.createdAt ? finalInvoice.createdAt.toISOString() : undefined,
+        updatedAt: finalInvoice.updatedAt ? finalInvoice.updatedAt.toISOString() : undefined,
       };
 
       // Ensure an id exists for frontend
