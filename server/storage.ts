@@ -1142,11 +1142,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
-    const [invoice] = await db
+    // Some drivers (e.g., sqlite/libsql in certain versions) may return [] from .returning()
+    const rows = await db
       .insert(invoices)
       .values(insertInvoice)
       .returning();
-    return invoice;
+    
+    if (Array.isArray(rows) && rows.length > 0) {
+      return rows[0] as Invoice;
+    }
+
+    // Fallback: re-select by a unique key (invoiceNumber is generated unique per request)
+    const [fallback] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.invoiceNumber, insertInvoice.invoiceNumber))
+      .limit(1);
+
+    if (!fallback) {
+      throw new Error("createInvoice: Insert succeeded but no row returned; fallback select empty");
+    }
+
+    return fallback as Invoice;
   }
 
   async updateInvoice(id: string, updateInvoice: Partial<InsertInvoice>, userId?: string): Promise<Invoice | undefined> {

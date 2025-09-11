@@ -2666,8 +2666,39 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         createdById: req.session.user!.id,
       };
 
-      const invoice = await storage.createInvoice(draftInvoice);
-      res.json(invoice);
+      const created = await storage.createInvoice(draftInvoice);
+
+      // Log what we are about to send (server-side)
+      console.info("[invoices#create] created row:", created);
+
+      // Normalize the response for JSON serialization
+      const payload = {
+        id: created.id ? String(created.id) : undefined,
+        invoiceNumber: created.invoiceNumber,
+        projectId: created.projectId,
+        clientName: created.clientName,
+        clientEmail: created.clientEmail,
+        clientAddress: created.clientAddress,
+        status: created.status,
+        invoiceDate: created.invoiceDate,
+        dueDate: created.dueDate,
+        subtotal: created.subtotal ? String(created.subtotal) : "0.00",
+        taxRate: created.taxRate ? String(created.taxRate) : "0.00",
+        taxAmount: created.taxAmount ? String(created.taxAmount) : "0.00",
+        discountAmount: created.discountAmount ? String(created.discountAmount) : "0.00",
+        totalAmount: created.totalAmount ? String(created.totalAmount) : "0.00",
+        lineItems: created.lineItems || [],
+        notes: created.notes,
+        createdAt: created.createdAt ? created.createdAt.toISOString() : undefined,
+        updatedAt: created.updatedAt ? created.updatedAt.toISOString() : undefined,
+      };
+
+      // Ensure an id exists for frontend
+      if (!payload.id) {
+        throw new Error("Created invoice has no id after serialization");
+      }
+
+      return res.status(201).json(payload);
     } catch (error) {
       console.error("Error creating draft invoice:", error);
       if (error instanceof z.ZodError) {
