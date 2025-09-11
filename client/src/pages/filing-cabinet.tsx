@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FolderOpen, FileText, File, Download, Search, Calendar, User, Building, Filter } from "lucide-react";
+import { FolderOpen, FileText, File, Download, Search, Calendar, User, Building, Filter, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import type { ClientDocument, Client, Project } from "@shared/schema";
 
@@ -99,7 +99,13 @@ export default function FilingCabinet() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-4 mb-2">
+            <Link href="/">
+              <Button variant="outline" size="sm" data-testid="button-back-to-dashboard">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </Link>
             <div className="flex items-center gap-3">
               <FolderOpen className="h-8 w-8 text-gray-600" />
               <h1 className="text-3xl font-bold text-gray-900">Filing Cabinet</h1>
