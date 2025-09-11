@@ -2860,23 +2860,16 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         }
       });
 
-      // Set ACL policy for the file
-      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        objectPath,
-        {
-          owner: req.session.user!.id,
-          visibility: "private"
-        }
-      );
-
-      // Create document record in Filing Cabinet
+      // Create document record in Filing Cabinet without ACL policy setting for now
+      const fileUrl = file.publicUrl();
+      
       const documentData = {
         clientId: invoice.clientId,
         name: `Invoice ${invoice.invoiceNumber}`,
         description: `Invoice for ${invoice.clientName || 'client'} - $${invoice.totalAmount}`,
         type: 'invoice' as const,
         category: 'invoice',
-        filePath: normalizedPath,
+        fileUrl: fileUrl,
         fileName: fileName,
         fileSize: pdfBuffer.length,
         mimeType: 'application/pdf',
