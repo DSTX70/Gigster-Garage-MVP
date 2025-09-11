@@ -1,0 +1,243 @@
+# Goal
+
+Server should return the freshly created invoice (including `id`) instead of `{}` so the frontend can set `createdInvoiceId`, show **Send Invoice**, and enable **Export PDF**.
+
+---
+
+## Plan (pseudocode)
+
+1. **Harden serialization**
+
+   * Add an Express `json replacer` to stringify `bigint`, dates, and any non-JSON-safe primitives.
+   * Create `toApiInvoice()` utility to convert DB row → plain JSON (own enumerable props only) and coerce problematic types.
+2. **Stabilize insert-return contract**
+
+   * In `storage.createInvoice()`, support environments where `.returning()` yields `[]` (e.g., some SQLite/libsql stacks). Fallback: re-select by unique `invoiceNumber`.
+   * Throw explicit error if no row is obtained.
+3. **Return normalized payload**
+
+   * In `POST /api/invoices`, call `toApiInvoice()` and send `201` with the normalized invoice.
+   * Add logs around insert & response.
+4. **(Optional) Schema sanity**
+
+   * Ensure Zod `insertInvoiceSchema` produces DB-acceptable shapes (e.g., decimal fields as string). Not strictly required for the `{}` fix.
+5. **Smoke test**
+
+   * Provide `curl` example and expected shape to verify `id` presence.
+
+---
+
+## Patch (drop-in code)
+
+```ts
+// file: src/server/app.ts
+import express from "express";
+import session from "express-session";
+import { jsonReplacer } from "./utils/serialize";
+
+export const app = express();
+
+app.use(express.json());
+app.set("json replacer", jsonReplacer as any); // stringify bigint/date safely
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "dev",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// ... your other middleware & routes
+```
+
+```ts
+// file: src/server/utils/serialize.ts
+/**
+ * JSON-safe replacer used by Express' res.json when set via app.set('json replacer').
+ * Converts BigInt and Date to strings; leaves other values unchanged.
+ */
+export function jsonReplacer(_key: string, value: unknown) {
+  if (typeof value === "bigint") return value.toString();
+  if (value instanceof Date) return value.toISOString();
+  return value as any;
+}
+
+/** JSON-safe scalar coercion. */
+function toJsonScalar(v: any) {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "bigint") return v.toString();
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "number" || typeof v === "boolean" || typeof v === "string") return v;
+  // For Decimal-like objects (e.g., drizzle decimal/numeric wrappers), fallback to string
+  try {
+    // Uses same rules as res.json, but forces plain data
+    return JSON.parse(JSON.stringify(v, jsonReplacer));
+  } catch {
+    return String(v);
+  }
+}
+
+/**
+ * Defensive: some drivers return row objects with non-enumerable props or prototypes.
+ * Normalize into a plain object with own enumerable keys only, coercing scalars.
+ */
+export function toPlainJson<T extends Record<string, any>>(row: T) {
+  const out: Record<string, any> = {};
+  for (const k of Object.keys(row)) out[k] = toJsonScalar((row as any)[k]);
+  return out;
+}
+
+/** Narrowed helper for invoices to keep API stable. */
+export function toApiInvoice(row: Record<string, any>) {
+  const plain = toPlainJson(row);
+  // Ensure critical fields exist & are strings where needed
+  if (plain.id != null) plain.id = String(plain.id);
+  if (plain.createdAt instanceof Date) plain.createdAt = (plain.createdAt as Date).toISOString();
+  if (plain.updatedAt instanceof Date) plain.updatedAt = (plain.updatedAt as Date).toISOString();
+  // If you store money as numeric/decimal, ensure strings
+  for (const m of ["subtotal", "tax", "total", "discount"]) {
+    if (plain[m] != null && typeof plain[m] !== "string") plain[m] = String(plain[m]);
+  }
+  return plain;
+}
+```
+
+```ts
+// file: src/server/storage/invoices.ts
+import { db } from "../db"; // your drizzle db
+import { invoices } from "../db/schema"; // your table
+import { eq } from "drizzle-orm";
+
+export type InsertInvoice = {
+  invoiceNumber: string;
+  clientName: string;
+  clientEmail: string;
+  // ... other fields required by your schema
+  status: "draft" | "sent" | "paid" | "void";
+  createdById: string;
+};
+
+export type Invoice = {
+  id: string | number | bigint; // DB type
+  invoiceNumber: string;
+  // ... rest of columns
+};
+
+export const storage = {
+  async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
+    // Some drivers (e.g., sqlite/libsql in certain versions) may return [] from .returning()
+    const rows = await db.insert(invoices).values(insertInvoice).returning();
+    if (Array.isArray(rows) && rows.length > 0) return rows[0] as Invoice;
+
+    // Fallback: re-select by a unique key (invoiceNumber is generated unique per request)
+    const [fallback] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.invoiceNumber, insertInvoice.invoiceNumber))
+      .limit(1);
+
+    if (!fallback) {
+      throw new Error("createInvoice: Insert succeeded but no row returned; fallback select empty");
+    }
+
+    return fallback as Invoice;
+  },
+};
+```
+
+```ts
+// file: src/server/routes/invoices.ts
+import { Router } from "express";
+import { storage } from "../storage/invoices";
+import { toApiInvoice } from "../utils/serialize";
+import { insertInvoiceSchema } from "../schemas/invoices"; // your existing Zod schema
+import { requireAuth } from "../middleware/auth";
+
+export const router = Router();
+
+router.post("/api/invoices", requireAuth, async (req, res) => {
+  try {
+    const invoiceData = insertInvoiceSchema.parse(req.body);
+
+    const draftInvoice = {
+      ...invoiceData,
+      status: "draft" as const,
+      invoiceNumber: `INV-${Date.now()}`,
+      createdById: req.session.user!.id,
+    };
+
+    const created = await storage.createInvoice(draftInvoice);
+
+    // Log what we are about to send (server-side)
+    console.info("[invoices#create] created row:", created);
+
+    const payload = toApiInvoice(created);
+
+    // Ensure an id exists for frontend
+    if (!payload.id) throw new Error("Created invoice has no id after serialization");
+
+    return res.status(201).json(payload);
+  } catch (err: any) {
+    console.error("[invoices#create] error:", err);
+    if (err?.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid invoice payload", details: err.errors });
+    }
+    return res.status(500).json({ error: "Failed to create invoice" });
+  }
+});
+```
+
+```ts
+// file: src/server/schemas/invoices.ts
+import { z } from "zod";
+
+// Keep numbers-as-strings for money to avoid floating point surprises downstream
+export const insertInvoiceSchema = z
+  .object({
+    clientName: z.string().min(1),
+    clientEmail: z.string().email(),
+    // ... other fields
+    subtotal: z.union([z.number(), z.string()]).transform((v) => String(v)),
+    tax: z.union([z.number(), z.string()]).transform((v) => String(v)),
+    total: z.union([z.number(), z.string()]).transform((v) => String(v)),
+    discount: z.union([z.number(), z.string()]).optional().transform((v) => (v == null ? undefined : String(v))),
+  })
+  .strict();
+```
+
+---
+
+## Smoke test
+
+```bash
+# 1) Create invoice
+curl -s -X POST http://localhost:3000/api/invoices \
+  -H 'Content-Type: application/json' \
+  --cookie "sid=<your session cookie>" \
+  -d '{
+    "clientName": "Muriel Sparks 4",
+    "clientEmail": "dustinsparks@mac.com",
+    "subtotal": "100.00",
+    "tax": "8.25",
+    "total": "108.25"
+  }' | jq
+
+# Expected (shape):
+# {
+#   "id": "123",
+#   "invoiceNumber": "INV-1757560403856",
+#   "clientName": "Muriel Sparks 4",
+#   ...,
+#   "total": "108.25",
+#   "createdAt": "2025-09-10T...Z"
+# }
+```
+
+### Notes
+
+* If you previously saw `{}` it is typically due to **non-enumerable props** or **non-JSON-safe types** (e.g., `bigint`, certain decimal wrappers) getting stripped by the serializer. The `jsonReplacer` + `toApiInvoice()` normalization prevents that.
+* The `.returning()` fallback guards against drivers that don't return rows after insert.
+
+```
+```
