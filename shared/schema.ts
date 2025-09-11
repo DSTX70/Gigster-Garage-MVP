@@ -703,6 +703,7 @@ const baseInsertInvoiceSchema = createInsertSchema(invoices, {
   subtotal: z.number().min(0, "Subtotal cannot be negative").optional(),
   taxRate: z.number().min(0, "Tax rate cannot be negative").max(100, "Tax rate cannot exceed 100%").optional(),
   taxAmount: z.number().min(0, "Tax amount cannot be negative").optional(),
+  discountAmount: z.number().min(0, "Discount amount cannot be negative").optional(),
   totalAmount: z.number().min(0, "Total amount cannot be negative").optional(),
   lineItems: z.array(z.object({
     id: z.number().min(1, "Line item id is required"),
@@ -713,7 +714,12 @@ const baseInsertInvoiceSchema = createInsertSchema(invoices, {
   })).optional(),
 });
 
-export const insertInvoiceSchema = baseInsertInvoiceSchema.refine((data) => {
+export const insertInvoiceSchema = baseInsertInvoiceSchema.omit({
+  id: true,
+  createdById: true, // Backend sets this automatically from authenticated user
+  createdAt: true,
+  updatedAt: true
+}).refine((data) => {
   // Custom validation: due date must be after invoice date
   if (data.invoiceDate && data.dueDate) {
     return new Date(data.dueDate) >= new Date(data.invoiceDate);
