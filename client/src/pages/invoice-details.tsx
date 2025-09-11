@@ -17,10 +17,16 @@ export default function InvoiceDetails() {
   const invoiceId = params?.id;
 
   // Fetch invoice details
-  const { data: invoice, isLoading } = useQuery<Invoice>({
+  const { data: invoice, isLoading } = useQuery({
     queryKey: ["/api/invoices", invoiceId],
     enabled: !!invoiceId,
-    queryFn: () => apiRequest("GET", `/api/invoices/${invoiceId}`)
+    queryFn: async () => {
+      const response = await fetch(`/api/invoices/${invoiceId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoice');
+      }
+      return response.json();
+    }
   });
 
   const getStatusBadgeVariant = (status: string) => {
