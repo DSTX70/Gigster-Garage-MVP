@@ -99,12 +99,13 @@ export default function CreateInvoice() {
     mutationFn: (data: any) => apiRequest("POST", "/api/invoices", data),
     onSuccess: (response: any) => {
       // Store the created invoice ID for sending
+      console.log("Save response:", response);
       const invoiceId = response.id;
       setCreatedInvoiceId(invoiceId);
       
       toast({
         title: "Invoice saved",
-        description: "Your invoice has been saved successfully.",
+        description: `Your invoice has been saved successfully. ID: ${invoiceId}`,
       });
     },
     onError: () => {
