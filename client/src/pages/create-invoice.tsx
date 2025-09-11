@@ -142,12 +142,12 @@ export default function CreateInvoice() {
   const handleSave = () => {
     const invoiceData = {
       ...formData,
-      taxRate: formData.taxRate.toString(),
-      discountAmount: formData.discountAmount.toString(),
+      taxRate: formData.taxRate, // Keep as number
+      discountAmount: formData.discountAmount, // Keep as number
       lineItems,
-      subtotal: getSubtotal().toString(),
-      taxAmount: getTaxAmount().toString(),
-      totalAmount: getTotalAmount().toString(),
+      subtotal: getSubtotal(), // Keep as number
+      taxAmount: getTaxAmount(), // Keep as number
+      totalAmount: getTotalAmount(), // Keep as number
       status: "draft" // Save as draft initially
     };
     saveInvoiceMutation.mutate(invoiceData);
@@ -180,7 +180,21 @@ export default function CreateInvoice() {
               Back to Editor
             </Button>
             <div className="space-x-2">
-              <Button variant="outline">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (createdInvoiceId) {
+                    window.open(`/api/invoices/${createdInvoiceId}/pdf`, '_blank');
+                  } else {
+                    toast({
+                      title: "Error",
+                      description: "Please save the invoice first to export PDF.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                data-testid="button-export-pdf"
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Export PDF
               </Button>

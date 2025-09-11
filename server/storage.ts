@@ -89,11 +89,11 @@ export interface IStorage {
   deleteClientDocument(id: string): Promise<boolean>;
 
   // Invoice management
-  getInvoices(): Promise<Invoice[]>;
-  getInvoice(id: string): Promise<Invoice | undefined>;
+  getInvoices(userId?: string): Promise<Invoice[]>;
+  getInvoice(id: string, userId?: string): Promise<Invoice | undefined>;
   createInvoice(insertInvoice: InsertInvoice): Promise<Invoice>;
-  updateInvoice(id: string, updateInvoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
-  deleteInvoice(id: string): Promise<boolean>;
+  updateInvoice(id: string, updateInvoice: Partial<InsertInvoice>, userId?: string): Promise<Invoice | undefined>;
+  deleteInvoice(id: string, userId?: string): Promise<boolean>;
 
   // Contract management
   getContracts(): Promise<Contract[]>;
@@ -1124,12 +1124,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Invoice operations
-  async getInvoices(): Promise<Invoice[]> {
+  async getInvoices(userId?: string): Promise<Invoice[]> {
+    if (userId) {
+      return await db.select().from(invoices)
+        .where(eq(invoices.createdById, userId))
+        .orderBy(desc(invoices.createdAt));
+    }
     return await db.select().from(invoices).orderBy(desc(invoices.createdAt));
   }
 
-  async getInvoice(id: string): Promise<Invoice | undefined> {
-    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+  async getInvoice(id: string, userId?: string): Promise<Invoice | undefined> {
+    const conditions = userId 
+      ? and(eq(invoices.id, id), eq(invoices.createdById, userId))
+      : eq(invoices.id, id);
+    const [invoice] = await db.select().from(invoices).where(conditions);
     return invoice;
   }
 
@@ -1141,17 +1149,23 @@ export class DatabaseStorage implements IStorage {
     return invoice;
   }
 
-  async updateInvoice(id: string, updateInvoice: Partial<InsertInvoice>): Promise<Invoice | undefined> {
+  async updateInvoice(id: string, updateInvoice: Partial<InsertInvoice>, userId?: string): Promise<Invoice | undefined> {
+    const conditions = userId 
+      ? and(eq(invoices.id, id), eq(invoices.createdById, userId))
+      : eq(invoices.id, id);
     const [invoice] = await db
       .update(invoices)
       .set(updateInvoice)
-      .where(eq(invoices.id, id))
+      .where(conditions)
       .returning();
     return invoice;
   }
 
-  async deleteInvoice(id: string): Promise<boolean> {
-    const result = await db.delete(invoices).where(eq(invoices.id, id));
+  async deleteInvoice(id: string, userId?: string): Promise<boolean> {
+    const conditions = userId 
+      ? and(eq(invoices.id, id), eq(invoices.createdById, userId))
+      : eq(invoices.id, id);
+    const result = await db.delete(invoices).where(conditions);
     return (result.rowCount ?? 0) > 0;
   }
 

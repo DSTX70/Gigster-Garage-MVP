@@ -181,6 +181,7 @@ export const invoices = pgTable("invoices", {
   amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default("0.00"),
   balanceDue: decimal("balance_due", { precision: 10, scale: 2 }).default("0.00"),
   notes: text("notes"),
+  createdById: varchar("created_by_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   sentAt: timestamp("sent_at"),
@@ -700,7 +701,7 @@ const baseInsertInvoiceSchema = createInsertSchema(invoices, {
     z.date().transform((val) => val.toISOString().split('T')[0]),
   ]).optional(),
   subtotal: z.number().min(0, "Subtotal cannot be negative").optional(),
-  taxRate: z.number().min(0, "Tax rate cannot be negative").max(1, "Tax rate cannot exceed 100%").optional(),
+  taxRate: z.number().min(0, "Tax rate cannot be negative").max(100, "Tax rate cannot exceed 100%").optional(),
   taxAmount: z.number().min(0, "Tax amount cannot be negative").optional(),
   totalAmount: z.number().min(0, "Total amount cannot be negative").optional(),
   lineItems: z.array(z.object({

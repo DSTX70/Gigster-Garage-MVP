@@ -168,12 +168,12 @@ export default function EditInvoice() {
   const handleUpdate = () => {
     const invoiceData = {
       ...formData,
-      taxRate: formData.taxRate.toString(),
-      discountAmount: formData.discountAmount.toString(),
+      taxRate: formData.taxRate, // Keep as number
+      discountAmount: formData.discountAmount, // Keep as number
       lineItems,
-      subtotal: getSubtotal().toString(),
-      taxAmount: getTaxAmount().toString(),
-      totalAmount: getTotalAmount().toString(),
+      subtotal: getSubtotal(), // Keep as number
+      taxAmount: getTaxAmount(), // Keep as number
+      totalAmount: getTotalAmount(), // Keep as number
     };
     updateInvoiceMutation.mutate(invoiceData);
   };

@@ -2311,7 +2311,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Send invoice via email
   app.post("/api/invoices/:id/send", requireAuth, async (req, res) => {
     try {
-      const invoice = await storage.getInvoice(req.params.id);
+      const invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
@@ -2680,7 +2680,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Get all invoices
   app.get("/api/invoices", requireAuth, async (req, res) => {
     try {
-      const invoices = await storage.getInvoices();
+      const invoices = await storage.getInvoices(req.session.user!.id);
       res.json(invoices);
     } catch (error) {
       console.error("Error fetching invoices:", error);
@@ -2691,7 +2691,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Get specific invoice
   app.get("/api/invoices/:id", requireAuth, async (req, res) => {
     try {
-      const invoice = await storage.getInvoice(req.params.id);
+      const invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
       if (!invoice) {
         return res.status(404).json({ error: "Invoice not found" });
       }
@@ -2702,10 +2702,28 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Download invoice PDF
+  app.get("/api/invoices/:id/pdf", requireAuth, async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      const pdfBuffer = await generateInvoicePDF(invoice);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating invoice PDF:", error);
+      res.status(500).json({ error: "Failed to generate PDF" });
+    }
+  });
+
   // Update invoice (edit line items, amounts, etc.)
   app.put("/api/invoices/:id", requireAuth, async (req, res) => {
     try {
-      const invoice = await storage.getInvoice(req.params.id);
+      const invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
       if (!invoice) {
         return res.status(404).json({ error: "Invoice not found" });
       }
@@ -2728,7 +2746,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         updateData.totalAmount = totalAmount.toString();
       }
 
-      const updatedInvoice = await storage.updateInvoice(req.params.id, updateData);
+      const updatedInvoice = await storage.updateInvoice(req.params.id, updateData, req.session.user!.id);
       res.json(updatedInvoice);
     } catch (error) {
       console.error("Error updating invoice:", error);
@@ -2742,7 +2760,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Send existing draft invoice
   app.post("/api/invoices/:id/send", requireAuth, async (req, res) => {
     try {
-      const invoice = await storage.getInvoice(req.params.id);
+      const invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
       if (!invoice) {
         return res.status(404).json({ error: "Invoice not found" });
       }
@@ -2808,7 +2826,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Delete draft invoice
   app.delete("/api/invoices/:id", requireAuth, async (req, res) => {
     try {
-      const invoice = await storage.getInvoice(req.params.id);
+      const invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
       if (!invoice) {
         return res.status(404).json({ error: "Invoice not found" });
       }
@@ -2818,7 +2836,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(400).json({ error: "Only draft invoices can be deleted" });
       }
 
-      const deleted = await storage.deleteInvoice(req.params.id);
+      const deleted = await storage.deleteInvoice(req.params.id, req.session.user!.id);
       if (deleted) {
         res.json({ success: true, message: "Invoice deleted successfully" });
       } else {
