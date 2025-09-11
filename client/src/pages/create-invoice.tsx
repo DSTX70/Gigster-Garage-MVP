@@ -96,21 +96,24 @@ export default function CreateInvoice() {
 
   // Save invoice mutation
   const saveInvoiceMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/invoices", data),
-    onSuccess: (response: any) => {
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/invoices", data);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
       // Store the created invoice ID for sending
-      console.log("Save response:", response);
-      if (response && response.id) {
-        const invoiceId = response.id;
+      console.log("Save response:", responseData);
+      if (responseData && responseData.id) {
+        const invoiceId = responseData.id;
         setCreatedInvoiceId(invoiceId);
-        setCreatedInvoiceData(response);
+        setCreatedInvoiceData(responseData);
         
         toast({
           title: "Invoice saved",
           description: `Invoice saved successfully! Payment link generated.`,
         });
       } else {
-        console.error("Invalid response format:", response);
+        console.error("Invalid response format:", responseData);
         toast({
           title: "Error",
           description: "Invoice save failed - invalid response format",
@@ -129,11 +132,14 @@ export default function CreateInvoice() {
 
   // Send invoice mutation
   const sendInvoiceMutation = useMutation({
-    mutationFn: (invoiceId: string) => apiRequest("POST", `/api/invoices/${invoiceId}/send`, { includePDF: true }),
-    onSuccess: (response: any) => {
+    mutationFn: async (invoiceId: string) => {
+      const response = await apiRequest("POST", `/api/invoices/${invoiceId}/send`, { includePDF: true });
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
       toast({
         title: "Invoice sent!",
-        description: response.message || "Invoice has been sent successfully",
+        description: responseData.message || "Invoice has been sent successfully",
       });
       // Redirect to invoices list after sending
       window.location.href = "/invoices";
