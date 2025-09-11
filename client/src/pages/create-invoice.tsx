@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard } from "lucide-react";
+import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard, FolderOpen, ChevronDown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -153,6 +154,27 @@ export default function CreateInvoice() {
     },
   });
 
+  // Save to Filing Cabinet mutation
+  const saveToFilingCabinetMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const response = await apiRequest("POST", `/api/invoices/${invoiceId}/save-to-filing-cabinet`);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      toast({
+        title: "Saved to Filing Cabinet!",
+        description: responseData.message || "Invoice PDF saved to Filing Cabinet successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save invoice to Filing Cabinet.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // State to track created invoice ID and data
   const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
   const [createdInvoiceData, setCreatedInvoiceData] = useState<any>(null);
@@ -207,24 +229,52 @@ export default function CreateInvoice() {
               Back to Editor
             </Button>
             <div className="space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  if (createdInvoiceId) {
-                    window.open(`/api/invoices/${createdInvoiceId}/pdf`, '_blank');
-                  } else {
-                    toast({
-                      title: "Error",
-                      description: "Please save the invoice first to export PDF.",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-                data-testid="button-export-pdf"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" data-testid="button-export-options">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export PDF
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (createdInvoiceId) {
+                        window.open(`/api/invoices/${createdInvoiceId}/pdf`, '_blank');
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Please save the invoice first to export PDF.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    data-testid="option-save-to-device"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Save to Device
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (createdInvoiceId) {
+                        saveToFilingCabinetMutation.mutate(createdInvoiceId);
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Please save the invoice first to save to Filing Cabinet.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={saveToFilingCabinetMutation.isPending}
+                    data-testid="option-save-to-filing-cabinet"
+                  >
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    {saveToFilingCabinetMutation.isPending ? "Saving..." : "Save to Filing Cabinet"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               {!createdInvoiceId ? (
                 <Button onClick={handleSave} disabled={saveInvoiceMutation.isPending}>
                   {saveInvoiceMutation.isPending ? (

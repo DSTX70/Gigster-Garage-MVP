@@ -11,7 +11,7 @@ import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF } from "./pdfService";
 import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, parseObjectPath, objectStorageClient } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
 import OpenAI from "openai";
@@ -2779,18 +2779,122 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Download invoice PDF
   app.get("/api/invoices/:id/pdf", requireAuth, async (req, res) => {
     try {
-      const invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
+      let invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
       if (!invoice) {
         return res.status(404).json({ error: "Invoice not found" });
       }
 
-      const pdfBuffer = await generateInvoicePDF(invoice);
+      // Ensure payment link exists before generating PDF
+      if (!invoice.paymentLink) {
+        console.log('🔗 Generating payment link for PDF');
+        await storage.generatePaymentLink(invoice.id);
+        // Re-fetch invoice with payment link
+        invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
+        if (!invoice) {
+          return res.status(404).json({ error: "Invoice not found after payment link generation" });
+        }
+        console.log('✅ Payment link generated for PDF:', invoice.paymentLink);
+      }
+
+      // Generate PDF with payment link included
+      const invoiceWithPaymentUrl = {
+        ...invoice,
+        paymentUrl: `${req.protocol}://${req.get('host')}/pay-invoice?link=${invoice.paymentLink}`
+      };
+
+      const pdfBuffer = await generateInvoicePDF(invoiceWithPaymentUrl);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
       res.send(pdfBuffer);
     } catch (error) {
       console.error("Error generating invoice PDF:", error);
       res.status(500).json({ error: "Failed to generate PDF" });
+    }
+  });
+
+  // Save invoice PDF to Filing Cabinet
+  app.post("/api/invoices/:id/save-to-filing-cabinet", requireAuth, async (req, res) => {
+    try {
+      let invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      // Ensure payment link exists before generating PDF
+      if (!invoice.paymentLink) {
+        console.log('🔗 Generating payment link for PDF');
+        await storage.generatePaymentLink(invoice.id);
+        // Re-fetch invoice with payment link
+        invoice = await storage.getInvoice(req.params.id, req.session.user!.id);
+        if (!invoice) {
+          return res.status(404).json({ error: "Invoice not found after payment link generation" });
+        }
+        console.log('✅ Payment link generated for PDF:', invoice.paymentLink);
+      }
+
+      // Generate PDF with payment link included
+      const invoiceWithPaymentUrl = {
+        ...invoice,
+        paymentUrl: `${req.protocol}://${req.get('host')}/pay-invoice?link=${invoice.paymentLink}`
+      };
+
+      const pdfBuffer = await generateInvoicePDF(invoiceWithPaymentUrl);
+      
+      // Save PDF to object storage and create document record
+      const fileName = `invoice-${invoice.invoiceNumber}.pdf`;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Upload PDF to object storage
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const objectPath = `${privateDir}/${req.session.user!.id}/invoices/${fileName}`;
+      
+      // Parse object path for upload
+      const { bucketName, objectName } = parseObjectPath(objectPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      // Upload the PDF buffer
+      await file.save(pdfBuffer, {
+        metadata: {
+          contentType: 'application/pdf'
+        }
+      });
+
+      // Set ACL policy for the file
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        file.publicUrl(),
+        {
+          owner: req.session.user!.id,
+          visibility: "private"
+        }
+      );
+
+      // Create document record in Filing Cabinet
+      const documentData = {
+        clientId: invoice.clientId,
+        name: `Invoice ${invoice.invoiceNumber}`,
+        description: `Invoice for ${invoice.clientName || 'client'} - $${invoice.totalAmount}`,
+        type: 'invoice' as const,
+        category: 'invoice',
+        filePath: normalizedPath,
+        fileName: fileName,
+        fileSize: pdfBuffer.length,
+        mimeType: 'application/pdf',
+        uploadedById: req.session.user!.id,
+        createdById: req.session.user!.id
+      };
+
+      const document = await storage.createClientDocument(documentData);
+      console.log(`✅ Invoice PDF saved to Filing Cabinet: ${document.name}`);
+      
+      res.status(201).json({ 
+        success: true, 
+        message: "Invoice PDF saved to Filing Cabinet successfully",
+        document 
+      });
+    } catch (error) {
+      console.error("Error saving invoice PDF to Filing Cabinet:", error);
+      res.status(500).json({ error: "Failed to save PDF to Filing Cabinet" });
     }
   });
 
@@ -2884,7 +2988,27 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       if (includePDF) {
         try {
           console.log('🔄 Generating invoice PDF');
-          invoicePDF = await generateInvoicePDF(invoice);
+          
+          // Ensure payment link exists before generating PDF
+          let pdfInvoice = invoice;
+          if (!invoice.paymentLink) {
+            console.log('🔗 Generating payment link for PDF');
+            await storage.generatePaymentLink(invoice.id);
+            // Re-fetch invoice with payment link
+            pdfInvoice = await storage.getInvoice(invoice.id, req.session.user!.id);
+            if (!pdfInvoice) {
+              throw new Error("Invoice not found after payment link generation");
+            }
+            console.log('✅ Payment link generated for PDF:', pdfInvoice.paymentLink);
+          }
+
+          // Generate PDF with payment link included
+          const invoiceWithPaymentUrl = {
+            ...pdfInvoice,
+            paymentUrl: `${req.protocol}://${req.get('host')}/pay-invoice?link=${pdfInvoice.paymentLink}`
+          };
+
+          invoicePDF = await generateInvoicePDF(invoiceWithPaymentUrl);
           console.log('✅ Invoice PDF generated successfully');
         } catch (pdfError) {
           console.error('❌ Invoice PDF generation failed:', pdfError);
