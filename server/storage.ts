@@ -182,6 +182,10 @@ export interface IStorage {
   // API Usage tracking
   getApiUsage(keyId?: string, startDate?: Date, endDate?: Date): Promise<ApiUsage[]>;
   createApiUsage(insertUsage: InsertApiUsage): Promise<ApiUsage>;
+
+  // Payment link management
+  generatePaymentLink(invoiceId: string): Promise<string>;
+  getInvoiceByPaymentLink(paymentLink: string): Promise<Invoice | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
