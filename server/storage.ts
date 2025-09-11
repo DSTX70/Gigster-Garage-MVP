@@ -1186,6 +1186,28 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async getInvoiceByPaymentLink(paymentLink: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.paymentLink, paymentLink));
+    return invoice;
+  }
+
+  async generatePaymentLink(invoiceId: string): Promise<string> {
+    const paymentLink = `pay-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30); // Expire in 30 days
+
+    await db
+      .update(invoices)
+      .set({
+        paymentLink,
+        paymentLinkExpiresAt: expiresAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(invoices.id, invoiceId));
+
+    return paymentLink;
+  }
+
   // Contract operations
   async getContracts(): Promise<Contract[]> {
     return await db.select().from(contracts).orderBy(desc(contracts.createdAt));

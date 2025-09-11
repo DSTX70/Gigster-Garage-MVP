@@ -2668,6 +2668,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
       const created = await storage.createInvoice(draftInvoice);
 
+      // Generate payment link for the invoice
+      const paymentLink = await storage.generatePaymentLink(created.id);
+
       // Log what we are about to send (server-side)
       console.info("[invoices#create] created row:", created);
 
@@ -2689,6 +2692,8 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         totalAmount: created.totalAmount ? String(created.totalAmount) : "0.00",
         lineItems: created.lineItems || [],
         notes: created.notes,
+        paymentLink: paymentLink,
+        paymentUrl: `${req.protocol}://${req.get('host')}/pay-invoice?link=${paymentLink}`,
         createdAt: created.createdAt ? created.createdAt.toISOString() : undefined,
         updatedAt: created.updatedAt ? created.updatedAt.toISOString() : undefined,
       };
@@ -2778,7 +2783,28 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       }
 
       const updatedInvoice = await storage.updateInvoice(req.params.id, updateData, req.session.user!.id);
-      res.json(updatedInvoice);
+      
+      if (updatedInvoice) {
+        // Generate payment link if it doesn't exist
+        if (!updatedInvoice.paymentLink) {
+          await storage.generatePaymentLink(updatedInvoice.id);
+          // Refetch to get the payment link
+          const updatedWithLink = await storage.getInvoice(updatedInvoice.id, req.session.user!.id);
+          if (updatedWithLink) {
+            const result = toApiInvoice(updatedWithLink);
+            result.paymentUrl = `${req.protocol}://${req.get('host')}/pay-invoice?link=${updatedWithLink.paymentLink}`;
+            return res.json(result);
+          }
+        }
+
+        const result = toApiInvoice(updatedInvoice);
+        if (updatedInvoice.paymentLink) {
+          result.paymentUrl = `${req.protocol}://${req.get('host')}/pay-invoice?link=${updatedInvoice.paymentLink}`;
+        }
+        res.json(result);
+      } else {
+        res.status(404).json({ error: "Invoice not found" });
+      }
     } catch (error) {
       console.error("Error updating invoice:", error);
       if (error instanceof z.ZodError) {
@@ -7258,6 +7284,164 @@ Keep it professional but easy to understand.`;
   // Initialize white-label service
   console.log('🏢 Initializing White-label Service...');
   (global as any).whiteLabelService = whiteLabelService;
+
+  // Public payment endpoints (no authentication required)
+  
+  // Get invoice by payment link (public)
+  app.get("/api/public/invoice/:paymentLink", async (req, res) => {
+    try {
+      const { paymentLink } = req.params;
+      
+      const invoice = await storage.getInvoiceByPaymentLink(paymentLink);
+      
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found or payment link expired" });
+      }
+
+      // Check if payment link is expired
+      if (invoice.paymentLinkExpiresAt && new Date() > invoice.paymentLinkExpiresAt) {
+        return res.status(404).json({ error: "Payment link expired" });
+      }
+
+      // Return normalized invoice data (safe for public)
+      const publicInvoiceData = {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        clientName: invoice.clientName,
+        clientEmail: invoice.clientEmail,
+        companyName: "Gigster Garage", // You can make this dynamic later
+        companyAddress: "Business Address\nCity, State ZIP", // You can make this dynamic later
+        subtotal: invoice.subtotal ? String(invoice.subtotal) : "0.00",
+        taxRate: invoice.taxRate ? String(invoice.taxRate) : "0.00",
+        taxAmount: invoice.taxAmount ? String(invoice.taxAmount) : "0.00",
+        discountAmount: invoice.discountAmount ? String(invoice.discountAmount) : "0.00",
+        totalAmount: invoice.totalAmount ? String(invoice.totalAmount) : "0.00",
+        lineItems: invoice.lineItems || [],
+        status: invoice.status,
+        invoiceDate: invoice.invoiceDate,
+        dueDate: invoice.dueDate,
+        notes: invoice.notes,
+      };
+
+      res.json(publicInvoiceData);
+    } catch (error) {
+      console.error("Error fetching public invoice:", error);
+      res.status(500).json({ error: "Failed to fetch invoice" });
+    }
+  });
+
+  // Create payment intent for public invoice payment
+  app.post("/api/public/create-payment-intent", async (req, res) => {
+    try {
+      const { paymentLink } = req.body;
+      
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ error: "Payment processing not configured" });
+      }
+
+      const invoice = await storage.getInvoiceByPaymentLink(paymentLink);
+      
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      if (invoice.status === 'paid') {
+        return res.status(400).json({ error: "Invoice already paid" });
+      }
+
+      // Check if payment link is expired
+      if (invoice.paymentLinkExpiresAt && new Date() > invoice.paymentLinkExpiresAt) {
+        return res.status(400).json({ error: "Payment link expired" });
+      }
+
+      const Stripe = require('stripe');
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+      // Create or retrieve existing payment intent
+      let paymentIntent;
+      if (invoice.stripePaymentIntentId) {
+        try {
+          paymentIntent = await stripe.paymentIntents.retrieve(invoice.stripePaymentIntentId);
+        } catch (error) {
+          // If payment intent doesn't exist, create new one
+          paymentIntent = null;
+        }
+      }
+
+      if (!paymentIntent) {
+        paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(parseFloat(invoice.totalAmount || "0") * 100), // Convert to cents
+          currency: "usd",
+          metadata: {
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+          },
+        });
+
+        // Update invoice with payment intent ID
+        await storage.updateInvoice(invoice.id, {
+          stripePaymentIntentId: paymentIntent.id
+        });
+      }
+
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Failed to create payment intent" });
+    }
+  });
+
+  // Stripe webhook to handle payment completion
+  app.post("/api/webhooks/stripe", express.raw({ type: 'application/json' }), async (req, res) => {
+    try {
+      const sig = req.headers['stripe-signature'];
+      
+      if (!process.env.STRIPE_WEBHOOK_SECRET || !process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ error: "Webhook not configured" });
+      }
+
+      const Stripe = require('stripe');
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      
+      let event;
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      } catch (err: any) {
+        console.error('Webhook signature verification failed:', err.message);
+        return res.status(400).json({ error: 'Invalid signature' });
+      }
+
+      if (event.type === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object;
+        const invoiceId = paymentIntent.metadata?.invoiceId;
+        
+        if (invoiceId) {
+          // Mark invoice as paid
+          await storage.updateInvoice(invoiceId, {
+            status: 'paid',
+            paidAt: new Date(),
+            amountPaid: (paymentIntent.amount / 100).toString(), // Convert from cents
+          });
+
+          // Create payment record
+          await storage.createPayment({
+            invoiceId,
+            amount: (paymentIntent.amount / 100).toString(),
+            paymentDate: new Date().toISOString().split('T')[0],
+            paymentMethod: 'stripe',
+            reference: paymentIntent.id,
+          });
+
+          console.log(`Invoice ${paymentIntent.metadata.invoiceNumber} marked as paid`);
+        }
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Webhook error:", error);
+      res.status(500).json({ error: "Webhook handler failed" });
+    }
+  });
 
   return httpServer;
 }

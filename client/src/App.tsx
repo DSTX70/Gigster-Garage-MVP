@@ -50,6 +50,7 @@ import PredictiveAnalytics from "@/pages/predictive-analytics";
 import EmailManagement from "@/pages/email-management";
 import SlackIntegration from "@/pages/slack-integration";
 import PerformanceDashboard from "@/pages/performance-dashboard";
+import PayInvoice from "@/pages/pay-invoice";
 
 // Mobile Pages
 import MobileHome from "@/pages/mobile-home";
@@ -107,6 +108,7 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/test-404" component={Test404} />
+        <Route path="/pay-invoice" component={PayInvoice} />
         <Route component={Landing} />
       </Switch>
     );

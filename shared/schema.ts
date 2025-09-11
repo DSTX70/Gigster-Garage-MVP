@@ -181,6 +181,10 @@ export const invoices = pgTable("invoices", {
   amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default("0.00"),
   balanceDue: decimal("balance_due", { precision: 10, scale: 2 }).default("0.00"),
   notes: text("notes"),
+  // Payment link fields
+  paymentLink: varchar("payment_link").unique(),
+  paymentLinkExpiresAt: timestamp("payment_link_expires_at"),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
   createdById: varchar("created_by_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
