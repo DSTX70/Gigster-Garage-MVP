@@ -2678,9 +2678,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       const createdWithPaymentLink = await storage.getInvoice(created.id, req.session.user!.id);
       const finalInvoice = createdWithPaymentLink || created;
 
-      // Normalize the response for JSON serialization
-      const payload = {
-        id: finalInvoice.id ? String(finalInvoice.id) : undefined,
+      // Create the response payload
+      const responseData = {
+        id: finalInvoice.id,
         invoiceNumber: finalInvoice.invoiceNumber,
         projectId: finalInvoice.projectId,
         clientName: finalInvoice.clientName,
@@ -2689,25 +2689,21 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         status: finalInvoice.status,
         invoiceDate: finalInvoice.invoiceDate,
         dueDate: finalInvoice.dueDate,
-        subtotal: finalInvoice.subtotal ? String(finalInvoice.subtotal) : "0.00",
-        taxRate: finalInvoice.taxRate ? String(finalInvoice.taxRate) : "0.00",
-        taxAmount: finalInvoice.taxAmount ? String(finalInvoice.taxAmount) : "0.00",
-        discountAmount: finalInvoice.discountAmount ? String(finalInvoice.discountAmount) : "0.00",
-        totalAmount: finalInvoice.totalAmount ? String(finalInvoice.totalAmount) : "0.00",
+        subtotal: finalInvoice.subtotal,
+        taxRate: finalInvoice.taxRate,
+        taxAmount: finalInvoice.taxAmount,
+        discountAmount: finalInvoice.discountAmount,
+        totalAmount: finalInvoice.totalAmount,
         lineItems: finalInvoice.lineItems || [],
         notes: finalInvoice.notes,
         paymentLink: finalInvoice.paymentLink || paymentLink,
         paymentUrl: `${req.protocol}://${req.get('host')}/pay-invoice?link=${finalInvoice.paymentLink || paymentLink}`,
-        createdAt: finalInvoice.createdAt ? finalInvoice.createdAt.toISOString() : undefined,
-        updatedAt: finalInvoice.updatedAt ? finalInvoice.updatedAt.toISOString() : undefined,
+        createdAt: finalInvoice.createdAt,
+        updatedAt: finalInvoice.updatedAt,
       };
 
-      // Ensure an id exists for frontend
-      if (!payload.id) {
-        throw new Error("Created invoice has no id after serialization");
-      }
-
-      return res.status(201).json(payload);
+      console.log("[invoices#create] sending response:", responseData);
+      res.status(201).json(responseData);
     } catch (error) {
       console.error("Error creating draft invoice:", error);
       if (error instanceof z.ZodError) {
@@ -2795,16 +2791,18 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           // Refetch to get the payment link
           const updatedWithLink = await storage.getInvoice(updatedInvoice.id, req.session.user!.id);
           if (updatedWithLink) {
-            const result = toApiInvoice(updatedWithLink);
-            result.paymentUrl = `${req.protocol}://${req.get('host')}/pay-invoice?link=${updatedWithLink.paymentLink}`;
+            const result = {
+              ...updatedWithLink,
+              paymentUrl: `${req.protocol}://${req.get('host')}/pay-invoice?link=${updatedWithLink.paymentLink}`
+            };
             return res.json(result);
           }
         }
 
-        const result = toApiInvoice(updatedInvoice);
-        if (updatedInvoice.paymentLink) {
-          result.paymentUrl = `${req.protocol}://${req.get('host')}/pay-invoice?link=${updatedInvoice.paymentLink}`;
-        }
+        const result = {
+          ...updatedInvoice,
+          paymentUrl: updatedInvoice.paymentLink ? `${req.protocol}://${req.get('host')}/pay-invoice?link=${updatedInvoice.paymentLink}` : undefined
+        };
         res.json(result);
       } else {
         res.status(404).json({ error: "Invoice not found" });
