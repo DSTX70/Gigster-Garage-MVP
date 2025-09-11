@@ -686,7 +686,7 @@ export const proposalSchema = baseInsertProposalSchema.omit({ id: true, createdA
 
 const baseInsertInvoiceSchema = createInsertSchema(invoices, {
   invoiceNumber: z.string().min(1, "Invoice number is required").max(50, "Invoice number too long"),
-  clientName: z.string().min(1, "Client name is required").max(100, "Client name too long"),
+  clientName: z.string().min(1, "Client name is required").max(100, "Client name too long").optional(),
   clientEmail: z.string().email("Invalid email format").optional().nullable(),
   clientAddress: z.string().max(500, "Address too long").optional().nullable(),
   status: z.enum(["draft", "sent", "viewed", "paid", "overdue", "cancelled"], {
@@ -700,11 +700,26 @@ const baseInsertInvoiceSchema = createInsertSchema(invoices, {
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
     z.date().transform((val) => val.toISOString().split('T')[0]),
   ]).optional(),
-  subtotal: z.number().min(0, "Subtotal cannot be negative").optional(),
-  taxRate: z.number().min(0, "Tax rate cannot be negative").max(100, "Tax rate cannot exceed 100%").optional(),
-  taxAmount: z.number().min(0, "Tax amount cannot be negative").optional(),
-  discountAmount: z.number().min(0, "Discount amount cannot be negative").optional(),
-  totalAmount: z.number().min(0, "Total amount cannot be negative").optional(),
+  subtotal: z.union([
+    z.string().regex(/^\d+\.?\d*$/, "Subtotal must be a valid number"),
+    z.number().transform((val) => val.toString()),
+  ]).optional(),
+  taxRate: z.union([
+    z.string().regex(/^\d+\.?\d*$/, "Tax rate must be a valid number"),
+    z.number().min(0).max(100).transform((val) => val.toString()),
+  ]).optional(),
+  taxAmount: z.union([
+    z.string().regex(/^\d+\.?\d*$/, "Tax amount must be a valid number"),
+    z.number().transform((val) => val.toString()),
+  ]).optional(),
+  discountAmount: z.union([
+    z.string().regex(/^\d+\.?\d*$/, "Discount amount must be a valid number"),
+    z.number().transform((val) => val.toString()),
+  ]).optional(),
+  totalAmount: z.union([
+    z.string().regex(/^\d+\.?\d*$/, "Total amount must be a valid number"),
+    z.number().transform((val) => val.toString()),
+  ]).optional(),
   lineItems: z.array(z.object({
     id: z.number().min(1, "Line item id is required"),
     description: z.string().min(1, "Item description is required"),
