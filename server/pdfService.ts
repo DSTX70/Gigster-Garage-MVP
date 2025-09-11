@@ -33,11 +33,16 @@ function isValidPaymentUrl(url: string | undefined | null): boolean {
       'checkout.square.com',
       // Add your own domain(s) for custom payment processing
       'localhost', // For development
-      '127.0.0.1'  // For development
+      '127.0.0.1',  // For development
+      'replit.dev', // Allow Replit domains
+      'replit.com'  // Allow Replit domains
     ];
     
-    // Must be HTTPS (except localhost for development)
-    if (parsedUrl.protocol !== 'https:' && !parsedUrl.hostname.includes('localhost') && parsedUrl.hostname !== '127.0.0.1') {
+    // Must be HTTPS (except localhost and Replit for development)
+    if (parsedUrl.protocol !== 'https:' && 
+        !parsedUrl.hostname.includes('localhost') && 
+        parsedUrl.hostname !== '127.0.0.1' &&
+        !parsedUrl.hostname.includes('replit.dev')) {
       return false;
     }
     
@@ -567,11 +572,11 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
             <p>Thank you for your business!</p>
         </div>
         
-        ${invoice.paymentLink && isValidPaymentUrl(invoice.paymentLink) ? `
+        ${(invoice.paymentUrl || invoice.paymentLink) && isValidPaymentUrl(invoice.paymentUrl || invoice.paymentLink) ? `
         <div class="payment-section">
             <h3>💳 Pay Your Invoice Online</h3>
             <p>Click the button below to securely pay your invoice online using our secure payment portal.</p>
-            <a href="${escapeHtml(invoice.paymentLink)}" class="pay-now-button">
+            <a href="${escapeHtml(invoice.paymentUrl || invoice.paymentLink)}" class="pay-now-button">
                 Pay Now - $${parseFloat(invoice.totalAmount || 0).toFixed(2)}
             </a>
             ${invoice.paymentLinkExpiresAt ? `
@@ -580,7 +585,7 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
             </div>
             ` : ''}
         </div>
-        ` : invoice.paymentLink ? `
+        ` : (invoice.paymentUrl || invoice.paymentLink) ? `
         <div class="payment-terms">
             <h3>⚠️ Invalid Payment Link</h3>
             <p>The payment link provided is not from a recognized secure payment provider. Please contact us for alternative payment methods.</p>
