@@ -4,6 +4,35 @@ import { db } from "./db";
 import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, contracts, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage, fileAttachments, documentVersions } from "@shared/schema";
 import type { User, UpsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, Contract, InsertContract, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage, FileAttachment, InsertFileAttachment, DocumentVersion, InsertDocumentVersion } from "@shared/schema";
 
+// Retry wrapper for transient database errors
+async function withRetry<T>(operation: () => Promise<T>, operationName: string = 'database operation'): Promise<T> {
+  const maxRetries = 3;
+  const baseDelay = 100; // Start with 100ms
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      const isTransientError = error.code === '57P01' || // admin_shutdown
+                              error.code === '53300' || // too_many_connections
+                              error.code === '57P03';    // cannot_connect_now
+      
+      if (isTransientError && attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(3, attempt - 1); // Exponential backoff: 100ms, 300ms, 900ms
+        console.warn(`🔄 Transient DB error (${error.code}) on ${operationName}, retrying in ${delay}ms (attempt ${attempt}/${maxRetries}):`, error.message);
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      // Re-throw if not transient or max retries reached
+      throw error;
+    }
+  }
+  
+  throw new Error(`Failed after ${maxRetries} attempts`);
+}
+
 export interface IStorage {
   // User management
   getUsers(): Promise<User[]>;

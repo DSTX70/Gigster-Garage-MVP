@@ -88,16 +88,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
   });
 
-  // PostgreSQL session store
-  const PgSession = ConnectPgSimple(session);
-  
-  // Session middleware with PostgreSQL store
+  // Use MemoryStore for development to reduce database connection pressure
+  // In production, consider using a separate Pool for session storage
   app.use(session({
-    store: new PgSession({
-      pool: pool,
-      tableName: 'sessions',
-      createTableIfMissing: false // Table already exists in schema
-    }),
     secret: process.env.SESSION_SECRET || 'taskflow-secret-key',
     resave: false,
     saveUninitialized: false,
@@ -128,6 +121,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.user = req.session.user;
     next();
   };
+
+  // Database health endpoint with pool monitoring
+  app.get("/api/db-health", async (_req, res) => {
+    try {
+      const start = Date.now();
+      
+      // Test database connectivity
+      await pool.query('SELECT 1');
+      const responseTime = Date.now() - start;
+      
+      // Get pool statistics
+      const poolStats = {
+        totalCount: pool.totalCount,
+        idleCount: pool.idleCount,
+        waitingCount: pool.waitingCount,
+        max: pool.options.max,
+        connectionString: pool.options.connectionString ? '***configured***' : 'missing'
+      };
+      
+      res.json({
+        status: 'healthy',
+        database: {
+          connected: true,
+          responseTime: `${responseTime}ms`,
+          pool: poolStats
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(503).json({
+        status: 'unhealthy',
+        database: {
+          connected: false,
+          error: error.message,
+          code: error.code || 'unknown',
+          pool: {
+            totalCount: pool.totalCount,
+            idleCount: pool.idleCount,
+            waitingCount: pool.waitingCount
+          }
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
 
   // Auth routes
   app.post("/api/signup", async (req, res) => {
