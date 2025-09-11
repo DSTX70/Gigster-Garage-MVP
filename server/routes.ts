@@ -2862,7 +2862,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
       // Set ACL policy for the file
       const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        file.publicUrl(),
+        objectPath,
         {
           owner: req.session.user!.id,
           visibility: "private"
