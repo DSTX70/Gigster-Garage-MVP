@@ -2860,11 +2860,28 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         }
       });
 
-      // Create document record in Filing Cabinet without ACL policy setting for now
+      // Create document record in Filing Cabinet 
       const fileUrl = file.publicUrl();
       
+      // Ensure we have a client ID - create default client if none exists
+      let clientId = invoice.clientId;
+      if (!clientId && invoice.clientName) {
+        console.log('Creating client for Filing Cabinet document');
+        const clientData = {
+          name: invoice.clientName,
+          email: invoice.clientEmail || '',
+          phone: '',
+          address: '',
+          notes: `Auto-created from invoice ${invoice.invoiceNumber}`,
+          createdById: req.session.user!.id
+        };
+        const newClient = await storage.createClient(clientData);
+        clientId = newClient.id;
+        console.log(`✅ Created client: ${newClient.name} (${clientId})`);
+      }
+      
       const documentData = {
-        clientId: invoice.clientId,
+        clientId: clientId!,
         name: `Invoice ${invoice.invoiceNumber}`,
         description: `Invoice for ${invoice.clientName || 'client'} - $${invoice.totalAmount}`,
         type: 'invoice' as const,
