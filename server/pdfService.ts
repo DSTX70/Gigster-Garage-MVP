@@ -4,13 +4,78 @@ import path from 'path';
 
 let browser: Browser | null = null;
 
-// Initialize browser instance
+// HTML escaping utility to prevent HTML injection attacks
+function escapeHtml(unsafe: string | undefined | null): string {
+  if (!unsafe) return '';
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
+// URL validation utility for payment links
+function isValidPaymentUrl(url: string | undefined | null): boolean {
+  if (!url) return false;
+  
+  try {
+    const parsedUrl = new URL(url);
+    // Allow common payment processors and secure domains
+    const allowedDomains = [
+      'stripe.com',
+      'checkout.stripe.com',
+      'paypal.com',
+      'sandbox.paypal.com',
+      'square.com',
+      'squareup.com',
+      'checkout.square.com',
+      // Add your own domain(s) for custom payment processing
+      'localhost', // For development
+      '127.0.0.1'  // For development
+    ];
+    
+    // Must be HTTPS (except localhost for development)
+    if (parsedUrl.protocol !== 'https:' && !parsedUrl.hostname.includes('localhost') && parsedUrl.hostname !== '127.0.0.1') {
+      return false;
+    }
+    
+    // Check if domain is in allowed list
+    return allowedDomains.some(domain => 
+      parsedUrl.hostname === domain || 
+      parsedUrl.hostname.endsWith('.' + domain)
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Timeout wrapper for async operations
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
+// Initialize browser instance with timeout and error handling
 async function getBrowser(): Promise<Browser> {
   if (!browser) {
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-    });
+    try {
+      browser = await withTimeout(
+        puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        }),
+        30000 // 30 second timeout for browser launch
+      );
+    } catch (error) {
+      console.error('Failed to launch browser:', error);
+      throw new Error(`Failed to initialize PDF browser: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
   return browser;
 }
@@ -25,23 +90,44 @@ export async function generatePDFFromHTML(
   } = {}
 ): Promise<Buffer> {
   const browserInstance = await getBrowser();
-  const page = await browserInstance.newPage();
+  let page: Page | null = null;
   
   try {
-    // Set content with proper styling
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    // Create page with timeout
+    page = await withTimeout(
+      browserInstance.newPage(),
+      10000 // 10 second timeout for page creation
+    );
     
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: options.format || 'A4',
-      margin: options.margin || { top: '1in', right: '0.75in', bottom: '1in', left: '0.75in' },
-      printBackground: true,
-      preferCSSPageSize: true,
-    });
+    // Set content with timeout
+    await withTimeout(
+      page.setContent(htmlContent, { waitUntil: 'networkidle0' }),
+      30000 // 30 second timeout for content loading
+    );
     
-    return pdfBuffer;
+    // Generate PDF with timeout
+    const pdfBuffer = await withTimeout(
+      page.pdf({
+        format: options.format || 'A4',
+        margin: options.margin || { top: '1in', right: '0.75in', bottom: '1in', left: '0.75in' },
+        printBackground: true,
+        preferCSSPageSize: true,
+      }),
+      60000 // 60 second timeout for PDF generation
+    );
+    
+    return Buffer.from(pdfBuffer);
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   } finally {
-    await page.close();
+    if (page) {
+      try {
+        await page.close();
+      } catch (closeError) {
+        console.error('Failed to close page:', closeError);
+      }
+    }
   }
 }
 
@@ -178,18 +264,18 @@ export async function generateProposalPDF(proposal: any): Promise<Buffer> {
             <div class="tagline">Simplified Workflow Hub</div>
         </div>
         
-        <div class="proposal-title">${proposal.title}</div>
+        <div class="proposal-title">${escapeHtml(proposal.title)}</div>
         
         <div class="client-info">
             <h3>Prepared For:</h3>
-            <p><strong>Client:</strong> ${proposal.clientName}</p>
-            <p><strong>Email:</strong> ${proposal.clientEmail}</p>
+            <p><strong>Client:</strong> ${escapeHtml(proposal.clientName)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(proposal.clientEmail)}</p>
             <p><strong>Date:</strong> ${new Date(proposal.createdAt).toLocaleDateString()}</p>
             ${proposal.expiresAt ? `<p><strong>Valid Until:</strong> ${new Date(proposal.expiresAt).toLocaleDateString()}</p>` : ''}
         </div>
         
         <div class="content-section">
-            ${proposal.content || ''}
+            ${escapeHtml(proposal.content || '')}
         </div>
         
         <div class="footer">
@@ -339,6 +425,55 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
                 border-left: 4px solid #007BFF;
             }
             
+            .payment-section {
+                clear: both;
+                margin-top: 40px;
+                padding: 30px;
+                background: linear-gradient(135deg, #007BFF 0%, #0056b3 100%);
+                border-radius: 10px;
+                text-align: center;
+                color: white;
+                box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+            }
+            
+            .payment-section h3 {
+                margin: 0 0 15px 0;
+                font-size: 24px;
+                font-weight: bold;
+            }
+            
+            .payment-section p {
+                margin: 0 0 25px 0;
+                font-size: 16px;
+                opacity: 0.9;
+            }
+            
+            .pay-now-button {
+                display: inline-block;
+                background: white;
+                color: #007BFF;
+                padding: 15px 40px;
+                border-radius: 50px;
+                text-decoration: none;
+                font-weight: bold;
+                font-size: 18px;
+                border: 3px solid white;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            }
+            
+            .pay-now-button:hover {
+                background: #f8f9fa;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            }
+            
+            .payment-expiry {
+                margin-top: 15px;
+                font-size: 14px;
+                opacity: 0.8;
+            }
+            
             .footer {
                 margin-top: 40px;
                 padding-top: 20px;
@@ -357,7 +492,7 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
             </div>
             <div class="invoice-info">
                 <h2>INVOICE</h2>
-                <p><strong>Invoice #:</strong> ${invoice.invoiceNumber || invoice.id}</p>
+                <p><strong>Invoice #:</strong> ${escapeHtml(invoice.invoiceNumber || invoice.id)}</p>
                 <p><strong>Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</p>
                 ${invoice.dueDate ? `<p><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}</p>` : ''}
             </div>
@@ -366,15 +501,15 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
         <div class="client-section">
             <div class="client-details">
                 <h3>Bill To:</h3>
-                <p><strong>${invoice.clientName}</strong></p>
-                <p>${invoice.clientEmail}</p>
-                ${invoice.clientAddress ? `<p>${invoice.clientAddress}</p>` : ''}
+                <p><strong>${escapeHtml(invoice.clientName)}</strong></p>
+                <p>${escapeHtml(invoice.clientEmail)}</p>
+                ${invoice.clientAddress ? `<p>${escapeHtml(invoice.clientAddress)}</p>` : ''}
             </div>
             <div class="invoice-details">
                 <h3>Invoice Details:</h3>
-                <p><strong>Project:</strong> ${invoice.projectDescription || 'Professional Services'}</p>
-                <p><strong>Status:</strong> ${invoice.status}</p>
-                ${invoice.terms ? `<p><strong>Terms:</strong> ${invoice.terms}</p>` : ''}
+                <p><strong>Project:</strong> ${escapeHtml(invoice.projectDescription || 'Professional Services')}</p>
+                <p><strong>Status:</strong> ${escapeHtml(invoice.status)}</p>
+                ${invoice.terms ? `<p><strong>Terms:</strong> ${escapeHtml(invoice.terms)}</p>` : ''}
             </div>
         </div>
         
@@ -391,10 +526,10 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
                 ${invoice.lineItems && invoice.lineItems.length > 0 
                   ? invoice.lineItems.map((item: any) => `
                     <tr>
-                        <td>${item.description || 'Service'}</td>
-                        <td style="text-align: center;">${item.quantity}</td>
-                        <td class="amount-cell">$${parseFloat(item.rate).toFixed(2)}</td>
-                        <td class="amount-cell">$${parseFloat(item.amount).toFixed(2)}</td>
+                        <td>${escapeHtml(item.description || 'Service')}</td>
+                        <td style="text-align: center;">${parseFloat(item.quantity || 1).toFixed(0)}</td>
+                        <td class="amount-cell">$${parseFloat(item.rate || 0).toFixed(2)}</td>
+                        <td class="amount-cell">$${parseFloat(item.amount || 0).toFixed(2)}</td>
                     </tr>
                   `).join('')
                   : `
@@ -428,9 +563,29 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
         
         <div class="payment-terms">
             <h3>Payment Terms & Instructions:</h3>
-            <p>${invoice.terms || 'Payment is due within 30 days of invoice date.'}</p>
+            <p>${escapeHtml(invoice.terms || 'Payment is due within 30 days of invoice date.')}</p>
             <p>Thank you for your business!</p>
         </div>
+        
+        ${invoice.paymentLink && isValidPaymentUrl(invoice.paymentLink) ? `
+        <div class="payment-section">
+            <h3>💳 Pay Your Invoice Online</h3>
+            <p>Click the button below to securely pay your invoice online using our secure payment portal.</p>
+            <a href="${escapeHtml(invoice.paymentLink)}" class="pay-now-button">
+                Pay Now - $${parseFloat(invoice.totalAmount || 0).toFixed(2)}
+            </a>
+            ${invoice.paymentLinkExpiresAt ? `
+            <div class="payment-expiry">
+                Payment link expires: ${new Date(invoice.paymentLinkExpiresAt).toLocaleDateString()} at ${new Date(invoice.paymentLinkExpiresAt).toLocaleTimeString()}
+            </div>
+            ` : ''}
+        </div>
+        ` : invoice.paymentLink ? `
+        <div class="payment-terms">
+            <h3>⚠️ Invalid Payment Link</h3>
+            <p>The payment link provided is not from a recognized secure payment provider. Please contact us for alternative payment methods.</p>
+        </div>
+        ` : ''}
         
         <div class="footer">
             <p><strong>Gigster Garage - Simplified Workflow Hub</strong></p>
