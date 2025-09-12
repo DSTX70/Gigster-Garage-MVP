@@ -5709,6 +5709,24 @@ Keep it professional but easy to understand.`;
           maxTokens = 1000;
           break;
 
+        case "marketing_concept_prompt":
+          prompt = `Generate a detailed marketing concept prompt that includes target audience, brand style, platform specifications, and creative direction. Make it specific and actionable for creating professional marketing mockups.
+
+The prompt should include:
+- Target audience demographics and psychographics
+- Brand style and visual direction
+- Platform specifications (social media, print, digital, etc.)
+- Creative direction and messaging approach
+- Specific elements to include in the design
+- Color palette and typography suggestions
+- Call-to-action recommendations
+
+${context ? `Additional context: ${context}` : ''}
+
+Create a comprehensive brief that a designer could use to create effective marketing materials.`;
+          maxTokens = 800;
+          break;
+
         default:
           return res.status(400).json({ message: "Invalid content type" });
       }
