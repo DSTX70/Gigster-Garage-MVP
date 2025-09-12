@@ -458,7 +458,7 @@ export default function FilingCabinet() {
       {/* Bulk Operations Toolbar */}
       <BulkOperationsToolbar
         selectedDocuments={selectedDocuments}
-        documents={filteredDocuments}
+        documents={documents}
         availableTags={allTags}
         folders={foldersWithCounts}
         onSelectAll={handleSelectAll}
@@ -584,7 +584,7 @@ export default function FilingCabinet() {
               </div>
               
               <Badge variant="secondary" className="text-sm">
-                {filteredDocuments.length} files
+                {documents.length} files
               </Badge>
             </div>
             <p className="text-gray-600">Advanced file organization and management system</p>
@@ -788,7 +788,7 @@ export default function FilingCabinet() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
               <p className="mt-2 text-gray-600">Loading files...</p>
             </div>
-          ) : filteredDocuments.length === 0 ? (
+          ) : documents.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -808,7 +808,7 @@ export default function FilingCabinet() {
             </Card>
           ) : (
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
-              {filteredDocuments.map(renderDocumentCard)}
+              {documents.map(renderDocumentCard)}
             </div>
           )}
         </main>
