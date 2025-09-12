@@ -91,6 +91,17 @@ export default function FilingCabinet() {
     { id: 'archived', name: 'Archived', documentCount: 0 }
   ]);
 
+  // Missing state variables for filters
+  const [folderFilter, setFolderFilter] = useState<string>('');
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [clientFilter, setClientFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Create computed values for missing variables
+  const allTags = useMemo(() => availableTags || [], [availableTags]);
+  
   const foldersWithCounts = useMemo(() => {
     return virtualFolders.map(folder => ({
       ...folder,
