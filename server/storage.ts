@@ -4,6 +4,66 @@ import { db } from "./db";
 import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, contracts, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage, fileAttachments, documentVersions } from "@shared/schema";
 import type { User, UpsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, Contract, InsertContract, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage, FileAttachment, InsertFileAttachment, DocumentVersion, InsertDocumentVersion } from "@shared/schema";
 
+// Advanced search types for client documents
+export interface DocumentSearchParams {
+  // Text search
+  query?: string;
+  searchFields?: ('name' | 'description' | 'fileName' | 'tags')[];
+  
+  // Filters
+  clientIds?: string[];
+  types?: string[];
+  statuses?: string[];
+  tags?: string[];
+  tagLogic?: 'AND' | 'OR';
+  
+  // Date ranges
+  createdDateFrom?: Date;
+  createdDateTo?: Date;
+  updatedDateFrom?: Date;
+  updatedDateTo?: Date;
+  
+  // File size ranges (in bytes)
+  fileSizeMin?: number;
+  fileSizeMax?: number;
+  
+  // Metadata filters
+  metadataFilters?: Array<{
+    key: string;
+    value: any;
+    operator?: 'equals' | 'contains' | 'startsWith' | 'exists';
+  }>;
+  
+  // Pagination and sorting
+  page?: number;
+  limit?: number;
+  sortBy?: 'relevance' | 'name' | 'createdAt' | 'updatedAt' | 'fileSize';
+  sortOrder?: 'asc' | 'desc';
+  
+  // Advanced options
+  includeArchived?: boolean;
+  fuzzySearch?: boolean;
+}
+
+export interface DocumentSearchFacets {
+  types: Array<{ value: string; count: number }>;
+  statuses: Array<{ value: string; count: number }>;
+  clients: Array<{ id: string; name: string; count: number }>;
+  tags: Array<{ value: string; count: number }>;
+  fileSizeRanges: Array<{ 
+    range: string; 
+    min: number; 
+    max: number | null; 
+    count: number 
+  }>;
+  dateRanges: Array<{
+    range: string;
+    from: Date;
+    to: Date;
+    count: number;
+  }>;
+}
+
 // Retry wrapper for transient database errors
 async function withRetry<T>(operation: () => Promise<T>, operationName: string = 'database operation'): Promise<T> {
   const maxRetries = 3;
@@ -116,6 +176,13 @@ export interface IStorage {
   createClientDocument(insertDocument: InsertClientDocument): Promise<ClientDocument>;
   updateClientDocument(id: string, updateDocument: Partial<InsertClientDocument>): Promise<ClientDocument | undefined>;
   deleteClientDocument(id: string): Promise<boolean>;
+  
+  // Advanced document search
+  searchClientDocuments(searchParams: DocumentSearchParams): Promise<{
+    documents: any[];
+    totalCount: number;
+    facets: DocumentSearchFacets;
+  }>;
 
   // Invoice management
   getInvoices(userId?: string): Promise<Invoice[]>;
@@ -1154,6 +1221,328 @@ export class DatabaseStorage implements IStorage {
   async deleteClientDocument(id: string): Promise<boolean> {
     const result = await db.delete(clientDocuments).where(eq(clientDocuments.id, id));
     return result.rowCount! > 0;
+  }
+
+  async searchClientDocuments(searchParams: DocumentSearchParams): Promise<{
+    documents: any[];
+    totalCount: number;
+    facets: DocumentSearchFacets;
+  }> {
+    return withRetry(async () => {
+      const {
+        query = '',
+        searchFields = ['name', 'description', 'fileName', 'tags'],
+        clientIds = [],
+        types = [],
+        statuses = [],
+        tags = [],
+        tagLogic = 'AND',
+        createdDateFrom,
+        createdDateTo,
+        updatedDateFrom,
+        updatedDateTo,
+        fileSizeMin,
+        fileSizeMax,
+        metadataFilters = [],
+        page = 1,
+        limit = 50,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        includeArchived = false,
+        fuzzySearch = false
+      } = searchParams;
+
+      // Build the base query with joins
+      const baseQuery = db
+        .select({
+          id: clientDocuments.id,
+          clientId: clientDocuments.clientId,
+          name: clientDocuments.name,
+          description: clientDocuments.description,
+          type: clientDocuments.type,
+          fileUrl: clientDocuments.fileUrl,
+          fileName: clientDocuments.fileName,
+          fileSize: clientDocuments.fileSize,
+          mimeType: clientDocuments.mimeType,
+          version: clientDocuments.version,
+          status: clientDocuments.status,
+          tags: clientDocuments.tags,
+          metadata: clientDocuments.metadata,
+          uploadedById: clientDocuments.uploadedById,
+          createdAt: clientDocuments.createdAt,
+          updatedAt: clientDocuments.updatedAt,
+          client: {
+            id: clients.id,
+            name: clients.name,
+            email: clients.email,
+            company: clients.company,
+          },
+          uploadedBy: {
+            id: users.id,
+            name: users.name,
+            email: users.email,
+          }
+        })
+        .from(clientDocuments)
+        .leftJoin(clients, eq(clientDocuments.clientId, clients.id))
+        .leftJoin(users, eq(clientDocuments.uploadedById, users.id));
+
+      // Build WHERE conditions
+      const whereConditions: any[] = [];
+
+      // Archive filter
+      if (!includeArchived) {
+        whereConditions.push(sql`${clientDocuments.status} != 'archived'`);
+      }
+
+      // Text search across multiple fields
+      if (query.trim()) {
+        const searchTerm = fuzzySearch ? `%${query.toLowerCase()}%` : `%${query.toLowerCase()}%`;
+        const searchConditions: any[] = [];
+
+        if (searchFields.includes('name')) {
+          searchConditions.push(sql`LOWER(${clientDocuments.name}) LIKE ${searchTerm}`);
+        }
+        if (searchFields.includes('description')) {
+          searchConditions.push(sql`LOWER(${clientDocuments.description}) LIKE ${searchTerm}`);
+        }
+        if (searchFields.includes('fileName')) {
+          searchConditions.push(sql`LOWER(${clientDocuments.fileName}) LIKE ${searchTerm}`);
+        }
+        if (searchFields.includes('tags')) {
+          // Search in JSON array tags
+          searchConditions.push(sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements_text(${clientDocuments.tags}) AS tag 
+            WHERE LOWER(tag) LIKE ${searchTerm}
+          )`);
+        }
+
+        if (searchConditions.length > 0) {
+          whereConditions.push(or(...searchConditions));
+        }
+      }
+
+      // Client filter
+      if (clientIds.length > 0) {
+        whereConditions.push(sql`${clientDocuments.clientId} = ANY(${clientIds})`);
+      }
+
+      // Type filter
+      if (types.length > 0) {
+        whereConditions.push(sql`${clientDocuments.type} = ANY(${types})`);
+      }
+
+      // Status filter
+      if (statuses.length > 0) {
+        whereConditions.push(sql`${clientDocuments.status} = ANY(${statuses})`);
+      }
+
+      // Tag filters
+      if (tags.length > 0) {
+        if (tagLogic === 'AND') {
+          // All tags must be present
+          whereConditions.push(sql`${clientDocuments.tags} @> ${JSON.stringify(tags)}`);
+        } else {
+          // Any tag must be present
+          const tagConditions = tags.map(tag => 
+            sql`${clientDocuments.tags} @> ${JSON.stringify([tag])}`
+          );
+          whereConditions.push(or(...tagConditions));
+        }
+      }
+
+      // Date range filters
+      if (createdDateFrom) {
+        whereConditions.push(gte(clientDocuments.createdAt, createdDateFrom));
+      }
+      if (createdDateTo) {
+        whereConditions.push(lte(clientDocuments.createdAt, createdDateTo));
+      }
+      if (updatedDateFrom) {
+        whereConditions.push(gte(clientDocuments.updatedAt, updatedDateFrom));
+      }
+      if (updatedDateTo) {
+        whereConditions.push(lte(clientDocuments.updatedAt, updatedDateTo));
+      }
+
+      // File size filters
+      if (fileSizeMin !== undefined) {
+        whereConditions.push(gte(clientDocuments.fileSize, fileSizeMin));
+      }
+      if (fileSizeMax !== undefined) {
+        whereConditions.push(lte(clientDocuments.fileSize, fileSizeMax));
+      }
+
+      // Metadata filters
+      metadataFilters.forEach(filter => {
+        const { key, value, operator = 'equals' } = filter;
+        switch (operator) {
+          case 'equals':
+            whereConditions.push(sql`${clientDocuments.metadata}->>${key} = ${value}`);
+            break;
+          case 'contains':
+            whereConditions.push(sql`${clientDocuments.metadata}->>${key} LIKE ${'%' + value + '%'}`);
+            break;
+          case 'startsWith':
+            whereConditions.push(sql`${clientDocuments.metadata}->>${key} LIKE ${value + '%'}`);
+            break;
+          case 'exists':
+            whereConditions.push(sql`${clientDocuments.metadata} ? ${key}`);
+            break;
+        }
+      });
+
+      // Apply WHERE conditions
+      let query_builder = baseQuery;
+      if (whereConditions.length > 0) {
+        query_builder = baseQuery.where(and(...whereConditions));
+      }
+
+      // Get total count for pagination
+      const countQuery = db
+        .select({ count: sql<number>`count(*)` })
+        .from(clientDocuments)
+        .leftJoin(clients, eq(clientDocuments.clientId, clients.id))
+        .leftJoin(users, eq(clientDocuments.uploadedById, users.id));
+
+      let countQueryWithWhere = countQuery;
+      if (whereConditions.length > 0) {
+        countQueryWithWhere = countQuery.where(and(...whereConditions));
+      }
+
+      const [{ count: totalCount }] = await countQueryWithWhere;
+
+      // Apply sorting
+      let orderedQuery = query_builder;
+      switch (sortBy) {
+        case 'name':
+          orderedQuery = sortOrder === 'asc' 
+            ? query_builder.orderBy(clientDocuments.name)
+            : query_builder.orderBy(desc(clientDocuments.name));
+          break;
+        case 'createdAt':
+          orderedQuery = sortOrder === 'asc'
+            ? query_builder.orderBy(clientDocuments.createdAt)
+            : query_builder.orderBy(desc(clientDocuments.createdAt));
+          break;
+        case 'updatedAt':
+          orderedQuery = sortOrder === 'asc'
+            ? query_builder.orderBy(clientDocuments.updatedAt)
+            : query_builder.orderBy(desc(clientDocuments.updatedAt));
+          break;
+        case 'fileSize':
+          orderedQuery = sortOrder === 'asc'
+            ? query_builder.orderBy(clientDocuments.fileSize)
+            : query_builder.orderBy(desc(clientDocuments.fileSize));
+          break;
+        case 'relevance':
+        default:
+          // For relevance, fall back to created date
+          orderedQuery = query_builder.orderBy(desc(clientDocuments.createdAt));
+          break;
+      }
+
+      // Apply pagination
+      const offset = (page - 1) * limit;
+      const documents = await orderedQuery.limit(limit).offset(offset);
+
+      // Generate facets for UI filtering
+      const facets = await this.generateDocumentSearchFacets(whereConditions);
+
+      return {
+        documents,
+        totalCount,
+        facets
+      };
+    }, 'searchClientDocuments');
+  }
+
+  private async generateDocumentSearchFacets(baseWhereConditions: any[]): Promise<DocumentSearchFacets> {
+    // Get counts for different facets
+    const [typeFacets, statusFacets, clientFacets, tagFacets] = await Promise.all([
+      // Type facets
+      db
+        .select({
+          value: clientDocuments.type,
+          count: sql<number>`count(*)`
+        })
+        .from(clientDocuments)
+        .where(baseWhereConditions.length > 0 ? and(...baseWhereConditions) : undefined)
+        .groupBy(clientDocuments.type),
+
+      // Status facets
+      db
+        .select({
+          value: clientDocuments.status,
+          count: sql<number>`count(*)`
+        })
+        .from(clientDocuments)
+        .where(baseWhereConditions.length > 0 ? and(...baseWhereConditions) : undefined)
+        .groupBy(clientDocuments.status),
+
+      // Client facets
+      db
+        .select({
+          id: clients.id,
+          name: clients.name,
+          count: sql<number>`count(*)`
+        })
+        .from(clientDocuments)
+        .leftJoin(clients, eq(clientDocuments.clientId, clients.id))
+        .where(baseWhereConditions.length > 0 ? and(...baseWhereConditions) : undefined)
+        .groupBy(clients.id, clients.name),
+
+      // Tag facets (simplified for now)
+      db
+        .select({
+          value: sql<string>`unnest(array(SELECT jsonb_array_elements_text(tags)))`,
+          count: sql<number>`count(*)`
+        })
+        .from(clientDocuments)
+        .where(baseWhereConditions.length > 0 ? and(...baseWhereConditions) : undefined)
+        .groupBy(sql`unnest(array(SELECT jsonb_array_elements_text(tags)))`)
+        .limit(20)
+    ]);
+
+    // Generate file size ranges
+    const fileSizeRanges = [
+      { range: "Small (< 1MB)", min: 0, max: 1024 * 1024, count: 0 },
+      { range: "Medium (1-10MB)", min: 1024 * 1024, max: 10 * 1024 * 1024, count: 0 },
+      { range: "Large (10-100MB)", min: 10 * 1024 * 1024, max: 100 * 1024 * 1024, count: 0 },
+      { range: "Very Large (>100MB)", min: 100 * 1024 * 1024, max: null, count: 0 }
+    ];
+
+    // Generate date ranges (simplified)
+    const now = new Date();
+    const dateRanges = [
+      { 
+        range: "Last 7 days", 
+        from: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), 
+        to: now, 
+        count: 0 
+      },
+      { 
+        range: "Last 30 days", 
+        from: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), 
+        to: now, 
+        count: 0 
+      },
+      { 
+        range: "Last 3 months", 
+        from: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), 
+        to: now, 
+        count: 0 
+      }
+    ];
+
+    return {
+      types: typeFacets || [],
+      statuses: statusFacets || [],
+      clients: clientFacets || [],
+      tags: tagFacets || [],
+      fileSizeRanges,
+      dateRanges
+    };
   }
 
   // Invoice operations

@@ -2262,6 +2262,41 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Advanced search for client documents
+  app.post("/api/client-documents/search", requireAuth, async (req, res) => {
+    try {
+      const searchParams = req.body;
+      
+      // Validate search params
+      if (searchParams.page && searchParams.page < 1) {
+        return res.status(400).json({ message: "Page must be greater than 0" });
+      }
+      if (searchParams.limit && (searchParams.limit < 1 || searchParams.limit > 1000)) {
+        return res.status(400).json({ message: "Limit must be between 1 and 1000" });
+      }
+
+      // Convert date strings to Date objects if provided
+      if (searchParams.createdDateFrom) {
+        searchParams.createdDateFrom = new Date(searchParams.createdDateFrom);
+      }
+      if (searchParams.createdDateTo) {
+        searchParams.createdDateTo = new Date(searchParams.createdDateTo);
+      }
+      if (searchParams.updatedDateFrom) {
+        searchParams.updatedDateFrom = new Date(searchParams.updatedDateFrom);
+      }
+      if (searchParams.updatedDateTo) {
+        searchParams.updatedDateTo = new Date(searchParams.updatedDateTo);
+      }
+
+      const result = await storage.searchClientDocuments(searchParams);
+      res.json(result);
+    } catch (error) {
+      console.error("Error searching client documents:", error);
+      res.status(500).json({ message: "Failed to search documents" });
+    }
+  });
+
   // Get a specific document
   app.get("/api/documents/:id", requireAuth, async (req, res) => {
     try {

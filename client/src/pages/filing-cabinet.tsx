@@ -10,12 +10,19 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FolderOpen, FileText, File, Download, Search, Calendar, User, Building, Filter, ArrowLeft, Grid, List, MoreVertical, Edit2, Trash2, Tag, Folder, Settings, Menu, Archive, Star, Eye, EyeOff } from "lucide-react";
+import { FolderOpen, FileText, File, Download, Search, Calendar, User, Building, Filter, ArrowLeft, Grid, List, MoreVertical, Edit2, Trash2, Tag, Folder, Settings, Menu, Archive, Star, Eye, EyeOff, FilterX, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+// Import advanced search components
+import { AdvancedSearchModal } from "@/components/search/AdvancedSearchModal";
+import { SearchBuilder } from "@/components/search/SearchBuilder";
+import { FilterChips } from "@/components/search/FilterChips";
+import { SearchResults } from "@/components/search/SearchResults";
+import { useAdvancedSearch } from "@/hooks/useAdvancedSearch";
 
 // Import our enhanced components
 import { TagManager } from "@/components/TagManager";
@@ -25,6 +32,7 @@ import { MetadataEditor } from "@/components/MetadataEditor";
 import { BulkOperationsToolbar } from "@/components/BulkOperationsToolbar";
 
 import type { ClientDocument, Client } from "@shared/schema";
+import type { DocumentSearchResult } from "@/hooks/useAdvancedSearch";
 
 interface EnhancedFilingCabinetDocument extends ClientDocument {
   client?: Client;
@@ -32,35 +40,49 @@ interface EnhancedFilingCabinetDocument extends ClientDocument {
 }
 
 type ViewMode = 'grid' | 'list';
-type SortOption = 'name' | 'date' | 'type' | 'size';
 
 export default function FilingCabinet() {
-  // Basic state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [clientFilter, setClientFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [tagFilter, setTagFilter] = useState<string[]>([]);
-  const [folderFilter, setFolderFilter] = useState<string | null>(null);
+  // Advanced search hook
+  const {
+    // State
+    filters,
+    isAdvancedModalOpen,
+    isSearchBuilderOpen,
+    savedSearches,
+    
+    // Data
+    results: documents,
+    totalCount,
+    facets,
+    clients,
+    availableTags,
+    isLoading,
+    hasActiveAdvancedSearch,
+    
+    // Actions
+    updateFilters,
+    resetFilters,
+    quickSearch,
+    removeFilter,
+    saveSearch,
+    loadSavedSearch,
+    deleteSavedSearch,
+    starSavedSearch,
+    refresh,
+    
+    // UI Controls
+    setIsAdvancedModalOpen,
+    setIsSearchBuilderOpen
+  } = useAdvancedSearch();
   
   // UI state  
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [sortBy, setSortBy] = useState<SortOption>('date');
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
-  const [editingDocument, setEditingDocument] = useState<EnhancedFilingCabinetDocument | null>(null);
+  const [editingDocument, setEditingDocument] = useState<DocumentSearchResult | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Data queries
-  const { data: documents = [], isLoading } = useQuery<EnhancedFilingCabinetDocument[]>({
-    queryKey: ["/api/client-documents"],
-  });
-
-  const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
-  });
 
   // Virtual folders state (stored in component state for demo - would be persisted in real app)
   const [virtualFolders, setVirtualFolders] = useState<VirtualFolder[]>([
@@ -68,17 +90,6 @@ export default function FilingCabinet() {
     { id: 'favorites', name: 'Favorites', documentCount: 0 },
     { id: 'archived', name: 'Archived', documentCount: 0 }
   ]);
-
-  // Derived data
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    documents.forEach(doc => {
-      if (doc.tags && Array.isArray(doc.tags)) {
-        doc.tags.forEach(tag => tags.add(tag));
-      }
-    });
-    return Array.from(tags);
-  }, [documents]);
 
   const foldersWithCounts = useMemo(() => {
     return virtualFolders.map(folder => ({
@@ -88,51 +99,6 @@ export default function FilingCabinet() {
       ).length
     }));
   }, [virtualFolders, documents]);
-
-  // Filtering and sorting
-  const filteredDocuments = useMemo(() => {
-    let filtered = documents.filter(doc => {
-      // Search filter
-      const matchesSearch = searchQuery === "" || 
-        doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.client?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // Basic filters
-      const matchesType = typeFilter === "all" || doc.type === typeFilter;
-      const matchesClient = clientFilter === "all" || doc.clientId === clientFilter;
-      const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
-
-      // Tag filter
-      const matchesTags = tagFilter.length === 0 || 
-        (doc.tags && Array.isArray(doc.tags) && 
-         tagFilter.every(tag => doc.tags!.includes(tag)));
-
-      // Folder filter
-      const matchesFolder = folderFilter === null || doc.metadata?.folder === folderFilter;
-
-      return matchesSearch && matchesType && matchesClient && matchesStatus && matchesTags && matchesFolder;
-    });
-
-    // Sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'date':
-          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-        case 'type':
-          return a.type.localeCompare(b.type);
-        case 'size':
-          return (b.fileSize || 0) - (a.fileSize || 0);
-        default:
-          return 0;
-      }
-    });
-
-    return filtered;
-  }, [documents, searchQuery, typeFilter, clientFilter, statusFilter, tagFilter, folderFilter, sortBy]);
 
   // Document stats
   const documentStats = useMemo(() => {
@@ -155,6 +121,7 @@ export default function FilingCabinet() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/client-documents"] });
+      refresh(); // Refresh search results too
       toast({ title: "Document updated successfully" });
     },
     onError: () => {
@@ -172,6 +139,7 @@ export default function FilingCabinet() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/client-documents"] });
+      refresh(); // Refresh search results too
       toast({ title: "Document deleted successfully" });
     },
     onError: () => {
@@ -189,7 +157,7 @@ export default function FilingCabinet() {
   };
 
   const handleSelectAll = () => {
-    setSelectedDocuments(filteredDocuments.map(doc => doc.id));
+    setSelectedDocuments(documents.map(doc => doc.id));
   };
 
   const handleDeselectAll = () => {
@@ -198,6 +166,22 @@ export default function FilingCabinet() {
 
   const handleBulkUpdate = () => {
     setSelectedDocuments([]);
+  };
+
+  // Document actions
+  const handleDownloadDocument = (document: DocumentSearchResult) => {
+    if (document.fileUrl) {
+      window.open(document.fileUrl, '_blank');
+    }
+  };
+
+  const handlePreviewDocument = (document: DocumentSearchResult) => {
+    // For now, just show document details - could be enhanced with actual preview
+    setEditingDocument(document);
+  };
+
+  const handleEditDocument = (document: DocumentSearchResult) => {
+    setEditingDocument(document);
   };
 
   const handleFolderCreate = (name: string, description?: string) => {
@@ -635,86 +619,115 @@ export default function FilingCabinet() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="Search files, clients, descriptions..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={filters.query}
+                    onChange={(e) => quickSearch(e.target.value)}
                     className="pl-10"
                     data-testid="input-search-files"
                   />
                 </div>
 
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger data-testid="select-type-filter">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="proposal">Proposals</SelectItem>
-                    <SelectItem value="invoice">Invoices</SelectItem>
-                    <SelectItem value="contract">Contracts</SelectItem>
-                    <SelectItem value="presentation">Presentations</SelectItem>
-                    <SelectItem value="report">Reports</SelectItem>
-                    <SelectItem value="agreement">Agreements</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger data-testid="select-status-filter">
-                    <SelectValue placeholder="All Statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={clientFilter} onValueChange={setClientFilter}>
-                  <SelectTrigger data-testid="select-client-filter">
-                    <SelectValue placeholder="All Clients" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Clients</SelectItem>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger data-testid="select-sort">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date">Date</SelectItem>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="type">Type</SelectItem>
-                    <SelectItem value="size">Size</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Quick filters for commonly used options */}
+                <div className="md:col-span-4 flex flex-wrap gap-2">
+                  <Button
+                    variant={filters.types.includes('proposal') ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      const newTypes = filters.types.includes('proposal')
+                        ? filters.types.filter(t => t !== 'proposal')
+                        : [...filters.types, 'proposal'];
+                      updateFilters({ types: newTypes });
+                    }}
+                    data-testid="filter-proposals"
+                  >
+                    Proposals ({facets.types.find(t => t.value === 'proposal')?.count || 0})
+                  </Button>
+                  <Button
+                    variant={filters.types.includes('invoice') ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      const newTypes = filters.types.includes('invoice')
+                        ? filters.types.filter(t => t !== 'invoice')
+                        : [...filters.types, 'invoice'];
+                      updateFilters({ types: newTypes });
+                    }}
+                    data-testid="filter-invoices"
+                  >
+                    Invoices ({facets.types.find(t => t.value === 'invoice')?.count || 0})
+                  </Button>
+                  <Button
+                    variant={filters.types.includes('contract') ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      const newTypes = filters.types.includes('contract')
+                        ? filters.types.filter(t => t !== 'contract')
+                        : [...filters.types, 'contract'];
+                      updateFilters({ types: newTypes });
+                    }}
+                    data-testid="filter-contracts"
+                  >
+                    Contracts ({facets.types.find(t => t.value === 'contract')?.count || 0})
+                  </Button>
+                  <Button
+                    variant={filters.statuses.includes('active') ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      const newStatuses = filters.statuses.includes('active')
+                        ? filters.statuses.filter(s => s !== 'active')
+                        : [...filters.statuses, 'active'];
+                      updateFilters({ statuses: newStatuses });
+                    }}
+                    data-testid="filter-active"
+                  >
+                    Active ({facets.statuses.find(s => s.value === 'active')?.count || 0})
+                  </Button>
+                  <Button
+                    variant={filters.includeArchived ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateFilters({ includeArchived: !filters.includeArchived })}
+                    data-testid="filter-include-archived"
+                  >
+                    Include Archived
+                  </Button>
+                </div>
               </div>
+
+              {/* Filter Chips */}
+              <FilterChips
+                filters={filters}
+                onRemoveFilter={removeFilter}
+                onClearAll={resetFilters}
+                clients={clients}
+                availableTags={availableTags}
+              />
 
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
-                    onClick={() => {
-                      setSearchQuery("");
-                      setTypeFilter("all");
-                      setClientFilter("all");
-                      setStatusFilter("all");
-                      setTagFilter([]);
-                      setFolderFilter(null);
-                    }}
-                    data-testid="button-clear-filters"
+                    onClick={() => setIsAdvancedModalOpen(true)}
+                    data-testid="button-advanced-search"
                   >
                     <Filter className="h-4 w-4 mr-2" />
-                    Clear All Filters
+                    Advanced Search
                   </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsSearchBuilderOpen(true)}
+                    data-testid="button-search-builder"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Search Builder
+                  </Button>
+                  {hasActiveAdvancedSearch && (
+                    <Button 
+                      variant="outline" 
+                      onClick={resetFilters}
+                      data-testid="button-clear-all-filters"
+                    >
+                      <FilterX className="h-4 w-4 mr-2" />
+                      Clear All
+                    </Button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -850,7 +863,7 @@ export default function FilingCabinet() {
 
               <div>
                 <TagManager
-                  availableTags={allTags}
+                  availableTags={availableTags}
                   selectedTags={editingDocument.tags || []}
                   onTagsChange={(tags) => setEditingDocument(prev => prev ? {...prev, tags} : null)}
                   documentId={editingDocument.id}
@@ -899,6 +912,34 @@ export default function FilingCabinet() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Advanced Search Modal */}
+      <AdvancedSearchModal
+        isOpen={isAdvancedModalOpen}
+        onOpenChange={setIsAdvancedModalOpen}
+        filters={filters}
+        onFiltersChange={updateFilters}
+        onSearch={() => setIsAdvancedModalOpen(false)}
+        onReset={resetFilters}
+        clients={clients}
+        availableTags={availableTags}
+        savedSearches={savedSearches}
+        onSaveSearch={saveSearch}
+        onLoadSearch={loadSavedSearch}
+      />
+
+      {/* Search Builder Modal */}
+      <SearchBuilder
+        isOpen={isSearchBuilderOpen}
+        onOpenChange={setIsSearchBuilderOpen}
+        onSearch={updateFilters}
+        clients={clients}
+        availableTags={availableTags}
+        savedSearches={savedSearches}
+        onSaveSearch={saveSearch}
+        onDeleteSearch={deleteSavedSearch}
+        onStarSearch={starSavedSearch}
+      />
     </div>
   );
 }
