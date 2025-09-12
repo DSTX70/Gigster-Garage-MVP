@@ -272,7 +272,7 @@ export default function CreateInvoice() {
         <AppHeader />
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-8">
-            <Button variant="ghost" onClick={() => setIsPreview(false)}>
+            <Button variant="outline" onClick={() => setIsPreview(false)} className="bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-medium">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Editor
             </Button>
