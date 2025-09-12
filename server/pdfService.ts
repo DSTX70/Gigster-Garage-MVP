@@ -436,6 +436,363 @@ export async function generateProposalPDF(proposal: any): Promise<Buffer> {
 }
 
 // Generate invoice PDF
+export async function generateContractPDF(contract: any): Promise<Buffer> {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {
+                margin: 1in 0.75in;
+                @top-center {
+                    content: "Gigster Garage - Contract";
+                    font-size: 10px;
+                    color: #666;
+                }
+                @bottom-center {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 10px;
+                    color: #666;
+                }
+            }
+            
+            body {
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .header {
+                background-color: #004C6D;
+                color: white;
+                padding: 40px 30px;
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            
+            .header h1 {
+                margin: 0;
+                font-size: 32px;
+                font-weight: bold;
+            }
+            
+            .header .tagline {
+                margin: 10px 0 0 0;
+                font-size: 16px;
+                opacity: 0.9;
+            }
+            
+            .contract-title {
+                font-size: 28px;
+                font-weight: bold;
+                color: #004C6D;
+                margin-bottom: 30px;
+                text-align: center;
+            }
+            
+            .parties-section {
+                background-color: #f8f9fa;
+                padding: 25px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+                border-left: 4px solid #004C6D;
+            }
+            
+            .parties-section h3 {
+                color: #004C6D;
+                margin-top: 0;
+            }
+            
+            .content-section {
+                margin-bottom: 40px;
+            }
+            
+            .content-section h2 {
+                color: #004C6D;
+                border-bottom: 2px solid #004C6D;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .signature-section {
+                margin-top: 60px;
+                padding-top: 40px;
+                border-top: 2px solid #004C6D;
+                display: flex;
+                justify-content: space-between;
+            }
+            
+            .signature-block {
+                width: 45%;
+                text-align: center;
+            }
+            
+            .signature-line {
+                border-bottom: 1px solid #333;
+                margin-bottom: 10px;
+                height: 40px;
+            }
+            
+            .footer {
+                margin-top: 60px;
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+                border-top: 1px solid #ddd;
+                padding-top: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Gigster Garage</h1>
+            <div class="tagline">Simplified Workflow Hub</div>
+        </div>
+
+        <div class="contract-title">
+            ${escapeHtml(contract.contractTitle || 'Service Contract')}
+        </div>
+
+        <div class="parties-section">
+            <h3>Contract Parties</h3>
+            <p><strong>Service Provider:</strong> Gigster Garage</p>
+            <p><strong>Client:</strong> ${escapeHtml(contract.clientName || 'Client Name')}</p>
+            <p><strong>Date:</strong> ${escapeHtml(contract.contractDate || new Date().toLocaleDateString())}</p>
+            <p><strong>Contract Value:</strong> $${escapeHtml(contract.contractValue?.toString() || '0')}</p>
+        </div>
+
+        ${contract.scope ? `
+        <div class="content-section">
+            <h2>Scope of Work</h2>
+            <div>${escapeHtml(contract.scope).replace(/\\n/g, '<br>')}</div>
+        </div>
+        ` : ''}
+
+        ${contract.deliverables ? `
+        <div class="content-section">
+            <h2>Deliverables</h2>
+            <div>${escapeHtml(contract.deliverables).replace(/\\n/g, '<br>')}</div>
+        </div>
+        ` : ''}
+
+        ${contract.paymentTerms ? `
+        <div class="content-section">
+            <h2>Payment Terms</h2>
+            <div>${escapeHtml(contract.paymentTerms).replace(/\\n/g, '<br>')}</div>
+        </div>
+        ` : ''}
+
+        ${contract.responsibilities ? `
+        <div class="content-section">
+            <h2>Responsibilities</h2>
+            <div>${escapeHtml(contract.responsibilities).replace(/\\n/g, '<br>')}</div>
+        </div>
+        ` : ''}
+
+        ${contract.legalTerms ? `
+        <div class="content-section">
+            <h2>Legal Terms</h2>
+            <div>${escapeHtml(contract.legalTerms).replace(/\\n/g, '<br>')}</div>
+        </div>
+        ` : ''}
+
+        ${contract.confidentiality ? `
+        <div class="content-section">
+            <h2>Confidentiality</h2>
+            <div>${escapeHtml(contract.confidentiality).replace(/\\n/g, '<br>')}</div>
+        </div>
+        ` : ''}
+
+        <div class="signature-section">
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <p><strong>Client Signature</strong></p>
+                <p>${escapeHtml(contract.clientName || 'Client Name')}</p>
+                <p>Date: _______________</p>
+            </div>
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <p><strong>Service Provider</strong></p>
+                <p>Gigster Garage</p>
+                <p>Date: _______________</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This contract is governed by applicable laws and regulations.</p>
+            <p>Generated by Gigster Garage - Simplified Workflow Hub</p>
+        </div>
+    </body>
+    </html>
+  `;
+
+  return await generatePDFFromHTML(htmlContent, { 
+    filename: `contract-${contract.id}.pdf`,
+    format: 'A4'
+  });
+}
+
+export async function generatePresentationPDF(presentation: any): Promise<Buffer> {
+  const slides = Array.isArray(presentation.slides) ? presentation.slides.sort((a: any, b: any) => a.order - b.order) : [];
+  
+  const slidesHtml = slides.map((slide: any, index: number) => {
+    const isLastSlide = index === slides.length - 1;
+    const pageBreakStyle = isLastSlide ? '' : 'page-break-after: always;';
+    
+    if (slide.slideType === 'title' && index === 0) {
+      return `
+        <div class="slide title-slide" style="${pageBreakStyle}">
+          <div class="slide-content">
+            <h1 class="presentation-title">${escapeHtml(presentation.title || 'Presentation Title')}</h1>
+            ${presentation.subtitle ? `<h2 class="presentation-subtitle">${escapeHtml(presentation.subtitle)}</h2>` : ''}
+            <div class="author-info">
+              ${presentation.author ? `<p class="author">${escapeHtml(presentation.author)}</p>` : ''}
+              ${presentation.company ? `<p class="company">${escapeHtml(presentation.company)}</p>` : ''}
+              ${presentation.date ? `<p class="date">${escapeHtml(presentation.date)}</p>` : ''}
+            </div>
+          </div>
+          <div class="slide-number">${index + 1} / ${slides.length}</div>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="slide" style="${pageBreakStyle}">
+          <div class="slide-content">
+            <h2 class="slide-title">${escapeHtml(slide.title || 'Slide Title')}</h2>
+            <div class="slide-text">${escapeHtml(slide.content || 'Slide content goes here...').replace(/\\n/g, '<br>')}</div>
+          </div>
+          <div class="slide-number">${index + 1} / ${slides.length}</div>
+        </div>
+      `;
+    }
+  }).join('');
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {
+                margin: 0.5in;
+                size: A4;
+            }
+            
+            body {
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                color: #333;
+            }
+            
+            .slide {
+                width: 100%;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                position: relative;
+                padding: 60px;
+                box-sizing: border-box;
+                background: white;
+            }
+            
+            .title-slide {
+                background: linear-gradient(135deg, #004C6D 0%, #0B1D3A 100%);
+                color: white;
+                text-align: center;
+            }
+            
+            .slide-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                width: 100%;
+                max-width: 800px;
+            }
+            
+            .presentation-title {
+                font-size: 48px;
+                font-weight: bold;
+                margin: 0 0 20px 0;
+                line-height: 1.2;
+            }
+            
+            .presentation-subtitle {
+                font-size: 24px;
+                margin: 0 0 40px 0;
+                opacity: 0.9;
+                font-weight: normal;
+            }
+            
+            .author-info {
+                margin-top: 60px;
+            }
+            
+            .author-info p {
+                margin: 10px 0;
+                font-size: 18px;
+            }
+            
+            .author {
+                font-weight: bold;
+                font-size: 24px;
+            }
+            
+            .company {
+                font-size: 20px;
+                opacity: 0.8;
+            }
+            
+            .date {
+                font-size: 16px;
+                opacity: 0.7;
+            }
+            
+            .slide-title {
+                font-size: 36px;
+                font-weight: bold;
+                color: #004C6D;
+                margin: 0 0 40px 0;
+                line-height: 1.2;
+            }
+            
+            .slide-text {
+                font-size: 18px;
+                line-height: 1.6;
+                color: #333;
+            }
+            
+            .slide-number {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                font-size: 14px;
+                color: #666;
+            }
+            
+            .title-slide .slide-number {
+                color: rgba(255, 255, 255, 0.7);
+            }
+        </style>
+    </head>
+    <body>
+        ${slidesHtml}
+    </body>
+    </html>
+  `;
+
+  return await generatePDFFromHTML(htmlContent, { 
+    filename: `presentation-${presentation.id}.pdf`,
+    format: 'A4'
+  });
+}
+
 export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
   const htmlContent = `
     <!DOCTYPE html>

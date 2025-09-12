@@ -9,7 +9,7 @@ import * as createCsvWriter from "csv-writer";
 import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
-import { generateInvoicePDF, generateProposalPDF } from "./pdfService";
+import { generateInvoicePDF, generateProposalPDF, generateContractPDF, generatePresentationPDF } from "./pdfService";
 import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError, parseObjectPath, objectStorageClient } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -2936,6 +2936,270 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   });
 
   // Save invoice PDF to Filing Cabinet
+  // Save proposal to Filing Cabinet
+  app.post("/api/proposals/:id/save-to-filing-cabinet", requireAuth, async (req, res) => {
+    try {
+      // Validate ID parameter
+      if (!req.params.id || typeof req.params.id !== 'string') {
+        return res.status(400).json({ error: "Invalid proposal ID" });
+      }
+
+      // Fetch proposal with ownership check
+      let proposal = await storage.getProposal(req.params.id, req.session.user!.id);
+      if (!proposal) {
+        return res.status(404).json({ error: "Proposal not found" });
+      }
+
+      // Generate PDF
+      const proposalPDF = await generateProposalPDF({
+        ...proposal,
+        clientName: proposal.clientName || 'Valued Client',
+      });
+      
+      // Save PDF to object storage and create document record
+      const fileName = `proposal-${proposal.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Upload PDF to object storage
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const objectPath = `${privateDir}/${req.session.user!.id}/proposals/${fileName}`;
+      
+      // Parse object path for upload
+      const { bucketName, objectName } = parseObjectPath(objectPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      // Upload the PDF buffer
+      await file.save(proposalPDF, {
+        metadata: {
+          contentType: 'application/pdf'
+        }
+      });
+
+      // Create document record in Filing Cabinet 
+      const fileUrl = file.publicUrl();
+      
+      // Ensure we have a client ID - create default client if none exists
+      let clientId = proposal.clientId;
+      if (!clientId && proposal.clientName) {
+        console.log('Creating client for Filing Cabinet document');
+        const clientData = {
+          name: proposal.clientName,
+          email: proposal.clientEmail || '',
+          phone: '',
+          address: '',
+          notes: `Auto-created from proposal ${proposal.title}`,
+          createdById: req.session.user!.id
+        };
+        const newClient = await storage.createClient(clientData);
+        clientId = newClient.id;
+      }
+
+      // Create document in Filing Cabinet using correct schema
+      const documentData = {
+        clientId: clientId!,
+        name: `Proposal: ${proposal.title}`,
+        description: `Proposal for ${proposal.clientName || 'client'} - ${proposal.title}`,
+        type: 'proposal' as const,
+        category: 'proposal',
+        fileUrl: fileUrl,
+        fileName: fileName,
+        fileSize: proposalPDF.length,
+        mimeType: 'application/pdf',
+        uploadedById: req.session.user!.id,
+        createdById: req.session.user!.id
+      };
+
+      const document = await storage.createClientDocument(documentData);
+      console.log(`✅ Proposal PDF saved to Filing Cabinet: ${proposal.title}`);
+
+      res.status(201).json({ 
+        message: "Proposal PDF saved to Filing Cabinet successfully",
+        documentId: document.id,
+        objectPath: objectPath
+      });
+    } catch (error) {
+      console.error("Error saving proposal PDF to Filing Cabinet:", error);
+      res.status(500).json({ error: "Failed to save PDF to Filing Cabinet" });
+    }
+  });
+
+  // Save contract to Filing Cabinet
+  app.post("/api/contracts/:id/save-to-filing-cabinet", requireAuth, async (req, res) => {
+    try {
+      // Validate ID parameter
+      if (!req.params.id || typeof req.params.id !== 'string') {
+        return res.status(400).json({ error: "Invalid contract ID" });
+      }
+
+      // Fetch contract with ownership check
+      let contract = await storage.getContract(req.params.id, req.session.user!.id);
+      if (!contract) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+
+      // Generate PDF
+      const contractPDF = await generateContractPDF({
+        ...contract,
+        clientName: contract.clientName || 'Valued Client',
+      });
+      
+      // Save PDF to object storage and create document record
+      const fileName = `contract-${contract.contractTitle.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Upload PDF to object storage
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const objectPath = `${privateDir}/${req.session.user!.id}/contracts/${fileName}`;
+      
+      // Parse object path for upload
+      const { bucketName, objectName } = parseObjectPath(objectPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      // Upload the PDF buffer
+      await file.save(contractPDF, {
+        metadata: {
+          contentType: 'application/pdf'
+        }
+      });
+
+      // Create document record in Filing Cabinet 
+      const fileUrl = file.publicUrl();
+      
+      // Ensure we have a client ID - create default client if none exists
+      let clientId = contract.clientId;
+      if (!clientId && contract.clientName) {
+        console.log('Creating client for Filing Cabinet document');
+        const clientData = {
+          name: contract.clientName,
+          email: contract.clientEmail || '',
+          phone: '',
+          address: contract.clientAddress || '',
+          notes: `Auto-created from contract ${contract.contractTitle}`,
+          createdById: req.session.user!.id
+        };
+        const newClient = await storage.createClient(clientData);
+        clientId = newClient.id;
+      }
+
+      // Create document in Filing Cabinet using correct schema
+      const documentData = {
+        clientId: clientId!,
+        name: `Contract: ${contract.contractTitle}`,
+        description: `Contract for ${contract.clientName || 'client'} - ${contract.contractTitle}`,
+        type: 'contract' as const,
+        category: 'contract',
+        fileUrl: fileUrl,
+        fileName: fileName,
+        fileSize: contractPDF.length,
+        mimeType: 'application/pdf',
+        uploadedById: req.session.user!.id,
+        createdById: req.session.user!.id
+      };
+
+      const document = await storage.createClientDocument(documentData);
+      console.log(`✅ Contract PDF saved to Filing Cabinet: ${contract.contractTitle}`);
+
+      res.status(201).json({ 
+        message: "Contract PDF saved to Filing Cabinet successfully",
+        documentId: document.id,
+        objectPath: objectPath
+      });
+    } catch (error) {
+      console.error("Error saving contract PDF to Filing Cabinet:", error);
+      res.status(500).json({ error: "Failed to save PDF to Filing Cabinet" });
+    }
+  });
+
+  // Save presentation to Filing Cabinet
+  app.post("/api/presentations/:id/save-to-filing-cabinet", requireAuth, async (req, res) => {
+    try {
+      // Validate ID parameter
+      if (!req.params.id || typeof req.params.id !== 'string') {
+        return res.status(400).json({ error: "Invalid presentation ID" });
+      }
+
+      // Fetch presentation with ownership check
+      let presentation = await storage.getPresentation(req.params.id, req.session.user!.id);
+      if (!presentation) {
+        return res.status(404).json({ error: "Presentation not found" });
+      }
+
+      // Generate PDF
+      const presentationPDF = await generatePresentationPDF({
+        ...presentation,
+        author: presentation.author || 'Presenter',
+      });
+      
+      // Save PDF to object storage and create document record
+      const fileName = `presentation-${presentation.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Upload PDF to object storage
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const objectPath = `${privateDir}/${req.session.user!.id}/presentations/${fileName}`;
+      
+      // Parse object path for upload
+      const { bucketName, objectName } = parseObjectPath(objectPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      // Upload the PDF buffer
+      await file.save(presentationPDF, {
+        metadata: {
+          contentType: 'application/pdf'
+        }
+      });
+
+      // Create document record in Filing Cabinet 
+      const fileUrl = file.publicUrl();
+      
+      // For presentations, we'll create a default client entry if needed
+      let clientId: string | null = null;
+      if (presentation.audience) {
+        console.log('Creating client for presentation Filing Cabinet document');
+        const clientData = {
+          name: `Presentation Audience: ${presentation.audience}`,
+          email: '',
+          phone: '',
+          address: '',
+          notes: `Auto-created from presentation ${presentation.title}`,
+          createdById: req.session.user!.id
+        };
+        const newClient = await storage.createClient(clientData);
+        clientId = newClient.id;
+      }
+
+      // Create document in Filing Cabinet using correct schema
+      const documentData = {
+        clientId: clientId,
+        name: `Presentation: ${presentation.title}`,
+        description: `Presentation: ${presentation.title} - ${presentation.audience || 'General Audience'}`,
+        type: 'presentation' as const,
+        category: 'presentation',
+        fileUrl: fileUrl,
+        fileName: fileName,
+        fileSize: presentationPDF.length,
+        mimeType: 'application/pdf',
+        uploadedById: req.session.user!.id,
+        createdById: req.session.user!.id
+      };
+
+      const document = await storage.createClientDocument(documentData);
+      console.log(`✅ Presentation PDF saved to Filing Cabinet: ${presentation.title}`);
+
+      res.status(201).json({ 
+        message: "Presentation PDF saved to Filing Cabinet successfully",
+        documentId: document.id,
+        objectPath: objectPath
+      });
+    } catch (error) {
+      console.error("Error saving presentation PDF to Filing Cabinet:", error);
+      res.status(500).json({ error: "Failed to save PDF to Filing Cabinet" });
+    }
+  });
+
   app.post("/api/invoices/:id/save-to-filing-cabinet", requireAuth, async (req, res) => {
     try {
       let invoice = await storage.getInvoice(req.params.id, req.session.user!.id);

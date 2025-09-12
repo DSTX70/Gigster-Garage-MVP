@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown, Save, PenTool, Loader2 } from "lucide-react";
+import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown, Save, PenTool, Loader2, FolderOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -108,19 +109,56 @@ export default function CreatePresentation() {
     setSlides(newSlides);
   };
 
+  // State to track created presentation ID
+  const [createdPresentationId, setCreatedPresentationId] = useState<string | null>(null);
+
   // Save presentation mutation
   const savePresentationMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/presentations", data),
-    onSuccess: () => {
-      toast({
-        title: "Presentation saved",
-        description: "Your presentation has been saved successfully.",
-      });
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/presentations", data);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      console.log("Save response:", responseData);
+      if (responseData && responseData.id) {
+        setCreatedPresentationId(responseData.id);
+        toast({
+          title: "Presentation saved",
+          description: "Your presentation has been saved successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Presentation save failed - invalid response format",
+          variant: "destructive",
+        });
+      }
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to save presentation.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Save to Filing Cabinet mutation
+  const saveToFilingCabinetMutation = useMutation({
+    mutationFn: async (presentationId: string) => {
+      const response = await apiRequest("POST", `/api/presentations/${presentationId}/save-to-filing-cabinet`);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      toast({
+        title: "Saved to Filing Cabinet!",
+        description: responseData.message || "Presentation PDF saved to Filing Cabinet successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save presentation to Filing Cabinet.",
         variant: "destructive",
       });
     },
@@ -243,10 +281,53 @@ export default function CreatePresentation() {
               Back to Editor
             </Button>
             <div className="space-x-2">
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" data-testid="button-export-options">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export PDF
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (createdPresentationId) {
+                        window.open(`/api/presentations/${createdPresentationId}/pdf`, '_blank');
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Please save the presentation first to export PDF.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!createdPresentationId}
+                    data-testid="menu-download-pdf"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Save to Device
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (createdPresentationId) {
+                        saveToFilingCabinetMutation.mutate(createdPresentationId);
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Please save the presentation first to save to Filing Cabinet.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!createdPresentationId || saveToFilingCabinetMutation.isPending}
+                    data-testid="menu-save-filing-cabinet"
+                  >
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Save to Filing Cabinet
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button onClick={handleSave}>
                 <Send className="h-4 w-4 mr-2" />
                 Save Presentation

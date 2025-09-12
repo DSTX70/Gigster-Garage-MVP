@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, FileCheck, Send, Download, Eye, Scale, Calendar, Save, PenTool, Loader2 } from "lucide-react";
+import { ArrowLeft, FileCheck, Send, Download, Eye, Scale, Calendar, Save, PenTool, Loader2, ChevronDown, FolderOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -61,19 +62,56 @@ export default function CreateContract() {
     queryKey: ["/api/projects"],
   });
 
+  // State to track created contract ID
+  const [createdContractId, setCreatedContractId] = useState<string | null>(null);
+
   // Save contract mutation
   const saveContractMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/contracts", data),
-    onSuccess: () => {
-      toast({
-        title: "Contract saved",
-        description: "Your contract has been saved successfully.",
-      });
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/contracts", data);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      console.log("Save response:", responseData);
+      if (responseData && responseData.id) {
+        setCreatedContractId(responseData.id);
+        toast({
+          title: "Contract saved",
+          description: "Your contract has been saved successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Contract save failed - invalid response format",
+          variant: "destructive",
+        });
+      }
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to save contract.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Save to Filing Cabinet mutation
+  const saveToFilingCabinetMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      const response = await apiRequest("POST", `/api/contracts/${contractId}/save-to-filing-cabinet`);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      toast({
+        title: "Saved to Filing Cabinet!",
+        description: responseData.message || "Contract PDF saved to Filing Cabinet successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save contract to Filing Cabinet.",
         variant: "destructive",
       });
     },
@@ -366,10 +404,53 @@ export default function CreateContract() {
               Back to Editor
             </Button>
             <div className="space-x-2">
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" data-testid="button-export-options">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export PDF
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (createdContractId) {
+                        window.open(`/api/contracts/${createdContractId}/pdf`, '_blank');
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Please save the contract first to export PDF.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!createdContractId}
+                    data-testid="menu-download-pdf"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Save to Device
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (createdContractId) {
+                        saveToFilingCabinetMutation.mutate(createdContractId);
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Please save the contract first to save to Filing Cabinet.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!createdContractId || saveToFilingCabinetMutation.isPending}
+                    data-testid="menu-save-filing-cabinet"
+                  >
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Save to Filing Cabinet
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button onClick={handleSave}>
                 <Send className="h-4 w-4 mr-2" />
                 Send Contract

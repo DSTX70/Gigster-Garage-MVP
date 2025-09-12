@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, FileText, Plus, X, Send, Download, Eye, PenTool, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, Plus, X, Send, Download, Eye, PenTool, Loader2, ChevronDown, FolderOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -90,19 +91,56 @@ export default function CreateProposal() {
     return lineItems.reduce((total, item) => total + (item.amount || 0), 0);
   };
 
+  // State to track created proposal ID
+  const [createdProposalId, setCreatedProposalId] = useState<string | null>(null);
+
   // Save proposal mutation
   const saveProposalMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/proposals", data),
-    onSuccess: () => {
-      toast({
-        title: "Proposal saved",
-        description: "Your proposal has been saved successfully.",
-      });
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/proposals", data);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      console.log("Save response:", responseData);
+      if (responseData && responseData.id) {
+        setCreatedProposalId(responseData.id);
+        toast({
+          title: "Proposal saved",
+          description: "Your proposal has been saved successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Proposal save failed - invalid response format",
+          variant: "destructive",
+        });
+      }
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to save proposal.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Save to Filing Cabinet mutation
+  const saveToFilingCabinetMutation = useMutation({
+    mutationFn: async (proposalId: string) => {
+      const response = await apiRequest("POST", `/api/proposals/${proposalId}/save-to-filing-cabinet`);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      toast({
+        title: "Saved to Filing Cabinet!",
+        description: responseData.message || "Proposal PDF saved to Filing Cabinet successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save proposal to Filing Cabinet.",
         variant: "destructive",
       });
     },
@@ -263,10 +301,53 @@ export default function CreateProposal() {
               Back to Editor
             </Button>
             <div className="space-x-2">
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" data-testid="button-export-options">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export PDF
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (createdProposalId) {
+                        window.open(`/api/proposals/${createdProposalId}/pdf`, '_blank');
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Please save the proposal first to export PDF.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!createdProposalId}
+                    data-testid="menu-download-pdf"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Save to Device
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (createdProposalId) {
+                        saveToFilingCabinetMutation.mutate(createdProposalId);
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Please save the proposal first to save to Filing Cabinet.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!createdProposalId || saveToFilingCabinetMutation.isPending}
+                    data-testid="menu-save-filing-cabinet"
+                  >
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Save to Filing Cabinet
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button onClick={handleSave}>
                 <Send className="h-4 w-4 mr-2" />
                 Send Proposal
