@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, FileCheck, Send, Download, Eye, Scale, Calendar, Save } from "lucide-react";
+import { ArrowLeft, FileCheck, Send, Download, Eye, Scale, Calendar, Save, PenTool, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -48,6 +48,14 @@ export default function CreateContract() {
   const [terminationCount, setTerminationCount] = useState(0);
   const [confidentialityCount, setConfidentialityCount] = useState(0);
 
+  // AI writing states
+  const [isGeneratingScope, setIsGeneratingScope] = useState(false);
+  const [isGeneratingDeliverables, setIsGeneratingDeliverables] = useState(false);
+  const [isGeneratingPaymentTerms, setIsGeneratingPaymentTerms] = useState(false);
+  const [isGeneratingResponsibilities, setIsGeneratingResponsibilities] = useState(false);
+  const [isGeneratingLegal, setIsGeneratingLegal] = useState(false);
+  const [isGeneratingConfidentiality, setIsGeneratingConfidentiality] = useState(false);
+
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -81,6 +89,270 @@ export default function CreateContract() {
 
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // AI content generation functions
+  const generateScope = async () => {
+    if (!formData.contractTitle.trim() && !formData.clientName.trim()) {
+      toast({
+        title: "Contract Title or Client Required",
+        description: "Please enter a contract title or client name before generating scope.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingScope(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "contract_scope",
+          contractTitle: formData.contractTitle,
+          clientName: formData.clientName,
+          contractValue: formData.contractValue,
+          context: `Generate detailed scope of work for contract "${formData.contractTitle}" with client "${formData.clientName}" valued at $${formData.contractValue}.`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate scope");
+      const data = await response.json();
+      
+      updateFormData("scope", data.content);
+      setScopeCount(data.content.length);
+      toast({
+        title: "Scope Generated!",
+        description: "AI has created a detailed scope of work.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate scope of work. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingScope(false);
+    }
+  };
+
+  const generateDeliverables = async () => {
+    if (!formData.contractTitle.trim() && !formData.scope.trim()) {
+      toast({
+        title: "Contract Title or Scope Required",
+        description: "Please enter a contract title or scope before generating deliverables.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingDeliverables(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "contract_deliverables",
+          contractTitle: formData.contractTitle,
+          scope: formData.scope,
+          contractValue: formData.contractValue,
+          context: `Generate specific deliverables and milestones for contract "${formData.contractTitle}" with scope: ${formData.scope.substring(0, 200)}...`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate deliverables");
+      const data = await response.json();
+      
+      updateFormData("deliverables", data.content);
+      setDeliverablesCount(data.content.length);
+      toast({
+        title: "Deliverables Generated!",
+        description: "AI has created detailed deliverables and milestones.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate deliverables. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingDeliverables(false);
+    }
+  };
+
+  const generatePaymentTerms = async () => {
+    if (!formData.contractValue && !formData.contractTitle.trim()) {
+      toast({
+        title: "Contract Value or Title Required",
+        description: "Please enter contract value or title before generating payment terms.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingPaymentTerms(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "contract_payment_terms",
+          contractValue: formData.contractValue,
+          contractTitle: formData.contractTitle,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          context: `Generate professional payment terms for contract "${formData.contractTitle}" valued at $${formData.contractValue} from ${formData.startDate} to ${formData.endDate}.`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate payment terms");
+      const data = await response.json();
+      
+      updateFormData("paymentTerms", data.content);
+      setPaymentTermsCount(data.content.length);
+      toast({
+        title: "Payment Terms Generated!",
+        description: "AI has created professional payment terms.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate payment terms. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPaymentTerms(false);
+    }
+  };
+
+  const generateResponsibilities = async () => {
+    if (!formData.contractTitle.trim() && !formData.clientName.trim()) {
+      toast({
+        title: "Contract Title or Client Required",
+        description: "Please enter a contract title or client name before generating responsibilities.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingResponsibilities(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "contract_responsibilities",
+          contractTitle: formData.contractTitle,
+          clientName: formData.clientName,
+          scope: formData.scope,
+          context: `Generate clear responsibilities for both parties in contract "${formData.contractTitle}" with client "${formData.clientName}".`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate responsibilities");
+      const data = await response.json();
+      
+      updateFormData("responsibilities", data.content);
+      setResponsibilitiesCount(data.content.length);
+      toast({
+        title: "Responsibilities Generated!",
+        description: "AI has defined responsibilities for both parties.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate responsibilities. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingResponsibilities(false);
+    }
+  };
+
+  const generateLegal = async () => {
+    if (!formData.contractTitle.trim()) {
+      toast({
+        title: "Contract Title Required",
+        description: "Please enter a contract title before generating legal terms.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingLegal(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "contract_legal",
+          contractTitle: formData.contractTitle,
+          contractValue: formData.contractValue,
+          context: `Generate legal termination clause for contract "${formData.contractTitle}" valued at $${formData.contractValue}.`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate legal terms");
+      const data = await response.json();
+      
+      updateFormData("termination", data.content);
+      setTerminationCount(data.content.length);
+      toast({
+        title: "Legal Terms Generated!",
+        description: "AI has created professional termination clauses.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate legal terms. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingLegal(false);
+    }
+  };
+
+  const generateConfidentiality = async () => {
+    if (!formData.contractTitle.trim() && !formData.clientName.trim()) {
+      toast({
+        title: "Contract Title or Client Required",
+        description: "Please enter a contract title or client name before generating confidentiality terms.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingConfidentiality(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "contract_confidentiality",
+          contractTitle: formData.contractTitle,
+          clientName: formData.clientName,
+          context: `Generate comprehensive confidentiality and non-disclosure terms for contract "${formData.contractTitle}" with client "${formData.clientName}".`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate confidentiality terms");
+      const data = await response.json();
+      
+      updateFormData("confidentiality", data.content);
+      setConfidentialityCount(data.content.length);
+      toast({
+        title: "Confidentiality Terms Generated!",
+        description: "AI has created comprehensive confidentiality clauses.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate confidentiality terms. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingConfidentiality(false);
+    }
   };
 
   if (isPreview) {
@@ -374,9 +646,26 @@ export default function CreateContract() {
           {/* Scope of Work */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Scope of Work 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Scope of Work 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateScope}
+                  disabled={isGeneratingScope}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-scope"
+                >
+                  {isGeneratingScope ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingScope ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -401,9 +690,26 @@ export default function CreateContract() {
           {/* Deliverables */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Deliverables 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Deliverables 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateDeliverables}
+                  disabled={isGeneratingDeliverables}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-deliverables"
+                >
+                  {isGeneratingDeliverables ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingDeliverables ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -428,9 +734,26 @@ export default function CreateContract() {
           {/* Payment Terms */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Payment Terms 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Payment Terms 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generatePaymentTerms}
+                  disabled={isGeneratingPaymentTerms}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-payment-terms"
+                >
+                  {isGeneratingPaymentTerms ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingPaymentTerms ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -455,9 +778,26 @@ export default function CreateContract() {
           {/* Responsibilities */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Responsibilities 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Responsibilities 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateResponsibilities}
+                  disabled={isGeneratingResponsibilities}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-responsibilities"
+                >
+                  {isGeneratingResponsibilities ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingResponsibilities ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -489,9 +829,26 @@ export default function CreateContract() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  Termination Clause 
-                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                <Label className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    Termination Clause 
+                    <Badge variant="outline" className="text-xs">textarea</Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={generateLegal}
+                    disabled={isGeneratingLegal}
+                    className="flex items-center gap-2"
+                    data-testid="button-generate-legal"
+                  >
+                    {isGeneratingLegal ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <PenTool className="w-4 h-4" />
+                    )}
+                    {isGeneratingLegal ? "Writing..." : "Write"}
+                  </Button>
                 </Label>
                 <Textarea
                   placeholder="Conditions under which the contract can be terminated..."
@@ -511,9 +868,26 @@ export default function CreateContract() {
               </div>
 
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  Confidentiality 
-                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                <Label className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    Confidentiality 
+                    <Badge variant="outline" className="text-xs">textarea</Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={generateConfidentiality}
+                    disabled={isGeneratingConfidentiality}
+                    className="flex items-center gap-2"
+                    data-testid="button-generate-confidentiality"
+                  >
+                    {isGeneratingConfidentiality ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <PenTool className="w-4 h-4" />
+                    )}
+                    {isGeneratingConfidentiality ? "Writing..." : "Write"}
+                  </Button>
                 </Label>
                 <Textarea
                   placeholder="Confidentiality and non-disclosure terms..."
