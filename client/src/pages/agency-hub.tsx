@@ -21,6 +21,7 @@ export default function AgencyHub() {
   const [writtenContent, setWrittenContent] = useState("");
   const [promoteContent, setPromoteContent] = useState("");
   const [trackInsights, setTrackInsights] = useState("");
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
 
   const { toast } = useToast();
 
@@ -61,6 +62,38 @@ export default function AgencyHub() {
       toast({ title: "Error", description: "Failed to generate image", variant: "destructive" });
     },
   });
+
+  // AI Write function for generating marketing concept prompts
+  const generateMarketingPrompt = async () => {
+    setIsGeneratingPrompt(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "marketing_concept_prompt",
+          context: "Generate a detailed marketing concept prompt that includes target audience, brand style, platform specifications, and creative direction. Make it specific and actionable for creating professional marketing mockups."
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate prompt");
+      const data = await response.json();
+      
+      setCreatePrompt(data.content);
+      toast({
+        title: "Marketing Prompt Generated!",
+        description: "AI has created a detailed marketing concept prompt.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate marketing prompt. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPrompt(false);
+    }
+  };
 
   const writeMutation = useMutation({
     mutationFn: async (prompt: string) => {
@@ -181,9 +214,26 @@ export default function AgencyHub() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Describe your marketing concept
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Describe your marketing concept
+                      </label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateMarketingPrompt}
+                        disabled={isGeneratingPrompt}
+                        className="flex items-center gap-2"
+                        data-testid="button-generate-marketing-prompt"
+                      >
+                        {isGeneratingPrompt ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <PenTool className="w-4 h-4" />
+                        )}
+                        {isGeneratingPrompt ? "Writing..." : "Write"}
+                      </Button>
+                    </div>
                     <Textarea
                       placeholder="e.g., Create a social media post for a luxury watch brand targeting young professionals..."
                       value={createPrompt}
