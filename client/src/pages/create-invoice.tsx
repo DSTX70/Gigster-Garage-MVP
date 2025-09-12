@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard, FolderOpen, ChevronDown } from "lucide-react";
+import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard, FolderOpen, ChevronDown, PenTool, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -51,6 +51,9 @@ export default function CreateInvoice() {
   // Character count state
   const [notesCount, setNotesCount] = useState(0);
   const [addressCount, setAddressCount] = useState(0);
+
+  // AI writing states
+  const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
 
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -216,6 +219,51 @@ export default function CreateInvoice() {
 
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // AI content generation function for notes
+  const generateNotesTerms = async () => {
+    if (!formData.clientName.trim() && !lineItems.some(item => item.description.trim())) {
+      toast({
+        title: "Client or Service Required",
+        description: "Please enter a client name or add line items before generating notes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingNotes(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "invoice_notes",
+          clientName: formData.clientName,
+          totalAmount: getTotalAmount(),
+          lineItems: lineItems.filter(item => item.description.trim()),
+          context: `Generate professional invoice notes and payment terms for client "${formData.clientName}" with total amount $${getTotalAmount().toFixed(2)}.`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate notes");
+      const data = await response.json();
+      
+      updateFormData("notes", data.content);
+      setNotesCount(data.content.length);
+      toast({
+        title: "Notes Generated!",
+        description: "AI has created professional payment terms and notes.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate notes and terms. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingNotes(false);
+    }
   };
 
   if (isPreview) {
@@ -738,9 +786,26 @@ export default function CreateInvoice() {
           {/* Notes */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Notes & Terms 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Notes & Terms 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateNotesTerms}
+                  disabled={isGeneratingNotes}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-notes"
+                >
+                  {isGeneratingNotes ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingNotes ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
