@@ -2490,6 +2490,94 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // PATCH route for client documents (expected by frontend)
+  app.patch("/api/client-documents/:id", requireAuth, async (req, res) => {
+    try {
+      const updateData = req.body;
+      const document = await storage.updateClientDocument(req.params.id, updateData);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      res.json(document);
+    } catch (error) {
+      console.error("Error updating document:", error);
+      res.status(500).json({ message: "Failed to update document" });
+    }
+  });
+
+  // Bulk operations for client documents
+  app.post("/api/client-documents/bulk-update", requireAuth, async (req, res) => {
+    try {
+      const { documentIds, updates } = req.body;
+      if (!Array.isArray(documentIds) || documentIds.length === 0) {
+        return res.status(400).json({ message: "Document IDs array required" });
+      }
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const id of documentIds) {
+        try {
+          const updated = await storage.updateClientDocument(id, updates);
+          if (updated) completed++;
+          else errors++;
+        } catch (error) {
+          console.error(`Error updating document ${id}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ total: documentIds.length, completed, errors });
+    } catch (error) {
+      console.error("Error in bulk update documents:", error);
+      res.status(500).json({ message: "Failed to update documents" });
+    }
+  });
+
+  app.post("/api/client-documents/bulk-delete", requireAuth, async (req, res) => {
+    try {
+      const { documentIds } = req.body;
+      if (!Array.isArray(documentIds) || documentIds.length === 0) {
+        return res.status(400).json({ message: "Document IDs array required" });
+      }
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const id of documentIds) {
+        try {
+          const success = await storage.deleteClientDocument(id);
+          if (success) completed++;
+          else errors++;
+        } catch (error) {
+          console.error(`Error deleting document ${id}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ total: documentIds.length, completed, errors });
+    } catch (error) {
+      console.error("Error in bulk delete documents:", error);
+      res.status(500).json({ message: "Failed to delete documents" });
+    }
+  });
+
+  app.post("/api/client-documents/bulk-download", requireAuth, async (req, res) => {
+    try {
+      const { documentIds } = req.body;
+      if (!Array.isArray(documentIds) || documentIds.length === 0) {
+        return res.status(400).json({ message: "Document IDs array required" });
+      }
+
+      // For now, we'll return a simple success response
+      // In a real implementation, you would create a zip file with all documents
+      res.json({ message: "Bulk download feature not fully implemented yet", documentCount: documentIds.length });
+    } catch (error) {
+      console.error("Error in bulk download documents:", error);
+      res.status(500).json({ message: "Failed to download documents" });
+    }
+  });
+
   // Auto-generate and send invoice when project completes
   app.post("/api/projects/:id/complete", requireAuth, async (req, res) => {
     try {

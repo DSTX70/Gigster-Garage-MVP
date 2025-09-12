@@ -3,6 +3,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 let browser: Browser | null = null;
+let browserHealthy = false;
+let lastHealthCheck = 0;
+const HEALTH_CHECK_INTERVAL = 60000; // 1 minute
 
 // HTML escaping utility to prevent HTML injection attacks
 function escapeHtml(unsafe: string | undefined | null): string {
@@ -66,74 +69,208 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   ]);
 }
 
+// Check browser health
+async function checkBrowserHealth(): Promise<boolean> {
+  if (!browser) return false;
+  
+  try {
+    // Simple health check - try to get browser version
+    const version = await browser.version();
+    return version !== null;
+  } catch {
+    return false;
+  }
+}
+
 // Initialize browser instance with timeout and error handling
 async function getBrowser(): Promise<Browser> {
+  const now = Date.now();
+  
+  // Check browser health periodically
+  if (browser && (now - lastHealthCheck > HEALTH_CHECK_INTERVAL || !browserHealthy)) {
+    browserHealthy = await checkBrowserHealth();
+    lastHealthCheck = now;
+    
+    if (!browserHealthy) {
+      console.log('Browser unhealthy, closing and recreating...');
+      try {
+        await browser.close();
+      } catch (error) {
+        console.log('Error closing unhealthy browser:', error);
+      }
+      browser = null;
+    }
+  }
+  
   if (!browser) {
     try {
+      console.log('Launching new browser instance...');
       browser = await withTimeout(
         puppeteer.launch({
           headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+          executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox', 
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-extensions'
+          ]
         }),
         30000 // 30 second timeout for browser launch
       );
+      
+      browserHealthy = true;
+      lastHealthCheck = now;
+      console.log('Browser launched successfully');
+      
+      // Handle browser disconnect
+      browser.on('disconnected', () => {
+        console.log('Browser disconnected, marking as unhealthy');
+        browserHealthy = false;
+        browser = null;
+      });
+      
     } catch (error) {
       console.error('Failed to launch browser:', error);
+      browser = null;
+      browserHealthy = false;
       throw new Error(`Failed to initialize PDF browser: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+  
   return browser;
 }
 
-// Generate PDF from HTML content
+// Modern PDF generation with no deprecated methods
 export async function generatePDFFromHTML(
   htmlContent: string,
   options: {
     filename?: string;
     format?: 'A4' | 'Letter';
     margin?: { top: string; right: string; bottom: string; left: string };
-  } = {}
+  } = {},
+  retries = 2
 ): Promise<Buffer> {
-  const browserInstance = await getBrowser();
-  let page: Page | null = null;
+  let lastError: Error | null = null;
   
-  try {
-    // Create page with timeout
-    page = await withTimeout(
-      browserInstance.newPage(),
-      10000 // 10 second timeout for page creation
-    );
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    let browserInstance: Browser | null = null;
+    let page: Page | null = null;
     
-    // Set content with timeout
-    await withTimeout(
-      page.setContent(htmlContent, { waitUntil: 'networkidle0' }),
-      30000 // 30 second timeout for content loading
-    );
-    
-    // Generate PDF with timeout
-    const pdfBuffer = await withTimeout(
-      page.pdf({
-        format: options.format || 'A4',
-        margin: options.margin || { top: '1in', right: '0.75in', bottom: '1in', left: '0.75in' },
-        printBackground: true,
-        preferCSSPageSize: true,
-      }),
-      60000 // 60 second timeout for PDF generation
-    );
-    
-    return Buffer.from(pdfBuffer);
-  } catch (error) {
-    console.error('PDF generation failed:', error);
-    throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (page) {
+    try {
+      console.log(`🔄 PDF generation attempt ${attempt + 1}/${retries + 1}`);
+      
+      // Get browser instance with modern timeout handling
+      browserInstance = await getBrowser();
+      
+      // Create page with modern timeout wrapper
+      page = await withTimeout(
+        browserInstance.newPage(),
+        15000 // Increased timeout for page creation
+      );
+      
+      // Configure page with optimal settings
+      await page.setViewport({ width: 1200, height: 800, deviceScaleFactor: 1 });
+      
+      // Set modern user agent to avoid rendering issues
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
+      
+      // Set content with modern wait strategy - using domcontentloaded is sufficient
+      console.log('🔄 Loading HTML content...');
+      await withTimeout(
+        page.setContent(htmlContent, { 
+          waitUntil: 'domcontentloaded',
+          timeout: 30000
+        }),
+        35000 // Timeout for content loading
+      );
+      
+      // Modern way to wait for content to settle - using standard setTimeout
+      console.log('🔄 Waiting for content to stabilize...');
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Slightly longer wait for stability
+      
+      // Ensure fonts are loaded by checking document readiness
       try {
-        await page.close();
-      } catch (closeError) {
-        console.error('Failed to close page:', closeError);
+        await page.evaluate(() => {
+          return new Promise<void>((resolve) => {
+            if (document.readyState === 'complete') {
+              resolve();
+            } else {
+              window.addEventListener('load', () => resolve());
+            }
+          });
+        });
+      } catch (evalError) {
+        console.log('Font loading check failed, proceeding:', evalError);
+      }
+      
+      // Generate PDF with modern settings and extended timeout
+      console.log('🔄 Generating PDF...');
+      const pdfBuffer = await withTimeout(
+        page.pdf({
+          format: options.format || 'A4',
+          margin: options.margin || { top: '1in', right: '0.75in', bottom: '1in', left: '0.75in' },
+          printBackground: true,
+          preferCSSPageSize: true,
+          displayHeaderFooter: false,
+          headerTemplate: '',
+          footerTemplate: '',
+          timeout: 60000 // Extended internal timeout
+        }),
+        65000 // Extended wrapper timeout for PDF generation
+      );
+      
+      console.log('✅ PDF generated successfully');
+      return Buffer.from(pdfBuffer);
+      
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`❌ PDF generation attempt ${attempt + 1} failed:`, lastError.message);
+      
+      // Enhanced error detection and browser reset logic
+      const isBrowserError = lastError.message.includes('Protocol error') || 
+          lastError.message.includes('Connection closed') ||
+          lastError.message.includes('Target closed') ||
+          lastError.message.includes('Session closed') ||
+          lastError.message.includes('Browser closed');
+      
+      if (attempt < retries && isBrowserError) {
+        console.log('🔄 Browser connection error detected, resetting browser for retry...');
+        browserHealthy = false;
+        if (browser) {
+          try {
+            await browser.close();
+          } catch (closeError) {
+            console.log('Error closing browser for retry:', closeError);
+          }
+          browser = null;
+        }
+        // Progressive backoff delay
+        const delayMs = 1000 * (attempt + 1);
+        console.log(`⏳ Waiting ${delayMs}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+      
+    } finally {
+      if (page) {
+        try {
+          await page.close();
+        } catch (closeError) {
+          console.log('Warning: Failed to close page:', closeError);
+        }
       }
     }
   }
+  
+  // Enhanced error reporting
+  const errorMessage = lastError?.message || 'Unknown error';
+  console.error(`💥 PDF generation failed completely after ${retries + 1} attempts:`, errorMessage);
+  throw new Error(`PDF generation failed after ${retries + 1} attempts: ${errorMessage}`);
 }
 
 // Generate proposal PDF
@@ -610,8 +747,14 @@ export async function generateInvoicePDF(invoice: any): Promise<Buffer> {
 // Clean up browser instance
 export async function closeBrowser(): Promise<void> {
   if (browser) {
-    await browser.close();
-    browser = null;
+    try {
+      await browser.close();
+    } catch (error) {
+      console.log('Error closing browser:', error);
+    } finally {
+      browser = null;
+      browserHealthy = false;
+    }
   }
 }
 
