@@ -208,6 +208,10 @@ export default function UserManual() {
           {
             title: 'Invoice Delivery',
             content: 'Send invoices directly to clients via email with professional formatting. Track delivery status and payment reminders.'
+          },
+          {
+            title: 'Save to Filing Cabinet',
+            content: 'Invoices can be saved directly to the Filing Cabinet from the preview screen. Use the Export PDF dropdown and select "Save to Filing Cabinet" to automatically archive invoices with proper client associations.'
           }
         ],
         tips: [
@@ -246,6 +250,10 @@ export default function UserManual() {
           {
             title: 'Proposal Delivery',
             content: 'Send proposals directly to clients via email with professional formatting. Track proposal status and manage follow-up communications.'
+          },
+          {
+            title: 'Save to Filing Cabinet',
+            content: 'Proposals can be saved directly to the Filing Cabinet from the preview screen. Use the Export PDF dropdown and select "Save to Filing Cabinet" to automatically archive proposals with proper client associations.'
           }
         ],
         tips: [
@@ -300,7 +308,7 @@ export default function UserManual() {
         sections: [
           {
             title: 'Create Tool - Marketing Mockups',
-            content: 'Generate detailed marketing concepts and visual mockups using AI. Create both written marketing concepts and actual AI-generated images for campaigns, social media posts, and promotional materials.'
+            content: 'Generate detailed marketing concepts and visual mockups using AI. Features an AI Write button to help craft comprehensive marketing prompts including target audience, brand style, and creative direction. Create both written marketing concepts and actual AI-generated images for campaigns, social media posts, and promotional materials.'
           },
           {
             title: 'Write Tool - Creative Copy',
@@ -320,6 +328,7 @@ export default function UserManual() {
           }
         ],
         tips: [
+          'Use the AI Write button to generate detailed marketing prompts',
           'Provide detailed prompts for better AI-generated results',
           'Use the Create tool for both concepts and actual visuals',
           'Save generated content for reuse and refinement',
@@ -334,11 +343,15 @@ export default function UserManual() {
       icon: <FolderOpen className="h-5 w-5 text-gray-600" />,
       description: 'Organize files and documents',
       content: {
-        overview: 'Centralized document management system for organizing all business files, contracts, proposals, and client documents.',
+        overview: 'Centralized document management system for organizing all business files, contracts, proposals, and client documents. Now includes one-click saving from all document creation pages.',
         sections: [
           {
             title: 'Document Organization',
             content: 'Create folders and categories to organize all business documents. Maintain a structured filing system for easy retrieval.'
+          },
+          {
+            title: 'Save to Filing Cabinet',
+            content: 'All document types (invoices, proposals, contracts, presentations) can be saved directly to the Filing Cabinet from their respective creation pages. Use the Export PDF dropdown and select "Save to Filing Cabinet" for instant document archiving.'
           },
           {
             title: 'File Upload & Storage',
@@ -354,10 +367,12 @@ export default function UserManual() {
           }
         ],
         tips: [
+          'Use "Save to Filing Cabinet" from document creation pages for instant archiving',
           'Create a consistent folder structure for organization',
           'Use descriptive file names for easy identification',
           'Regularly review and archive old documents',
-          'Set appropriate access permissions for sensitive files'
+          'Set appropriate access permissions for sensitive files',
+          'Save important documents immediately after creation'
         ]
       }
     },

@@ -520,6 +520,19 @@ POST   /api/backups/schedule  - Configure automatic backups
 
 ## Recent Updates (September 2025)
 
+### Document Management & Filing Cabinet Enhancements
+- **Save to Filing Cabinet** - All document types (invoices, proposals, contracts, presentations) can now be saved directly to the Filing Cabinet with one-click functionality
+- **Export Options Dropdown** - Enhanced PDF export options with "Save to Device" and "Save to Filing Cabinet" choices
+- **Automatic Client Creation** - When saving documents to Filing Cabinet, clients are automatically created if they don't exist
+- **Organized Document Storage** - Documents are systematically organized by user and document type in object storage
+- **PDF Generation for All Documents** - Complete PDF generation support for proposals, contracts, and presentations with professional formatting
+
+### Agency Hub AI Writing Assistance
+- **AI Write Button for Marketing Mockups** - Added intelligent content generation to help create detailed marketing concept prompts
+- **Smart Marketing Prompts** - AI generates comprehensive prompts including target audience, brand style, platform specifications, and creative direction
+- **Enhanced Creative Workflow** - Users can now get AI assistance in crafting professional marketing briefs before generating mockups
+- **Consistent User Experience** - AI write functionality follows the same design patterns used throughout the application
+
 ### Authentication & Security Enhancements
 - **Enhanced Authentication System** - Comprehensive error handling across all API endpoints with intelligent middleware
 - **Advanced Session Management** - Session monitoring, timeout protection, and automatic cleanup
