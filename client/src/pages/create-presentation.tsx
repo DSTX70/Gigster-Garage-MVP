@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown, Save } from "lucide-react";
+import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown, Save, PenTool, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -48,6 +48,10 @@ export default function CreatePresentation() {
 
   // Character counts
   const [objectiveCount, setObjectiveCount] = useState(0);
+
+  // AI writing states
+  const [isGeneratingObjective, setIsGeneratingObjective] = useState(false);
+  const [generatingSlideContent, setGeneratingSlideContent] = useState<{ [key: number]: boolean }>({});
 
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -133,6 +137,99 @@ export default function CreatePresentation() {
 
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // AI content generation functions
+  const generateObjective = async () => {
+    if (!formData.title.trim() && !formData.audience.trim()) {
+      toast({
+        title: "Title or Audience Required",
+        description: "Please enter a presentation title or target audience before generating objectives.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingObjective(true);
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "presentation_objective",
+          title: formData.title,
+          audience: formData.audience,
+          duration: formData.duration,
+          context: `Generate clear objectives and goals for presentation "${formData.title}" targeted at ${formData.audience} for ${formData.duration} minutes.`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate objective");
+      const data = await response.json();
+      
+      updateFormData("objective", data.content);
+      setObjectiveCount(data.content.length);
+      toast({
+        title: "Objective Generated!",
+        description: "AI has created presentation objectives and goals.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate objectives. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingObjective(false);
+    }
+  };
+
+  const generateSlideContent = async (slideId: number) => {
+    const slide = slides.find(s => s.id === slideId);
+    if (!slide) return;
+
+    if (!formData.title.trim() && !slide.title.trim()) {
+      toast({
+        title: "Presentation or Slide Title Required",
+        description: "Please enter a presentation title or slide title before generating content.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingSlideContent(prev => ({ ...prev, [slideId]: true }));
+    try {
+      const response = await fetch("/api/ai/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "presentation_slide_content",
+          presentationTitle: formData.title,
+          slideTitle: slide.title,
+          slideType: slide.slideType,
+          audience: formData.audience,
+          objective: formData.objective,
+          context: `Generate ${slide.slideType} content for slide "${slide.title}" in presentation "${formData.title}" for ${formData.audience}.`
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate slide content");
+      const data = await response.json();
+      
+      updateSlide(slideId, 'content', data.content);
+      toast({
+        title: "Slide Content Generated!",
+        description: `AI has created content for "${slide.title}".`,
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate slide content. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingSlideContent(prev => ({ ...prev, [slideId]: false }));
+    }
   };
 
   if (isPreview) {
@@ -339,9 +436,26 @@ export default function CreatePresentation() {
           {/* Presentation Objective */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Objective & Goals 
-                <Badge variant="outline" className="text-xs">textarea</Badge>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  Objective & Goals 
+                  <Badge variant="outline" className="text-xs">textarea</Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateObjective}
+                  disabled={isGeneratingObjective}
+                  className="flex items-center gap-2"
+                  data-testid="button-generate-objective"
+                >
+                  {isGeneratingObjective ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PenTool className="w-4 h-4" />
+                  )}
+                  {isGeneratingObjective ? "Writing..." : "Write"}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -443,9 +557,26 @@ export default function CreatePresentation() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          Content 
-                          <Badge variant="outline" className="text-xs">textarea</Badge>
+                        <Label className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            Content 
+                            <Badge variant="outline" className="text-xs">textarea</Badge>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => generateSlideContent(slide.id)}
+                            disabled={generatingSlideContent[slide.id]}
+                            className="flex items-center gap-2"
+                            data-testid={`button-generate-slide-${slide.id}`}
+                          >
+                            {generatingSlideContent[slide.id] ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <PenTool className="w-4 h-4" />
+                            )}
+                            {generatingSlideContent[slide.id] ? "Writing..." : "Write"}
+                          </Button>
                         </Label>
                         <Textarea
                           placeholder={
