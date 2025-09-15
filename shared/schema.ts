@@ -52,6 +52,10 @@ export const users = pgTable("users", {
   phone: varchar("phone"),
   emailOptIn: boolean("email_opt_in").default(true),
   smsOptIn: boolean("sms_opt_in").default(false),
+  // Demo session fields
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  sessionExpiresAt: timestamp("session_expires_at"),
 });
 
 export type UpsertUser = typeof users.$inferInsert;

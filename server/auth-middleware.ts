@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { demoSessionService } from './demoSessionService';
 
 // Enhanced request interface with user data
 export interface AuthenticatedRequest extends Request {
@@ -126,6 +127,24 @@ export function enhancedRequireAuth(options: {
 
       // Attach user to request
       req.user = user;
+
+      // Handle demo user session validation
+      if (demoSessionService.isDemoUser(user)) {
+        const demoStatus = await demoSessionService.getDemoSessionStatus(user.id);
+        
+        if (!demoStatus.isDemo || demoStatus.error) {
+          // Demo session expired or invalid
+          req.session.destroy(() => {});
+          throw new AuthenticationError(
+            'Demo session has expired. Please create a new demo session.',
+            401,
+            'DEMO_SESSION_EXPIRED'
+          );
+        }
+
+        // Update demo session activity
+        await demoSessionService.updateDemoSessionActivity(user.id);
+      }
 
       // Create session info
       req.sessionInfo = {

@@ -44,6 +44,7 @@ import { databaseOptimizer } from './database-optimizer';
 import { loadBalancer } from './load-balancer';
 import passport from 'passport';
 import { seedDemoData, clearDemoData } from './demoDataService';
+import { demoSessionService } from './demoSessionService';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -265,6 +266,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } else {
       res.status(401).json({ message: "Not authenticated" });
+    }
+  });
+
+  // Demo Session Routes
+  app.post("/api/demo/create-session", async (req, res) => {
+    try {
+      const result = await demoSessionService.createDemoSession();
+      
+      if (result.success && result.user && result.session) {
+        // Set session for demo user
+        req.session.user = result.user;
+        
+        res.status(201).json({
+          success: true,
+          message: "Demo session created successfully",
+          user: {
+            id: result.user.id,
+            username: result.user.username,
+            name: result.user.name,
+            email: result.user.email,
+            role: result.user.role,
+            hasCompletedOnboarding: result.user.hasCompletedOnboarding,
+            isDemo: true
+          },
+          session: {
+            id: result.session.id,
+            expiresAt: result.session.expiresAt,
+            remainingMinutes: result.session.remainingMinutes
+          }
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: result.error || "Failed to create demo session"
+        });
+      }
+    } catch (error: any) {
+      console.error("Error creating demo session:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create demo session"
+      });
+    }
+  });
+
+  app.get("/api/demo/session-status", async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.json({
+          isDemo: false,
+          authenticated: false,
+          message: "No active session"
+        });
+      }
+
+      const status = await demoSessionService.getDemoSessionStatus(req.session.user.id);
+      
+      if (status.isDemo && status.session) {
+        res.json({
+          isDemo: true,
+          authenticated: true,
+          session: {
+            id: status.session.id,
+            expiresAt: status.session.expiresAt,
+            remainingMinutes: status.session.remainingMinutes,
+            lastActivity: status.session.lastActivity
+          }
+        });
+      } else if (status.isDemo && status.error) {
+        res.json({
+          isDemo: true,
+          authenticated: false,
+          error: status.error
+        });
+      } else {
+        res.json({
+          isDemo: false,
+          authenticated: true,
+          message: "Regular user session"
+        });
+      }
+    } catch (error: any) {
+      console.error("Error checking demo session status:", error);
+      res.status(500).json({
+        isDemo: false,
+        authenticated: false,
+        error: "Failed to check session status"
+      });
+    }
+  });
+
+  app.delete("/api/demo/end-session", async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({
+          success: false,
+          message: "No active session to end"
+        });
+      }
+
+      if (!demoSessionService.isDemoUser(req.session.user)) {
+        return res.status(400).json({
+          success: false,
+          message: "Not a demo session"
+        });
+      }
+
+      const success = await demoSessionService.endDemoSession(req.session.user.id);
+      
+      if (success) {
+        // Destroy Express session
+        req.session.destroy((err) => {
+          if (err) {
+            console.error("Error destroying session:", err);
+          }
+        });
+
+        res.json({
+          success: true,
+          message: "Demo session ended successfully"
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: "Failed to end demo session"
+        });
+      }
+    } catch (error: any) {
+      console.error("Error ending demo session:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to end demo session"
+      });
     }
   });
 
@@ -7926,6 +8060,9 @@ Create a comprehensive brief that a designer could use to create effective marke
   automatedInvoicingService.startAutomatedInvoicing();
   smartNotificationsService.startSmartNotifications();
   contractManagementService.startContractMonitoring();
+  
+  // Initialize demo session service
+  demoSessionService.initializeDemoSessionService();
   
   // Start cache warming service
   console.log("🚀 Starting cache warming service...");
