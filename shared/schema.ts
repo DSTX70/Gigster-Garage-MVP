@@ -72,6 +72,10 @@ export const projects = pgTable("projects", {
   color: varchar("color"),
   timeline: text("timeline"),
   clientId: varchar("client_id").references(() => clients.id),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type Project = typeof projects.$inferSelect;
@@ -94,6 +98,10 @@ export const clients = pgTable("clients", {
   totalInvoices: integer("total_invoices").default(0),
   totalRevenue: decimal("total_revenue", { precision: 10, scale: 2 }).default("0.00"),
   outstandingBalance: decimal("outstanding_balance", { precision: 10, scale: 2 }).default("0.00"),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type Client = typeof clients.$inferSelect;
@@ -117,6 +125,10 @@ export const clientDocuments = pgTable("client_documents", {
   uploadedById: varchar("uploaded_by_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type ClientDocument = typeof clientDocuments.$inferSelect;
@@ -156,6 +168,10 @@ export const proposals: any = pgTable("proposals", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   acceptedAt: timestamp("accepted_at"),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type Proposal = typeof proposals.$inferSelect;
@@ -194,6 +210,10 @@ export const invoices = pgTable("invoices", {
   updatedAt: timestamp("updated_at").defaultNow(),
   sentAt: timestamp("sent_at"),
   paidAt: timestamp("paid_at"),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type Invoice = typeof invoices.$inferSelect;
@@ -211,6 +231,10 @@ export const payments = pgTable("payments", {
   notes: text("notes"),
   isDeposit: boolean("is_deposit").default(false),
   createdAt: timestamp("created_at").defaultNow(),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type Payment = typeof payments.$inferSelect;
@@ -301,6 +325,10 @@ export const contracts = pgTable("contracts", {
   lastModifiedById: varchar("last_modified_by_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type Contract = typeof contracts.$inferSelect;
@@ -330,6 +358,10 @@ export const tasks = pgTable("tasks", {
   progressNotes: jsonb("progress_notes").$type<Array<{ id: string; date: string; comment: string; createdAt: string; }>>().default([]),
   estimatedHours: integer("estimated_hours"),
   actualHours: integer("actual_hours"),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type Task = typeof tasks.$inferSelect;
@@ -350,6 +382,10 @@ export const templates = pgTable("templates", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   createdById: varchar("created_by_id").references(() => users.id),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type Template = typeof templates.$inferSelect;
@@ -387,6 +423,10 @@ export const timeLogs = pgTable("time_logs", {
   rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type TimeLog = typeof timeLogs.$inferSelect;
@@ -411,6 +451,10 @@ export const fileAttachments = pgTable("file_attachments", {
   metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type FileAttachment = typeof fileAttachments.$inferSelect;
@@ -428,6 +472,10 @@ export const documentVersions = pgTable("document_versions", {
   changes: text("changes"), // Description of changes
   uploadedById: varchar("uploaded_by_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
 });
 
 export type DocumentVersion = typeof documentVersions.$inferSelect;

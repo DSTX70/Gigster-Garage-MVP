@@ -93,9 +93,9 @@ export async function createDemoSession(): Promise<CreateDemoSessionResult> {
     demoSessions.set(sessionId, session);
     userIdToSessionId.set(demoUser.id, sessionId);
 
-    // Seed demo data for this user
+    // Seed demo data for this user with secure isolation
     console.log(`🎮 Creating demo session ${sessionId} for user ${demoUser.id}`);
-    await seedDemoData(demoUser.id);
+    await seedDemoData(demoUser.id, sessionId);
 
     console.log(`✅ Demo session created successfully: ${sessionId} (expires in ${DEMO_SESSION_DURATION_MINUTES} minutes)`);
 
