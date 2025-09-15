@@ -5,6 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { MoodPaletteProvider } from "@/hooks/useMoodPalette";
+import { DemoModeProvider } from "@/hooks/useDemoMode";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
+import { DemoSessionWarning } from "@/components/DemoSessionWarning";
+import { DemoModeStatusBar } from "@/components/DemoModeBanner";
 import { useEffect } from "react";
 import Home from "@/pages/home";
 import Landing from "@/pages/landing";
@@ -168,12 +172,17 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <MoodPaletteProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </MoodPaletteProvider>
+      <DemoModeProvider>
+        <MoodPaletteProvider>
+          <TooltipProvider>
+            <DemoModeStatusBar />
+            <DemoModeBanner />
+            <DemoSessionWarning />
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </MoodPaletteProvider>
+      </DemoModeProvider>
     </QueryClientProvider>
   );
 }

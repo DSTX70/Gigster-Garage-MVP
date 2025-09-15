@@ -9,6 +9,7 @@ import { GlobalSearch } from "@/components/global-search";
 import { MoodPaletteSwitcher } from "@/components/MoodPaletteSwitcher";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { DemoModeIndicator } from "@/components/DemoModeBanner";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -194,6 +195,9 @@ export function AppHeader() {
                 </span>
               )}
             </div>
+            
+            {/* Demo Mode Indicator */}
+            <DemoModeIndicator />
             
             <div className="flex items-center space-x-2 sm:space-x-3">
               {/* Home Button - Keep for quick access */}

@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { useAuth } from "@/hooks/useAuth";
+import { DemoUpgradePrompt } from "@/components/DemoUpgradePrompt";
 
 export default function Home() {
   const { isAdmin } = useAuth();
@@ -122,6 +123,11 @@ export default function Home() {
             </div>
           </div>
           <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening with your tasks and projects.</p>
+        </div>
+
+        {/* Demo Mode Upgrade Prompt */}
+        <div className="mb-6 sm:mb-8">
+          <DemoUpgradePrompt context="general" compact={true} />
         </div>
 
         {/* Urgent & Overview Section */}

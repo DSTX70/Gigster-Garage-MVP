@@ -11,11 +11,16 @@ export function useAuth() {
     retry: false,
   });
 
+  const user = data?.user;
+
   return {
-    user: data?.user,
+    user,
     isLoading,
-    isAuthenticated: !!data?.user,
-    isAdmin: data?.user?.role === 'admin',
+    isAuthenticated: !!user,
+    isAdmin: user?.role === 'admin',
+    isDemoUser: !!user?.isDemo,
+    demoSessionId: user?.demoSessionId,
+    sessionExpiresAt: user?.sessionExpiresAt,
     error,
   };
 }

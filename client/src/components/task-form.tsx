@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { useDemoGuard, DEMO_LIMITATIONS } from "@/hooks/useDemoGuard";
 import { Plus, X, FileText, Link, Upload, User } from "lucide-react";
 import { insertTaskSchema, type InsertTask, type User as UserType, type Project, type Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -158,6 +159,7 @@ interface TaskFormProps {
 
 export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProps = {}) {
   const { user: currentUser, isAdmin } = useAuth();
+  const { canPerformAction, isDemoMode } = useDemoGuard();
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -240,6 +242,11 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
       return;
     }
 
+    // Check demo limitations for new tasks (not editing existing ones)
+    if (!existingTask && !canPerformAction(DEMO_LIMITATIONS.CREATE_TASK)) {
+      return;
+    }
+
     try {
       // Combine date and time into a single datetime
       let combinedDateTime = null;
@@ -266,7 +273,9 @@ export function TaskForm({ onSuccess, parentTaskId, existingTask }: TaskFormProp
         links: links.length > 0 ? links.filter(link => link.trim() !== '') : undefined,
       });
 
-      createTaskMutation.mutate(taskData);
+      if (existingTask || !isDemoMode) {
+        createTaskMutation.mutate(taskData as InsertTask);
+      }
     } catch (error) {
       console.error('Validation error:', error);
       toast({

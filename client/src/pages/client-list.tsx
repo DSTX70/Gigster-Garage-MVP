@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Plus, Mail, Phone, Building, DollarSign, FileText, Search, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useDemoGuard, DEMO_LIMITATIONS } from "@/hooks/useDemoGuard";
 import { AppHeader } from "@/components/app-header";
 import { copy } from "@/lib/copy";
 import type { Client } from "@shared/schema";
@@ -29,6 +30,7 @@ interface NewClientForm {
 
 export default function ClientList() {
   const { toast } = useToast();
+  const { canPerformAction } = useDemoGuard();
   
   // Scroll to top when component mounts
   useEffect(() => {
@@ -70,6 +72,11 @@ export default function ClientList() {
         description: "Client name is required",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check demo limitations for client creation
+    if (!canPerformAction(DEMO_LIMITATIONS.CREATE_CLIENT)) {
       return;
     }
 
@@ -151,13 +158,20 @@ export default function ClientList() {
             </div>
           </div>
           
+          <Button 
+            className="bg-[#FF7F00] hover:bg-[#e6720a] text-white" 
+            data-testid="button-new-client"
+            onClick={() => {
+              if (canPerformAction(DEMO_LIMITATIONS.CREATE_CLIENT)) {
+                setIsOpen(true);
+              }
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Client
+          </Button>
+          
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#FF7F00] hover:bg-[#e6720a] text-white" data-testid="button-new-client">
-                <Plus className="h-4 w-4 mr-2" />
-                New Client
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Client</DialogTitle>
@@ -292,7 +306,11 @@ export default function ClientList() {
               </p>
               {!searchTerm && (
                 <Button
-                  onClick={() => setIsOpen(true)}
+                  onClick={() => {
+                    if (canPerformAction(DEMO_LIMITATIONS.CREATE_CLIENT)) {
+                      setIsOpen(true);
+                    }
+                  }}
                   className="bg-[#FF7F00] hover:bg-[#e6720a] text-white"
                   data-testid="button-add-first-client"
                 >
@@ -312,8 +330,8 @@ export default function ClientList() {
                       <CardTitle className="text-lg font-semibold text-gray-900 truncate">
                         {client.name}
                       </CardTitle>
-                      <Badge variant={getStatusBadgeVariant(client.status)}>
-                        {client.status}
+                      <Badge variant={getStatusBadgeVariant(client.status ?? 'active')}>
+                        {client.status || 'active'}
                       </Badge>
                     </div>
                     {client.company && (
