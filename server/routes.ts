@@ -43,6 +43,7 @@ import { cdnService } from './cdn-service';
 import { databaseOptimizer } from './database-optimizer';
 import { loadBalancer } from './load-balancer';
 import passport from 'passport';
+import { seedDemoData, clearDemoData } from './demoDataService';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -394,6 +395,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting user:", error);
       res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Demo Data Management Routes (admin only)
+  app.post("/api/demo-data/seed", requireAdmin, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      console.log(`🌱 Admin ${user.username} initiating demo data seeding...`);
+      
+      const demoIds = await seedDemoData(user.id);
+      
+      res.json({ 
+        message: "Demo data seeded successfully",
+        summary: {
+          clients: Object.keys(demoIds.clients).length,
+          projects: Object.keys(demoIds.projects).length,
+          tasks: Object.keys(demoIds.tasks).length,
+          templates: Object.keys(demoIds.templates).length,
+          proposals: Object.keys(demoIds.proposals).length,
+          invoices: Object.keys(demoIds.invoices).length,
+          contracts: Object.keys(demoIds.contracts).length
+        },
+        generatedIds: demoIds
+      });
+    } catch (error) {
+      console.error("Error seeding demo data:", error);
+      res.status(500).json({ 
+        message: "Failed to seed demo data", 
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.delete("/api/demo-data/clear", requireAdmin, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      console.log(`🧹 Admin ${user.username} initiating demo data cleanup...`);
+      
+      await clearDemoData(user.id);
+      
+      res.json({ 
+        message: "Demo data cleared successfully"
+      });
+    } catch (error) {
+      console.error("Error clearing demo data:", error);
+      res.status(500).json({ 
+        message: "Failed to clear demo data", 
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/demo-data/status", requireAdmin, async (req, res) => {
+    try {
+      // Get counts of existing data to show current status
+      const [clients, projects, tasks, templates, proposals, invoices, contracts] = await Promise.all([
+        storage.getClients(),
+        storage.getProjects(), 
+        storage.getTasks(),
+        storage.getTemplates(),
+        storage.getProposals(),
+        storage.getInvoices(),
+        storage.getContracts()
+      ]);
+
+      res.json({
+        currentData: {
+          clients: clients.length,
+          projects: projects.length,
+          tasks: tasks.length,
+          templates: templates.length,
+          proposals: proposals.length,
+          invoices: invoices.length,
+          contracts: contracts.length
+        },
+        hasDemoData: clients.length > 0 || projects.length > 0 || tasks.length > 0
+      });
+    } catch (error) {
+      console.error("Error checking demo data status:", error);
+      res.status(500).json({ 
+        message: "Failed to check demo data status", 
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
