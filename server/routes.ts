@@ -1506,9 +1506,9 @@ Focus on fields that are:
 
 Return a JSON object with a "suggestions" array containing the field objects.`;
 
-          // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+          // Using stable gpt-4o model for reliable content generation
           const completion = await openai.chat.completions.create({
-            model: "gpt-5",
+            model: "gpt-4o",
             messages: [
               {
                 role: "system",
