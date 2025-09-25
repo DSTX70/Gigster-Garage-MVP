@@ -285,9 +285,9 @@ Gigster Garage is a comprehensive time tracker and workflow management system de
 - **Advanced Session Security** - Session timeout protection, activity monitoring, and automatic cleanup
 - **Rate Limiting Protection** - Intelligent rate limiting with IP-based tracking and progressive blocking
 - **Authentication Error Handling** - User-friendly error messages with detailed logging and security monitoring
-- **Data Encryption** - End-to-end encryption for all sensitive data
-- **Single Sign-On (SSO)** - Enterprise SSO integration with SAML/OAuth
-- **Multi-Factor Authentication** - Advanced MFA with biometric support
+- **Data Encryption** - Advanced encryption service for sensitive data with AES-256-GCM and key rotation
+- **Single Sign-On (SSO)** - Enterprise SSO integration with SAML, OAuth 2.0, and OpenID Connect
+- **Multi-Factor Authentication** - MFA support through SSO providers (biometric support depends on identity provider)
 - **Role-Based Access Control** - Granular permissions and user management
 - **Audit Logging** - Comprehensive activity tracking and compliance reporting
 
@@ -299,8 +299,8 @@ Gigster Garage is a comprehensive time tracker and workflow management system de
 - **Monitoring & Analytics** - Real-time performance monitoring and alerts
 
 ### Compliance & Governance
-- **GDPR Compliance** - Full compliance with data protection regulations
-- **SOC 2 Type II** - Enterprise security standards certification
+- **GDPR Compliance** - Data protection features and audit trails to support GDPR compliance requirements
+- **Compliance Frameworks** - Audit and reporting features designed for SOC 2, GDPR, HIPAA, and PCI-DSS compliance efforts
 - **Data Backup & Recovery** - Automated backup with point-in-time recovery
 - **Disaster Recovery** - Multi-region backup and failover capabilities
 - **Data Retention Policies** - Configurable data lifecycle management
