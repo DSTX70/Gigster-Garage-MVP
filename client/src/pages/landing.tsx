@@ -19,6 +19,7 @@ import {
 import { GigsterLogo } from "@/components/vsuite-logo";
 import { ScreenshotCarousel } from "@/components/screenshot-carousel";
 import { Link } from "wouter";
+import { DemoSessionCreator } from "@/components/DemoSessionCreator";
 
 export default function Landing() {
   const [activeFeature, setActiveFeature] = useState(0);
@@ -246,11 +247,7 @@ export default function Landing() {
                     <span>Task assignment and tracking</span>
                   </div>
                   
-                  <Link href="/login">
-                    <Button className="w-full mt-4">
-                      Try Demo Now
-                    </Button>
-                  </Link>
+                  <DemoSessionCreator />
                 </div>
               </div>
             </CardContent>
