@@ -29,6 +29,48 @@ export function performanceMiddleware() {
 /**
  * Cache middleware for API responses
  */
+/**
+ * Map API endpoints to entity cache keys
+ */
+function getEntityCacheKey(path: string, query: any): string | null {
+  // Remove trailing slash if present
+  const cleanPath = path.replace(/\/$/, '');
+  
+  // Map common API endpoints to entity cache keys
+  if (cleanPath === '/api/users' && Object.keys(query).length === 0) {
+    return 'users:all';
+  }
+  if (cleanPath === '/api/projects' && Object.keys(query).length === 0) {
+    return 'projects:all';
+  }
+  if (cleanPath === '/api/tasks' && Object.keys(query).length === 0) {
+    return 'tasks:all';
+  }
+  
+  // Handle filtered tasks (from cache warming)
+  if (cleanPath === '/api/tasks' && query.status === 'active') {
+    return 'tasks:active';
+  }
+  
+  // Handle individual entity requests
+  const userMatch = cleanPath.match(/^\/api\/users\/([^\/]+)$/);
+  if (userMatch) {
+    return `user:${userMatch[1]}`;
+  }
+  
+  const projectMatch = cleanPath.match(/^\/api\/projects\/([^\/]+)$/);
+  if (projectMatch) {
+    return `project:${projectMatch[1]}`;
+  }
+  
+  const taskMatch = cleanPath.match(/^\/api\/tasks\/([^\/]+)$/);
+  if (taskMatch) {
+    return `task:${taskMatch[1]}`;
+  }
+  
+  return null;
+}
+
 export function cacheMiddleware(ttl: number = 300) {
   return async (req: Request, res: Response, next: NextFunction) => {
     // Skip caching for non-GET requests
@@ -36,10 +78,12 @@ export function cacheMiddleware(ttl: number = 300) {
       return next();
     }
 
-    // Skip caching for authenticated requests that might be user-specific
-    const skipCache = req.path.includes('/user') || 
+    // Skip caching for user-specific and admin routes only
+    const skipCache = req.path.match(/^\/api\/users\/me$/) ||
                      req.path.includes('/auth') ||
-                     req.path.includes('/admin');
+                     req.path.includes('/admin') ||
+                     req.path.includes('/login') ||
+                     req.path.includes('/logout');
     
     if (skipCache) {
       return next();
@@ -50,10 +94,23 @@ export function cacheMiddleware(ttl: number = 300) {
       const cache = AppCache.getInstance();
       const cacheKey = `api:${req.method}:${req.path}:${JSON.stringify(req.query)}`;
 
-      // Try to get cached response
-      const cachedResponse = await cache.get(cacheKey);
+      // Try to get cached response - first check API-specific cache
+      let cachedResponse = await cache.get(cacheKey);
+      
+      // If no API cache hit, try entity-specific cache (from cache warming)
+      if (!cachedResponse) {
+        const entityKey = getEntityCacheKey(req.path, req.query);
+        if (entityKey) {
+          cachedResponse = await cache.get(entityKey);
+          if (cachedResponse) {
+            console.log(`🚀 Cache HIT (entity): ${entityKey} for ${req.path}`);
+            return res.json(cachedResponse);
+          }
+        }
+      }
+      
       if (cachedResponse) {
-        console.log(`🚀 Cache HIT for: ${req.path}`);
+        console.log(`🚀 Cache HIT (api): ${req.path}`);
         return res.json(cachedResponse);
       }
 
