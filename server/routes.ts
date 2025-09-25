@@ -4,6 +4,8 @@ import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 import multer from "multer";
+import path from "path";
+import { fileTypeFromBuffer } from "file-type";
 import csvParser from "csv-parser";
 import * as createCsvWriter from "csv-writer";
 import { z } from "zod";
@@ -84,11 +86,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply performance monitoring to all routes
   app.use(performanceMiddleware());
   app.use(optimizationMiddleware());
-  // Configure multer for file uploads
+  // Configure multer for file uploads with enhanced security validation
   const upload = multer({ 
-    dest: 'uploads/',
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+    storage: multer.memoryStorage(), // Use memory storage for content validation
+    limits: { 
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+      files: 5 // Maximum 5 files per request
+    },
+    fileFilter: async (req, file, cb) => {
+      try {
+        // Allowed file types with magic byte signatures
+        const allowedTypes = new Map([
+          ['application/pdf', ['.pdf']],
+          ['application/msword', ['.doc']],
+          ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', ['.docx']],
+          ['application/vnd.ms-excel', ['.xls']],
+          ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ['.xlsx']],
+          ['application/vnd.ms-powerpoint', ['.ppt']],
+          ['application/vnd.openxmlformats-officedocument.presentationml.presentation', ['.pptx']],
+          ['text/plain', ['.txt']],
+          ['text/csv', ['.csv']],
+          ['image/jpeg', ['.jpg', '.jpeg']],
+          ['image/png', ['.png']],
+          ['image/gif', ['.gif']],
+          ['image/webp', ['.webp']]
+          // Removed SVG due to XSS risk
+        ]);
+
+        // Dangerous extensions that should never be allowed anywhere in filename
+        const dangerousExtensions = [
+          '.exe', '.sh', '.bat', '.cmd', '.com', '.js', '.mjs', '.cjs', 
+          '.php', '.pl', '.py', '.rb', '.jar', '.dll', '.scr', '.msi', '.apk'
+        ];
+
+        // Check for dangerous extensions anywhere in filename
+        const fileName = file.originalname.toLowerCase();
+        for (const dangerous of dangerousExtensions) {
+          if (fileName.includes(dangerous)) {
+            return cb(new Error(`File contains dangerous extension '${dangerous}' which is not allowed for security reasons`));
+          }
+        }
+
+        // Validate last extension
+        const fileExtension = path.extname(file.originalname).toLowerCase();
+        const allowedExtensions = Array.from(allowedTypes.values()).flat();
+        
+        if (!allowedExtensions.includes(fileExtension)) {
+          return cb(new Error(`File extension '${fileExtension}' not allowed. Allowed extensions: ${allowedExtensions.join(', ')}`));
+        }
+
+        // Initial validation passed - content will be validated after upload
+        cb(null, true);
+        
+      } catch (error) {
+        cb(new Error(`File validation error: ${error.message}`));
+      }
+    }
   });
+
+  // Content validation middleware for uploaded files
+  const validateFileContent = async (req: any, res: any, next: any) => {
+    if (!req.files || req.files.length === 0) {
+      return next();
+    }
+
+    try {
+      // Allowed MIME types based on magic bytes
+      const allowedMimeTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'text/csv',
+        'image/jpeg',
+        'image/png', 
+        'image/gif',
+        'image/webp'
+      ];
+
+      for (const file of req.files) {
+        // Validate file content using magic bytes
+        const fileType = await fileTypeFromBuffer(file.buffer);
+        
+        if (fileType && !allowedMimeTypes.includes(fileType.mime)) {
+          return res.status(400).json({ 
+            message: `File content type '${fileType.mime}' not allowed. File appears to be different from its extension.` 
+          });
+        }
+
+        // For text files, magic byte detection might not work, so we allow them if extension matches
+        const fileExtension = path.extname(file.originalname).toLowerCase();
+        if (!fileType && !['.txt', '.csv'].includes(fileExtension)) {
+          return res.status(400).json({ 
+            message: 'Unable to determine file type. File may be corrupted or unsupported.' 
+          });
+        }
+      }
+
+      next();
+    } catch (error) {
+      console.error('File content validation error:', error);
+      return res.status(500).json({ message: 'File validation failed' });
+    }
+  };
 
   // Use MemoryStore for development to reduce database connection pressure
   // In production, consider using a separate Pool for session storage
