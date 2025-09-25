@@ -1,0 +1,21 @@
+# Gigster Garage — Audit Tracker (Sheet‑Ready)
+
+> Copy into Google Sheets/Excel. Use one row per test. Update **Status** and **Severity** as you go.
+
+| ID     | Area           | Scenario                | Steps (condensed)                               | Expected                                   | Env (browser/device) | Evidence (link) | Owner    | Status | Severity | Notes |
+| ------ | -------------- | ----------------------- | ----------------------------------------------- | ------------------------------------------ | -------------------- | --------------- | -------- | ------ | -------- | ----- |
+| GG‑001 | Demo           | Launch 45‑min demo      | Landing → **Try Demo Now**                      | Demo loads; isolated session               | Chrome / Desktop     |                 | Lume     | ☐      | P2       |       |
+| GG‑002 | Projects       | Create project + Kanban | New project → add 3 tasks → drag across columns | Persists; no console errors                | Safari / iPhone      |                 | Lume     | ☐      | P2       |       |
+| GG‑003 | Tasks          | Assign + due dates      | Create task → assign user → set due date        | Assignee & date visible                    | Chrome / Desktop     |                 | Lume     | ☐      | P3       |       |
+| GG‑004 | Proposals      | AI generate proposal    | Fill min fields → Generate                      | Draft renders; editable; no HTML injection | Chrome / Desktop     |                 | Lume     | ☐      | P2       |       |
+| GG‑005 | Invoices       | Build + export PDF      | Add items → Export PDF                          | Valid PDF; currency/format correct         | Firefox / Desktop    |                 | Forge    | ☐      | P2       |       |
+| GG‑006 | Files          | Upload negative types   | Upload .exe / oversized .jpg                    | Rejected with clear message                | Edge / Desktop       |                 | Sentinel | ☐      | **P1**   |       |
+| GG‑007 | Auth           | Role escalation block   | New user → hit admin route                      | 403/redirect; logged                       | Chrome / Desktop     |                 | Sentinel | ☐      | **P1**   |       |
+| GG‑008 | IDOR           | Tamper resource IDs     | Change task/project ID in XHR/URL               | 403/404; no data leak                      | Chrome / Desktop     |                 | Sentinel | ☐      | **P1**   |       |
+| GG‑009 | CSRF           | State‑change requests   | Verify CSRF token / SameSite cookies            | Token present; blocked without             | Chrome / Desktop     |                 | Sentinel | ☐      | P1       |       |
+| GG‑010 | Perf           | LCP/TBT/CLS (mobile)    | Lighthouse (mobile) on key pages                | LCP ≤ 2.8s; TBT ≤ 200ms; CLS ≤ 0.1         | iPhone / Safari      |                 | Forge    | ☐      | P2       |       |
+| GG‑011 | Mobile         | Core flows mobile       | Repeat core flows on mobile                     | No layout break; taps targetable           | Android / Chrome     |                 | Lume     | ☐      | P2       |       |
+| GG‑012 | Error handling | 404/500 theming         | Visit unknown route                             | Friendly page; backlink                    | Any                  |                 | Navi     | ☐      | P3       |       |
+| GG‑013 | Rate limits    | AI generation flood     | 10 rapid generations                            | Graceful limit + message                   | Chrome / Desktop     |                 | Sentinel | ☐      | P2       |       |
+| GG‑014 | Logs           | PII in errors           | Trigger errors; check console/server            | No PII exposed                             | Any                  |                 | Forge    | ☐      | P1       |       |
+| GG‑015 | Caching        | Warm cache perf         | Repeat page after warm                          | Faster LCP; no heavy re‑downloads          | Any                  |                 | Forge    | ☐      | P3       |       |
