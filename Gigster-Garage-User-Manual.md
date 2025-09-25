@@ -33,7 +33,36 @@ Gigster Garage is a comprehensive time tracker and workflow management system de
 
 ## Getting Started
 
-### Initial Setup
+### Try Demo Now (No Account Required)
+**Experience Gigster Garage instantly with our 45-minute demo sessions!**
+
+1. **One-Click Access** - Click "Try Demo Now" on the landing page for immediate access
+2. **Pre-loaded Sample Data** - Explore with realistic business data already configured
+3. **Core Features Enabled** - Experience key features with demo limitations (see below)
+4. **Session Duration** - 45 minutes of access to test core functionality
+5. **Data Privacy** - All demo data is automatically cleaned up after session expires
+
+**Demo Session Includes:**
+- ✅ 12 sample users with realistic profiles
+- ✅ 4 active projects with progress tracking
+- ✅ Sample tasks with various priorities and due dates
+- ✅ Professional invoice and proposal templates
+- ✅ Client management examples
+- ✅ AI-powered content generation testing
+- ✅ All premium features unlocked
+
+**Session Limitations:**
+- ⏰ 45-minute time limit per session
+- 📝 Maximum 5 tasks can be created
+- 📂 Maximum 3 projects can be created
+- 📎 File uploads limited to 5MB total
+- 🔄 Data resets after session expiration
+- 📧 No email notifications sent during demo
+- 💾 Export functionality disabled in demo mode
+- 🔌 External integrations (Stripe, SSO) are simulated
+- 🤖 AI features require configured API keys (may be limited)
+
+### Full Account Setup
 1. **Landing Page Access** - Visit the Gigster Garage branded landing page
 2. **Account Creation** - Quick signup with username, password, name, and email
 3. **First Login Flow** - Guided onboarding to set notification preferences
@@ -428,17 +457,36 @@ Gigster Garage is a comprehensive time tracker and workflow management system de
 
 ## Data Management & Protection
 
-### Sample Data & Onboarding
-Gigster Garage includes comprehensive sample data to help new users understand the system's capabilities:
+### Demo Sessions & Sample Data
+**Gigster Garage Demo Sessions** provide instant access to explore the platform with realistic business data pre-configured for immediate testing.
 
-#### Professional Templates
-- **6 Business Templates** ready for immediate use
-  - Website Development Proposal
-  - Marketing Strategy Contract
-  - Legal Services Agreement
-  - Consulting Engagement Proposal
-  - Software Development Invoice
-  - Freelance Project Invoice
+#### Demo Session System
+- **45-Minute Sessions** - Full access to all features with automatic cleanup
+- **One-Click Access** - No registration required, instant platform exploration
+- **Session Management** - Expired demo sessions are cleaned up automatically (cleanup runs every 5 minutes)
+- **Real-Time Monitoring** - Session time remaining displayed in interface
+- **Account Upgrade** - Easy transition to full account (demo data is not transferred to new accounts)
+
+#### Demo Session Data Includes
+
+**Sample User Profiles (12 Users)**
+- **Admin Users** - Full system access for testing admin features
+- **Team Members** - Various roles including managers, developers, designers
+- **Client Contacts** - Realistic client profiles with contact information
+
+**Active Projects (4 Projects)**
+- **E-Commerce Platform** - Multi-phase development project with timeline
+- **Marketing Campaign** - Creative project with deliverables and deadlines
+- **Mobile App Development** - Technical project with sprint planning
+- **Brand Identity Redesign** - Design-focused project with client collaboration
+
+**Professional Templates (6 Templates)**
+- **Website Development Proposal** - Complete proposal template with pricing
+- **Marketing Strategy Contract** - Service agreement with project scope
+- **Legal Services Agreement** - Professional services contract template
+- **Consulting Engagement Proposal** - Business consulting proposal structure
+- **Software Development Invoice** - Technical services invoice format
+- **Freelance Project Invoice** - Independent contractor billing template
 
 #### Sample Client Profiles
 - **TechStartup Inc** - Active technology client with website development project
@@ -447,8 +495,16 @@ Gigster Garage includes comprehensive sample data to help new users understand t
 
 #### Demo Business Data
 - **Active Proposals** - $30,000 website project and $45,000 consulting engagement
-- **Sample Contracts** - Service agreements and recurring contracts
-- **Invoice Examples** - Sent, paid, and overdue invoices with proper line items
+- **Sample Contracts** - Service agreements and recurring contracts with realistic terms
+- **Invoice Examples** - Sent, paid, and overdue invoices with proper line items and calculations
+- **Time Tracking Data** - Logged hours across projects with productivity metrics
+- **AI-Generated Content** - Pre-generated proposals and content examples for testing
+
+#### Permanent Sample Data (Full Accounts)
+New full accounts also receive comprehensive sample data to accelerate onboarding:
+- **Starter Templates** - Basic project and client templates for immediate use
+- **Tutorial Tasks** - Guided tasks to learn platform features
+- **Sample Workflows** - Pre-configured automation examples
 
 ### Enhanced Form Validation
 Comprehensive validation system ensures data quality and user-friendly error handling:
