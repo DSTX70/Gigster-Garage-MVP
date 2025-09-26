@@ -6049,6 +6049,50 @@ Create a comprehensive brief that a designer could use to create effective marke
           maxTokens = 800;
           break;
 
+        case "presentation_objective":
+          const { title, audience, duration } = req.body;
+          prompt = `Generate clear and compelling presentation objectives for a presentation titled "${title || projectTitle}".
+
+The presentation details:
+${title ? `- Title: ${title}` : ''}
+${audience ? `- Target Audience: ${audience}` : ''}
+${duration ? `- Duration: ${duration} minutes` : ''}
+
+Create 3-5 specific, measurable objectives that:
+- Clearly state what the audience will learn or achieve
+- Are appropriate for the target audience
+- Can be accomplished within the presentation timeframe
+- Use action-oriented language (e.g., "understand", "identify", "apply")
+- Are relevant to the presentation topic
+
+Format as a concise list that would fit in a presentation outline section.
+
+${context ? `Additional context: ${context}` : ''}`;
+          maxTokens = 400;
+          break;
+
+        case "presentation_slide_content":
+          const { presentationTitle, slideTitle, slideType, objective } = req.body;
+          prompt = `Generate engaging content for a presentation slide.
+
+Slide Details:
+- Presentation: ${presentationTitle || projectTitle}
+- Slide Title: ${slideTitle}
+- Slide Type: ${slideType}
+${audience ? `- Audience: ${audience}` : ''}
+${objective ? `- Presentation Objective: ${objective}` : ''}
+
+Create ${slideType} content that:
+- Is appropriate for the slide type and audience
+- Supports the overall presentation objectives
+- Is concise and engaging
+- Uses appropriate formatting (bullet points, paragraphs, etc.)
+- Maintains professional tone
+
+${context ? `Additional context: ${context}` : ''}`;
+          maxTokens = 600;
+          break;
+
         default:
           return res.status(400).json({ message: "Invalid content type" });
       }
