@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
@@ -55,6 +56,42 @@ export default function CreateProposal() {
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [isGeneratingDeliverables, setIsGeneratingDeliverables] = useState(false);
   const [isGeneratingTerms, setIsGeneratingTerms] = useState(false);
+
+  // Question dialog states
+  const [showDescriptionQuestions, setShowDescriptionQuestions] = useState(false);
+  const [showDeliverablesQuestions, setShowDeliverablesQuestions] = useState(false);
+  const [showTermsQuestions, setShowTermsQuestions] = useState(false);
+
+  // Questions form data
+  const [descriptionQuestions, setDescriptionQuestions] = useState({
+    projectType: "",
+    industry: "",
+    targetAudience: "",
+    primaryGoals: "",
+    keyFeatures: "",
+    timeline: "",
+    budget: ""
+  });
+
+  const [deliverablesQuestions, setDeliverablesQuestions] = useState({
+    outputFormats: "",
+    qualityStandards: "",
+    reviewProcess: "",
+    revisionRounds: "",
+    deliveryMethod: "",
+    milestones: "",
+    acceptanceCriteria: ""
+  });
+
+  const [termsQuestions, setTermsQuestions] = useState({
+    paymentSchedule: "",
+    intellectualProperty: "",
+    liabilityLimits: "",
+    cancellationPolicy: "",
+    disputeResolution: "",
+    dataOwnership: "",
+    confidentiality: ""
+  });
 
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -179,8 +216,23 @@ export default function CreateProposal() {
       return;
     }
 
+    setShowDescriptionQuestions(true);
+  };
+
+  const generateDescriptionWithQuestions = async () => {
     setIsGeneratingDescription(true);
     try {
+      const context = `Generate a professional project description for "${formData.title}" ${formData.clientName ? `for client ${formData.clientName}` : ''}. 
+      
+      Project Details:
+      - Type: ${descriptionQuestions.projectType}
+      - Industry: ${descriptionQuestions.industry}
+      - Target Audience: ${descriptionQuestions.targetAudience}
+      - Primary Goals: ${descriptionQuestions.primaryGoals}
+      - Key Features: ${descriptionQuestions.keyFeatures}
+      - Timeline: ${descriptionQuestions.timeline}
+      - Budget Range: ${descriptionQuestions.budget}`;
+
       const response = await fetch("/api/ai/generate-content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -188,7 +240,7 @@ export default function CreateProposal() {
           type: "project_description",
           projectTitle: formData.title,
           clientName: formData.clientName,
-          context: `Generate a professional project description for "${formData.title}" ${formData.clientName ? `for client ${formData.clientName}` : ''}.`
+          context: context
         }),
       });
 
@@ -197,9 +249,10 @@ export default function CreateProposal() {
       
       updateFormData("projectDescription", data.content);
       setDescriptionCount(data.content.length);
+      setShowDescriptionQuestions(false);
       toast({
         title: "Description Generated!",
-        description: "AI has created a professional project description.",
+        description: "AI has created a customized project description based on your answers.",
       });
     } catch (error) {
       toast({
@@ -222,8 +275,23 @@ export default function CreateProposal() {
       return;
     }
 
+    setShowDeliverablesQuestions(true);
+  };
+
+  const generateDeliverablesWithQuestions = async () => {
     setIsGeneratingDeliverables(true);
     try {
+      const context = `Generate detailed deliverables list for project "${formData.title}".
+      
+      Deliverable Specifications:
+      - Output Formats: ${deliverablesQuestions.outputFormats}
+      - Quality Standards: ${deliverablesQuestions.qualityStandards}
+      - Review Process: ${deliverablesQuestions.reviewProcess}
+      - Revision Rounds: ${deliverablesQuestions.revisionRounds}
+      - Delivery Method: ${deliverablesQuestions.deliveryMethod}
+      - Milestones: ${deliverablesQuestions.milestones}
+      - Acceptance Criteria: ${deliverablesQuestions.acceptanceCriteria}`;
+
       const response = await fetch("/api/ai/generate-content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -231,7 +299,7 @@ export default function CreateProposal() {
           type: "deliverables",
           projectTitle: formData.title,
           projectDescription: formData.projectDescription,
-          context: `Generate detailed deliverables list for project "${formData.title}".`
+          context: context
         }),
       });
 
@@ -240,9 +308,10 @@ export default function CreateProposal() {
       
       updateFormData("deliverables", data.content);
       setDeliverablesCount(data.content.length);
+      setShowDeliverablesQuestions(false);
       toast({
         title: "Deliverables Generated!",
-        description: "AI has created a comprehensive deliverables list.",
+        description: "AI has created a customized deliverables list based on your specifications.",
       });
     } catch (error) {
       toast({
@@ -256,8 +325,23 @@ export default function CreateProposal() {
   };
 
   const generateTermsConditions = async () => {
+    setShowTermsQuestions(true);
+  };
+
+  const generateTermsWithQuestions = async () => {
     setIsGeneratingTerms(true);
     try {
+      const context = `Generate professional terms and conditions for project "${formData.title}" with budget $${formData.totalBudget} and timeline ${formData.timeline}.
+      
+      Terms & Conditions Specifications:
+      - Payment Schedule: ${termsQuestions.paymentSchedule}
+      - Intellectual Property: ${termsQuestions.intellectualProperty}
+      - Liability Limits: ${termsQuestions.liabilityLimits}
+      - Cancellation Policy: ${termsQuestions.cancellationPolicy}
+      - Dispute Resolution: ${termsQuestions.disputeResolution}
+      - Data Ownership: ${termsQuestions.dataOwnership}
+      - Confidentiality: ${termsQuestions.confidentiality}`;
+
       const response = await fetch("/api/ai/generate-content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -266,7 +350,7 @@ export default function CreateProposal() {
           projectTitle: formData.title,
           totalBudget: formData.totalBudget,
           timeline: formData.timeline,
-          context: `Generate professional terms and conditions for project "${formData.title}" with budget $${formData.totalBudget} and timeline ${formData.timeline}.`
+          context: context
         }),
       });
 
@@ -275,9 +359,10 @@ export default function CreateProposal() {
       
       updateFormData("terms", data.content);
       setTermsCount(data.content.length);
+      setShowTermsQuestions(false);
       toast({
         title: "Terms Generated!",
-        description: "AI has created professional terms and conditions.",
+        description: "AI has created customized terms and conditions based on your requirements.",
       });
     } catch (error) {
       toast({
@@ -826,6 +911,270 @@ export default function CreateProposal() {
           </Card>
         </div>
       </main>
+
+      {/* Project Description Questions Dialog */}
+      <Dialog open={showDescriptionQuestions} onOpenChange={setShowDescriptionQuestions}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Project Description Questions</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="projectType">What type of project is this?</Label>
+                <Input
+                  id="projectType"
+                  placeholder="e.g., Website, Mobile App, Marketing Campaign"
+                  value={descriptionQuestions.projectType}
+                  onChange={(e) => setDescriptionQuestions(prev => ({ ...prev, projectType: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="industry">What industry or sector?</Label>
+                <Input
+                  id="industry"
+                  placeholder="e.g., Healthcare, Finance, E-commerce, Education"
+                  value={descriptionQuestions.industry}
+                  onChange={(e) => setDescriptionQuestions(prev => ({ ...prev, industry: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="targetAudience">Who is the target audience?</Label>
+                <Input
+                  id="targetAudience"
+                  placeholder="e.g., Small businesses, Young professionals, Families"
+                  value={descriptionQuestions.targetAudience}
+                  onChange={(e) => setDescriptionQuestions(prev => ({ ...prev, targetAudience: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="primaryGoals">What are the primary goals?</Label>
+                <Textarea
+                  id="primaryGoals"
+                  placeholder="e.g., Increase sales, Improve user experience, Automate processes"
+                  value={descriptionQuestions.primaryGoals}
+                  onChange={(e) => setDescriptionQuestions(prev => ({ ...prev, primaryGoals: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="keyFeatures">What are the key features or requirements?</Label>
+                <Textarea
+                  id="keyFeatures"
+                  placeholder="e.g., User registration, Payment processing, Real-time messaging"
+                  value={descriptionQuestions.keyFeatures}
+                  onChange={(e) => setDescriptionQuestions(prev => ({ ...prev, keyFeatures: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descTimeline">What is the expected timeline?</Label>
+                <Input
+                  id="descTimeline"
+                  placeholder="e.g., 8 weeks, 3 months, 6 months"
+                  value={descriptionQuestions.timeline}
+                  onChange={(e) => setDescriptionQuestions(prev => ({ ...prev, timeline: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="budget">What is the budget range?</Label>
+                <Input
+                  id="budget"
+                  placeholder="e.g., $5,000-$10,000, $20,000-$50,000"
+                  value={descriptionQuestions.budget}
+                  onChange={(e) => setDescriptionQuestions(prev => ({ ...prev, budget: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button variant="outline" onClick={() => setShowDescriptionQuestions(false)}>
+                Cancel
+              </Button>
+              <Button onClick={generateDescriptionWithQuestions} disabled={isGeneratingDescription}>
+                {isGeneratingDescription ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
+                ) : (
+                  "Generate Description"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deliverables Questions Dialog */}
+      <Dialog open={showDeliverablesQuestions} onOpenChange={setShowDeliverablesQuestions}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Deliverables Specification</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="outputFormats">What output formats are required?</Label>
+                <Input
+                  id="outputFormats"
+                  placeholder="e.g., PDF documents, Web application, Mobile app, Source code"
+                  value={deliverablesQuestions.outputFormats}
+                  onChange={(e) => setDeliverablesQuestions(prev => ({ ...prev, outputFormats: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="qualityStandards">What quality standards must be met?</Label>
+                <Input
+                  id="qualityStandards"
+                  placeholder="e.g., Industry standards, Accessibility compliance, Performance benchmarks"
+                  value={deliverablesQuestions.qualityStandards}
+                  onChange={(e) => setDeliverablesQuestions(prev => ({ ...prev, qualityStandards: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reviewProcess">What is the review and approval process?</Label>
+                <Textarea
+                  id="reviewProcess"
+                  placeholder="e.g., Weekly reviews, Client approval at each milestone, Testing phases"
+                  value={deliverablesQuestions.reviewProcess}
+                  onChange={(e) => setDeliverablesQuestions(prev => ({ ...prev, reviewProcess: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="revisionRounds">How many revision rounds are included?</Label>
+                <Input
+                  id="revisionRounds"
+                  placeholder="e.g., 2 rounds of revisions, Unlimited minor changes, 3 major revisions"
+                  value={deliverablesQuestions.revisionRounds}
+                  onChange={(e) => setDeliverablesQuestions(prev => ({ ...prev, revisionRounds: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deliveryMethod">How will deliverables be delivered?</Label>
+                <Input
+                  id="deliveryMethod"
+                  placeholder="e.g., Cloud platform, Email, Client portal, Physical media"
+                  value={deliverablesQuestions.deliveryMethod}
+                  onChange={(e) => setDeliverablesQuestions(prev => ({ ...prev, deliveryMethod: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="milestones">What are the key milestones?</Label>
+                <Textarea
+                  id="milestones"
+                  placeholder="e.g., Design completion, Development phases, Testing milestones"
+                  value={deliverablesQuestions.milestones}
+                  onChange={(e) => setDeliverablesQuestions(prev => ({ ...prev, milestones: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="acceptanceCriteria">What are the acceptance criteria?</Label>
+                <Textarea
+                  id="acceptanceCriteria"
+                  placeholder="e.g., Functional requirements, Performance metrics, Client sign-off requirements"
+                  value={deliverablesQuestions.acceptanceCriteria}
+                  onChange={(e) => setDeliverablesQuestions(prev => ({ ...prev, acceptanceCriteria: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button variant="outline" onClick={() => setShowDeliverablesQuestions(false)}>
+                Cancel
+              </Button>
+              <Button onClick={generateDeliverablesWithQuestions} disabled={isGeneratingDeliverables}>
+                {isGeneratingDeliverables ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
+                ) : (
+                  "Generate Deliverables"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Terms & Conditions Questions Dialog */}
+      <Dialog open={showTermsQuestions} onOpenChange={setShowTermsQuestions}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Terms & Conditions Specification</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="paymentSchedule">What is the payment schedule?</Label>
+                <Input
+                  id="paymentSchedule"
+                  placeholder="e.g., 50% upfront, 50% on completion, Monthly payments"
+                  value={termsQuestions.paymentSchedule}
+                  onChange={(e) => setTermsQuestions(prev => ({ ...prev, paymentSchedule: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="intellectualProperty">Who owns the intellectual property?</Label>
+                <Input
+                  id="intellectualProperty"
+                  placeholder="e.g., Client owns all rights, Joint ownership, Agency retains templates"
+                  value={termsQuestions.intellectualProperty}
+                  onChange={(e) => setTermsQuestions(prev => ({ ...prev, intellectualProperty: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="liabilityLimits">What are the liability limits?</Label>
+                <Textarea
+                  id="liabilityLimits"
+                  placeholder="e.g., Limited to project value, No liability for consequential damages"
+                  value={termsQuestions.liabilityLimits}
+                  onChange={(e) => setTermsQuestions(prev => ({ ...prev, liabilityLimits: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cancellationPolicy">What is the cancellation policy?</Label>
+                <Textarea
+                  id="cancellationPolicy"
+                  placeholder="e.g., 30-day notice required, Work completed to date is billable"
+                  value={termsQuestions.cancellationPolicy}
+                  onChange={(e) => setTermsQuestions(prev => ({ ...prev, cancellationPolicy: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="disputeResolution">How are disputes resolved?</Label>
+                <Input
+                  id="disputeResolution"
+                  placeholder="e.g., Mediation first, Arbitration, Court jurisdiction"
+                  value={termsQuestions.disputeResolution}
+                  onChange={(e) => setTermsQuestions(prev => ({ ...prev, disputeResolution: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dataOwnership">Who owns the data and content?</Label>
+                <Input
+                  id="dataOwnership"
+                  placeholder="e.g., Client retains all data ownership, Data backup procedures"
+                  value={termsQuestions.dataOwnership}
+                  onChange={(e) => setTermsQuestions(prev => ({ ...prev, dataOwnership: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confidentiality">What confidentiality terms apply?</Label>
+                <Textarea
+                  id="confidentiality"
+                  placeholder="e.g., Non-disclosure agreement, Confidentiality period, Exceptions"
+                  value={termsQuestions.confidentiality}
+                  onChange={(e) => setTermsQuestions(prev => ({ ...prev, confidentiality: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button variant="outline" onClick={() => setShowTermsQuestions(false)}>
+                Cancel
+              </Button>
+              <Button onClick={generateTermsWithQuestions} disabled={isGeneratingTerms}>
+                {isGeneratingTerms ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
+                ) : (
+                  "Generate Terms"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
