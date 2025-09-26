@@ -4595,6 +4595,99 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Save generated image to Filing Cabinet
+  app.post("/api/agency/save-image-to-filing-cabinet", requireAuth, async (req, res) => {
+    try {
+      const { imageUrl, prompt, description } = req.body;
+      if (!imageUrl) {
+        return res.status(400).json({ error: "Image URL is required" });
+      }
+
+      console.log("💾 Saving generated image to Filing Cabinet...");
+
+      // Download the image from the URL
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error("Failed to download image");
+      }
+      
+      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      const fileName = `agency-visual-${Date.now()}.png`;
+      
+      // Save image to object storage
+      const objectStorageService = new ObjectStorageService();
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const objectPath = `${privateDir}/${req.session.user!.id}/agency-visuals/${fileName}`;
+      
+      // Parse object path for upload
+      const { bucketName, objectName } = parseObjectPath(objectPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      // Upload the image buffer
+      await file.save(imageBuffer, {
+        metadata: {
+          contentType: 'image/png'
+        }
+      });
+
+      // Create document record in Filing Cabinet 
+      const fileUrl = file.publicUrl();
+      
+      // Create a default client for Agency Hub visuals if needed
+      console.log('Creating client for Agency Hub visual Filing Cabinet document');
+      const clientData = {
+        name: "Agency Hub Visuals",
+        email: '',
+        phone: '',
+        address: '',
+        notes: 'Auto-created for Agency Hub generated visuals',
+        createdById: req.session.user!.id
+      };
+      
+      // Check if client already exists
+      let existingClients = await storage.getClients();
+      let agencyClient = existingClients.find(c => c.name === "Agency Hub Visuals" && c.createdById === req.session.user!.id);
+      
+      if (!agencyClient) {
+        agencyClient = await storage.createClient(clientData);
+      }
+
+      // Create document in Filing Cabinet
+      const documentData = {
+        clientId: agencyClient.id,
+        name: `Agency Visual: ${prompt?.substring(0, 50) || 'Generated Visual'}...`,
+        description: description || `AI-generated marketing visual${prompt ? ` from prompt: ${prompt}` : ''}`,
+        type: 'visual' as const,
+        category: 'marketing',
+        fileUrl: fileUrl,
+        fileName: fileName,
+        fileSize: imageBuffer.length,
+        mimeType: 'image/png',
+        uploadedById: req.session.user!.id,
+        createdById: req.session.user!.id,
+        tags: ['agency-hub', 'ai-generated', 'marketing-visual'],
+        metadata: {
+          prompt: prompt || '',
+          generatedAt: new Date().toISOString(),
+          source: 'agency-hub-dall-e-3'
+        }
+      };
+
+      const document = await storage.createClientDocument(documentData);
+      console.log(`✅ Agency visual saved to Filing Cabinet: ${fileName}`);
+
+      res.status(201).json({ 
+        message: "Visual saved to Filing Cabinet successfully",
+        document,
+        clientName: agencyClient.name
+      });
+    } catch (error: any) {
+      console.error("❌ Save to Filing Cabinet Error:", error.message || error);
+      res.status(500).json({ error: "Failed to save visual to Filing Cabinet: " + (error.message || "Unknown error") });
+    }
+  });
+
   // Payment endpoints
   app.get("/api/payments", requireAuth, async (req, res) => {
     try {
