@@ -123,9 +123,9 @@ export default function Login() {
             </p>
             
             <div className="border-t pt-3">
-              <p>Admin Demo Account:</p>
-              <p>Username: <code className="bg-gray-100 px-1 rounded">admin</code></p>
-              <p>Password: <code className="bg-gray-100 px-1 rounded">admin123</code></p>
+              <p>Demo Account:</p>
+              <p>Username: <code className="bg-gray-100 px-1 rounded">demo</code></p>
+              <p>Password: <code className="bg-gray-100 px-1 rounded">demo123</code></p>
             </div>
           </div>
         </CardContent>

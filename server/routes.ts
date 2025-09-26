@@ -8429,5 +8429,59 @@ Format as a detailed list that clearly defines what will be delivered to the cli
     }
   });
 
+  // Initialize default users (admin and demo accounts)
+  async function initializeDefaultUsers() {
+    console.log("🚀 Initializing default user accounts...");
+    try {
+      // Check if admin user exists
+      const existingAdmin = await storage.getUserByUsername("admin");
+      if (!existingAdmin) {
+        console.log("🔐 Creating admin user...");
+        await storage.createUser({
+          username: "admin",
+          password: "admin123",
+          name: "Administrator",
+          email: "admin@gigster-garage.com",
+          role: "admin",
+          hasCompletedOnboarding: true,
+          emailNotifications: true,
+          smsNotifications: false,
+          emailOptIn: true,
+          smsOptIn: false
+        });
+        console.log("✅ Admin user created successfully");
+      } else {
+        console.log("👤 Admin user already exists, skipping creation");
+      }
+
+      // Check if demo user exists
+      const existingDemo = await storage.getUserByUsername("demo");
+      if (!existingDemo) {
+        console.log("🎮 Creating demo user...");
+        await storage.createUser({
+          username: "demo",
+          password: "demo123",
+          name: "Demo User",
+          email: "demo@gigster-garage.com",
+          role: "user",
+          hasCompletedOnboarding: true,
+          emailNotifications: false,
+          smsNotifications: false,
+          emailOptIn: false,
+          smsOptIn: false
+        });
+        console.log("✅ Demo user created successfully");
+      } else {
+        console.log("🎮 Demo user already exists, skipping creation");
+      }
+      console.log("✅ Default user initialization complete");
+    } catch (error) {
+      console.error("❌ Error initializing default users:", error);
+    }
+  }
+
+  // Initialize default users on startup
+  await initializeDefaultUsers();
+
   return httpServer;
 }
