@@ -55,7 +55,7 @@ export default function AgencyHub() {
       return response.json();
     },
     onSuccess: (data) => {
-      setGeneratedImageUrl(data.imageUrl);
+      setGeneratedImageUrl(data.imageUrl || data.url || data.path || data?.data?.imageUrl || "");
       toast({ title: "Image generated!", description: "Your marketing visual is ready." });
     },
     onError: () => {
@@ -158,7 +158,7 @@ export default function AgencyHub() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[var(--bg)]">
       <AppHeader />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -171,12 +171,12 @@ export default function AgencyHub() {
                 Back to My Dashboard
               </Button>
             </Link>
-            <div className="bg-purple-100 p-3 rounded-lg">
-              <Zap className="h-8 w-8 text-purple-600" />
+            <div className="bg-[var(--surface)] p-3 rounded-lg border border-[color:var(--keyline)]"
+              <Zap className="h-8 w-8 text-[var(--brand)]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Agency Hub</h1>
-              <p className="text-gray-600">AI-powered marketing and creative tools for your business</p>
+              <h1 className="text-3xl font-bold text-[var(--text)]">Agency Hub</h1>
+              <p className="text-[var(--muted)]">AI-powered marketing and creative tools for your business</p>
             </div>
           </div>
         </div>
@@ -246,7 +246,7 @@ export default function AgencyHub() {
                     <Button 
                       onClick={() => createMutation.mutate(createPrompt)}
                       disabled={!createPrompt.trim() || createMutation.isPending}
-                      className="w-full bg-purple-600 hover:bg-purple-700"
+                      className="w-full bg-[var(--brand)] hover:bg-[#09172f] text-white"
                       data-testid="button-create-generate"
                     >
                       {createMutation.isPending ? (
@@ -265,7 +265,7 @@ export default function AgencyHub() {
                       onClick={() => generateImageMutation.mutate(createPrompt)}
                       disabled={!createPrompt.trim() || generateImageMutation.isPending}
                       variant="outline"
-                      className="w-full border-purple-200 hover:bg-purple-50"
+                      className="w-full border-[color:var(--keyline)] hover:bg-[var(--surface)]"
                       data-testid="button-generate-image"
                     >
                       {generateImageMutation.isPending ? (
@@ -293,7 +293,7 @@ export default function AgencyHub() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setGeneratedImageUrl("")}
-                        className="h-8 w-8 p-0 hover:bg-gray-100"
+                        className="h-8 w-8 p-0 text-gray-700 dark:text-gray-200 hover:bg-neutral-200 dark:hover:bg-neutral-800"
                         data-testid="button-close-image"
                       >
                         <X className="h-4 w-4" />
@@ -333,6 +333,15 @@ export default function AgencyHub() {
                           >
                             <Download className="h-4 w-4 mr-2" />
                             Download
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setGeneratedImageUrl("")}
+                            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            data-testid="button-clear-image"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Clear
                           </Button>
                         </div>
                       </div>
@@ -403,7 +412,7 @@ export default function AgencyHub() {
                   <Button 
                     onClick={() => writeMutation.mutate(writePrompt)}
                     disabled={!writePrompt.trim() || writeMutation.isPending}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full bg-[var(--accent)] hover:bg-[#26b3b0] text-white"
                     data-testid="button-write-generate"
                   >
                     {writeMutation.isPending ? (
@@ -478,7 +487,7 @@ export default function AgencyHub() {
                   <Button 
                     onClick={() => promoteMutation.mutate(promotePrompt)}
                     disabled={!promotePrompt.trim() || promoteMutation.isPending}
-                    className="w-full bg-orange-600 hover:bg-orange-700"
+                    className="w-full bg-[var(--signal)] hover:bg-[#e6a329] text-white"
                     data-testid="button-promote-generate"
                   >
                     {promoteMutation.isPending ? (
@@ -553,7 +562,7 @@ export default function AgencyHub() {
                   <Button 
                     onClick={() => trackMutation.mutate(trackData)}
                     disabled={!trackData.trim() || trackMutation.isPending}
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full bg-[var(--success)] hover:bg-[#1a7354] text-white"
                     data-testid="button-track-analyze"
                   >
                     {trackMutation.isPending ? (
