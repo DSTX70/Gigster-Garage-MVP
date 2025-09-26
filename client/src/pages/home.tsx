@@ -67,9 +67,9 @@ export default function Home() {
       <AppHeader />
       <ReminderSystem />
       
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6 sm:py-8 lg:py-12">
         {/* Dashboard Header */}
-        <div className="mb-6 md:mb-8">
+        <div className="mb-8 lg:mb-12">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
             <h1 className="gg-h1 text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text)' }}>My Dashboard</h1>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
@@ -78,7 +78,7 @@ export default function Home() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="w-full sm:w-auto bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+                    className="w-full sm:w-auto bg-[var(--brand)] text-white border-[var(--brand)] hover:opacity-90"
                     data-testid="button-analytics-dashboard"
                   >
                     <TrendingUp className="h-4 w-4 mr-1" />
@@ -91,7 +91,7 @@ export default function Home() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="w-full sm:w-auto bg-green-600 text-white border-green-600 hover:bg-green-700 hover:border-green-700"
+                  className="w-full sm:w-auto bg-[var(--success)] text-white border-[var(--success)] hover:opacity-90"
                   data-testid="button-user-manual"
                 >
                   <BookOpen className="h-4 w-4 mr-1" />
@@ -131,7 +131,7 @@ export default function Home() {
         </div>
 
         {/* Urgent & Overview Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8 lg:mb-12">
           {/* Overdue Tasks */}
           <Tooltip>
             <TooltipTrigger asChild>

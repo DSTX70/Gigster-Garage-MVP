@@ -131,8 +131,8 @@ export function AppHeader() {
 
   return (
     <header className="gg-header border-b sticky top-0 z-50 shadow-lg">
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2 sm:py-3">
-        <div className="flex flex-col space-y-2 sm:space-y-3">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="flex flex-col space-y-3 sm:space-y-4">
           {/* Top line: Shield + Logo + Tagline + Timer */}
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-2 sm:space-x-3">
