@@ -1,0 +1,329 @@
+import * as React from 'react'
+
+/**
+ * Gigster Garage — Style Refresh (Single TSX File)
+ * Drop this into src/App.tsx (Vite/CRA/Replit). No external CSS required.
+ * - Light + softened Dark theme (persisted in localStorage)
+ * - Two‑column Projects grid on desktop (1‑col < 720px)
+ * - Compact "Add Task" buttons (34px)
+ * - Brand gradients: page glows, navy gradient topbar, card mint→amber stripe, progress mint→navy
+ * - Section‑level collapsibles via <details>/<summary>
+ */
+
+const GG_CSS = `
+:root{
+  /* Brand */
+  --brand:#0B1D3A; /* Navy */
+  --accent:#2EC5C2; /* Mint */
+  --signal:#FFB52E; /* Amber */
+
+  /* Neutrals (light) */
+  --bg:#F7F8FA;
+  --panel:#FFFFFF;
+  --surface:#F3F4F6;
+  --text:#1A2433;
+  --muted:#6B7280;
+  --keyline:rgba(11,29,58,0.10);
+
+  /* States */
+  --success:#1e845e;
+  --warn:#d58b19;
+  --danger:#c43b3b;
+  --info:#2e7ea8;
+
+  /* Elevation */
+  --radius:14px;
+  --shadow-1:0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(11,29,58,.06);
+}
+
+/* Dark theme overrides */
+.theme-dark{
+  --bg:#151A22;
+  --panel:#1B2330;
+  --surface:#161C27;
+  --text:#ECF2F8;
+  --muted:#B4BECA;
+  --keyline:rgba(255,255,255,.10);
+  --shadow-1:0 1px 2px rgba(0,0,0,.18), 0 8px 24px rgba(0,0,0,.28);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:'Open Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 600px at 8% -10%, rgba(46,197,194,.10), transparent 55%),
+    radial-gradient(900px 420px at 110% -20%, rgba(255,181,46,.10), transparent 60%),
+    var(--bg);
+  line-height:1.5;
+  transition:background .2s ease, color .2s ease;
+}
+
+/* Topbar */
+.topbar{position:sticky;top:0;z-index:50;background:linear-gradient(180deg, var(--brand) 0%, #08152b 100%);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.08) inset, 0 8px 24px rgba(0,0,0,.12)}
+.topbar-inner{max-width:1200px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg, var(--signal), var(--accent));display:grid;place-items:center;font-weight:700;color:#0b1d3a}
+.brand-name{font-family:'Montserrat',sans-serif;font-weight:700;letter-spacing:.2px}
+.toolbar{display:flex;align-items:center;gap:10px}
+.btn{appearance:none;border:0;cursor:pointer;font:600 13px/1 'Open Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;height:40px;padding:0 14px;border-radius:12px;display:inline-flex;align-items:center;gap:10px;transition:background .15s ease,border-color .15s ease,color .15s ease,opacity .15s ease}
+.btn-primary{background:linear-gradient(180deg, var(--brand), #09172f);color:#fff}
+.btn-primary:hover{background:#09172f}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.10)}
+.search-wrap{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.search{height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.25);padding:0 14px 0 40px;color:#0B1D3A;background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%238899aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>') no-repeat 12px center}
+.theme-dark .search{background:var(--surface) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%239AA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>') no-repeat 12px center;border-color:rgba(255,255,255,.18);color:var(--text)}
+.search::placeholder{color:#8899aa}
+.theme-dark .search::placeholder{color:#9AA3AF}
+.search:focus{outline:none;box-shadow:0 0 0 3px rgba(46,197,194,.25)}
+
+/* Page */
+.page{max-width:1200px;margin:18px auto 48px;padding:0 20px}
+h1{font-family:'Montserrat',sans-serif;font-size:22px;line-height:1.3;margin:6px 0 2px}
+.subheader{color:var(--muted);font-size:14px}
+
+/* KPI row */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0 22px}
+.kpi{background:var(--panel);border:1px solid var(--keyline);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:12px 14px;display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:center}
+.kpi .ico{width:26px;height:26px;display:grid;place-items:center;border-radius:999px;font-size:12px}
+.ico-danger{background:rgba(196,59,59,.12);color:var(--danger)}
+.ico-warn{background:rgba(213,139,25,.14);color:var(--warn)}
+.ico-success{background:rgba(46,197,194,.14);color:var(--accent)}
+.ico-info{background:rgba(46,126,168,.14);color:var(--info)}
+.kpi .value{font-family:'Montserrat',sans-serif;font-size:20px}
+.kpi .label{color:var(--muted);font-size:12px}
+
+/* Collapsible sections */
+details.section{background:transparent;border:1px solid var(--keyline);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:10px 12px;margin:10px 0 16px}
+details.section[open]{padding-bottom:14px}
+details.section>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px}
+details.section>summary::-webkit-details-marker{display:none}
+.summary-left{display:flex;align-items:center;gap:10px}
+.caret{width:18px;height:18px;border-radius:6px;background:linear-gradient(180deg, var(--accent), var(--signal));display:grid;place-items:center;color:#0B1D3A;font-weight:700;transform:rotate(0deg);transition:transform .15s ease}
+details[open] .caret{transform:rotate(90deg)}
+.summary-title{font-family:'Montserrat',sans-serif;font-size:16px}
+
+/* Projects grid (fixed two columns; collapses only on small screens) */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:720px){.kpis{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}
+
+/* Project cards */
+.card{position:relative;background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,0) 60%), var(--panel);border:1px solid var(--keyline);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:16px;display:grid;gap:8px}
+.card::before{content:'';position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg, var(--accent), var(--signal));opacity:.6;border-top-left-radius:var(--radius);border-top-right-radius:var(--radius)}
+.card-head{display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'Montserrat',sans-serif;font-size:17px;display:flex;align-items:center;gap:8px}
+
+.pill{font-size:11px;padding:3px 9px;border-radius:999px}
+.pill-active{color:var(--accent);background:rgba(46,197,194,.14)}
+.pill-cancel{color:var(--danger);background:rgba(196,59,59,.12)}
+
+.meta{font-size:12px;color:var(--muted);display:flex;gap:14px}
+.meta strong{color:var(--text);font-weight:600}
+
+.progress{height:6px;width:100%;border-radius:999px;background:#E5E7EB;overflow:hidden}
+.theme-dark .progress{background:rgba(255,255,255,.14)}
+.progress>span{display:block;height:100%;width:67%;background:linear-gradient(90deg, var(--accent), rgba(11,29,58,.95))}
+
+/* Card footer buttons (compact) */
+.card-foot{display:flex;gap:6px}
+.card-foot .btn{height:34px;padding:0 12px;font-size:13px}
+.btn-secondary{background:transparent;border:1px solid var(--keyline);color:var(--brand)}
+.btn-secondary:hover{background:rgba(11,29,58,.06)}
+
+/* Helper icons */
+.i{width:18px;height:18px;display:inline-block;vertical-align:-3px}
+.i-folder{background:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="%23E7EDF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h5l2 3h11v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h3l2 2h4"/></svg>') no-repeat center/contain}
+.theme-dark .i-folder{filter:none}
+
+/* Theme toggle */
+.toggle{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:12px;opacity:.9}
+.switch{position:relative;width:42px;height:24px;background:rgba(255,255,255,.25);border-radius:999px;cursor:pointer}
+.knob{position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .15s ease}
+.theme-dark .knob{transform:translateX(18px)}
+`;
+
+function useInjectHeadAssets(){
+  React.useEffect(() => {
+    // Fonts
+    const FONT_ID = 'gg-fonts';
+    if (!document.getElementById(FONT_ID)){
+      const link = document.createElement('link');
+      link.id = FONT_ID;
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400;600&display=swap';
+      document.head.appendChild(link);
+    }
+    // Styles
+    const STYLE_ID = 'gg-style-refresh';
+    if (!document.getElementById(STYLE_ID)){
+      const style = document.createElement('style');
+      style.id = STYLE_ID;
+      style.textContent = GG_CSS;
+      document.head.appendChild(style);
+    }
+  }, []);
+}
+
+function useTheme(): [boolean, () => void]{
+  const [dark, setDark] = React.useState<boolean>(() => {
+    try { return localStorage.getItem('gg-theme') === 'dark'; } catch { return false; }
+  });
+  React.useEffect(() => {
+    document.body.classList.toggle('theme-dark', dark);
+    try { localStorage.setItem('gg-theme', dark ? 'dark' : 'light'); } catch {}
+  }, [dark]);
+  const toggle = React.useCallback(() => setDark(v => !v), []);
+  return [dark, toggle];
+}
+
+// Demo data types
+type KPI = { icon?: React.ReactNode; label: string; value: string | number; tone?: 'danger'|'warn'|'success'|'info' }
+
+type Project = {
+  id: string
+  title: string
+  status: 'active'|'cancelled'
+  tasks: number
+  priority?: 'critical'|'normal'|'low'
+  progressPct: number // 0..100
+}
+
+// UI Bits
+function Topbar({ onToggleDark }: { onToggleDark: () => void }){
+  return (
+    <header className="topbar" role="banner">
+      <div className="topbar-inner">
+        <div className="search-wrap">
+          <div className="brand" aria-label="Gigster Garage">
+            <div className="brand-mark" aria-hidden>G</div>
+            <div className="brand-name">Gigster Garage</div>
+          </div>
+          <div className="toolbar">
+            <div className="toggle" title="Toggle dark mode" onClick={onToggleDark}>
+              <div className="switch" id="themeSwitch"><div className="knob" /></div>
+              Dark
+            </div>
+            <input className="search" placeholder="Search tasks, projects, clients… (Ctrl+K)" aria-label="Search" />
+            <button className="btn btn-ghost" title="User Manual">User Manual</button>
+            <button className="btn btn-primary" title="Create">+ Spark New Task</button>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function KPIRow({ items }: { items: KPI[] }){
+  const toneClass = (t?: KPI['tone']) => ({
+    danger: { bg:'rgba(196,59,59,.12)', fg:'var(--danger)' },
+    warn:   { bg:'rgba(213,139,25,.14)', fg:'var(--warn)' },
+    success:{ bg:'rgba(46,197,194,.14)', fg:'var(--accent)' },
+    info:   { bg:'rgba(46,126,168,.14)', fg:'var(--info)' },
+  }[t||'info']);
+  return (
+    <div className="kpis">
+      {items.map((k,i)=>{
+        const t = toneClass(k.tone);
+        return (
+          <div key={i} className="kpi">
+            <div className="ico" style={{ background: t.bg, color: t.fg }}>{k.icon ?? '•'}</div>
+            <div>
+              <div className="value">{k.value}</div>
+              <div className="label">{k.label}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Section({ title, right, children, defaultOpen=true }: { title: React.ReactNode; right?: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }){
+  return (
+    <details className="section" open={defaultOpen}>
+      <summary>
+        <div className="summary-left">
+          <div className="caret">›</div>
+          <div className="summary-title">{title}</div>
+        </div>
+        <div className="right-actions">{right}</div>
+      </summary>
+      {children}
+    </details>
+  );
+}
+
+function ProjectCard({ project, onOpen, onAddTask }: { project: Project; onOpen?: (id:string)=>void; onAddTask?: (id:string)=>void }){
+  const folderIcon = `url('data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23E7EDF6\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 7h5l2 3h11v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><path d=\"M3 7V5a2 2 0 0 1 2-2h3l2 2h4\"/></svg>`)}') no-repeat center/contain`;
+  return (
+    <article className="card">
+      <div className="card-head">
+        <div className="card-title"><span className="i i-folder" style={{ background: folderIcon }} aria-hidden /> {project.title}</div>
+        <span className={`pill ${project.status==='active' ? 'pill-active' : 'pill-cancel'}`}>{project.status}</span>
+      </div>
+      <div className="meta"><span>Tasks: <strong>{project.tasks}</strong></span><span>Priority: <strong style={{color: project.priority==='critical' ? 'var(--signal)' : 'var(--text)'}}>{project.priority ?? '—'}</strong></span></div>
+      <div className="progress" aria-label="Progress"><span style={{ width: `${Math.max(0,Math.min(100,project.progressPct))}%` }} /></div>
+      <div className="card-foot">
+        <button className="btn btn-secondary" onClick={()=>onOpen?.(project.id)}>Open</button>
+        <button className="btn btn-primary" style={{ height: 34, fontSize: 13, padding: '0 12px' }} onClick={()=>onAddTask?.(project.id)}>Add Task</button>
+      </div>
+    </article>
+  );
+}
+
+function ProjectsGrid({ projects, onOpen, onAddTask }: { projects: Project[]; onOpen?: (id:string)=>void; onAddTask?: (id:string)=>void }){
+  return (
+    <section className="grid" aria-label="Project list">
+      {projects.map(p => (
+        <ProjectCard key={p.id} project={p} onOpen={onOpen} onAddTask={onAddTask} />
+      ))}
+    </section>
+  );
+}
+
+export default function App(): JSX.Element {
+  useInjectHeadAssets();
+  const [, toggleDark] = useTheme();
+
+  // Demo data (swap with live data bindings)
+  const kpis: KPI[] = [
+    { label:'Overdue', value:0, tone:'danger' },
+    { label:'Due soon', value:0, tone:'warn' },
+    { label:'High priority', value:1, tone:'info' },
+    { label:'Completed today', value:0, tone:'success' },
+  ];
+
+  const projects: Project[] = [
+    { id:'1', title:'Digital Transformation Strategy', status:'cancelled', tasks:0, priority:'critical', progressPct:0 },
+    { id:'2', title:'Gigster', status:'active', tasks:1, priority:'critical', progressPct:67 },
+    { id:'3', title:'Startup', status:'cancelled', tasks:0, progressPct:0 },
+    { id:'4', title:'TechFlow Platform Redesign', status:'cancelled', tasks:0, progressPct:0 },
+  ];
+
+  return (
+    <div>
+      <Topbar onToggleDark={toggleDark} />
+
+      <main className="page" role="main">
+        <h1>My Dashboard</h1>
+        <div className="subheader">Welcome back! Here's what's happening with your tasks and projects.</div>
+
+        <Section title={<span>Key performance indicators</span>}>
+          <KPIRow items={kpis} />
+        </Section>
+
+        <Section
+          title={<span>Projects <span className="badge" aria-label="Active projects">4 active</span></span>}
+          right={<>
+            <button className="btn btn-secondary" type="button">Analytics Dashboard</button>
+            <button className="btn btn-primary" type="button">+ New Project</button>
+          </>}
+        >
+          <ProjectsGrid projects={projects} />
+        </Section>
+      </main>
+    </div>
+  );
+}

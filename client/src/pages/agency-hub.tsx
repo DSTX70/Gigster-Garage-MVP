@@ -171,7 +171,7 @@ export default function AgencyHub() {
                 Back to My Dashboard
               </Button>
             </Link>
-            <div className="bg-[var(--surface)] p-3 rounded-lg border border-[color:var(--keyline)]"
+            <div className="bg-[var(--surface)] p-3 rounded-lg border border-[color:var(--keyline)]">
               <Zap className="h-8 w-8 text-[var(--brand)]" />
             </div>
             <div>
