@@ -286,8 +286,19 @@ export default function AgencyHub() {
               <div className="space-y-6">
                 {/* Generated Image */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                     <CardTitle>Generated Visual</CardTitle>
+                    {generatedImageUrl && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setGeneratedImageUrl("")}
+                        className="h-8 w-8 p-0 hover:bg-gray-100"
+                        data-testid="button-close-image"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent>
                     {generatedImageUrl ? (
