@@ -136,7 +136,7 @@ export default function Home() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=overdue">
-                <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow cursor-pointer">
+                <Card className="border-l-4 border-l-red-500 card-elevated card-interactive">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -158,7 +158,7 @@ export default function Home() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=due-soon">
-                <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition-shadow cursor-pointer">
+                <Card className="border-l-4 border-l-yellow-500 card-elevated card-interactive">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>

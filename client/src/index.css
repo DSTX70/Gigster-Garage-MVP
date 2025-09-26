@@ -671,6 +671,86 @@
     }
   }
   
+  /* Enhanced Component Styling Patterns - Design Refresh */
+  
+  /* Enhanced Button Patterns */
+  .btn-brand {
+    @apply bg-[var(--brand)] text-white border-[var(--brand)] hover:opacity-90 transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-success {
+    @apply bg-[var(--success)] text-white border-[var(--success)] hover:opacity-90 transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-accent {
+    @apply bg-[var(--accent)] text-white border-[var(--accent)] hover:opacity-90 transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  /* Enhanced Card Patterns */
+  .card-elevated {
+    @apply bg-[var(--panel)] border border-[var(--keyline)] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1;
+  }
+  
+  .card-interactive {
+    @apply cursor-pointer hover:border-[var(--accent)] transition-all duration-200;
+  }
+  
+  /* Enhanced Form Patterns */
+  .form-input-enhanced {
+    @apply border-[var(--keyline)] bg-[var(--panel)] focus:border-[var(--accent)] focus:ring-[var(--accent)] focus:ring-1 transition-all duration-200;
+  }
+  
+  /* Enhanced Status Indicators */
+  .status-indicator {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200;
+  }
+  
+  .status-success {
+    @apply bg-green-50 text-green-700 border-green-200 hover:bg-green-100;
+  }
+  
+  .status-warning {
+    @apply bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100;
+  }
+  
+  .status-danger {
+    @apply bg-red-50 text-red-700 border-red-200 hover:bg-red-100;
+  }
+  
+  .status-info {
+    @apply bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100;
+  }
+  
+  /* Enhanced Navigation Patterns */
+  .nav-item {
+    @apply flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-[var(--surface)] hover:text-[var(--accent)];
+  }
+  
+  .nav-item.active {
+    @apply bg-[var(--accent)] text-white shadow-sm;
+  }
+  
+  /* Enhanced Typography Patterns */
+  .text-brand {
+    color: var(--brand);
+  }
+  
+  .text-accent {
+    color: var(--accent);
+  }
+  
+  .text-success {
+    color: var(--success);
+  }
+  
+  .gradient-text-brand {
+    background: var(--grad);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+  }
+  
   /* Header Enhancements */
   .gigster-header {
     @apply bg-white border-b shadow-sm;
