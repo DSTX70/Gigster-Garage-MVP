@@ -63,7 +63,7 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <AppHeader />
       <ReminderSystem />
       
@@ -71,7 +71,7 @@ export default function Home() {
         {/* Dashboard Header */}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Dashboard</h1>
+            <h1 className="gg-h1 text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text)' }}>My Dashboard</h1>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
               {isAdmin && (
                 <Link href="/dashboard">
