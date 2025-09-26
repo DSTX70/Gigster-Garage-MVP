@@ -1,11 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Gigster Garage Brand Colors - Official Brand Guide */
+  /* Enhanced Brand System - Style Refresh */
+  --brand:#0B1D3A; /* Navy */
+  --accent:#2EC5C2; /* Mint */
+  --signal:#FFB52E; /* Amber */
+
+  /* Neutrals (light) */
+  --bg:#F7F8FA;
+  --panel:#FFFFFF;
+  --surface:#F3F4F6;
+  --text:#1A2433;
+  --muted:#6B7280;
+  --keyline:rgba(11,29,58,0.10);
+
+  /* States */
+  --success:#1e845e;
+  --warn:#d58b19;
+  --danger:#c43b3b;
+  --info:#2e7ea8;
+
+  /* Elevation */
+  --radius:14px;
+  --shadow-1:0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(11,29,58,.06);
+
+  /* Legacy Gigster Garage Brand Colors - Preserved for compatibility */
   --gg-teal: #008272;
   --gg-amber: #FFB200;
   --gg-teal-tint: #66E0C7;
@@ -16,9 +39,9 @@
   --gg-white: #FFFFFF;
 
   /* Brand gradients */
-  --grad: linear-gradient(90deg, #008272 0%, #FFB200 100%);
+  --grad: linear-gradient(90deg, var(--accent) 0%, var(--signal) 100%);
   --grad-soft: linear-gradient(90deg, #E7F7F3 0%, #FFF3DB 100%);
-  --subtext: #6B7280;
+  --subtext: var(--muted);
   --placeholder: #9CA3AF;
   
   /* Legacy mappings for backward compatibility */
@@ -88,7 +111,17 @@
   --gigster-shadow-amber: 0 4px 12px rgba(255, 176, 0, 0.15);
 }
 
-.dark {
+/* Enhanced Dark theme from style refresh */
+.dark, .theme-dark {
+  --bg:#151A22;
+  --panel:#1B2330;
+  --surface:#161C27;
+  --text:#ECF2F8;
+  --muted:#B4BECA;
+  --keyline:rgba(255,255,255,.10);
+  --shadow-1:0 1px 2px rgba(0,0,0,.18), 0 8px 24px rgba(0,0,0,.28);
+  
+  /* Legacy dark theme compatibility */
   --background: hsl(222 47% 11%);
   --foreground: hsl(210 17% 98%);
   --card: hsl(222 41% 13%);
@@ -99,9 +132,9 @@
   --primary-foreground: hsl(0 0% 100%);
   --secondary: hsl(211 100% 50%);
   --secondary-foreground: hsl(0 0% 100%);
-  --muted: hsl(217 33% 17%);
+  --muted-dark: hsl(217 33% 17%);
   --muted-foreground: hsl(215 12% 64%);
-  --accent: hsl(38 92% 50%);
+  --accent-hsl: hsl(38 92% 50%);
   --accent-foreground: hsl(222 47% 11%);
   --destructive: hsl(0 84% 60%);
   --destructive-foreground: hsl(0 0% 100%);
@@ -116,49 +149,80 @@
   }
   
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    color: var(--gg-slate-ink);
+    @apply text-foreground font-sans antialiased;
+    font-family: 'Open Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 8% -10%, rgba(46,197,194,.10), transparent 55%),
+      radial-gradient(900px 420px at 110% -20%, rgba(255,181,46,.10), transparent 60%),
+      var(--bg);
+    line-height: 1.5;
+    transition: background .2s ease, color .2s ease;
   }
   
-  /* Gigster Garage Typography System */
+  /* Enhanced Typography System - Style Refresh */
   h1, .gg-h1 {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 800; /* ExtraBold */
-    font-size: 2rem; /* 32px */
-    line-height: 1.2;
-    color: var(--gg-slate-ink);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1.3;
+    margin: 6px 0 2px;
+    color: var(--text);
   }
   
   h2, .gg-h2 {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 700; /* Bold */
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
     font-size: 1.5rem; /* 24px */
     line-height: 1.3;
-    color: var(--gg-slate-ink);
+    color: var(--text);
   }
   
   .gg-body {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 400; /* Regular */
-    font-size: 1rem; /* 16px */
+    font-family: 'Open Sans', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
     line-height: 1.6;
-    color: var(--gg-slate-ink);
+    color: var(--text);
   }
   
-  .gg-subtext {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 400; /* Regular */
-    font-size: 0.875rem; /* 14px */
+  .gg-subtext, .subheader {
+    font-family: 'Open Sans', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 14px;
     line-height: 1.6;
-    color: var(--subtext);
+    color: var(--muted);
   }
   
   .gg-placeholder {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 400; /* Regular */
-    font-size: 0.875rem; /* 14px */
+    font-family: 'Open Sans', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 0.875rem;
     color: var(--placeholder);
+  }
+  
+  /* Enhanced button styling from refresh */
+  .btn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    font: 600 13px/1 'Open Sans', system-ui, sans-serif;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;
+  }
+  
+  .btn-primary-refresh {
+    background: linear-gradient(180deg, var(--brand), #09172f);
+    color: #fff;
+  }
+  
+  .btn-primary-refresh:hover {
+    background: #09172f;
   }
 }
 
@@ -198,17 +262,33 @@
 }
 
 @layer components {
-  /* Gigster Garage Card Styles - Official Brand Guide */
+  /* Enhanced Card Styles - Style Refresh */
   .gg-card {
-    @apply rounded-xl p-6;
-    background: var(--gg-white);
-    box-shadow: 0 6px 22px rgba(0,0,0,0.06);
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,0) 60%), var(--panel);
+    border: 1px solid var(--keyline);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-1);
+    padding: 16px;
+    display: grid;
+    gap: 8px;
+  }
+  
+  .gg-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--signal));
+    opacity: .6;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
   }
   
   .gg-card-muted {
     @apply rounded-xl p-6;
     background-color: var(--gg-light-card);
-    box-shadow: 0 6px 22px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow-1);
   }
   
   .gg-btn-glow {
