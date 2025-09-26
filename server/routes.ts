@@ -6072,14 +6072,14 @@ ${context ? `Additional context: ${context}` : ''}`;
           break;
 
         case "presentation_slide_content":
-          const { presentationTitle, slideTitle, slideType, objective } = req.body;
+          const { presentationTitle, slideTitle, slideType, objective, audience: slideAudience } = req.body;
           prompt = `Generate engaging content for a presentation slide.
 
 Slide Details:
 - Presentation: ${presentationTitle || projectTitle}
 - Slide Title: ${slideTitle}
 - Slide Type: ${slideType}
-${audience ? `- Audience: ${audience}` : ''}
+${slideAudience ? `- Audience: ${slideAudience}` : ''}
 ${objective ? `- Presentation Objective: ${objective}` : ''}
 
 Create ${slideType} content that:
@@ -6090,6 +6090,44 @@ Create ${slideType} content that:
 - Maintains professional tone
 
 ${context ? `Additional context: ${context}` : ''}`;
+          maxTokens = 600;
+          break;
+
+        case "contract_scope":
+          const { contractTitle, contractValue } = req.body;
+          prompt = `Generate a detailed scope of work for contract "${contractTitle || projectTitle}"${clientName ? ` with client ${clientName}` : ''}${contractValue ? ` valued at $${contractValue}` : ''}.
+
+The scope of work should include:
+- Project objectives and goals
+- Detailed breakdown of tasks and activities
+- Key deliverables and milestones
+- Project boundaries and limitations
+- Responsibilities of each party
+- Timeline considerations
+- Quality standards and acceptance criteria
+
+Format as a comprehensive, professional scope that clearly defines what work will be performed.
+
+${context ? `Additional context: ${context}` : ''}`;
+          maxTokens = 800;
+          break;
+
+        case "contract_deliverables":
+          const { contractTitle: contractDelTitle, scope } = req.body;
+          prompt = `Create a comprehensive list of deliverables for contract "${contractDelTitle || projectTitle}"${clientName ? ` with client ${clientName}` : ''}.
+
+The deliverables should:
+- Be specific and measurable
+- Include all key outputs and results
+- Be organized logically by phase or category
+- Include acceptance criteria for each deliverable
+- Specify formats and quality standards
+- Include any supporting documentation
+
+${scope ? `Project scope: ${scope}` : ''}
+${context ? `Additional context: ${context}` : ''}
+
+Format as a detailed list that clearly defines what will be delivered to the client.`;
           maxTokens = 600;
           break;
 
