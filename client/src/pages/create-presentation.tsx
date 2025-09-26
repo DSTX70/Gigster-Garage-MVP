@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown, Save, PenTool, Loader2, FolderOpen } from "lucide-react";
+import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown, ArrowUp, ArrowDown, Save, PenTool, Loader2, FolderOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
@@ -53,6 +53,9 @@ export default function CreatePresentation() {
   // AI writing states
   const [isGeneratingObjective, setIsGeneratingObjective] = useState(false);
   const [generatingSlideContent, setGeneratingSlideContent] = useState<{ [key: number]: boolean }>({});
+  
+  // Slide expansion states
+  const [expandedSlides, setExpandedSlides] = useState<{ [key: number]: boolean }>({});
 
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -107,6 +110,14 @@ export default function CreatePresentation() {
     });
     
     setSlides(newSlides);
+  };
+
+  // Toggle slide expansion
+  const toggleSlideExpansion = (id: number) => {
+    setExpandedSlides(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   };
 
   // State to track created presentation ID
@@ -563,20 +574,24 @@ export default function CreatePresentation() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Slides</span>
-                <Button size="sm" onClick={addSlide}>
+                <Button size="sm" onClick={addSlide} data-testid="button-create-slide">
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Slide
+                  Create Slide
                 </Button>
               </CardTitle>
               <CardDescription>Manage your presentation slides and content</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {slides.sort((a, b) => a.order - b.order).map((slide, index) => (
+                {slides.sort((a, b) => a.order - b.order).map((slide, index) => {
+                  const isExpanded = expandedSlides[slide.id] || false;
+                  const slideTypeDisplay = slide.slideType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                  
+                  return (
                   <Card key={slide.id} className="border-2 border-orange-200">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 flex-1">
                           <Badge variant="outline" className="min-w-[60px] justify-center">
                             Slide {slide.order}
                           </Badge>
@@ -586,15 +601,27 @@ export default function CreatePresentation() {
                             onChange={(e) => updateSlide(slide.id, 'title', e.target.value)}
                             className="flex-1 border-orange-300"
                           />
+                          <Badge variant="secondary" className="text-xs">
+                            {slideTypeDisplay}
+                          </Badge>
                         </div>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleSlideExpansion(slide.id)}
+                            data-testid={`button-expand-slide-${slide.id}`}
+                            className="text-orange-600 hover:text-orange-700"
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => moveSlide(slide.id, 'up')}
                             disabled={index === 0}
                           >
-                            <ChevronUp className="h-4 w-4" />
+                            <ArrowUp className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -602,7 +629,7 @@ export default function CreatePresentation() {
                             onClick={() => moveSlide(slide.id, 'down')}
                             disabled={index === slides.length - 1}
                           >
-                            <ChevronDown className="h-4 w-4" />
+                            <ArrowDown className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -615,67 +642,89 @@ export default function CreatePresentation() {
                           </Button>
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Slide Type</Label>
-                        <Select 
-                          value={slide.slideType} 
-                          onValueChange={(value) => updateSlide(slide.id, 'slideType', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="title">Title Slide</SelectItem>
-                            <SelectItem value="content">Content Slide</SelectItem>
-                            <SelectItem value="bullet-points">Bullet Points</SelectItem>
-                            <SelectItem value="image">Image Slide</SelectItem>
-                            <SelectItem value="quote">Quote</SelectItem>
-                            <SelectItem value="conclusion">Conclusion</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            Content 
-                            <Badge variant="outline" className="text-xs">textarea</Badge>
+                      
+                      {/* Slide Preview (when collapsed) */}
+                      {!isExpanded && (
+                        <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                          <div className="text-sm text-gray-600 mb-1">Preview:</div>
+                          <div className="text-sm text-gray-800 line-clamp-2">
+                            {slide.content || <span className="italic text-gray-500">No content yet - click expand to add content</span>}
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => generateSlideContent(slide.id)}
-                            disabled={generatingSlideContent[slide.id]}
-                            className="flex items-center gap-2"
-                            data-testid={`button-generate-slide-${slide.id}`}
+                            onClick={() => toggleSlideExpansion(slide.id)}
+                            className="mt-2 text-orange-600 border-orange-300 hover:bg-orange-50"
                           >
-                            {generatingSlideContent[slide.id] ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <PenTool className="w-4 h-4" />
-                            )}
-                            {generatingSlideContent[slide.id] ? "Writing..." : "Write"}
+                            Expand to Edit
                           </Button>
-                        </Label>
-                        <Textarea
-                          placeholder={
-                            slide.slideType === 'bullet-points' 
-                              ? "• Point one\n• Point two\n• Point three" 
-                              : slide.slideType === 'quote'
-                              ? '"Your inspirational quote here"\n- Author Name'
-                              : "Enter slide content..."
-                          }
-                          rows={4}
-                          className="min-h-[100px] resize-y bg-orange-50 border-orange-200 focus:border-orange-500"
-                          value={slide.content}
-                          onChange={(e) => updateSlide(slide.id, 'content', e.target.value)}
-                        />
-                      </div>
-                    </CardContent>
+                        </div>
+                      )}
+                    </CardHeader>
+                    {/* Detailed Editing (when expanded) */}
+                    {isExpanded && (
+                      <CardContent className="space-y-4 border-t border-orange-200 bg-white">
+                        <div className="space-y-2">
+                          <Label>Slide Type</Label>
+                          <Select 
+                            value={slide.slideType} 
+                            onValueChange={(value) => updateSlide(slide.id, 'slideType', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="title">Title Slide</SelectItem>
+                              <SelectItem value="content">Content Slide</SelectItem>
+                              <SelectItem value="bullet-points">Bullet Points</SelectItem>
+                              <SelectItem value="image">Image Slide</SelectItem>
+                              <SelectItem value="quote">Quote</SelectItem>
+                              <SelectItem value="conclusion">Conclusion</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              Content 
+                              <Badge variant="outline" className="text-xs">textarea</Badge>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => generateSlideContent(slide.id)}
+                              disabled={generatingSlideContent[slide.id]}
+                              className="flex items-center gap-2"
+                              data-testid={`button-generate-slide-${slide.id}`}
+                            >
+                              {generatingSlideContent[slide.id] ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <PenTool className="w-4 h-4" />
+                              )}
+                              {generatingSlideContent[slide.id] ? "Writing..." : "Write"}
+                            </Button>
+                          </Label>
+                          <Textarea
+                            placeholder={
+                              slide.slideType === 'bullet-points' 
+                                ? "• Point one\n• Point two\n• Point three" 
+                                : slide.slideType === 'quote'
+                                ? '"Your inspirational quote here"\n- Author Name'
+                                : "Enter slide content..."
+                            }
+                            rows={4}
+                            className="min-h-[100px] resize-y bg-orange-50 border-orange-200 focus:border-orange-500"
+                            value={slide.content}
+                            onChange={(e) => updateSlide(slide.id, 'content', e.target.value)}
+                          />
+                        </div>
+                      </CardContent>
+                    )}
                   </Card>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
