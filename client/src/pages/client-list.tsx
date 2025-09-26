@@ -153,7 +153,7 @@ export default function ClientList() {
               </Button>
             </Link>
             <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-[#FF7F00]" />
+              <Users className="h-8 w-8 text-[var(--signal)]" />
               <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
             </div>
           </div>

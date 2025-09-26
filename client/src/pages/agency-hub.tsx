@@ -246,7 +246,7 @@ export default function AgencyHub() {
                     <Button 
                       onClick={() => createMutation.mutate(createPrompt)}
                       disabled={!createPrompt.trim() || createMutation.isPending}
-                      className="w-full bg-[var(--brand)] hover:bg-[#09172f] text-white"
+                      className="w-full bg-[var(--brand)] hover:opacity-90 text-white"
                       data-testid="button-create-generate"
                     >
                       {createMutation.isPending ? (
@@ -412,7 +412,7 @@ export default function AgencyHub() {
                   <Button 
                     onClick={() => writeMutation.mutate(writePrompt)}
                     disabled={!writePrompt.trim() || writeMutation.isPending}
-                    className="w-full bg-[var(--accent)] hover:bg-[#26b3b0] text-white"
+                    className="w-full bg-[var(--accent)] hover:opacity-90 text-white"
                     data-testid="button-write-generate"
                   >
                     {writeMutation.isPending ? (
@@ -487,7 +487,7 @@ export default function AgencyHub() {
                   <Button 
                     onClick={() => promoteMutation.mutate(promotePrompt)}
                     disabled={!promotePrompt.trim() || promoteMutation.isPending}
-                    className="w-full bg-[var(--signal)] hover:bg-[#e6a329] text-white"
+                    className="w-full bg-[var(--signal)] hover:opacity-90 text-white"
                     data-testid="button-promote-generate"
                   >
                     {promoteMutation.isPending ? (
@@ -562,7 +562,7 @@ export default function AgencyHub() {
                   <Button 
                     onClick={() => trackMutation.mutate(trackData)}
                     disabled={!trackData.trim() || trackMutation.isPending}
-                    className="w-full bg-[var(--success)] hover:bg-[#1a7354] text-white"
+                    className="w-full bg-[var(--success)] hover:opacity-90 text-white"
                     data-testid="button-track-analyze"
                   >
                     {trackMutation.isPending ? (

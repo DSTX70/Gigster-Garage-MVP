@@ -445,14 +445,14 @@ export default function CreateProposal() {
             <CardContent className="p-8">
               <div className="space-y-8">
                 {/* Company Branding Header */}
-                <div className="text-center border-b-2 border-[#FF7F00] pb-6 mb-8">
+                <div className="text-center border-b-2 border-[var(--signal)] pb-6 mb-8">
                   <div className="flex items-center justify-center gap-4 mb-4">
-                    <div className="w-16 h-16 bg-[#FF7F00] rounded-lg flex items-center justify-center">
+                    <div className="w-16 h-16 bg-[var(--signal)] rounded-lg flex items-center justify-center">
                       <span className="text-white font-bold text-2xl">GG</span>
                     </div>
                     <div className="text-left">
                       <h1 className="text-3xl font-bold text-gray-900">Gigster Garage</h1>
-                      <p className="text-[#FF7F00] font-semibold">Smarter tools for bolder dreams</p>
+                      <p className="text-[var(--signal)] font-semibold">Smarter tools for bolder dreams</p>
                     </div>
                   </div>
                 </div>

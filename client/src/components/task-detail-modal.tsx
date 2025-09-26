@@ -352,7 +352,7 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
 
           {/* Team Collaboration Section */}
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-[#0B1D3A] flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-[var(--ignition-teal)] flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
               Team Collaboration
             </h2>
