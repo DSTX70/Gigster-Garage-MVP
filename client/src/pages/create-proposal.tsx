@@ -914,11 +914,11 @@ export default function CreateProposal() {
 
       {/* Project Description Questions Dialog */}
       <Dialog open={showDescriptionQuestions} onOpenChange={setShowDescriptionQuestions}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Project Description Questions</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="projectType">What type of project is this?</Label>
@@ -984,29 +984,29 @@ export default function CreateProposal() {
                 />
               </div>
             </div>
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={() => setShowDescriptionQuestions(false)}>
-                Cancel
-              </Button>
-              <Button onClick={generateDescriptionWithQuestions} disabled={isGeneratingDescription}>
-                {isGeneratingDescription ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
-                ) : (
-                  "Generate Description"
-                )}
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end space-x-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowDescriptionQuestions(false)}>
+              Cancel
+            </Button>
+            <Button onClick={generateDescriptionWithQuestions} disabled={isGeneratingDescription}>
+              {isGeneratingDescription ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
+              ) : (
+                "Generate Description"
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Deliverables Questions Dialog */}
       <Dialog open={showDeliverablesQuestions} onOpenChange={setShowDeliverablesQuestions}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Deliverables Specification</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="outputFormats">What output formats are required?</Label>
@@ -1072,29 +1072,29 @@ export default function CreateProposal() {
                 />
               </div>
             </div>
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={() => setShowDeliverablesQuestions(false)}>
-                Cancel
-              </Button>
-              <Button onClick={generateDeliverablesWithQuestions} disabled={isGeneratingDeliverables}>
-                {isGeneratingDeliverables ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
-                ) : (
-                  "Generate Deliverables"
-                )}
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end space-x-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowDeliverablesQuestions(false)}>
+              Cancel
+            </Button>
+            <Button onClick={generateDeliverablesWithQuestions} disabled={isGeneratingDeliverables}>
+              {isGeneratingDeliverables ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
+              ) : (
+                "Generate Deliverables"
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Terms & Conditions Questions Dialog */}
       <Dialog open={showTermsQuestions} onOpenChange={setShowTermsQuestions}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Terms & Conditions Specification</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="paymentSchedule">What is the payment schedule?</Label>
@@ -1160,18 +1160,18 @@ export default function CreateProposal() {
                 />
               </div>
             </div>
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={() => setShowTermsQuestions(false)}>
-                Cancel
-              </Button>
-              <Button onClick={generateTermsWithQuestions} disabled={isGeneratingTerms}>
-                {isGeneratingTerms ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
-                ) : (
-                  "Generate Terms"
-                )}
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end space-x-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowTermsQuestions(false)}>
+              Cancel
+            </Button>
+            <Button onClick={generateTermsWithQuestions} disabled={isGeneratingTerms}>
+              {isGeneratingTerms ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</>
+              ) : (
+                "Generate Terms"
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
