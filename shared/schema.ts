@@ -110,7 +110,7 @@ export type InsertClient = typeof clients.$inferInsert;
 // Client Documents
 export const clientDocuments = pgTable("client_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  clientId: varchar("client_id").references(() => clients.id),
   name: varchar("name").notNull(),
   description: text("description"),
   type: varchar("type", { enum: ["proposal", "invoice", "contract", "presentation", "report", "agreement", "other"] }).notNull(),
