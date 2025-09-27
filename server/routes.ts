@@ -2784,16 +2784,16 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       });
 
       // Set object ACL policy for the uploaded file
-      if (validatedData.filePath) {
+      if (validatedData.fileUrl) {
         const objectStorageService = new ObjectStorageService();
         const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
-          validatedData.filePath,
+          validatedData.fileUrl,
           {
             owner: req.session.user?.id || "",
             visibility: "private", // Client documents are private by default
           }
         );
-        validatedData.filePath = normalizedPath;
+        validatedData.fileUrl = normalizedPath;
       }
 
       const document = await storage.createClientDocument(validatedData);
@@ -6233,6 +6233,23 @@ ${context ? `Additional context: ${context}` : ''}
 
 Format as a detailed list that clearly defines what will be delivered to the client.`;
           maxTokens = 600;
+          break;
+
+        case "invoice_notes":
+          prompt = `Generate professional invoice notes and payment terms${clientName ? ` for client ${clientName}` : ''}.
+
+The notes should include:
+- Clear payment terms and due date information
+- Accepted payment methods
+- Late payment policies if applicable
+- Contact information for payment inquiries
+- Any relevant project or service references
+- Professional but friendly tone
+
+${context ? `Additional context: ${context}` : ''}
+
+Keep the notes concise but comprehensive, suitable for a professional invoice.`;
+          maxTokens = 400;
           break;
 
         default:
