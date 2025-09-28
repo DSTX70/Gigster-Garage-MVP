@@ -87,9 +87,16 @@ const errorTracker = {
   }
 };
 
+// Define error tracker type first
+interface ErrorTracker {
+  errors: Map<string, number>;
+  logError(route: string, status: number, error: string): void;
+  getTopErrors(limit?: number): [string, number][];
+}
+
 // Make error tracker globally accessible for middleware
 declare global {
-  var errorTracker: typeof errorTracker;
+  var errorTracker: ErrorTracker;
 }
 global.errorTracker = errorTracker;
 
@@ -124,49 +131,26 @@ declare global {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Error tracking endpoints for audit purposes (FIRST - before other routes)
-  app.get('/api/_audit/errors/top', (req, res) => {
-    const topErrors = global.errorTracker ? global.errorTracker.getTopErrors(20) : [];
-    res.json({
-      success: true,
-      topErrors: topErrors.map(([key, count]: [string, number]) => ({
-        error: key,
-        count
-      }))
+  // Request counters for dynamic error rate calculation
+  let totalRequests = 0;
+  let failedRequests = 0;
+
+  // Request counting middleware with proper finish listener and error logging
+  app.use((req, res, next) => {
+    totalRequests++;
+    res.on('finish', () => {
+      if (res.statusCode >= 400) {
+        failedRequests++;
+        
+        // Log errors to errorTracker for audit endpoints (covers non-throw paths)
+        const route = req.originalUrl || req.path || 'unknown';
+        const msg = res.locals.errorMessage || (res.statusCode >= 500 ? 'ServerError' : 'ClientError');
+        if (global.errorTracker) {
+          global.errorTracker.logError(route, res.statusCode, msg);
+        }
+      }
     });
-  });
-  
-  app.get('/api/_audit/errors/summary', (req, res) => {
-    const topErrors = global.errorTracker ? global.errorTracker.getTopErrors(50) : [];
-    const totalErrors = global.errorTracker 
-      ? Array.from(global.errorTracker.errors.values()).reduce((a: number, b: number) => a + b, 0)
-      : 0;
-    
-    // Separate 4xx vs 5xx errors
-    const errorsByStatus = new Map<string, number>();
-    const errorsByRoute = new Map<string, number>();
-    
-    topErrors.forEach(([key, count]) => {
-      const status = key.split('_')[0];
-      const statusGroup = status.startsWith('4') ? '4xx' : status.startsWith('5') ? '5xx' : 'other';
-      errorsByStatus.set(statusGroup, (errorsByStatus.get(statusGroup) || 0) + count);
-      
-      const route = key.split('_')[1] || 'unknown';
-      errorsByRoute.set(route, (errorsByRoute.get(route) || 0) + count);
-    });
-    
-    res.json({
-      success: true,
-      currentErrorRate: '4.92%',
-      totalErrors,
-      errorsByStatus: Array.from(errorsByStatus.entries()),
-      errorsByRoute: Array.from(errorsByRoute.entries()).slice(0, 10),
-      topErrors: topErrors.slice(0, 10).map(([key, count]: [string, number]) => ({
-        error: key,
-        count,
-        percentage: totalErrors > 0 ? ((count / totalErrors) * 100).toFixed(2) : '0'
-      }))
-    });
+    next();
   });
 
   // Apply performance monitoring to all routes
@@ -313,6 +297,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.user = req.session.user;
     next();
   };
+
+  // Error tracking endpoints for audit purposes (after session middleware)
+  app.get('/api/_audit/errors/top', requireAdmin, (req, res) => {
+    try {
+      const topErrors = global.errorTracker?.getTopErrors(20) || [];
+      res.json({
+        success: true,
+        topErrors: topErrors.map(([key, count]) => ({
+          route: key.split('_')[1] || 'unknown',
+          status: key.split('_')[0] || 'unknown', 
+          count
+        }))
+      });
+    } catch {
+      res.status(500).json({ success: false, message: 'Failed to fetch error data' });
+    }
+  });
+  
+  app.get('/api/_audit/errors/summary', requireAdmin, (req, res) => {
+    try {
+      const topErrors = global.errorTracker?.getTopErrors(50) || [];
+      const totalErrors = topErrors.reduce((sum, [, count]) => sum + count, 0);
+      
+      // Dynamic error rate calculation
+      const currentErrorRate = totalRequests > 0 
+        ? ((failedRequests / totalRequests) * 100).toFixed(2) + '%'
+        : '0%';
+      
+      // Categorize errors
+      const errorsByStatus = new Map<string, number>();
+      const errorsByRoute = new Map<string, number>();
+      
+      topErrors.forEach(([key, count]) => {
+        const status = key.split('_')[0] || 'unknown';
+        const route = key.split('_')[1] || 'unknown';
+        const statusGroup = status.startsWith('4') ? '4xx' : status.startsWith('5') ? '5xx' : 'other';
+        
+        errorsByStatus.set(statusGroup, (errorsByStatus.get(statusGroup) || 0) + count);
+        errorsByRoute.set(route, (errorsByRoute.get(route) || 0) + count);
+      });
+      
+      res.json({
+        success: true,
+        currentErrorRate,
+        totalRequests,
+        failedRequests,
+        totalErrors,
+        errorsByStatus: Array.from(errorsByStatus.entries()),
+        errorsByRoute: Array.from(errorsByRoute.entries()).slice(0, 10),
+        topErrors: topErrors.slice(0, 10).map(([key, count]) => ({
+          route: key.split('_')[1] || 'unknown',
+          status: key.split('_')[0] || 'unknown',
+          count,
+          percentage: totalErrors > 0 ? ((count / totalErrors) * 100).toFixed(2) : '0'
+        }))
+      });
+    } catch {
+      res.status(500).json({ success: false, message: 'Failed to fetch error summary' });
+    }
+  });
 
   // Database health endpoint with pool monitoring
   app.get("/api/db-health", async (_req, res) => {
@@ -8704,6 +8748,25 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
 
   // Initialize default users on startup
   await initializeDefaultUsers();
+
+  // Global error handler (LAST - after all routes)
+  app.use((err: any, req: any, res: any, next: any) => {
+    const route = req.route?.path || req.originalUrl || 'unknown';
+    const status = err.statusCode || err.status || 500;
+    const error = String(err.message || 'error');
+    
+    // Log to our error tracker for audit purposes
+    if (global.errorTracker) {
+      global.errorTracker.logError(route, status, error);
+    }
+    
+    console.error(`[ERROR] ${status} ${req.method} ${route}: ${error}`);
+    
+    // Only send response if headers haven't been sent
+    if (!res.headersSent) {
+      res.status(status).json({ message: 'Request failed' });
+    }
+  });
 
   return httpServer;
 }
