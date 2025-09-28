@@ -2,9 +2,9 @@ import OpenAI from 'openai';
 import { storage } from './storage';
 import { logAuditEvent } from './audit-service';
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 export interface SchedulingContext {
   userId?: string;
@@ -392,7 +392,7 @@ export class SmartSchedulingService {
 
   private async analyzeTasksWithAI(tasks: any[], teamMembers: any[]): Promise<any[]> {
     try {
-      if (!openai.apiKey || tasks.length === 0) {
+      if (!openai || tasks.length === 0) {
         return tasks.map(task => ({
           ...task,
           aiAnalysis: {
@@ -426,7 +426,7 @@ For each task, provide a JSON analysis with:
 Respond with valid JSON only: { "taskAnalyses": [...] }
       `;
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o", // Using GPT-4o as per the blueprint
         messages: [
           {

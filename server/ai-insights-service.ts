@@ -6,9 +6,9 @@ import { storage } from './storage';
  * Provides intelligent analytics and recommendations using GPT-4
  */
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 export interface InsightData {
   tasks: any[];
@@ -35,10 +35,22 @@ export interface AIInsight {
 export class AIInsightsService {
   
   /**
+   * Check if AI services are available
+   */
+  private isAIAvailable(): boolean {
+    return openai !== null;
+  }
+  
+  /**
    * Generate comprehensive business insights
    */
   async generateInsights(userId: string): Promise<AIInsight[]> {
     try {
+      if (!this.isAIAvailable()) {
+        console.warn('⚠️ OpenAI API key not configured - AI insights disabled');
+        return [];
+      }
+      
       console.log('🧠 Generating AI insights for user:', userId);
       
       // Gather user data
@@ -84,6 +96,9 @@ export class AIInsightsService {
    */
   private async analyzeProductivity(data: InsightData): Promise<AIInsight | null> {
     try {
+      if (!this.isAIAvailable()) {
+        return null;
+      }
       const completedTasks = data.tasks.filter(t => t.status === 'completed');
       const overdueTasks = data.tasks.filter(t => t.status === 'overdue');
       const totalTimeLogged = data.timeLog.reduce((sum, log) => sum + (log.duration || 0), 0);
@@ -113,7 +128,7 @@ export class AIInsightsService {
         }
       `;
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
@@ -139,6 +154,9 @@ export class AIInsightsService {
    */
   private async analyzeFinancialHealth(data: InsightData): Promise<AIInsight | null> {
     try {
+      if (!this.isAIAvailable()) {
+        return null;
+      }
       const totalInvoiceValue = data.invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
       const paidInvoices = data.invoices.filter(inv => inv.status === 'paid');
       const overdueInvoices = data.invoices.filter(inv => inv.status === 'overdue');
@@ -166,7 +184,7 @@ export class AIInsightsService {
         }
       `;
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
@@ -192,6 +210,9 @@ export class AIInsightsService {
    */
   private async analyzeProjectProgress(data: InsightData): Promise<AIInsight | null> {
     try {
+      if (!this.isAIAvailable()) {
+        return null;
+      }
       const activeProjects = data.projects.filter(p => p.status === 'active');
       const completedProjects = data.projects.filter(p => p.status === 'completed');
       
@@ -224,7 +245,7 @@ export class AIInsightsService {
         }
       `;
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
@@ -250,6 +271,9 @@ export class AIInsightsService {
    */
   private async identifyWorkflowOptimizations(data: InsightData): Promise<AIInsight | null> {
     try {
+      if (!this.isAIAvailable()) {
+        return null;
+      }
       const tasksByPriority = {
         high: data.tasks.filter(t => t.priority === 'high').length,
         medium: data.tasks.filter(t => t.priority === 'medium').length,
@@ -285,7 +309,7 @@ export class AIInsightsService {
         }
       `;
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
@@ -311,6 +335,9 @@ export class AIInsightsService {
    */
   private async identifyBusinessOpportunities(data: InsightData): Promise<AIInsight | null> {
     try {
+      if (!this.isAIAvailable()) {
+        return null;
+      }
       const acceptedProposals = data.proposals.filter(p => p.status === 'accepted');
       const proposalWinRate = data.proposals.length > 0 
         ? (acceptedProposals.length / data.proposals.length * 100).toFixed(1)
@@ -344,7 +371,7 @@ export class AIInsightsService {
         }
       `;
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
@@ -385,7 +412,7 @@ export class AIInsightsService {
         ["task 1", "task 2", "task 3", "task 4", "task 5"]
       `;
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
@@ -405,6 +432,11 @@ export class AIInsightsService {
    */
   async generateTeamInsights(): Promise<AIInsight[]> {
     try {
+      if (!this.isAIAvailable()) {
+        console.warn('⚠️ OpenAI API key not configured - team insights disabled');
+        return [];
+      }
+      
       console.log('🧠 Generating team performance insights');
       
       const [allTasks, allUsers, allTimeLog] = await Promise.all([
@@ -421,7 +453,7 @@ export class AIInsightsService {
           name: user.name,
           tasksCompleted: userTasks.filter(t => t.status === 'completed').length,
           tasksTotal: userTasks.length,
-          timeLogged: userTimeLog.reduce((sum, log) => sum + (log.duration || 0), 0)
+          timeLogged: userTimeLog.reduce((sum, log) => sum + (Number(log.duration) || 0), 0)
         };
       });
 
@@ -445,7 +477,7 @@ export class AIInsightsService {
         }
       `;
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },

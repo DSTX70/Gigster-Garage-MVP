@@ -49,9 +49,9 @@ import { seedDemoData, clearDemoData } from './demoDataService';
 import { demoSessionService } from './demoSessionService';
 
 // Initialize OpenAI client
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 // Verify OpenAI configuration on startup
 if (!process.env.OPENAI_API_KEY) {

@@ -2,9 +2,9 @@ import OpenAI from 'openai';
 import { storage } from './storage';
 import { logAuditEvent } from './audit-service';
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 export interface ProjectPrediction {
   projectId: string;
