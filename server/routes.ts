@@ -53,6 +53,40 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 }) : null;
 
+// Helper function to sanitize foreign key IDs - converts empty strings to null
+function sanitizeId(value: string | null | undefined): string | null {
+  if (!value || typeof value !== 'string' || value.trim() === '') {
+    return null;
+  }
+  return value.trim();
+}
+
+// Helper function to sanitize an object's foreign key fields
+function sanitizeForeignKeys(obj: any, fields: string[]): any {
+  const sanitized = { ...obj };
+  fields.forEach(field => {
+    if (field in sanitized) {
+      sanitized[field] = sanitizeId(sanitized[field]);
+    }
+  });
+  return sanitized;
+}
+
+// Error tracking for audit purposes
+const errorTracker = {
+  errors: new Map<string, number>(),
+  logError(route: string, status: number, error: string) {
+    const key = `${status}_${route}_${error.substring(0, 50)}`;
+    const count = this.errors.get(key) || 0;
+    this.errors.set(key, count + 1);
+  },
+  getTopErrors(limit = 10) {
+    return Array.from(this.errors.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit);
+  }
+};
+
 // Verify OpenAI configuration on startup
 if (!process.env.OPENAI_API_KEY) {
   console.error('⚠️  OPENAI_API_KEY not found - AI tools will be disabled');
@@ -2072,7 +2106,10 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         });
       }
 
-      const proposal = await storage.updateProposal(req.params.id, result.data);
+      // Sanitize foreign key fields to prevent empty string constraint violations
+      const sanitizedData = sanitizeForeignKeys(result.data, ['projectId', 'clientId', 'templateId', 'parentProposalId']);
+
+      const proposal = await storage.updateProposal(req.params.id, sanitizedData);
       if (!proposal) {
         return res.status(404).json({ message: "Proposal not found" });
       }
@@ -2363,8 +2400,11 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     try {
       const contractData = insertContractSchema.parse(req.body);
       
+      // Sanitize foreign key fields to prevent empty string constraint violations
+      const sanitizedContractData = sanitizeForeignKeys(contractData, ['projectId', 'clientId', 'proposalId']);
+      
       const newContract = {
-        ...contractData,
+        ...sanitizedContractData,
         contractNumber: `CNT-${Date.now()}`,
         createdById: req.session.user!.id,
         lastModifiedById: req.session.user!.id,
@@ -2395,7 +2435,10 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       if (!updateResult.success) {
         return res.status(400).json({ error: "Invalid contract data", details: updateResult.error.errors });
       }
-      const updateData = { ...updateResult.data, lastModifiedById: req.session.user!.id };
+      // Sanitize foreign key fields to prevent empty string constraint violations
+      const sanitizedData = sanitizeForeignKeys(updateResult.data, ['projectId', 'clientId', 'proposalId']);
+      
+      const updateData = { ...sanitizedData, lastModifiedById: req.session.user!.id };
 
       const updatedContract = await storage.updateContract(req.params.id, updateData);
       res.json(updatedContract);
@@ -3152,13 +3195,8 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     try {
       const invoiceData = insertInvoiceSchema.parse(req.body);
       
-      // Normalize empty strings to null for foreign key fields
-      const normalizedInvoiceData = {
-        ...invoiceData,
-        projectId: invoiceData.projectId || null,
-        clientId: invoiceData.clientId || null,
-        proposalId: invoiceData.proposalId || null,
-      };
+      // Sanitize foreign key fields to prevent empty string constraint violations
+      const normalizedInvoiceData = sanitizeForeignKeys(invoiceData, ['projectId', 'clientId', 'proposalId']);
 
       // Ensure status is draft for new invoices
       const draftInvoice = {
@@ -3651,18 +3689,21 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
       const updateData = insertInvoiceSchema.partial().parse(req.body);
       
+      // Sanitize foreign key fields to prevent empty string constraint violations
+      const sanitizedUpdateData = sanitizeForeignKeys(updateData, ['projectId', 'clientId', 'proposalId']);
+      
       // Calculate totals if line items are updated
-      if (updateData.lineItems) {
-        const subtotal = Array.isArray(updateData.lineItems) ? updateData.lineItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0) : 0;
-        const taxAmount = subtotal * Number(updateData.taxRate || invoice.taxRate || 0) / 100;
-        const totalAmount = subtotal + taxAmount - Number(updateData.discountAmount || 0);
+      if (sanitizedUpdateData.lineItems) {
+        const subtotal = Array.isArray(sanitizedUpdateData.lineItems) ? sanitizedUpdateData.lineItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0) : 0;
+        const taxAmount = subtotal * Number(sanitizedUpdateData.taxRate || invoice.taxRate || 0) / 100;
+        const totalAmount = subtotal + taxAmount - Number(sanitizedUpdateData.discountAmount || 0);
         
-        updateData.subtotal = subtotal.toString();
-        updateData.taxAmount = taxAmount.toString();
-        updateData.totalAmount = totalAmount.toString();
+        sanitizedUpdateData.subtotal = subtotal.toString();
+        sanitizedUpdateData.taxAmount = taxAmount.toString();
+        sanitizedUpdateData.totalAmount = totalAmount.toString();
       }
 
-      const updatedInvoice = await storage.updateInvoice(req.params.id, updateData, req.session.user!.id);
+      const updatedInvoice = await storage.updateInvoice(req.params.id, sanitizedUpdateData, req.session.user!.id);
       
       if (updatedInvoice) {
         // Generate payment link if it doesn't exist
