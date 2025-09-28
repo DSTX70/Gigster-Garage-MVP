@@ -1,0 +1,786 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Enhanced Brand System - Style Refresh */
+  --brand:#0B1D3A; /* Navy */
+  --accent:#2EC5C2; /* Mint */
+  --signal:#FFB52E; /* Amber */
+
+  /* Neutrals (light) */
+  --bg:#F7F8FA;
+  --panel:#FFFFFF;
+  --surface:#F3F4F6;
+  --text:#1A2433;
+  --muted:#6B7280;
+  --keyline:rgba(11,29,58,0.10);
+
+  /* States */
+  --success:#1e845e;
+  --warn:#d58b19;
+  --danger:#c43b3b;
+  --info:#2e7ea8;
+
+  /* Elevation */
+  --radius:14px;
+  --shadow-1:0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(11,29,58,.06);
+
+  /* Legacy Gigster Garage Brand Colors - Preserved for compatibility */
+  --gg-teal: #008272;
+  --gg-amber: #FFB200;
+  --gg-teal-tint: #66E0C7;
+  --gg-blue-tint: #66C7FF;
+  --gg-amber-tint: #FFD87A;
+  --gg-slate-ink: #1A241A;
+  --gg-light-card: #F7F9FA;
+  --gg-white: #FFFFFF;
+
+  /* Brand gradients */
+  --grad: linear-gradient(90deg, var(--accent) 0%, var(--signal) 100%);
+  --grad-soft: linear-gradient(90deg, #E7F7F3 0%, #FFF3DB 100%);
+  --subtext: var(--muted);
+  --placeholder: #9CA3AF;
+  
+  /* Legacy mappings for backward compatibility */
+  --slate-ink: var(--gg-slate-ink);
+  --light-card: var(--gg-light-card);
+  --brand-teal: var(--gg-teal);
+  --brand-teal-tint: var(--gg-teal-tint);
+  --brand-blue-tint: var(--gg-blue-tint);
+  --brand-amber: var(--gg-amber);
+  --brand-amber-tint: var(--gg-amber-tint);
+  
+  /* Legacy colors for backward compatibility */
+  --garage-navy: #004C6D;
+  --ignition-teal: #0B1D3A;  
+  --workshop-amber: #FFB200;
+  --steel-gray: hsl(0 0% 24%); /* #3C3C3C */
+  --concrete-light: hsl(0 0% 90%); /* #E5E5E5 */
+  --gigster-white: hsl(0 0% 100%); /* #FFFFFF */
+  --cream-card: #F9F5F1;
+  
+  /* Theme Variables */
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 0%);
+  --card: hsl(248 10% 97%);
+  --card-foreground: hsl(0 0% 0%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 0%);
+  --primary: #004C6D; /* Garage Navy */
+  --primary-foreground: #ffffff;
+  --secondary: #0B1D3A; /* Garage Navy */
+  --secondary-foreground: #ffffff;
+  --muted: hsl(220 14.3% 95.9%);
+  --muted-foreground: hsl(220 8.9% 46.1%);
+  --accent: #FFB000; /* Workshop Amber for accents */
+  --accent-foreground: #004C6D;
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(220 13% 91%);
+  --input: hsl(220 13% 91%);
+  --ring: #004C6D; /* Garage Navy */
+  --radius: 0.75rem;
+  
+  /* Neutral colors matching design */
+  --neutral-50: hsl(210 17% 98%);
+  --neutral-100: hsl(214 15% 95%);
+  --neutral-200: hsl(210 16% 93%);
+  --neutral-300: hsl(213 13% 84%);
+  --neutral-400: hsl(215 12% 64%);
+  --neutral-500: hsl(214 11% 45%);
+  --neutral-600: hsl(215 19% 35%);
+  --neutral-700: hsl(215 25% 27%);
+  --neutral-800: hsl(217 33% 17%);
+  --neutral-900: hsl(222 47% 11%);
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Gigster Garage Brand Gradients */
+  --gigster-gradient-teal-amber: var(--grad);
+  --gigster-gradient-soft: var(--grad-soft);
+  --gigster-gradient: var(--grad);
+  --gigster-gradient-navy: linear-gradient(135deg, #004C6D 0%, #003d5a 100%);
+  --gigster-gradient-teal: linear-gradient(135deg, #008272 0%, #006b5e 100%);
+  --gigster-gradient-amber: linear-gradient(135deg, #FFB200 0%, #CC8A00 100%);
+  --gigster-shadow-navy: 0 4px 12px rgba(0, 76, 109, 0.15);
+  --gigster-shadow-teal: 0 4px 12px rgba(11, 29, 58, 0.15);
+  --gigster-shadow-amber: 0 4px 12px rgba(255, 176, 0, 0.15);
+}
+
+/* Enhanced Dark theme from style refresh */
+.dark, .theme-dark {
+  --bg:#151A22;
+  --panel:#1B2330;
+  --surface:#161C27;
+  --text:#ECF2F8;
+  --muted:#B4BECA;
+  --keyline:rgba(255,255,255,.10);
+  --shadow-1:0 1px 2px rgba(0,0,0,.18), 0 8px 24px rgba(0,0,0,.28);
+  
+  /* Legacy dark theme compatibility */
+  --background: hsl(222 47% 11%);
+  --foreground: hsl(210 17% 98%);
+  --card: hsl(222 41% 13%);
+  --card-foreground: hsl(210 17% 98%);
+  --popover: hsl(222 47% 11%);
+  --popover-foreground: hsl(210 17% 98%);
+  --primary: hsl(211 100% 50%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(211 100% 50%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted-dark: hsl(217 33% 17%);
+  --muted-foreground: hsl(215 12% 64%);
+  --accent-hsl: hsl(38 92% 50%);
+  --accent-foreground: hsl(222 47% 11%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(217 33% 17%);
+  --input: hsl(217 33% 17%);
+  --ring: hsl(217 78% 58%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply text-foreground font-sans antialiased;
+    font-family: 'Open Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 8% -10%, rgba(46,197,194,.10), transparent 55%),
+      radial-gradient(900px 420px at 110% -20%, rgba(255,181,46,.10), transparent 60%),
+      var(--bg);
+    line-height: 1.5;
+    transition: background .2s ease, color .2s ease;
+  }
+  
+  /* Enhanced Typography System - Style Refresh */
+  h1, .gg-h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1.3;
+    margin: 6px 0 2px;
+    color: var(--text);
+  }
+  
+  h2, .gg-h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem; /* 24px */
+    line-height: 1.3;
+    color: var(--text);
+  }
+  
+  .gg-body {
+    font-family: 'Open Sans', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  
+  .gg-subtext, .subheader {
+    font-family: 'Open Sans', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  
+  .gg-placeholder {
+    font-family: 'Open Sans', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 0.875rem;
+    color: var(--placeholder);
+  }
+  
+  /* Enhanced button styling from refresh */
+  .btn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    font: 600 13px/1 'Open Sans', system-ui, sans-serif;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;
+  }
+  
+  .btn-primary-refresh {
+    background: linear-gradient(180deg, var(--brand), #09172f);
+    color: #fff;
+  }
+  
+  .btn-primary-refresh:hover {
+    background: #09172f;
+  }
+}
+
+@layer utilities {
+  .text-neutral-50 { color: var(--neutral-50); }
+  .text-neutral-100 { color: var(--neutral-100); }
+  .text-neutral-200 { color: var(--neutral-200); }
+  .text-neutral-300 { color: var(--neutral-300); }
+  .text-neutral-400 { color: var(--neutral-400); }
+  .text-neutral-500 { color: var(--neutral-500); }
+  .text-neutral-600 { color: var(--neutral-600); }
+  .text-neutral-700 { color: var(--neutral-700); }
+  .text-neutral-800 { color: var(--neutral-800); }
+  .text-neutral-900 { color: var(--neutral-900); }
+  
+  .bg-neutral-50 { background-color: var(--neutral-50); }
+  .bg-neutral-100 { background-color: var(--neutral-100); }
+  .bg-neutral-200 { background-color: var(--neutral-200); }
+  .bg-neutral-300 { background-color: var(--neutral-300); }
+  .bg-neutral-400 { background-color: var(--neutral-400); }
+  .bg-neutral-500 { background-color: var(--neutral-500); }
+  .bg-neutral-600 { background-color: var(--neutral-600); }
+  .bg-neutral-700 { background-color: var(--neutral-700); }
+  .bg-neutral-800 { background-color: var(--neutral-800); }
+  .bg-neutral-900 { background-color: var(--neutral-900); }
+  
+  .border-neutral-50 { border-color: var(--neutral-50); }
+  .border-neutral-100 { border-color: var(--neutral-100); }
+  .border-neutral-200 { border-color: var(--neutral-200); }
+  .border-neutral-300 { border-color: var(--neutral-300); }
+  .border-neutral-400 { border-color: var(--neutral-400); }
+  .border-neutral-500 { border-color: var(--neutral-500); }
+  .border-neutral-600 { border-color: var(--neutral-600); }
+  .border-neutral-700 { border-color: var(--neutral-700); }
+  .border-neutral-800 { border-color: var(--neutral-800); }
+  .border-neutral-900 { border-color: var(--neutral-900); }
+}
+
+@layer components {
+  /* Enhanced Card Styles - Style Refresh */
+  .gg-card {
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,0) 60%), var(--panel);
+    border: 1px solid var(--keyline);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-1);
+    padding: 16px;
+    display: grid;
+    gap: 8px;
+  }
+  
+  .gg-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--signal));
+    opacity: .6;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+  }
+  
+  .gg-card-muted {
+    @apply rounded-xl p-6;
+    background-color: var(--gg-light-card);
+    box-shadow: var(--shadow-1);
+  }
+  
+  .gg-btn-glow {
+    box-shadow: 0 8px 26px rgba(0,130,114,.22), inset 0 0 0 1px rgba(255,178,0,.45);
+  }
+  
+  /* Enhanced Task Cards with Style Refresh */
+  .gg-task-card {
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,0) 60%), var(--panel);
+    border: 1px solid var(--keyline);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-1);
+    padding: 16px;
+    display: grid;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  .gg-task-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--signal));
+    opacity: .6;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+  }
+  
+  .gg-task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(11,29,58,.12);
+  }
+  
+  /* Priority badges with Gigster Garage brand colors */
+  .gg-priority-high {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  
+  .gg-priority-medium {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background: rgba(255, 178, 0, 0.1);
+    color: var(--gg-amber);
+    border: 1px solid rgba(255, 178, 0, 0.2);
+  }
+  
+  .gg-priority-low {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background: rgba(0, 130, 114, 0.1);
+    color: var(--gg-teal);
+    border: 1px solid rgba(0, 130, 114, 0.2);
+  }
+  
+  /* Icon Gradient Support */
+  .icon-gradient-teal-amber {
+    fill: url(#gg-gradient-teal-amber);
+    color: url(#gg-gradient-teal-amber);
+  }
+  
+  .icon-brand-teal {
+    color: var(--gg-teal);
+  }
+  
+  .icon-brand-amber {
+    color: var(--gg-amber);
+  }
+  
+  .icon-filled {
+    background: radial-gradient(120% 120% at 50% 0%, var(--gg-amber) 0%, var(--gg-teal) 60%);
+    border-radius: 50%;
+  }
+  
+  /* Header with original Gigster Garage darker navy - preserving the original brand */
+  .gg-header {
+    @apply border-b;
+    background: linear-gradient(135deg, var(--garage-navy) 0%, var(--ignition-teal) 100%);
+  }
+  
+  .gg-header-light {
+    border-color: var(--gg-light-card);
+    background: var(--gg-white);
+    box-shadow: 0 6px 22px rgba(0,0,0,0.06);
+  }
+  
+  /* Gigster Garage Enhanced Brand Components */
+  .gigster-card {
+    @apply border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
+    background: var(--cream-card);
+  }
+  
+  .gigster-button-primary {
+    @apply font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
+    background: var(--workshop-amber);
+    color: var(--garage-navy);
+    font-family: var(--font-display);
+  }
+  
+  .gigster-button-primary:hover {
+    background: var(--gigster-gradient-amber);
+    transform: translateY(-1px);
+    box-shadow: var(--gigster-shadow-amber);
+  }
+  
+  .gigster-button-secondary {
+    @apply font-medium px-6 py-3 rounded-lg transition-all duration-200;
+    background-color: var(--ignition-teal);
+    color: white;
+    border: 1px solid var(--ignition-teal);
+    font-family: var(--font-display);
+  }
+  
+  .gigster-button-secondary:hover {
+    background: var(--gigster-gradient-teal);
+  }
+  
+  .gigster-button-outline {
+    @apply bg-transparent font-medium px-6 py-3 rounded-lg transition-all duration-200;
+    color: var(--garage-navy);
+    border: 2px solid var(--garage-navy);
+    font-family: var(--font-display);
+  }
+  
+  .gigster-button-outline:hover {
+    background-color: rgba(11, 29, 58, 0.05);
+  }
+  
+  .gigster-section-header {
+    @apply p-6 rounded-t-xl text-white;
+    background: var(--gigster-gradient);
+  }
+  
+  /* Logo Components */
+  .gigster-logo-large {
+    @apply w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-xl;
+    background: var(--gigster-gradient);
+  }
+  
+  .gigster-section-navy {
+    @apply p-8 rounded-xl text-white mb-8;
+    background: var(--gigster-gradient-navy);
+  }
+  
+  .gigster-accent-section {
+    @apply p-6 rounded-xl border-l-4;
+    border-left-color: var(--workshop-amber);
+    background-color: rgba(255, 181, 46, 0.1);
+  }
+  
+  .gigster-header-gradient {
+    background: var(--gigster-gradient);
+  }
+  
+  .gigster-bg-pattern {
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(46, 197, 194, 0.05) 1px, transparent 0);
+    background-size: 20px 20px;
+  }
+  
+  .gigster-hero-section {
+    @apply relative overflow-hidden;
+    background: var(--gigster-gradient);
+  }
+  
+  .gigster-hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
+  }
+  
+  .gigster-form-card {
+    @apply gigster-card p-8;
+    border-color: var(--ignition-teal);
+    box-shadow: 0 4px 20px rgba(11, 29, 58, 0.08);
+  }
+  
+  /* Gigster Garage Logo Components */
+  .gigster-logo {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg;
+    background: var(--gigster-gradient);
+  }
+  
+  .gigster-logo-mini {
+    @apply w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md;
+    background: var(--gigster-gradient);
+  }
+  
+  .gigster-logo-large {
+    @apply w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-xl;
+    background: var(--gigster-gradient);
+  }
+  
+  /* Brand Typography */
+  .brand-heading {
+    @apply font-bold;
+    color: var(--garage-navy);
+    font-family: var(--font-display);
+  }
+  
+  .brand-tagline {
+    @apply font-medium;
+    color: var(--workshop-amber);
+    font-family: var(--font-sans);
+  }
+  
+  /* Enhanced Task Cards */
+  .task-card {
+    @apply gigster-card p-5 relative overflow-hidden;
+    box-shadow: 0 2px 12px rgba(11, 29, 58, 0.06);
+    border-color: var(--concrete-light);
+  }
+  
+  .task-card:hover {
+    border-color: var(--ignition-teal);
+  }
+  
+  .task-card:hover {
+    box-shadow: 0 8px 25px rgba(11, 29, 58, 0.12);
+    transform: translateY(-2px);
+  }
+  
+  .task-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gigster-gradient);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .task-card:hover::before {
+    opacity: 1;
+  }
+  
+  /* Priority Indicators with Gigster Garage Brand Colors */
+  .priority-high {
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(229, 57, 53, 0.1);
+    color: #E53935;
+    border: 1px solid rgba(229, 57, 53, 0.2);
+  }
+  
+  .priority-medium {
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(242, 153, 74, 0.1);
+    color: #F2994A;
+    border: 1px solid rgba(242, 153, 74, 0.2);
+  }
+  
+  .priority-low {
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(39, 174, 96, 0.1);
+    color: #27AE60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
+  }
+  
+  /* Gigster Garage Status Badge System */
+  :root {
+    --badge-radius: 999px;
+    --badge-gap: 6px;
+    --badge-padding: 4px 8px;
+    --badge-bg: #F6F7F9;
+    --badge-fg: #0F172A;
+  }
+
+  .vs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--badge-gap);
+    padding: var(--badge-padding);
+    border-radius: var(--badge-radius);
+    border: 1px solid var(--badge-color);
+    color: var(--badge-fg);
+    background: color-mix(in oklab, var(--badge-color) 12%, white);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vs-badge__icon {
+    stroke: var(--badge-color);
+  }
+
+  .vs-badge__text {
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 600;
+  }
+
+  /* Overdue diagonal stripe overlay */
+  .vs-badge__stripe {
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  /* Status Indicators */
+  .status-completed {
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(39, 174, 96, 0.1);
+    color: #27AE60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
+  }
+  
+  .status-overdue {
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(229, 57, 53, 0.1);
+    color: #E53935;
+    border: 1px solid rgba(229, 57, 53, 0.2);
+  }
+  
+  .status-due-today {
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+    background-color: rgba(242, 153, 74, 0.1);
+    color: #F2994A;
+    border: 1px solid rgba(242, 153, 74, 0.2);
+  }
+  
+  /* Gigster Garage Brand Accents */
+  .gigster-accent-border {
+    border-left: 4px solid var(--workshop-amber);
+  }
+  
+  .gigster-feature-card {
+    @apply gigster-card p-6 cursor-pointer;
+    transition: all 0.3s ease;
+    border-color: var(--concrete-light);
+  }
+  
+  .gigster-feature-card:hover {
+    border-color: var(--ignition-teal);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(11, 29, 58, 0.1);
+  }
+  
+  .gigster-feature-card:hover .feature-icon {
+    @apply scale-110;
+    color: var(--ignition-teal);
+    transition: all 0.3s ease;
+  }
+  
+  /* Animations */
+  .fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .pulse-gigster {
+    animation: pulseGigster 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulseGigster {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(46, 197, 194, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(46, 197, 194, 0);
+    }
+  }
+  
+  /* Enhanced Component Styling Patterns - Design Refresh */
+  
+  /* Enhanced Button Patterns */
+  .btn-brand {
+    @apply bg-[var(--brand)] text-white border-[var(--brand)] hover:opacity-90 transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-success {
+    @apply bg-[var(--success)] text-white border-[var(--success)] hover:opacity-90 transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-accent {
+    @apply bg-[var(--accent)] text-white border-[var(--accent)] hover:opacity-90 transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  /* Enhanced Card Patterns */
+  .card-elevated {
+    @apply bg-[var(--panel)] border border-[var(--keyline)] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1;
+  }
+  
+  .card-interactive {
+    @apply cursor-pointer hover:border-[var(--accent)] transition-all duration-200;
+  }
+  
+  /* Enhanced Form Patterns */
+  .form-input-enhanced {
+    @apply border-[var(--keyline)] bg-[var(--panel)] focus:border-[var(--accent)] focus:ring-[var(--accent)] focus:ring-1 transition-all duration-200;
+  }
+  
+  /* Enhanced Status Indicators */
+  .status-indicator {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200;
+  }
+  
+  .status-success {
+    @apply bg-green-50 text-green-700 border-green-200 hover:bg-green-100;
+  }
+  
+  .status-warning {
+    @apply bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100;
+  }
+  
+  .status-danger {
+    @apply bg-red-50 text-red-700 border-red-200 hover:bg-red-100;
+  }
+  
+  .status-info {
+    @apply bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100;
+  }
+  
+  /* Enhanced Navigation Patterns */
+  .nav-item {
+    @apply flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-[var(--surface)] hover:text-[var(--accent)];
+  }
+  
+  .nav-item.active {
+    @apply bg-[var(--accent)] text-white shadow-sm;
+  }
+  
+  /* Enhanced Typography Patterns */
+  .text-brand {
+    color: var(--brand);
+  }
+  
+  .text-accent {
+    color: var(--accent);
+  }
+  
+  .text-success {
+    color: var(--success);
+  }
+  
+  .gradient-text-brand {
+    background: var(--grad);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+  }
+  
+  /* Header Enhancements */
+  .gigster-header {
+    @apply bg-white border-b shadow-sm;
+    border-color: var(--concrete-light);
+    background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  }
+  
+  /* Form Enhancements */
+  .gigster-form-card {
+    @apply gigster-card p-8;
+    border-color: var(--ignition-teal);
+    box-shadow: 0 4px 20px rgba(0, 76, 109, 0.08);
+  }
+  
+  /* Interactive Elements */
+  .gigster-interactive:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+  }
+  
+  /* Brand Consistent Shadows */
+  .gigster-shadow-sm {
+    box-shadow: 0 1px 3px 0 rgba(11, 29, 58, 0.1), 0 1px 2px 0 rgba(11, 29, 58, 0.06);
+  }
+  
+  .gigster-shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(11, 29, 58, 0.1), 0 2px 4px -1px rgba(11, 29, 58, 0.06);
+  }
+  
+  .gigster-shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(11, 29, 58, 0.1), 0 4px 6px -2px rgba(11, 29, 58, 0.05);
+  }
+}
