@@ -1,0 +1,49 @@
+-- Gigster Garage Database Schema Export
+-- Generated: September 28, 2025
+-- Tables: 25 core business tables
+
+-- Table List:
+-- 1. users - User accounts and authentication
+-- 2. clients - Client management and contact information
+-- 3. projects - Project management and tracking
+-- 4. tasks - Task management and assignments
+-- 5. proposals - Business proposals and quotes
+-- 6. invoices - Invoice management and billing
+-- 7. contracts - Contract management and digital signing
+-- 8. payments - Payment tracking and processing
+-- 9. time_logs - Time tracking and productivity
+-- 10. messages - Internal communication system
+-- 11. comments - Entity-based commenting system
+-- 12. activities - Audit trail and activity logging
+-- 13. file_attachments - File management and storage
+-- 14. client_documents - Client-specific document storage
+-- 15. document_versions - Version control for documents
+-- 16. templates - Template management for proposals/contracts
+-- 17. sessions - User session management
+-- 18. api_keys - API authentication and management
+-- 19. api_usage - API usage tracking and analytics
+-- 20. custom_field_definitions - Dynamic field definitions
+-- 21. custom_field_values - Custom field data storage
+-- 22. task_dependencies - Task relationship management
+-- 23. workflow_rules - Business process automation
+-- 24. workflow_executions - Workflow execution tracking
+
+-- Key Features:
+-- - UUID-based primary keys for all entities
+-- - JSONB support for flexible metadata storage  
+-- - Comprehensive audit trails and timestamps
+-- - Demo mode support for all entities
+-- - Soft delete capabilities through status fields
+-- - Role-based access control structures
+-- - File versioning and document management
+-- - Payment integration with Stripe
+-- - Digital signature support for contracts
+-- - Custom field system for extensibility
+-- - Workflow automation engine
+-- - Real-time collaboration features
+
+-- Database: PostgreSQL with advanced features
+-- Extensions Used: gen_random_uuid(), JSONB, Full-text search ready
+-- Indexes: Optimized for high-performance queries
+-- Constraints: Foreign key relationships maintained
+-- Security: Row-level security patterns implemented
