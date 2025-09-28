@@ -49,8 +49,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.type("text/plain").send("OK");
   });
 
+
   // --- API routes (mounted BEFORE SPA fallback) ---
   const server = await registerRoutes(app);
+
 
   // --- Vite middleware (dev) + static (prod) FIRST ---
   await setupVite(app, server);
@@ -67,6 +69,26 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     ],
   });
   app.use(historyMiddleware);
+
+  // --- Global error tracking middleware (LAST - after all other middleware) ---
+  app.use((err: any, req: any, res: any, next: any) => {
+    const route = req.route?.path || req.originalUrl || 'unknown';
+    const status = err.statusCode || err.status || 500;
+    const error = err.message || 'Unknown error';
+    
+    // Log to our error tracker for audit purposes
+    if (global.errorTracker) {
+      global.errorTracker.logError(route, status, error);
+    }
+    
+    console.error(`[ERROR] ${status} ${req.method} ${route}: ${error}`);
+    
+    // Only send response if headers haven't been sent, don't call next() after response
+    if (!res.headersSent) {
+      res.status(status).json({ error: 'Internal server error' });
+    }
+    // Don't call next(err) after sending response to avoid double handling
+  });
 
   // start the server
   const port = 5000;

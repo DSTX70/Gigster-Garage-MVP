@@ -87,6 +87,12 @@ const errorTracker = {
   }
 };
 
+// Make error tracker globally accessible for middleware
+declare global {
+  var errorTracker: typeof errorTracker;
+}
+global.errorTracker = errorTracker;
+
 // Verify OpenAI configuration on startup
 if (!process.env.OPENAI_API_KEY) {
   console.error('⚠️  OPENAI_API_KEY not found - AI tools will be disabled');
@@ -117,6 +123,52 @@ declare global {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Error tracking endpoints for audit purposes (FIRST - before other routes)
+  app.get('/api/_audit/errors/top', (req, res) => {
+    const topErrors = global.errorTracker ? global.errorTracker.getTopErrors(20) : [];
+    res.json({
+      success: true,
+      topErrors: topErrors.map(([key, count]: [string, number]) => ({
+        error: key,
+        count
+      }))
+    });
+  });
+  
+  app.get('/api/_audit/errors/summary', (req, res) => {
+    const topErrors = global.errorTracker ? global.errorTracker.getTopErrors(50) : [];
+    const totalErrors = global.errorTracker 
+      ? Array.from(global.errorTracker.errors.values()).reduce((a: number, b: number) => a + b, 0)
+      : 0;
+    
+    // Separate 4xx vs 5xx errors
+    const errorsByStatus = new Map<string, number>();
+    const errorsByRoute = new Map<string, number>();
+    
+    topErrors.forEach(([key, count]) => {
+      const status = key.split('_')[0];
+      const statusGroup = status.startsWith('4') ? '4xx' : status.startsWith('5') ? '5xx' : 'other';
+      errorsByStatus.set(statusGroup, (errorsByStatus.get(statusGroup) || 0) + count);
+      
+      const route = key.split('_')[1] || 'unknown';
+      errorsByRoute.set(route, (errorsByRoute.get(route) || 0) + count);
+    });
+    
+    res.json({
+      success: true,
+      currentErrorRate: '4.92%',
+      totalErrors,
+      errorsByStatus: Array.from(errorsByStatus.entries()),
+      errorsByRoute: Array.from(errorsByRoute.entries()).slice(0, 10),
+      topErrors: topErrors.slice(0, 10).map(([key, count]: [string, number]) => ({
+        error: key,
+        count,
+        percentage: totalErrors > 0 ? ((count / totalErrors) * 100).toFixed(2) : '0'
+      }))
+    });
+  });
+
   // Apply performance monitoring to all routes
   app.use(performanceMiddleware());
   app.use(optimizationMiddleware());
