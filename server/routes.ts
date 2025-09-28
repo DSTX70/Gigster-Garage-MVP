@@ -1901,8 +1901,8 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
         const proposalData = {
           title,
-          templateId,
-          projectId,
+          templateId: templateId || null,
+          projectId: projectId || null,
           clientName,
           clientEmail,
           content,
@@ -3152,9 +3152,17 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     try {
       const invoiceData = insertInvoiceSchema.parse(req.body);
       
+      // Normalize empty strings to null for foreign key fields
+      const normalizedInvoiceData = {
+        ...invoiceData,
+        projectId: invoiceData.projectId || null,
+        clientId: invoiceData.clientId || null,
+        proposalId: invoiceData.proposalId || null,
+      };
+
       // Ensure status is draft for new invoices
       const draftInvoice = {
-        ...invoiceData,
+        ...normalizedInvoiceData,
         status: "draft" as const,
         invoiceNumber: `INV-${Date.now()}`,
         createdById: req.session.user!.id,
