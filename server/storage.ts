@@ -161,6 +161,31 @@ export interface IStorage {
   createProposal(insertProposal: InsertProposal): Promise<Proposal>;
   updateProposal(id: string, updateProposal: UpdateProposal): Promise<Proposal | undefined>;
   deleteProposal(id: string): Promise<boolean>;
+
+  // **NEW: Optimized filtered query methods for Advanced Reporting**
+  getFilteredTasks(filters: {
+    projectIds?: string[];
+    userIds?: string[];
+    statuses?: string[];
+    priorities?: string[];
+    timeRange?: { start: Date; end: Date };
+  }): Promise<Task[]>;
+  
+  getFilteredTimeLogs(filters: {
+    userIds?: string[];
+    projectIds?: string[];
+    timeRange?: { start: Date; end: Date };
+  }): Promise<TimeLog[]>;
+  
+  getFilteredInvoices(filters: {
+    timeRange?: { start: Date; end: Date };
+    statuses?: string[];
+  }): Promise<Invoice[]>;
+  
+  getFilteredProposals(filters: {
+    timeRange?: { start: Date; end: Date };
+    statuses?: string[];
+  }): Promise<Proposal[]>;
   generateShareableLink(proposalId: string): Promise<string>;
 
   // Client management
@@ -1606,6 +1631,147 @@ export class DatabaseStorage implements IStorage {
       : eq(invoices.id, id);
     const result = await db.delete(invoices).where(conditions);
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // **NEW: OPTIMIZED FILTERED QUERY METHODS FOR ADVANCED REPORTING**
+  // These methods implement database-level filtering instead of in-memory filtering
+  // for massive performance improvements in the Advanced Reporting Service
+
+  async getFilteredTasks(filters: {
+    projectIds?: string[];
+    userIds?: string[];
+    statuses?: string[];
+    priorities?: string[];
+    timeRange?: { start: Date; end: Date };
+  }): Promise<Task[]> {
+    return withRetry(async () => {
+      let query = db.select().from(tasks);
+      const conditions: any[] = [];
+
+      // Time range filter - use database WHERE instead of memory filtering
+      if (filters.timeRange) {
+        conditions.push(gte(tasks.createdAt, filters.timeRange.start));
+        conditions.push(lte(tasks.createdAt, filters.timeRange.end));
+      }
+
+      // Project filter - use database WHERE instead of memory filtering
+      if (filters.projectIds?.length) {
+        conditions.push(sql`${tasks.projectId} = ANY(${filters.projectIds})`);
+      }
+
+      // User filter - use database WHERE instead of memory filtering
+      if (filters.userIds?.length) {
+        conditions.push(
+          or(
+            sql`${tasks.assignedToId} = ANY(${filters.userIds})`,
+            sql`${tasks.createdById} = ANY(${filters.userIds})`
+          )
+        );
+      }
+
+      // Status filter - use database WHERE instead of memory filtering
+      if (filters.statuses?.length) {
+        conditions.push(sql`${tasks.status} = ANY(${filters.statuses})`);
+      }
+
+      // Priority filter - use database WHERE instead of memory filtering
+      if (filters.priorities?.length) {
+        conditions.push(sql`${tasks.priority} = ANY(${filters.priorities})`);
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(tasks.createdAt));
+    }, 'getFilteredTasks');
+  }
+
+  async getFilteredTimeLogs(filters: {
+    userIds?: string[];
+    projectIds?: string[];
+    timeRange?: { start: Date; end: Date };
+  }): Promise<TimeLog[]> {
+    return withRetry(async () => {
+      let query = db.select().from(timeLogs);
+      const conditions: any[] = [];
+
+      // Time range filter - use database WHERE instead of memory filtering
+      if (filters.timeRange) {
+        conditions.push(gte(timeLogs.startTime, filters.timeRange.start));
+        conditions.push(lte(timeLogs.startTime, filters.timeRange.end));
+      }
+
+      // User filter - use database WHERE instead of memory filtering
+      if (filters.userIds?.length) {
+        conditions.push(sql`${timeLogs.userId} = ANY(${filters.userIds})`);
+      }
+
+      // Project filter - use database WHERE instead of memory filtering
+      if (filters.projectIds?.length) {
+        conditions.push(sql`${timeLogs.projectId} = ANY(${filters.projectIds})`);
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(timeLogs.startTime));
+    }, 'getFilteredTimeLogs');
+  }
+
+  async getFilteredInvoices(filters: {
+    timeRange?: { start: Date; end: Date };
+    statuses?: string[];
+  }): Promise<Invoice[]> {
+    return withRetry(async () => {
+      let query = db.select().from(invoices);
+      const conditions: any[] = [];
+
+      // Time range filter - use database WHERE instead of memory filtering
+      if (filters.timeRange) {
+        conditions.push(gte(invoices.createdAt, filters.timeRange.start));
+        conditions.push(lte(invoices.createdAt, filters.timeRange.end));
+      }
+
+      // Status filter - use database WHERE instead of memory filtering
+      if (filters.statuses?.length) {
+        conditions.push(sql`${invoices.status} = ANY(${filters.statuses})`);
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(invoices.createdAt));
+    }, 'getFilteredInvoices');
+  }
+
+  async getFilteredProposals(filters: {
+    timeRange?: { start: Date; end: Date };
+    statuses?: string[];
+  }): Promise<Proposal[]> {
+    return withRetry(async () => {
+      let query = db.select().from(proposals);
+      const conditions: any[] = [];
+
+      // Time range filter - use database WHERE instead of memory filtering
+      if (filters.timeRange) {
+        conditions.push(gte(proposals.createdAt, filters.timeRange.start));
+        conditions.push(lte(proposals.createdAt, filters.timeRange.end));
+      }
+
+      // Status filter - use database WHERE instead of memory filtering
+      if (filters.statuses?.length) {
+        conditions.push(sql`${proposals.status} = ANY(${filters.statuses})`);
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(proposals.createdAt));
+    }, 'getFilteredProposals');
   }
 
   async getInvoiceByPaymentLink(paymentLink: string): Promise<Invoice | undefined> {

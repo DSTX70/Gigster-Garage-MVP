@@ -146,20 +146,32 @@ export class AdvancedReportingService {
 
     console.log(`📊 Generating report: ${config.name}`);
 
-    // Fetch all necessary data
+    // **OPTIMIZED: Use database-level filtering instead of in-memory filtering**
     const [tasks, projects, users, timeLogs, invoices, proposals] = await Promise.all([
-      storage.getTasks(),
-      storage.getProjects(),
-      storage.getUsers(),
-      storage.getTimeLogs(),
-      storage.getInvoices(),
-      storage.getProposals()
+      storage.getFilteredTasks({
+        projectIds: config.filters.projectIds,
+        userIds: config.filters.userIds,
+        statuses: config.filters.taskStatuses,
+        priorities: config.filters.priorities,
+        timeRange: config.timeRange
+      }),
+      storage.getProjects(), // Projects still use simple fetch (could be optimized further)
+      storage.getUsers(),    // Users still use simple fetch (could be optimized further)
+      storage.getFilteredTimeLogs({
+        userIds: config.filters.userIds,
+        projectIds: config.filters.projectIds,
+        timeRange: config.timeRange
+      }),
+      storage.getFilteredInvoices({
+        timeRange: config.timeRange
+      }),
+      storage.getFilteredProposals({
+        timeRange: config.timeRange
+      })
     ]);
 
-    // Apply filters
-    const filteredData = this.applyFilters({
-      tasks, projects, users, timeLogs, invoices, proposals
-    }, config.filters, config.timeRange);
+    // **OPTIMIZATION: No need for memory filtering since database already filtered**
+    const filteredData = { tasks, projects, users, timeLogs, invoices, proposals };
 
     // Calculate metrics
     const metrics = await this.calculateMetrics(filteredData, config.metrics);
@@ -426,12 +438,14 @@ export class AdvancedReportingService {
     const end = timeRange.end;
 
     tasks = tasks.filter((task: Task) => {
+      if (!task.createdAt) return false;
       const createdAt = new Date(task.createdAt);
       return createdAt >= start && createdAt <= end;
     });
 
     timeLogs = timeLogs.filter((log: TimeLog) => {
-      const date = new Date(log.date);
+      if (!log.startTime) return false;
+      const date = new Date(log.startTime);
       return date >= start && date <= end;
     });
 
@@ -457,13 +471,13 @@ export class AdvancedReportingService {
 
     if (filters.taskStatuses?.length) {
       tasks = tasks.filter((task: Task) => 
-        filters.taskStatuses!.includes(task.status)
+        task.status && filters.taskStatuses!.includes(task.status)
       );
     }
 
     if (filters.priorities?.length) {
       tasks = tasks.filter((task: Task) => 
-        filters.priorities!.includes(task.priority)
+        task.priority && filters.priorities!.includes(task.priority)
       );
     }
 
@@ -494,12 +508,18 @@ export class AdvancedReportingService {
         return tasks.filter((t: Task) => t.status === 'completed').length;
       
       case 'total_hours':
-        return timeLogs.reduce((sum: number, log: TimeLog) => sum + (log.duration || 0), 0) / 60; // Convert to hours
+        return timeLogs.reduce((sum: number, log: TimeLog) => {
+          const duration = log.duration ? parseInt(log.duration, 10) : 0;
+          return sum + duration;
+        }, 0) / 3600; // Convert seconds to hours
       
       case 'total_revenue':
         return invoices
           .filter((inv: Invoice) => inv.status === 'paid')
-          .reduce((sum: number, inv: Invoice) => sum + (inv.totalAmount || 0), 0);
+          .reduce((sum: number, inv: Invoice) => {
+            const amount = inv.totalAmount ? parseFloat(inv.totalAmount.toString()) : 0;
+            return sum + amount;
+          }, 0);
       
       case 'productivity_score':
         const completed = tasks.filter((t: Task) => t.status === 'completed').length;
@@ -557,10 +577,14 @@ export class AdvancedReportingService {
       case 'total_hours':
         return timeLogs
           .filter((log: TimeLog) => {
-            const logDate = new Date(log.date);
+            if (!log.startTime) return false;
+            const logDate = new Date(log.startTime);
             return logDate >= dayStart && logDate <= dayEnd;
           })
-          .reduce((sum: number, log: TimeLog) => sum + (log.duration || 0), 0) / 60;
+          .reduce((sum: number, log: TimeLog) => {
+            const duration = log.duration ? parseInt(log.duration, 10) : 0;
+            return sum + duration;
+          }, 0) / 3600; // Convert seconds to hours
       
       default:
         return 0;
@@ -593,8 +617,11 @@ export class AdvancedReportingService {
     
     projects.forEach(project => {
       const projectLogs = timeLogs.filter(log => log.projectId === project.id);
-      const totalMinutes = projectLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
-      projectTime[project.name] = totalMinutes / 60; // Convert to hours
+      const totalSeconds = projectLogs.reduce((sum, log) => {
+        const duration = log.duration ? parseInt(log.duration, 10) : 0;
+        return sum + duration;
+      }, 0);
+      projectTime[project.name] = totalSeconds / 3600; // Convert seconds to hours
     });
 
     return projectTime;
@@ -605,8 +632,12 @@ export class AdvancedReportingService {
     
     users.forEach(user => {
       const userLogs = timeLogs.filter(log => log.userId === user.id);
-      const totalMinutes = userLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
-      userTime[user.name] = totalMinutes / 60; // Convert to hours
+      const totalSeconds = userLogs.reduce((sum, log) => {
+        const duration = log.duration ? parseInt(log.duration, 10) : 0;
+        return sum + duration;
+      }, 0);
+      const userName = user.name || user.username || `User ${user.id}`;
+      userTime[userName] = totalSeconds / 3600; // Convert seconds to hours
     });
 
     return userTime;
