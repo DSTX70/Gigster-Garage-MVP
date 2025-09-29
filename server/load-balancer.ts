@@ -128,7 +128,16 @@ export class LoadBalancer {
       memoryUsage: 0,
       region: 'us-east-1',
       version: '1.0.0',
-      ...server
+      ...server,
+      // Override defaults with server values if provided
+      status: server.status || 'healthy',
+      currentConnections: server.currentConnections || 0,
+      lastHealthCheck: server.lastHealthCheck || Date.now(),
+      responseTime: server.responseTime || 0,
+      cpuUsage: server.cpuUsage || 0,
+      memoryUsage: server.memoryUsage || 0,
+      region: server.region || 'us-east-1',
+      version: server.version || '1.0.0'
     };
 
     this.servers.set(serverId, serverInstance);
@@ -271,7 +280,7 @@ export class LoadBalancer {
       
       logAuditEvent(
         'system',
-        'infrastructure_change',
+        'system_config',
         'server_health_status_change',
         {
           id: 'system',
@@ -361,7 +370,8 @@ export class LoadBalancer {
     console.log(`⚖️ Draining server: ${server.host}:${server.port}`);
 
     // Remove from session mappings
-    for (const [sessionId, serverIdInSession] of this.sessionMap.entries()) {
+    const entries = Array.from(this.sessionMap.entries());
+    for (const [sessionId, serverIdInSession] of entries) {
       if (serverIdInSession === serverId) {
         this.sessionMap.delete(sessionId);
       }
@@ -575,20 +585,68 @@ export class LoadBalancer {
       try {
         const startTime = Date.now();
         
-        // Simulate health check (in real implementation, would make HTTP request)
-        const isHealthy = Math.random() > 0.05; // 95% success rate
-        const responseTime = Date.now() - startTime + Math.random() * 50; // Simulate latency
+        // **REAL HTTP HEALTH CHECK** - Replace simulation with actual HTTP probe
+        const isHealthy = await this.performRealHealthCheck(server);
+        const responseTime = Date.now() - startTime;
         
         this.updateServerHealth(server.id, isHealthy, responseTime);
         
-        // Update server resource usage (simulation)
-        server.cpuUsage = 10 + Math.random() * 80; // 10-90% CPU
-        server.memoryUsage = 20 + Math.random() * 60; // 20-80% Memory
+        // Update server resource usage (still simulated but more realistic)
+        if (isHealthy) {
+          server.cpuUsage = Math.max(5, server.cpuUsage + (Math.random() - 0.5) * 10);
+          server.memoryUsage = Math.max(10, server.memoryUsage + (Math.random() - 0.5) * 5);
+        } else {
+          server.cpuUsage = Math.min(95, server.cpuUsage + 20); // High CPU on unhealthy
+          server.memoryUsage = Math.min(90, server.memoryUsage + 15); // High memory on unhealthy
+        }
         
       } catch (error) {
         console.error(`⚖️ Health check failed for ${server.host}:${server.port}:`, error);
         this.updateServerHealth(server.id, false);
       }
+    }
+  }
+
+  /**
+   * **NEW: REAL HTTP HEALTH CHECK** - Replaces Math.random() simulation
+   * Performs actual HTTP request to server health endpoint
+   */
+  private async performRealHealthCheck(server: ServerInstance): Promise<boolean> {
+    try {
+      const healthUrl = `http://${server.host}:${server.port}${this.config.healthCheckPath}`;
+      
+      // Use fetch with timeout for real HTTP probe
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), this.config.healthCheckTimeout);
+      
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'LoadBalancer/1.0',
+          'Accept': 'text/plain, application/json'
+        }
+      });
+      
+      clearTimeout(timeout);
+      
+      // Consider healthy if status is 2xx
+      const isHealthy = response.status >= 200 && response.status < 300;
+      
+      if (!isHealthy) {
+        console.warn(`⚖️ Health check failed for ${server.host}:${server.port} - Status: ${response.status}`);
+      }
+      
+      return isHealthy;
+      
+    } catch (error: any) {
+      // Handle network errors, timeouts, etc.
+      if (error.name === 'AbortError') {
+        console.warn(`⚖️ Health check timeout for ${server.host}:${server.port}`);
+      } else {
+        console.warn(`⚖️ Health check error for ${server.host}:${server.port}:`, error.message);
+      }
+      return false;
     }
   }
 
@@ -661,6 +719,80 @@ export class LoadBalancer {
   }
 
   private startTime = Date.now();
+
+  /**
+   * **NEW: REQUEST MIDDLEWARE INTEGRATION** - Creates Express middleware
+   * Integrates load balancer with request routing for proper request handling
+   */
+  createRequestMiddleware() {
+    return (req: any, res: any, next: any) => {
+      // Skip middleware for health checks and static assets
+      if (req.path === '/health' || req.path.startsWith('/static/') || req.path.startsWith('/@')) {
+        return next();
+      }
+
+      // Get session ID and client IP for routing
+      const sessionId = req.sessionID || req.session?.id;
+      const clientIP = req.ip || req.connection.remoteAddress;
+      
+      // Get routing decision from load balancer
+      const routing = this.getNextServer(sessionId, clientIP);
+      
+      if (!routing) {
+        console.error('⚖️ No healthy servers available for request');
+        return res.status(503).json({ error: 'Service Temporarily Unavailable' });
+      }
+
+      // Add routing info to request for monitoring
+      req.loadBalancerRouting = routing;
+      
+      // Record metrics
+      this.recordRequestStart(routing.serverId);
+      
+      // Set up response handling for connection cleanup
+      const originalEnd = res.end;
+      res.end = (...args: any[]) => {
+        this.recordRequestEnd(routing.serverId);
+        this.releaseConnection(routing.serverId);
+        originalEnd.apply(res, args);
+      };
+
+      next();
+    };
+  }
+
+  /**
+   * Record request start for server metrics
+   */
+  private recordRequestStart(serverId: string): void {
+    const server = this.servers.get(serverId);
+    if (server) {
+      server.currentConnections++;
+      this.metrics.totalRequests++;
+    }
+  }
+
+  /**
+   * Record request end for server metrics
+   */
+  private recordRequestEnd(serverId: string): void {
+    const server = this.servers.get(serverId);
+    if (server) {
+      // Update server metrics
+      const metric = this.metrics.serverMetrics.find(m => m.serverId === serverId);
+      if (metric) {
+        metric.requests++;
+      } else {
+        this.metrics.serverMetrics.push({
+          serverId,
+          requests: 1,
+          connections: server.currentConnections,
+          responseTime: server.responseTime,
+          status: server.status
+        });
+      }
+    }
+  }
 }
 
 export const loadBalancer = new LoadBalancer({
