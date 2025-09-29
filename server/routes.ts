@@ -5,6 +5,7 @@ import ConnectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 import multer from "multer";
 import path from "path";
+import { promises as fs } from "fs";
 import { fileTypeFromBuffer } from "file-type";
 import csvParser from "csv-parser";
 import * as createCsvWriter from "csv-writer";
@@ -3470,28 +3471,24 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         clientName: proposal.clientName || 'Valued Client',
       });
       
-      // Save PDF to object storage and create document record
+      console.log('🚀 NEW FILING CABINET CODE: Starting proposal PDF save to filesystem');
+      
+      // Save PDF to filesystem
       const fileName = `proposal-${proposal.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
-      const objectStorageService = new ObjectStorageService();
+      const storageDir = '/home/runner/workspace/gigster-garage-files/private';
+      const objectKey = `${req.session.user!.id}/proposals/${fileName}`;
+      const fullPath = `${storageDir}/${objectKey}`;
       
-      // Upload PDF to object storage
-      const privateDir = objectStorageService.getPrivateObjectDir();
-      const objectPath = `${privateDir}/${req.session.user!.id}/proposals/${fileName}`;
+      console.log('📂 Filing Cabinet (Proposal): Saving to path:', fullPath);
       
-      // Parse object path for upload
-      const { bucketName, objectName } = parseObjectPath(objectPath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
+      // Ensure directory exists and write PDF
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, proposalPDF);
       
-      // Upload the PDF buffer
-      await file.save(proposalPDF, {
-        metadata: {
-          contentType: 'application/pdf'
-        }
-      });
+      console.log('✅ Filing Cabinet (Proposal): PDF saved successfully to filesystem');
 
       // Create document record in Filing Cabinet 
-      const fileUrl = file.publicUrl();
+      const fileUrl = `/storage/${objectKey}`;
       
       // Ensure we have a client ID - create default client if none exists
       let clientId = proposal.clientId;
@@ -3558,28 +3555,24 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         clientName: contract.clientName || 'Valued Client',
       });
       
-      // Save PDF to object storage and create document record
+      console.log('🚀 NEW FILING CABINET CODE: Starting contract PDF save to filesystem');
+      
+      // Save PDF to filesystem
       const fileName = `contract-${contract.contractTitle.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
-      const objectStorageService = new ObjectStorageService();
+      const storageDir = '/home/runner/workspace/gigster-garage-files/private';
+      const objectKey = `${req.session.user!.id}/contracts/${fileName}`;
+      const fullPath = `${storageDir}/${objectKey}`;
       
-      // Upload PDF to object storage
-      const privateDir = objectStorageService.getPrivateObjectDir();
-      const objectPath = `${privateDir}/${req.session.user!.id}/contracts/${fileName}`;
+      console.log('📂 Filing Cabinet (Contract): Saving to path:', fullPath);
       
-      // Parse object path for upload
-      const { bucketName, objectName } = parseObjectPath(objectPath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
+      // Ensure directory exists and write PDF
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, contractPDF);
       
-      // Upload the PDF buffer
-      await file.save(contractPDF, {
-        metadata: {
-          contentType: 'application/pdf'
-        }
-      });
+      console.log('✅ Filing Cabinet (Contract): PDF saved successfully to filesystem');
 
       // Create document record in Filing Cabinet 
-      const fileUrl = file.publicUrl();
+      const fileUrl = `/storage/${objectKey}`;
       
       // Ensure we have a client ID - create default client if none exists
       let clientId = contract.clientId;
@@ -3646,28 +3639,24 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         author: presentation.author || 'Presenter',
       });
       
-      // Save PDF to object storage and create document record
+      console.log('🚀 NEW FILING CABINET CODE: Starting presentation PDF save to filesystem');
+      
+      // Save PDF to filesystem
       const fileName = `presentation-${presentation.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
-      const objectStorageService = new ObjectStorageService();
+      const storageDir = '/home/runner/workspace/gigster-garage-files/private';
+      const objectKey = `${req.session.user!.id}/presentations/${fileName}`;
+      const fullPath = `${storageDir}/${objectKey}`;
       
-      // Upload PDF to object storage
-      const privateDir = objectStorageService.getPrivateObjectDir();
-      const objectPath = `${privateDir}/${req.session.user!.id}/presentations/${fileName}`;
+      console.log('📂 Filing Cabinet (Presentation): Saving to path:', fullPath);
       
-      // Parse object path for upload
-      const { bucketName, objectName } = parseObjectPath(objectPath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
+      // Ensure directory exists and write PDF
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, presentationPDF);
       
-      // Upload the PDF buffer
-      await file.save(presentationPDF, {
-        metadata: {
-          contentType: 'application/pdf'
-        }
-      });
+      console.log('✅ Filing Cabinet (Presentation): PDF saved successfully to filesystem');
 
       // Create document record in Filing Cabinet 
-      const fileUrl = file.publicUrl();
+      const fileUrl = `/storage/${objectKey}`;
       
       // For presentations, we'll create a default client entry if needed
       let clientId: string | null = null;
@@ -3741,28 +3730,26 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
       const pdfBuffer = await generateInvoicePDF(invoiceWithPaymentUrl);
       
-      // Save PDF to object storage and create document record
+      console.log('🚀 NEW FILING CABINET CODE: Starting PDF save to filesystem');
+      
+      // Save PDF to Replit App Storage using filesystem
       const fileName = `invoice-${invoice.invoiceNumber}.pdf`;
-      const objectStorageService = new ObjectStorageService();
       
-      // Upload PDF to object storage
-      const privateDir = objectStorageService.getPrivateObjectDir();
-      const objectPath = `${privateDir}/${req.session.user!.id}/invoices/${fileName}`;
+      // Use workspace-based storage directory
+      const storageDir = '/home/runner/workspace/gigster-garage-files/private';
+      const objectKey = `${req.session.user!.id}/invoices/${fileName}`;
+      const fullPath = `${storageDir}/${objectKey}`;
       
-      // Parse object path for upload
-      const { bucketName, objectName } = parseObjectPath(objectPath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
+      console.log('📂 Filing Cabinet: Saving to path:', fullPath);
       
-      // Upload the PDF buffer
-      await file.save(pdfBuffer, {
-        metadata: {
-          contentType: 'application/pdf'
-        }
-      });
+      // Ensure directory exists and write PDF
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, pdfBuffer);
+      
+      console.log('✅ Filing Cabinet: PDF saved successfully to filesystem');
 
       // Create document record in Filing Cabinet 
-      const fileUrl = file.publicUrl();
+      const fileUrl = `/storage/${objectKey}`;
       
       // Ensure we have a client ID - create default client if none exists
       let clientId = invoice.clientId;
