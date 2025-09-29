@@ -672,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Project routes
-  app.get("/api/projects", requireAuth, async (req, res) => {
+  app.get("/api/projects", requireAuth, cacheMiddleware(600), async (req, res) => {
     try {
       const projects = await storage.getProjects();
       res.json(projects);
@@ -742,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User management routes (admin only)
-  app.get("/api/users", requireAdmin, async (req, res) => {
+  app.get("/api/users", requireAdmin, cacheMiddleware(600), async (req, res) => {
     try {
       const users = await storage.getUsers();
       const safeUsers = users.map(user => ({
@@ -1057,7 +1057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task routes
-  app.get("/api/tasks", requireAuth, async (req, res) => {
+  app.get("/api/tasks", requireAuth, cacheMiddleware(300), async (req, res) => {
     try {
       const user = req.session.user!;
       const tasks = await storage.getTasks(user.role === 'admin' ? undefined : user.id);
@@ -1103,7 +1103,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.session.user!;
       const task = await storage.createTask(result.data, user.id);
       
-      // Cache invalidation temporarily disabled
+      // **SECURITY FIX**: Invalidate cache after task creation to prevent stale data
+      try {
+        const { AppCache } = await import('./cache-service');
+        const cache = AppCache.getInstance();
+        
+        // Clear user-specific caches
+        await cache.delPattern(`api:GET:/api/tasks:*:uid:${user.id}:*`);
+        if (user.role === 'admin') {
+          await cache.delPattern(`api:GET:/api/tasks:*`);
+        }
+        
+        // Clear entity caches
+        await cache.deleteByTags(['task-data']);
+      } catch (cacheError) {
+        console.warn('Cache invalidation failed:', cacheError);
+      }
       
       // Send notifications for high priority tasks
       if (task.priority === 'high' && task.assignedToId) {
@@ -1241,7 +1256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Project routes
-  app.get("/api/projects", requireAuth, async (req, res) => {
+  app.get("/api/projects", requireAuth, cacheMiddleware(600), async (req, res) => {
     try {
       const projects = await storage.getProjects();
       res.json(projects);

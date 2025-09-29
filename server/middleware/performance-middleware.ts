@@ -92,13 +92,23 @@ export function cacheMiddleware(ttl: number = 300) {
     try {
       const { AppCache } = await import('../cache-service');
       const cache = AppCache.getInstance();
-      const cacheKey = `api:${req.method}:${req.path}:${JSON.stringify(req.query)}`;
+      
+      // **SECURITY FIX**: Include user identity in cache key for user-scoped routes
+      const user = (req as any).user || (req as any).session?.user;
+      const isUserScopedRoute = req.path === '/api/tasks'; // Tasks vary by user
+      
+      let cacheKey: string;
+      if (isUserScopedRoute && user) {
+        cacheKey = `api:${req.method}:${req.path}:${JSON.stringify(req.query)}:uid:${user.id}:role:${user.role}`;
+      } else {
+        cacheKey = `api:${req.method}:${req.path}:${JSON.stringify(req.query)}`;
+      }
 
       // Try to get cached response - first check API-specific cache
       let cachedResponse = await cache.get(cacheKey);
       
-      // If no API cache hit, try entity-specific cache (from cache warming)
-      if (!cachedResponse) {
+      // **SECURITY FIX**: Disable entity fallback for user-scoped routes to prevent data leakage
+      if (!cachedResponse && !isUserScopedRoute) {
         const entityKey = getEntityCacheKey(req.path, req.query);
         if (entityKey) {
           cachedResponse = await cache.get(entityKey);
