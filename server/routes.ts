@@ -277,6 +277,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Secure cache middleware for public endpoints (after session)
+  app.use((req, res, next) => {
+    // Cache safe, public endpoints even for authenticated users (they're truly public)
+    const publicEndpoints = [
+      '/api/i18n/languages',     // Language list - always public
+    ];
+    
+    // Pattern for i18n translations: /api/i18n/translations/:lang
+    const i18nTranslationMatch = req.path.match(/^\/api\/i18n\/translations\/([a-z]{2})$/);
+    
+    const isPublicEndpoint = publicEndpoints.includes(req.path);
+    const isI18nTranslation = i18nTranslationMatch !== null;
+    const isGetRequest = req.method === 'GET';
+    
+    // Cache public endpoints (safe for all users)
+    if (isGetRequest && (isPublicEndpoint || isI18nTranslation)) {
+      // Include language in cache key for i18n
+      const cacheKey = isI18nTranslation ? `${req.path}_lang_${i18nTranslationMatch[1]}` : req.path;
+      return cacheMiddleware(1800)(req, res, next); // 30 min TTL for stable i18n data
+    }
+    
+    next();
+  });
+
   // Middleware to check authentication
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.session.user) {
