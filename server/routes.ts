@@ -994,12 +994,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           invoice.notes?.toLowerCase().includes(query)
         ).slice(0, 3);
         
+        // Optimize: Batch fetch clients to eliminate N+1 queries
+        const clientIds = [...new Set(matchingInvoices.map(i => i.clientId).filter(Boolean))];
+        const invoiceClients = clientIds.length > 0 ? await storage.getClients() : [];
+        const clientMap = new Map(invoiceClients.map(c => [c.id, c.name]));
+        
         for (const invoice of matchingInvoices) {
-          let clientName;
-          if (invoice.clientId) {
-            const client = await storage.getClient(invoice.clientId);
-            clientName = client?.name;
-          }
+          const clientName = invoice.clientId ? clientMap.get(invoice.clientId) : undefined;
           
           results.push({
             id: invoice.id,
