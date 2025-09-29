@@ -3450,7 +3450,6 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
-  // Save invoice PDF to Filing Cabinet
   // Save proposal to Filing Cabinet
   app.post("/api/proposals/:id/save-to-filing-cabinet", requireAuth, async (req, res) => {
     try {
@@ -3474,10 +3473,48 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         data: proposalPDF 
       });
       
-      res.json({ 
-        ok: true, 
-        location,
-        message: "Proposal saved to Filing Cabinet successfully"
+      // Create document record in Filing Cabinet
+      const fileName = `proposal-${proposal.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+      const objectKey = location.replace('/home/runner/workspace/gigster-garage-files/private/', '');
+      const fileUrl = `/storage/${objectKey}`;
+      
+      // Ensure we have a client ID - create default client if none exists
+      let clientId = proposal.clientId;
+      if (!clientId && proposal.clientName) {
+        console.log('Creating client for Filing Cabinet document');
+        const clientData = {
+          name: proposal.clientName,
+          email: proposal.clientEmail || '',
+          phone: '',
+          address: '',
+          notes: `Auto-created from proposal ${proposal.title}`,
+          createdById: req.session.user!.id
+        };
+        const newClient = await storage.createClient(clientData);
+        clientId = newClient.id;
+        console.log(`✅ Created client: ${newClient.name} (${clientId})`);
+      }
+      
+      const documentData = {
+        clientId: clientId!,
+        name: `Proposal: ${proposal.title}`,
+        description: `Proposal for ${proposal.clientName || 'client'} - ${proposal.title}`,
+        type: 'proposal' as const,
+        category: 'proposal',
+        fileUrl: fileUrl,
+        fileName: fileName,
+        fileSize: proposalPDF.length,
+        mimeType: 'application/pdf',
+        uploadedById: req.session.user!.id
+      };
+
+      const document = await storage.createClientDocument(documentData);
+      console.log(`✅ Proposal PDF saved to Filing Cabinet: ${document.name}`);
+      
+      res.status(201).json({ 
+        success: true, 
+        message: "Proposal PDF saved to Filing Cabinet successfully",
+        document 
       });
     } catch (error) {
       console.error("Error saving proposal PDF to Filing Cabinet:", error);

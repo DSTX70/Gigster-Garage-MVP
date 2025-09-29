@@ -913,7 +913,7 @@ export const onboardingSchema = z.object({
 export const generateProposalSchema = z.object({
   templateId: z.string(),
   title: z.string(),
-  projectId: z.string().optional(),
+  projectId: z.string().nullish(),
   clientName: z.string(),
   clientEmail: z.string().email(),
   variables: z.record(z.any()),
@@ -923,7 +923,7 @@ export const generateProposalSchema = z.object({
 // Direct proposal creation schema (for form-based proposals)
 export const directProposalSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  projectId: z.string().optional(),
+  projectId: z.string().nullish(),
   clientName: z.string().min(1, "Client name is required"),
   clientEmail: z.string().email("Valid email is required"),
   projectDescription: z.string().optional(),

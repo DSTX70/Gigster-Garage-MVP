@@ -28,7 +28,11 @@ export class ReplitAppStorage {
   private root: string;
 
   constructor(rootDir?: string) {
-    this.root = rootDir ?? requireEnv("PRIVATE_OBJECT_DIR");
+    const envDir = rootDir ?? requireEnv("PRIVATE_OBJECT_DIR");
+    // If path doesn't start with /home, prepend workspace path
+    this.root = envDir.startsWith('/home/runner') 
+      ? envDir 
+      : join('/home/runner/workspace', envDir.replace(/^\//, ''));
   }
 
   private fullPath(objectKey: string): string {
