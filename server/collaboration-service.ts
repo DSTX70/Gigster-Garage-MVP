@@ -477,6 +477,44 @@ export class CollaborationService {
       data: message
     });
   }
+
+  /**
+   * **NEW: PUBLIC SYSTEM ALERT BROADCASTING**
+   * Public API for broadcasting system alerts to all connected clients
+   */
+  public broadcastSystemAlert(payload: any): void {
+    try {
+      this.broadcastToAll({
+        type: 'system_alert',
+        data: payload
+      });
+      console.log(`📡 System alert broadcasted to ${this.clients.size} connected clients`);
+    } catch (error) {
+      console.error('❌ Failed to broadcast system alert:', error);
+      throw error;
+    }
+  }
 }
 
+// **NEW: ROBUST SINGLETON PATTERN** for reliable initialization
+let collaborationServiceInstance: CollaborationService | undefined;
+
+export function initCollaborationService(server: Server): void {
+  if (collaborationServiceInstance) {
+    console.warn('⚠️ Collaboration service already initialized');
+    return;
+  }
+  
+  collaborationServiceInstance = new CollaborationService(server);
+  console.log('✅ Collaboration service initialized successfully');
+}
+
+export function getCollaborationService(): CollaborationService {
+  if (!collaborationServiceInstance) {
+    throw new Error('🚨 Collaboration service not initialized. Call initCollaborationService() first.');
+  }
+  return collaborationServiceInstance;
+}
+
+// Backwards compatibility
 export let collaborationService: CollaborationService;

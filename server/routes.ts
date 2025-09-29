@@ -8563,10 +8563,10 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
 
   const httpServer = createServer(app);
 
-  // Initialize collaboration service with WebSocket support
+  // **NEW: ROBUST COLLABORATION SERVICE INITIALIZATION**
   console.log('🚀 Initializing Team Collaboration Service...');
-  const collaboration = new CollaborationService(httpServer);
-  (global as any).collaborationService = collaboration;
+  const { initCollaborationService } = await import('./collaboration-service');
+  initCollaborationService(httpServer);
 
   // Initialize webhook service
   console.log('🔗 Initializing Webhook Service...');

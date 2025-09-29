@@ -79,19 +79,50 @@ export class PerformanceMonitor {
   private monitoringInterval: NodeJS.Timeout | null = null;
   private startTime = Date.now();
 
-  // Alert thresholds
-  private thresholds = {
-    responseTimeP95: 2000, // 2 seconds
-    errorRate: 5, // 5%
-    cpuUsage: 80, // 80%
-    memoryUsage: 85, // 85%
-    diskUsage: 90, // 90%
-    cacheHitRate: 70, // 70%
-    dbQueryTime: 1000 // 1 second
+  // **NEW: PER-ENVIRONMENT ALERT THRESHOLDS**
+  private environmentThresholds = {
+    development: {
+      responseTimeP95: 3000, // 3 seconds (relaxed for dev)
+      errorRate: 10, // 10% (higher tolerance in dev)
+      cpuUsage: 90, // 90%
+      memoryUsage: 90, // 90% 
+      diskUsage: 95, // 95%
+      cacheHitRate: 50, // 50% (lower expectation in dev)
+      dbQueryTime: 2000 // 2 seconds
+    },
+    staging: {
+      responseTimeP95: 2000, // 2 seconds
+      errorRate: 7, // 7%
+      cpuUsage: 85, // 85%
+      memoryUsage: 85, // 85%
+      diskUsage: 90, // 90%
+      cacheHitRate: 60, // 60%
+      dbQueryTime: 1500 // 1.5 seconds
+    },
+    production: {
+      responseTimeP95: 1000, // 1 second (strict for prod)
+      errorRate: 2, // 2% (very low tolerance)
+      cpuUsage: 75, // 75%
+      memoryUsage: 80, // 80%
+      diskUsage: 85, // 85%
+      cacheHitRate: 80, // 80% (high expectation)
+      dbQueryTime: 800 // 800ms
+    }
   };
 
+  private currentEnvironment: keyof typeof this.environmentThresholds;
+  
+  // Get active thresholds based on current environment
+  private get thresholds() {
+    return this.environmentThresholds[this.currentEnvironment];
+  }
+
   constructor() {
-    console.log('📊 Performance monitor initialized');
+    // **NEW: Initialize environment from NODE_ENV**
+    this.currentEnvironment = (process.env.NODE_ENV as keyof typeof this.environmentThresholds) || 'development';
+    
+    console.log(`📊 Performance monitor initialized for ${this.currentEnvironment} environment`);
+    console.log(`📊 Active thresholds:`, this.thresholds);
     this.startMonitoring();
   }
 
@@ -426,6 +457,9 @@ export class PerformanceMonitor {
     this.alerts.set(alert.id, alert);
     console.log(`📊 Alert triggered: ${alert.title} (${alert.currentValue} > ${alert.threshold})`);
 
+    // **NEW: MULTI-WINDOW ALERT BROADCASTING** - Broadcast to all connected clients
+    this.broadcastAlertToAllClients(alert);
+
     // Log to audit system
     logAuditEvent(
       'system',
@@ -557,6 +591,135 @@ cpu_usage ${metrics.resources.cpuUsage} ${timestamp}
 # TYPE memory_usage gauge
 memory_usage ${metrics.resources.memoryUsage} ${timestamp}
 `.trim();
+  }
+
+  /**
+   * **NEW: MULTI-WINDOW ALERT BROADCASTING** 
+   * Broadcasts performance alerts to all connected WebSocket clients
+   */
+  private async broadcastAlertToAllClients(alert: Alert): Promise<void> {
+    try {
+      // **NEW: USE ROBUST SINGLETON PATTERN WITH PUBLIC API**
+      const { getCollaborationService } = await import('./collaboration-service');
+      
+      const collaborationService = getCollaborationService();
+      
+      // Use public API for system alert broadcasting
+      collaborationService.broadcastSystemAlert({
+        alertType: 'performance_alert',
+        alert: {
+          id: alert.id,
+          type: alert.type,
+          severity: alert.severity,
+          title: alert.title,
+          description: alert.description,
+          timestamp: alert.timestamp,
+          metric: alert.metric,
+          threshold: alert.threshold,
+          currentValue: alert.currentValue
+        },
+        source: 'PerformanceMonitor',
+        timestamp: Date.now()
+      });
+      
+      console.log(`📡 Alert broadcasted to all clients: ${alert.title}`);
+    } catch (error) {
+      console.warn('⚠️ Failed to broadcast alert to clients:', error);
+      // Don't fail the alert creation if broadcasting fails
+    }
+  }
+
+  /**
+   * **NEW: PER-ENVIRONMENT CONFIGURABLE ALERT THRESHOLDS**
+   * Allows users to customize alert thresholds per environment (dev/staging/prod)
+   */
+  updateThresholds(environment: keyof typeof this.environmentThresholds, newThresholds: Partial<typeof this.thresholds>): void {
+    this.environmentThresholds[environment] = {
+      ...this.environmentThresholds[environment],
+      ...newThresholds
+    };
+    
+    console.log(`📊 Alert thresholds updated for ${environment}:`, newThresholds);
+    
+    // Log configuration change
+    logAuditEvent(
+      'system',
+      'system_config', 
+      'performance_thresholds_updated',
+      {
+        id: 'system',
+        type: 'system',
+        name: 'PerformanceMonitor',
+        ipAddress: '127.0.0.1'
+      },
+      {
+        type: 'configuration',
+        name: 'alert_thresholds',
+        attributes: { environment }
+      },
+      'success',
+      {
+        description: `Performance monitoring alert thresholds updated for ${environment}`,
+        metadata: { environment, updatedThresholds: newThresholds }
+      },
+      {
+        severity: 'medium',
+        dataClassification: 'internal'
+      }
+    );
+  }
+
+  /**
+   * Get alert thresholds for specific environment
+   */
+  getThresholds(environment?: keyof typeof this.environmentThresholds): typeof this.thresholds {
+    const env = environment || this.currentEnvironment;
+    return { ...this.environmentThresholds[env] };
+  }
+
+  /**
+   * Get all environment thresholds
+   */
+  getAllEnvironmentThresholds(): typeof this.environmentThresholds {
+    return { ...this.environmentThresholds };
+  }
+
+  /**
+   * Switch monitoring to different environment 
+   */
+  setEnvironment(environment: keyof typeof this.environmentThresholds): void {
+    const oldEnv = this.currentEnvironment;
+    this.currentEnvironment = environment;
+    
+    console.log(`📊 Environment switched from ${oldEnv} to ${environment}`);
+    console.log(`📊 New active thresholds:`, this.thresholds);
+    
+    // Log environment change
+    logAuditEvent(
+      'system',
+      'system_config',
+      'monitoring_environment_changed',
+      {
+        id: 'system',
+        type: 'system', 
+        name: 'PerformanceMonitor',
+        ipAddress: '127.0.0.1'
+      },
+      {
+        type: 'configuration',
+        name: 'monitoring_environment'
+      },
+      'success',
+      {
+        description: `Monitoring environment changed from ${oldEnv} to ${environment}`,
+        oldValue: oldEnv,
+        newValue: environment
+      },
+      {
+        severity: 'medium',
+        dataClassification: 'internal'
+      }
+    );
   }
 }
 
