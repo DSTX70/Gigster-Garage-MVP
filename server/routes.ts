@@ -906,21 +906,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           task.notes?.toLowerCase().includes(query)
         ).slice(0, 5);
         
+        // Optimize: Batch fetch projects and users to eliminate N+1 queries
+        const projectIds = [...new Set(matchingTasks.map(t => t.projectId).filter(Boolean))];
+        const assigneeIds = [...new Set(matchingTasks.map(t => t.assignedToId).filter(Boolean))];
+        
+        const [projects, assignees] = await Promise.all([
+          projectIds.length > 0 ? storage.getProjects() : Promise.resolve([]),
+          assigneeIds.length > 0 ? storage.getUsers() : Promise.resolve([])
+        ]);
+        
+        // Create lookup maps for O(1) access
+        const projectMap = new Map(projects.map(p => [p.id, p.name]));
+        const assigneeMap = new Map(assignees.map(u => [u.id, u.name]));
+        
         for (const task of matchingTasks) {
-          // Get project name for context
-          let projectName;
-          if (task.projectId) {
-            const project = await storage.getProject(task.projectId);
-            projectName = project?.name;
-          }
-          
-          // Get assignee name for context
-          let assigneeName;
-          if (task.assignedToId) {
-            const assignee = await storage.getUser(task.assignedToId);
-            assigneeName = assignee?.name;
-          }
-          
           results.push({
             id: task.id,
             type: "task",
@@ -931,8 +930,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: task.completed ? "completed" : "active",
               priority: task.priority,
               dueDate: task.dueDate,
-              projectName,
-              assigneeName
+              projectName: task.projectId ? projectMap.get(task.projectId) : undefined,
+              assigneeName: task.assignedToId ? assigneeMap.get(task.assignedToId) : undefined
             }
           });
         }
