@@ -14,7 +14,7 @@ import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF, generateContractPDF, generatePresentationPDF } from "./pdfService";
 import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
-import { ObjectStorageService, ObjectNotFoundError, parseObjectPath, objectStorageClient } from "./objectStorage";
+import { saveToFilingCabinet, fetchFromFilingCabinet } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
 import OpenAI from "openai";
@@ -3454,11 +3454,6 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // Save proposal to Filing Cabinet
   app.post("/api/proposals/:id/save-to-filing-cabinet", requireAuth, async (req, res) => {
     try {
-      // Validate ID parameter
-      if (!req.params.id || typeof req.params.id !== 'string') {
-        return res.status(400).json({ error: "Invalid proposal ID" });
-      }
-
       // Fetch proposal with ownership check
       let proposal = await storage.getProposal(req.params.id, req.session.user!.id);
       if (!proposal) {
@@ -3471,63 +3466,18 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         clientName: proposal.clientName || 'Valued Client',
       });
       
-      console.log('🚀 NEW FILING CABINET CODE: Starting proposal PDF save to filesystem');
+      // Save using new Filing Cabinet system
+      const { location } = await saveToFilingCabinet({ 
+        kind: "proposal", 
+        id: req.params.id, 
+        orgId: req.session.user!.id,
+        data: proposalPDF 
+      });
       
-      // Save PDF to filesystem
-      const fileName = `proposal-${proposal.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
-      const storageDir = '/home/runner/workspace/gigster-garage-files/private';
-      const objectKey = `${req.session.user!.id}/proposals/${fileName}`;
-      const fullPath = `${storageDir}/${objectKey}`;
-      
-      console.log('📂 Filing Cabinet (Proposal): Saving to path:', fullPath);
-      
-      // Ensure directory exists and write PDF
-      await fs.mkdir(path.dirname(fullPath), { recursive: true });
-      await fs.writeFile(fullPath, proposalPDF);
-      
-      console.log('✅ Filing Cabinet (Proposal): PDF saved successfully to filesystem');
-
-      // Create document record in Filing Cabinet 
-      const fileUrl = `/storage/${objectKey}`;
-      
-      // Ensure we have a client ID - create default client if none exists
-      let clientId = proposal.clientId;
-      if (!clientId && proposal.clientName) {
-        console.log('Creating client for Filing Cabinet document');
-        const clientData = {
-          name: proposal.clientName,
-          email: proposal.clientEmail || '',
-          phone: '',
-          address: '',
-          notes: `Auto-created from proposal ${proposal.title}`,
-          createdById: req.session.user!.id
-        };
-        const newClient = await storage.createClient(clientData);
-        clientId = newClient.id;
-      }
-
-      // Create document in Filing Cabinet using correct schema
-      const documentData = {
-        clientId: clientId!,
-        name: `Proposal: ${proposal.title}`,
-        description: `Proposal for ${proposal.clientName || 'client'} - ${proposal.title}`,
-        type: 'proposal' as const,
-        category: 'proposal',
-        fileUrl: fileUrl,
-        fileName: fileName,
-        fileSize: proposalPDF.length,
-        mimeType: 'application/pdf',
-        uploadedById: req.session.user!.id,
-        createdById: req.session.user!.id
-      };
-
-      const document = await storage.createClientDocument(documentData);
-      console.log(`✅ Proposal PDF saved to Filing Cabinet: ${proposal.title}`);
-
-      res.status(201).json({ 
-        message: "Proposal PDF saved to Filing Cabinet successfully",
-        documentId: document.id,
-        objectPath: objectPath
+      res.json({ 
+        ok: true, 
+        location,
+        message: "Proposal saved to Filing Cabinet successfully"
       });
     } catch (error) {
       console.error("Error saving proposal PDF to Filing Cabinet:", error);

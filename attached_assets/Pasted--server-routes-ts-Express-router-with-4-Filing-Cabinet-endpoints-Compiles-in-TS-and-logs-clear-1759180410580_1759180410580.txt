@@ -1,0 +1,91 @@
+// server/routes.ts
+// Express router with 4 Filing Cabinet endpoints. Compiles in TS and logs clearly.
+
+import { Router, Request, Response } from "express";
+import { saveToFilingCabinet, fetchFromFilingCabinet } from "./objectStorage";
+
+const router = Router();
+
+function decodePdf(req: Request): Buffer {
+  // Accept either { pdfBase64 } or raw body as Buffer
+  const asBase64 = (req.body && (req.body as any).pdfBase64) as string | undefined;
+  if (asBase64) return Buffer.from(asBase64, "base64");
+  if (Buffer.isBuffer(req.body)) return req.body;
+  throw new Error("Missing PDF. Provide json { pdfBase64 } or raw application/pdf body.");
+}
+
+function sendOk(res: Response, location: string) {
+  res.json({ ok: true, location });
+}
+
+function handleError(res: Response, e: unknown) {
+  const message = e instanceof Error ? e.message : String(e);
+  res.status(400).json({ ok: false, error: message });
+}
+
+// --- Invoice ---
+router.post("/api/invoices/:invoiceId/save-to-filing-cabinet", async (req, res) => {
+  try {
+    const pdf = decodePdf(req);
+    const invoiceId = req.params.invoiceId;
+    const orgId = (req.query.orgId as string | undefined) ?? (req.body?.orgId as string | undefined);
+    const { location } = await saveToFilingCabinet({ kind: "invoice", id: invoiceId, orgId, data: pdf });
+    sendOk(res, location);
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+router.get("/api/invoices/:invoiceId/filing-cabinet", async (req, res) => {
+  try {
+    const invoiceId = req.params.invoiceId;
+    const orgId = (req.query.orgId as string | undefined);
+    const result = await fetchFromFilingCabinet("invoice", invoiceId, orgId);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", String(result.size));
+    (result.stream as any).pipe(res);
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// --- Proposal ---
+router.post("/api/proposals/:proposalId/save-to-filing-cabinet", async (req, res) => {
+  try {
+    const pdf = decodePdf(req);
+    const proposalId = req.params.proposalId;
+    const orgId = (req.query.orgId as string | undefined) ?? (req.body?.orgId as string | undefined);
+    const { location } = await saveToFilingCabinet({ kind: "proposal", id: proposalId, orgId, data: pdf });
+    sendOk(res, location);
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// --- Contract ---
+router.post("/api/contracts/:contractId/save-to-filing-cabinet", async (req, res) => {
+  try {
+    const pdf = decodePdf(req);
+    const contractId = req.params.contractId;
+    const orgId = (req.query.orgId as string | undefined) ?? (req.body?.orgId as string | undefined);
+    const { location } = await saveToFilingCabinet({ kind: "contract", id: contractId, orgId, data: pdf });
+    sendOk(res, location);
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+// --- Presentation ---
+router.post("/api/presentations/:presentationId/save-to-filing-cabinet", async (req, res) => {
+  try {
+    const pdf = decodePdf(req);
+    const presentationId = req.params.presentationId;
+    const orgId = (req.query.orgId as string | undefined) ?? (req.body?.orgId as string | undefined);
+    const { location } = await saveToFilingCabinet({ kind: "presentation", id: presentationId, orgId, data: pdf });
+    sendOk(res, location);
+  } catch (e) {
+    handleError(res, e);
+  }
+});
+
+export default router;
