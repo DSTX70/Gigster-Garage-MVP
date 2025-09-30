@@ -126,8 +126,7 @@ export default function CreatePresentation() {
   // Save presentation mutation
   const savePresentationMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/presentations", data);
-      return await response.json();
+      return await apiRequest("POST", "/api/presentations", data);
     },
     onSuccess: (responseData: any) => {
       console.log("Save response:", responseData);
@@ -159,8 +158,7 @@ export default function CreatePresentation() {
   // Save to Filing Cabinet mutation
   const saveToFilingCabinetMutation = useMutation({
     mutationFn: async (presentationId: string) => {
-      const response = await apiRequest("POST", `/api/presentations/${presentationId}/save-to-filing-cabinet`);
-      return await response.json();
+      return await apiRequest("POST", `/api/presentations/${presentationId}/save-to-filing-cabinet`);
     },
     onSuccess: (responseData: any) => {
       toast({

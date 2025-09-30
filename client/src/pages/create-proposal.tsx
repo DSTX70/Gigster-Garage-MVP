@@ -134,8 +134,7 @@ export default function CreateProposal() {
   // Save proposal mutation
   const saveProposalMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest<any>("POST", "/api/proposals", data);
-      return await response.json();
+      return await apiRequest<any>("POST", "/api/proposals", data);
     },
     onSuccess: (responseData: any) => {
       console.log("Save response:", responseData);

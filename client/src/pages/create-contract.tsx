@@ -68,8 +68,7 @@ export default function CreateContract() {
   // Save contract mutation
   const saveContractMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/contracts", data);
-      return await response.json();
+      return await apiRequest("POST", "/api/contracts", data);
     },
     onSuccess: (responseData: any) => {
       console.log("Save response:", responseData);
@@ -101,8 +100,7 @@ export default function CreateContract() {
   // Save to Filing Cabinet mutation
   const saveToFilingCabinetMutation = useMutation({
     mutationFn: async (contractId: string) => {
-      const response = await apiRequest("POST", `/api/contracts/${contractId}/save-to-filing-cabinet`);
-      return await response.json();
+      return await apiRequest("POST", `/api/contracts/${contractId}/save-to-filing-cabinet`);
     },
     onSuccess: (responseData: any) => {
       toast({

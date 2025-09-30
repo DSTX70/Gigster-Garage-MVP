@@ -101,8 +101,7 @@ export default function CreateInvoice() {
   // Save invoice mutation
   const saveInvoiceMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/invoices", data);
-      return await response.json();
+      return await apiRequest("POST", "/api/invoices", data);
     },
     onSuccess: (responseData: any) => {
       // Store the created invoice ID for sending
@@ -140,8 +139,7 @@ export default function CreateInvoice() {
   // Send invoice mutation
   const sendInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      const response = await apiRequest("POST", `/api/invoices/${invoiceId}/send`, { includePDF: true });
-      return await response.json();
+      return await apiRequest("POST", `/api/invoices/${invoiceId}/send`, { includePDF: true });
     },
     onSuccess: (responseData: any) => {
       toast({
@@ -163,8 +161,7 @@ export default function CreateInvoice() {
   // Save to Filing Cabinet mutation
   const saveToFilingCabinetMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-      const response = await apiRequest("POST", `/api/invoices/${invoiceId}/save-to-filing-cabinet`);
-      return await response.json();
+      return await apiRequest("POST", `/api/invoices/${invoiceId}/save-to-filing-cabinet`);
     },
     onSuccess: (responseData: any) => {
       toast({
