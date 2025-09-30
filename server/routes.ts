@@ -1532,6 +1532,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get uninvoiced approved time logs for invoice import
+  app.get("/api/timelogs/uninvoiced", requireAuth, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      const projectId = req.query.projectId as string | undefined;
+      const clientId = req.query.clientId as string | undefined;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      
+      // Fetch all time logs based on user role
+      const allTimeLogs = await storage.getTimeLogs(
+        user.role === 'admin' ? undefined : user.id,
+        projectId
+      );
+      
+      // Filter for approved time logs that haven't been invoiced
+      let uninvoicedLogs = allTimeLogs.filter(log => 
+        log.approvalStatus === 'approved' && 
+        !log.invoiceId &&
+        !log.isSelectedForInvoice
+      );
+      
+      // Apply additional filters if provided
+      if (clientId && uninvoicedLogs.length > 0) {
+        // Filter by project's clientId
+        uninvoicedLogs = uninvoicedLogs.filter(log => 
+          log.project?.clientId === clientId
+        );
+      }
+      
+      if (startDate) {
+        const start = new Date(startDate);
+        uninvoicedLogs = uninvoicedLogs.filter(log => 
+          new Date(log.startTime) >= start
+        );
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate);
+        uninvoicedLogs = uninvoicedLogs.filter(log => 
+          new Date(log.startTime) <= end
+        );
+      }
+      
+      res.json(uninvoicedLogs);
+    } catch (error) {
+      console.error("Error fetching uninvoiced time logs:", error);
+      res.status(500).json({ message: "Failed to fetch uninvoiced time logs" });
+    }
+  });
+
   // Get productivity stats
   app.get("/api/productivity/stats", requireAuth, async (req, res) => {
     try {
@@ -3414,6 +3465,35 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(400).json({ error: "Invalid invoice data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create invoice" });
+    }
+  });
+
+  // Link time logs to an invoice
+  app.post("/api/invoices/:id/link-timelogs", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { timeLogIds } = req.body;
+
+      if (!Array.isArray(timeLogIds) || timeLogIds.length === 0) {
+        return res.status(400).json({ error: "Invalid time log IDs" });
+      }
+
+      // Update each time log to link it to this invoice
+      for (const timeLogId of timeLogIds) {
+        await storage.updateTimeLog(timeLogId, {
+          invoiceId: id,
+          isSelectedForInvoice: true
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `Linked ${timeLogIds.length} time ${timeLogIds.length === 1 ? 'entry' : 'entries'} to invoice`,
+        linkedCount: timeLogIds.length
+      });
+    } catch (error) {
+      console.error("Error linking time logs to invoice:", error);
+      res.status(500).json({ error: "Failed to link time logs" });
     }
   });
 

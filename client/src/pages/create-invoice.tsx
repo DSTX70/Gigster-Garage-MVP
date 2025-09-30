@@ -10,10 +10,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
-import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard, FolderOpen, ChevronDown, PenTool, Loader2 } from "lucide-react";
+import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard, FolderOpen, ChevronDown, PenTool, Loader2, Clock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Project } from "@shared/schema";
+import type { Project, TimeLog } from "@shared/schema";
+import { TimeImportDialog } from "@/components/time-import-dialog";
 
 interface LineItem {
   id: number;
@@ -54,6 +55,10 @@ export default function CreateInvoice() {
 
   // AI writing states
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+
+  // Time import states
+  const [showTimeImportDialog, setShowTimeImportDialog] = useState(false);
+  const [selectedTimeLogIds, setSelectedTimeLogIds] = useState<string[]>([]);
 
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -98,18 +103,62 @@ export default function CreateInvoice() {
     return getSubtotal() + getTaxAmount() - formData.discountAmount;
   };
 
+  // Handle time import from timesheet
+  const handleTimeImport = (selectedLogs: TimeLog[], hourlyRate: number) => {
+    // Convert time logs to line items
+    const newLineItems = selectedLogs.map((log, index) => {
+      const hours = Math.round((parseInt(log.duration || "0", 10) / 3600) * 100) / 100;
+      const amount = hours * hourlyRate;
+      
+      return {
+        id: Math.max(...lineItems.map(item => item.id), 0) + index + 1,
+        description: log.description,
+        quantity: hours,
+        rate: hourlyRate,
+        amount: Math.round(amount * 100) / 100
+      };
+    });
+
+    // Add to existing line items (or replace if only one empty item)
+    if (lineItems.length === 1 && !lineItems[0].description && lineItems[0].rate === 0) {
+      setLineItems(newLineItems);
+    } else {
+      setLineItems([...lineItems, ...newLineItems]);
+    }
+
+    // Store time log IDs for linking when invoice is saved
+    setSelectedTimeLogIds(selectedLogs.map(log => log.id));
+
+    toast({
+      title: "Time imported",
+      description: `Added ${newLineItems.length} time ${newLineItems.length === 1 ? 'entry' : 'entries'} to invoice`,
+    });
+  };
+
   // Save invoice mutation
   const saveInvoiceMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/invoices", data);
     },
-    onSuccess: (responseData: any) => {
+    onSuccess: async (responseData: any) => {
       // Store the created invoice ID for sending
       console.log("Save response:", responseData);
       if (responseData && responseData.id) {
         const invoiceId = responseData.id;
         setCreatedInvoiceId(invoiceId);
         setCreatedInvoiceData(responseData);
+        
+        // Link time logs to invoice if any were selected
+        if (selectedTimeLogIds.length > 0) {
+          try {
+            await apiRequest("POST", `/api/invoices/${invoiceId}/link-timelogs`, {
+              timeLogIds: selectedTimeLogIds
+            });
+            console.log(`Linked ${selectedTimeLogIds.length} time logs to invoice`);
+          } catch (error) {
+            console.error("Error linking time logs:", error);
+          }
+        }
         
         toast({
           title: "Invoice saved",
@@ -640,10 +689,22 @@ export default function CreateInvoice() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-green-900">Services & Products</h4>
-                    <Button size="sm" variant="outline" className="text-xs" onClick={addLineItem}>
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add Item
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100" 
+                        onClick={() => setShowTimeImportDialog(true)}
+                        data-testid="button-import-time"
+                      >
+                        <Clock className="h-3 w-3 mr-1" />
+                        Import from Timesheet
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={addLineItem} data-testid="button-add-item">
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Item
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="overflow-x-auto">
@@ -854,6 +915,14 @@ export default function CreateInvoice() {
           </Card>
         </div>
       </main>
+
+      {/* Time Import Dialog */}
+      <TimeImportDialog
+        open={showTimeImportDialog}
+        onOpenChange={setShowTimeImportDialog}
+        onImport={handleTimeImport}
+        projectId={formData.projectId || undefined}
+      />
     </div>
   );
 }
