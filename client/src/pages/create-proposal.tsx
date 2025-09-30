@@ -145,6 +145,7 @@ export default function CreateProposal() {
           description: "Your proposal has been saved successfully. Saving to Filing Cabinet...",
         });
         // Automatically save to Filing Cabinet
+        console.log("Triggering Filing Cabinet save for proposal ID:", responseData.id);
         saveToFilingCabinetMutation.mutate(responseData.id);
       } else {
         toast({
