@@ -28,8 +28,7 @@ export default function Signup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupData) => {
-      const response = await apiRequest("POST", "/api/signup", data);
-      return response.json();
+      return await apiRequest<any>("POST", "/api/signup", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
