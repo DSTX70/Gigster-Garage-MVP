@@ -3596,9 +3596,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       console.log(`✅ Contract PDF saved to Filing Cabinet: ${contract.title}`);
 
       res.status(201).json({ 
+        success: true,
         message: "Contract PDF saved to Filing Cabinet successfully",
-        documentId: document.id,
-        objectPath: objectPath
+        document
       });
     } catch (error) {
       console.error("Error saving contract PDF to Filing Cabinet:", error);
