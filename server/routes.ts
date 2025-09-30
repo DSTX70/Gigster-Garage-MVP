@@ -3472,27 +3472,57 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   app.post("/api/invoices/:id/link-timelogs", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const { timeLogIds } = req.body;
+      
+      // Validate request body
+      const linkTimeLogsSchema = z.object({
+        timeLogIds: z.array(z.string()).min(1, "At least one time log ID is required")
+      });
+      
+      const { timeLogIds } = linkTimeLogsSchema.parse(req.body);
 
-      if (!Array.isArray(timeLogIds) || timeLogIds.length === 0) {
-        return res.status(400).json({ error: "Invalid time log IDs" });
+      // Verify invoice exists and user has access
+      const invoice = await storage.getInvoice(id, req.session.user!.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found or access denied" });
       }
+
+      let linkedCount = 0;
+      let skippedCount = 0;
 
       // Update each time log to link it to this invoice
       for (const timeLogId of timeLogIds) {
+        const timeLog = await storage.getTimeLog(timeLogId);
+        
+        // Verify time log exists and belongs to current user or their organization
+        if (!timeLog || (timeLog.userId !== req.session.user!.id && req.session.user!.role !== "admin")) {
+          skippedCount++;
+          continue;
+        }
+
+        // Skip if already linked to another invoice
+        if (timeLog.invoiceId && timeLog.invoiceId !== id) {
+          skippedCount++;
+          continue;
+        }
+
         await storage.updateTimeLog(timeLogId, {
           invoiceId: id,
           isSelectedForInvoice: true
         });
+        linkedCount++;
       }
 
       res.json({
         success: true,
-        message: `Linked ${timeLogIds.length} time ${timeLogIds.length === 1 ? 'entry' : 'entries'} to invoice`,
-        linkedCount: timeLogIds.length
+        message: `Linked ${linkedCount} time ${linkedCount === 1 ? 'entry' : 'entries'} to invoice${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`,
+        linkedCount,
+        skippedCount
       });
     } catch (error) {
       console.error("Error linking time logs to invoice:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
       res.status(500).json({ error: "Failed to link time logs" });
     }
   });

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/app-header";
 import { Link } from "wouter";
 import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard, FolderOpen, ChevronDown, PenTool, Loader2, Clock } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, TimeLog } from "@shared/schema";
 import { TimeImportDialog } from "@/components/time-import-dialog";
@@ -151,12 +151,21 @@ export default function CreateInvoice() {
         // Link time logs to invoice if any were selected
         if (selectedTimeLogIds.length > 0) {
           try {
-            await apiRequest("POST", `/api/invoices/${invoiceId}/link-timelogs`, {
+            const linkResult = await apiRequest("POST", `/api/invoices/${invoiceId}/link-timelogs`, {
               timeLogIds: selectedTimeLogIds
             });
             console.log(`Linked ${selectedTimeLogIds.length} time logs to invoice`);
+            
+            // Invalidate time logs cache to reflect updated invoice links
+            queryClient.invalidateQueries({ queryKey: ['/api/timelogs'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/timelogs/uninvoiced'] });
           } catch (error) {
             console.error("Error linking time logs:", error);
+            toast({
+              title: "Warning",
+              description: "Invoice saved but failed to link time entries. You may need to manually mark them as invoiced.",
+              variant: "destructive",
+            });
           }
         }
         
