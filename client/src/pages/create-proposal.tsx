@@ -142,8 +142,10 @@ export default function CreateProposal() {
         setCreatedProposalId(responseData.id);
         toast({
           title: "Proposal saved",
-          description: "Your proposal has been saved successfully.",
+          description: "Your proposal has been saved successfully. Saving to Filing Cabinet...",
         });
+        // Automatically save to Filing Cabinet
+        saveToFilingCabinetMutation.mutate(responseData.id);
       } else {
         toast({
           title: "Error",
