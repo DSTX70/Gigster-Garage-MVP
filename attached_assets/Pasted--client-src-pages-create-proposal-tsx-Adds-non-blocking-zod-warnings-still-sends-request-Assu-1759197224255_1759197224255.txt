@@ -1,0 +1,72 @@
+// client/src/pages/create-proposal.tsx
+// Adds non-blocking zod warnings; still sends request. Assumes apiRequest() from earlier.
+import * as React from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "../lib/queryClient";
+import { toast } from "../components/ui/use-toast";
+import { collectWarnings, ProposalPayload } from "../validation/proposal";
+
+type LineItem = { description: string; quantity: number; unitPrice: number };
+
+export default function CreateProposalPage() {
+  const [formData, setFormData] = React.useState<Record<string, any>>({});
+  const [lineItems, setLineItems] = React.useState<LineItem[]>([]);
+
+  const getTotalAmount = React.useCallback(
+    () =>
+      lineItems.reduce((sum, li) => sum + (Number(li.quantity) || 0) * (Number(li.unitPrice) || 0), 0),
+    [lineItems]
+  );
+
+  const saveProposalMutation = useMutation({
+    mutationFn: async (data: ProposalPayload) => apiRequest<any>("POST", "/api/proposals", data),
+    onSuccess: (data: any) => {
+      toast({ title: "Proposal saved", description: `ID: ${data?.id ?? "unknown"}` });
+    },
+    onError: (err: any) => {
+      toast({ title: "Save failed", description: err?.message ?? "Unknown error", variant: "destructive" });
+      console.error("Proposal save error:", err); // why: dev visibility
+    },
+  });
+
+  const handleSave = React.useCallback(() => {
+    const payload: ProposalPayload = {
+      title: (formData.title ?? "").toString(),
+      projectId: formData.projectId ?? null,
+      clientName: formData.clientName ?? null,
+      clientEmail: formData.clientEmail ?? null,
+      projectDescription: formData.projectDescription ?? null,
+      totalBudget: Number(formData.totalBudget ?? 0),
+      timeline: formData.timeline ?? null,
+      deliverables: formData.deliverables ?? null,
+      terms: formData.terms ?? null,
+      lineItems: (lineItems || []).map((li) => ({
+        description: (li.description ?? "").toString(),
+        quantity: Number(li.quantity ?? 0),
+        unitPrice: Number(li.unitPrice ?? 0),
+      })),
+      calculatedTotal: Number(getTotalAmount()),
+      expiresInDays: 30,
+    };
+
+    const warnings = collectWarnings(payload);
+    if (warnings.length) {
+      toast({
+        title: "Review before sending",
+        description: warnings.join(" • "),
+      });
+    }
+
+    console.debug("create-proposal payload:", payload); // why: inspect preflight
+    saveProposalMutation.mutate(payload);
+  }, [formData, lineItems, getTotalAmount, saveProposalMutation]);
+
+  return (
+    <div>
+      {/* Your form fields, bindings to setFormData/setLineItems */}
+      <button onClick={handleSave} disabled={saveProposalMutation.isLoading}>
+        {saveProposalMutation.isLoading ? "Saving..." : "Save Proposal"}
+      </button>
+    </div>
+  );
+}

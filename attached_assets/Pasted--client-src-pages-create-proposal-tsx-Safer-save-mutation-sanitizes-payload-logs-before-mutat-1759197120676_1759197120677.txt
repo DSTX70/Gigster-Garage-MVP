@@ -1,0 +1,102 @@
+// client/src/pages/create-proposal.tsx
+/* Safer save mutation: sanitizes payload, logs before mutate, surfaces exact errors. */
+import * as React from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "../lib/queryClient";
+import { toast } from "../components/ui/use-toast";
+
+type LineItem = { description: string; quantity: number; unitPrice: number };
+type ProposalPayload = {
+  title: string;
+  projectId?: string | null;
+  clientName?: string | null;
+  clientEmail?: string | null;
+  projectDescription?: string | null;
+  totalBudget?: number;
+  timeline?: string | null;
+  deliverables?: string | null;
+  terms?: string | null;
+  lineItems?: LineItem[];
+  calculatedTotal?: number;
+  expiresInDays?: number;
+};
+
+export default function CreateProposalPage() {
+  const [formData, setFormData] = React.useState<any>({});
+  const [lineItems, setLineItems] = React.useState<LineItem[]>([]);
+  const getTotalAmount = React.useCallback(
+    () =>
+      lineItems.reduce((sum, li) => {
+        const qty = Number(li.quantity) || 0;
+        const price = Number(li.unitPrice) || 0;
+        return sum + qty * price;
+      }, 0),
+    [lineItems]
+  );
+
+  const saveProposalMutation = useMutation({
+    mutationFn: async (data: ProposalPayload) => {
+      // apiRequest returns parsed JSON per wrapper
+      return await apiRequest<any>("POST", "/api/proposals", data);
+    },
+    onSuccess: (responseData: any) => {
+      if (responseData && responseData.id) {
+        toast({ title: "Proposal saved", description: "Your proposal has been saved successfully." });
+      } else {
+        toast({
+          title: "Error",
+          description: "Proposal save failed - invalid response format",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (err: any) => {
+      const msg = err?.message || "Failed to save proposal.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+      // Keep a console error so devs see stack/context
+      // Why: helps confirm preflight/URL/serialization issues immediately in console
+      // eslint-disable-next-line no-console
+      console.error("Proposal save error:", err);
+    },
+  });
+
+  const handleSave = React.useCallback(() => {
+    // Normalize/clean payload. Use nullish for optional schema fields.
+    const payload: ProposalPayload = {
+      title: (formData.title ?? "").toString(),
+      projectId: formData.projectId ?? null, // matches .nullish()
+      clientName: formData.clientName ?? null,
+      clientEmail: formData.clientEmail ?? null,
+      projectDescription: formData.projectDescription ?? null,
+      totalBudget: Number(formData.totalBudget ?? 0),
+      timeline: formData.timeline ?? null,
+      deliverables: formData.deliverables ?? null,
+      terms: formData.terms ?? null,
+      lineItems: (lineItems || []).map((li) => ({
+        description: (li.description ?? "").toString(),
+        quantity: Number(li.quantity ?? 0),
+        unitPrice: Number(li.unitPrice ?? 0),
+      })),
+      calculatedTotal: Number(getTotalAmount()),
+      expiresInDays: 30,
+    };
+
+    // Log BEFORE mutate so we can see if a sync error occurs
+    // eslint-disable-next-line no-console
+    console.debug("create-proposal payload:", payload);
+
+    // If required title is empty, let the server validate; do not block sending.
+    // Kick off mutation; any sync error in apiRequest (e.g., bad URL/JSON) will be caught by onError via Promise.
+    saveProposalMutation.mutate(payload);
+  }, [formData, lineItems, getTotalAmount, saveProposalMutation]);
+
+  // ... your JSX form calling handleSave()
+  return (
+    <div>
+      {/* form elements ... */}
+      <button onClick={handleSave} disabled={saveProposalMutation.isLoading}>
+        {saveProposalMutation.isLoading ? "Saving..." : "Save Proposal"}
+      </button>
+    </div>
+  );
+}

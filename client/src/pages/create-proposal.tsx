@@ -134,8 +134,7 @@ export default function CreateProposal() {
   // Save proposal mutation
   const saveProposalMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/proposals", data);
-      return await response.json();
+      return await apiRequest<any>("POST", "/api/proposals", data);
     },
     onSuccess: (responseData: any) => {
       console.log("Save response:", responseData);
@@ -153,20 +152,21 @@ export default function CreateProposal() {
         });
       }
     },
-    onError: () => {
+    onError: (err: any) => {
+      const msg = err?.message || "Failed to save proposal.";
       toast({
         title: "Error",
-        description: "Failed to save proposal.",
+        description: msg,
         variant: "destructive",
       });
+      console.error("Proposal save error:", err);
     },
   });
 
   // Save to Filing Cabinet mutation
   const saveToFilingCabinetMutation = useMutation({
     mutationFn: async (proposalId: string) => {
-      const response = await apiRequest("POST", `/api/proposals/${proposalId}/save-to-filing-cabinet`);
-      return await response.json();
+      return await apiRequest<any>("POST", `/api/proposals/${proposalId}/save-to-filing-cabinet`);
     },
     onSuccess: (responseData: any) => {
       toast({
@@ -174,30 +174,33 @@ export default function CreateProposal() {
         description: responseData.message || "Proposal PDF saved to Filing Cabinet successfully",
       });
     },
-    onError: () => {
+    onError: (err: any) => {
+      const msg = err?.message || "Failed to save proposal to Filing Cabinet.";
       toast({
         title: "Error",
-        description: "Failed to save proposal to Filing Cabinet.",
+        description: msg,
         variant: "destructive",
       });
+      console.error("Filing Cabinet save error:", err);
     },
   });
 
   const handleSave = () => {
     const proposalData = {
-      title: formData.title,
-      projectId: formData.projectId || undefined,
-      clientName: formData.clientName,
-      clientEmail: formData.clientEmail,
-      projectDescription: formData.projectDescription || undefined,
-      totalBudget: formData.totalBudget || 0,
-      timeline: formData.timeline || undefined,
-      deliverables: formData.deliverables || undefined,
-      terms: formData.terms || undefined,
+      title: (formData.title ?? "").toString(),
+      projectId: formData.projectId ?? null,
+      clientName: formData.clientName ?? null,
+      clientEmail: formData.clientEmail ?? null,
+      projectDescription: formData.projectDescription ?? null,
+      totalBudget: Number(formData.totalBudget ?? 0),
+      timeline: formData.timeline ?? null,
+      deliverables: formData.deliverables ?? null,
+      terms: formData.terms ?? null,
       lineItems,
-      calculatedTotal: getTotalAmount(),
+      calculatedTotal: Number(getTotalAmount()),
       expiresInDays: 30
     };
+    console.debug("create-proposal payload:", proposalData);
     saveProposalMutation.mutate(proposalData);
   };
 
