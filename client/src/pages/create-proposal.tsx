@@ -187,15 +187,15 @@ export default function CreateProposal() {
 
   const handleSave = () => {
     const proposalData = {
-      title: (formData.title ?? "").toString(),
-      projectId: formData.projectId ?? null,
-      clientName: formData.clientName ?? null,
-      clientEmail: formData.clientEmail ?? null,
-      projectDescription: formData.projectDescription ?? null,
+      title: (formData.title ?? "").toString().trim(),
+      projectId: formData.projectId?.trim() || null,
+      clientName: formData.clientName?.trim() || null,
+      clientEmail: formData.clientEmail?.trim() || null,
+      projectDescription: formData.projectDescription?.trim() || null,
       totalBudget: Number(formData.totalBudget ?? 0),
-      timeline: formData.timeline ?? null,
-      deliverables: formData.deliverables ?? null,
-      terms: formData.terms ?? null,
+      timeline: formData.timeline?.trim() || null,
+      deliverables: formData.deliverables?.trim() || null,
+      terms: formData.terms?.trim() || null,
       lineItems,
       calculatedTotal: Number(getTotalAmount()),
       expiresInDays: 30
