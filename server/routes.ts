@@ -3545,7 +3545,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       console.log('🚀 NEW FILING CABINET CODE: Starting contract PDF save to filesystem');
       
       // Save PDF to filesystem
-      const fileName = `contract-${contract.contractTitle.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+      const fileName = `contract-${contract.title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
       const storageDir = '/home/runner/workspace/gigster-garage-files/private';
       const objectKey = `${req.session.user!.id}/contracts/${fileName}`;
       const fullPath = `${storageDir}/${objectKey}`;
@@ -3570,7 +3570,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
           email: contract.clientEmail || '',
           phone: '',
           address: contract.clientAddress || '',
-          notes: `Auto-created from contract ${contract.contractTitle}`,
+          notes: `Auto-created from contract ${contract.title}`,
           createdById: req.session.user!.id
         };
         const newClient = await storage.createClient(clientData);
@@ -3580,8 +3580,8 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       // Create document in Filing Cabinet using correct schema
       const documentData = {
         clientId: clientId!,
-        name: `Contract: ${contract.contractTitle}`,
-        description: `Contract for ${contract.clientName || 'client'} - ${contract.contractTitle}`,
+        name: `Contract: ${contract.title}`,
+        description: `Contract for ${contract.clientName || 'client'} - ${contract.title}`,
         type: 'contract' as const,
         category: 'contract',
         fileUrl: fileUrl,
@@ -3593,7 +3593,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       };
 
       const document = await storage.createClientDocument(documentData);
-      console.log(`✅ Contract PDF saved to Filing Cabinet: ${contract.contractTitle}`);
+      console.log(`✅ Contract PDF saved to Filing Cabinet: ${contract.title}`);
 
       res.status(201).json({ 
         message: "Contract PDF saved to Filing Cabinet successfully",
