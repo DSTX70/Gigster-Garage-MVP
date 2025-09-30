@@ -820,7 +820,7 @@ const baseInsertContractSchema = createInsertSchema(contracts, {
   contractValue: z.union([
     z.string().regex(/^\d+\.?\d*$/, "Contract value must be a valid number"),
     z.number().min(0, "Contract value cannot be negative").transform((val) => val.toString()),
-  ]).optional(),
+  ]).optional().nullable(),
   currency: z.string().length(3, "Currency must be a 3-letter code (e.g., USD)").default("USD"),
   effectiveDate: z.union([
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),

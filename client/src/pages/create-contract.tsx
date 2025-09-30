@@ -118,22 +118,25 @@ export default function CreateContract() {
   });
 
   const handleSave = () => {
-    const contractData = {
+    const contractData: any = {
       title: formData.contractTitle || "Untitled Contract",
       contractType: formData.contractType || "service",
-      projectId: formData.projectId || null,
       clientName: formData.clientName || "Client",
-      clientEmail: formData.clientEmail && formData.clientEmail.includes('@') ? formData.clientEmail : null,
-      clientAddress: formData.clientAddress || null,
-      contractValue: formData.contractValue ? String(formData.contractValue) : null,
-      effectiveDate: formData.startDate || null,
-      expirationDate: formData.endDate || null,
-      paymentTerms: formData.paymentTerms || null,
-      confidentiality: formData.confidentiality || null,
-      disputeResolution: formData.disputeResolution || null,
-      governingLaw: formData.governingLaw || null,
       type: "contract"
     };
+    
+    // Only add optional fields if they have values
+    if (formData.projectId) contractData.projectId = formData.projectId;
+    if (formData.clientEmail && formData.clientEmail.includes('@')) contractData.clientEmail = formData.clientEmail;
+    if (formData.clientAddress) contractData.clientAddress = formData.clientAddress;
+    if (formData.contractValue && formData.contractValue > 0) contractData.contractValue = String(formData.contractValue);
+    if (formData.startDate) contractData.effectiveDate = formData.startDate;
+    if (formData.endDate) contractData.expirationDate = formData.endDate;
+    if (formData.paymentTerms) contractData.paymentTerms = formData.paymentTerms;
+    if (formData.confidentiality) contractData.confidentiality = formData.confidentiality;
+    if (formData.disputeResolution) contractData.disputeResolution = formData.disputeResolution;
+    if (formData.governingLaw) contractData.governingLaw = formData.governingLaw;
+    
     saveContractMutation.mutate(contractData);
   };
 
@@ -615,12 +618,10 @@ export default function CreateContract() {
                       <SelectValue placeholder="Select contract type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="service-agreement">Service Agreement</SelectItem>
-                      <SelectItem value="consulting">Consulting Agreement</SelectItem>
-                      <SelectItem value="development">Development Contract</SelectItem>
-                      <SelectItem value="maintenance">Maintenance Agreement</SelectItem>
-                      <SelectItem value="nda">Non-Disclosure Agreement</SelectItem>
-                      <SelectItem value="retainer">Retainer Agreement</SelectItem>
+                      <SelectItem value="service">Service Agreement</SelectItem>
+                      <SelectItem value="product">Product Agreement</SelectItem>
+                      <SelectItem value="recurring">Recurring Contract</SelectItem>
+                      <SelectItem value="one_time">One-Time Contract</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
