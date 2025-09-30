@@ -13,7 +13,7 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF, generateContractPDF, generatePresentationPDF } from "./pdfService";
-import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
+import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertPresentationSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
 import { saveToFilingCabinet, fetchFromFilingCabinet } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
@@ -2608,6 +2608,34 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error) {
       console.error("Error deleting contract:", error);
       res.status(500).json({ error: "Failed to delete contract" });
+    }
+  });
+
+  // ===== Presentation Routes =====
+  
+  // Create new presentation
+  app.post("/api/presentations", requireAuth, async (req, res) => {
+    try {
+      const presentationData = insertPresentationSchema.parse(req.body);
+      
+      // Sanitize foreign key fields to prevent empty string constraint violations
+      const sanitizedData = sanitizeForeignKeys(presentationData, ['projectId']);
+      
+      const newPresentation = {
+        ...sanitizedData,
+        createdById: req.session.user!.id,
+        status: "draft" as const,
+      };
+
+      const presentation = await storage.createPresentation(newPresentation);
+      console.log(`📊 Created presentation "${presentation.title}"`);
+      res.status(201).json(presentation);
+    } catch (error) {
+      console.error("Error creating presentation:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid presentation data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create presentation" });
     }
   });
 

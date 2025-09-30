@@ -334,6 +334,43 @@ export const contracts = pgTable("contracts", {
 export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = typeof contracts.$inferInsert;
 
+// Presentations table
+export const presentations = pgTable("presentations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  subtitle: varchar("subtitle"),
+  author: varchar("author"),
+  company: varchar("company"),
+  date: varchar("date"),
+  projectId: varchar("project_id").references(() => projects.id),
+  theme: varchar("theme").default("modern"),
+  audience: text("audience"),
+  objective: text("objective"),
+  duration: integer("duration").default(30),
+  slides: jsonb("slides").$type<Array<{
+    id: number;
+    title: string;
+    content: string;
+    slideType: string;
+    order: number;
+  }>>().default([]),
+  status: varchar("status", { enum: ["draft", "sent", "viewed", "accepted", "rejected"] }).default("draft"),
+  shareableLink: varchar("shareable_link").unique(),
+  sentAt: timestamp("sent_at"),
+  viewedAt: timestamp("viewed_at"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdById: varchar("created_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  // Demo session fields for data isolation
+  isDemo: boolean("is_demo").default(false),
+  demoSessionId: varchar("demo_session_id"),
+  demoUserId: varchar("demo_user_id"),
+});
+
+export type Presentation = typeof presentations.$inferSelect;
+export type InsertPresentation = typeof presentations.$inferInsert;
+
 // Tasks table with enhanced features
 export const tasks = pgTable("tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -853,6 +890,18 @@ export const insertContractSchema = baseInsertContractSchema.refine((data) => {
 
 export const selectContractSchema = createSelectSchema(contracts);
 export const contractSchema = baseInsertContractSchema.omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertPresentationSchema = createInsertSchema(presentations, {
+  title: z.string().min(1, "Presentation title is required").max(200, "Title must be less than 200 characters"),
+  subtitle: z.string().max(300, "Subtitle must be less than 300 characters").optional().nullable(),
+  author: z.string().max(100, "Author must be less than 100 characters").optional().nullable(),
+  company: z.string().max(100, "Company must be less than 100 characters").optional().nullable(),
+  audience: z.string().max(500, "Audience must be less than 500 characters").optional().nullable(),
+  objective: z.string().max(1000, "Objective must be less than 1000 characters").optional().nullable(),
+  duration: z.number().min(5, "Duration must be at least 5 minutes").max(480, "Duration must be less than 8 hours").optional().nullable(),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export const selectPresentationSchema = createSelectSchema(presentations);
 
 export const insertTemplateSchema = createInsertSchema(templates);
 export const selectTemplateSchema = createSelectSchema(templates);

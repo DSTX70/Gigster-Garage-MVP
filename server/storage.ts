@@ -1,8 +1,8 @@
 import { eq, and, or, desc, gte, lte, isNull, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, contracts, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage, fileAttachments, documentVersions } from "@shared/schema";
-import type { User, UpsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, Contract, InsertContract, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage, FileAttachment, InsertFileAttachment, DocumentVersion, InsertDocumentVersion } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, contracts, presentations, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage, fileAttachments, documentVersions } from "@shared/schema";
+import type { User, UpsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, Contract, InsertContract, Presentation, InsertPresentation, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage, FileAttachment, InsertFileAttachment, DocumentVersion, InsertDocumentVersion } from "@shared/schema";
 
 // Advanced search types for client documents
 export interface DocumentSearchParams {
@@ -222,6 +222,13 @@ export interface IStorage {
   createContract(insertContract: InsertContract): Promise<Contract>;
   updateContract(id: string, updateContract: Partial<InsertContract>): Promise<Contract | undefined>;
   deleteContract(id: string): Promise<boolean>;
+
+  // Presentation management
+  getPresentations(): Promise<Presentation[]>;
+  getPresentation(id: string, userId?: string): Promise<Presentation | undefined>;
+  createPresentation(insertPresentation: InsertPresentation): Promise<Presentation>;
+  updatePresentation(id: string, updatePresentation: Partial<InsertPresentation>): Promise<Presentation | undefined>;
+  deletePresentation(id: string): Promise<boolean>;
 
   // Payment management  
   getPayments(): Promise<Payment[]>;
@@ -1828,6 +1835,41 @@ export class DatabaseStorage implements IStorage {
 
   async deleteContract(id: string): Promise<boolean> {
     const result = await db.delete(contracts).where(eq(contracts.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Presentation operations
+  async getPresentations(): Promise<Presentation[]> {
+    return await db.select().from(presentations).orderBy(desc(presentations.createdAt));
+  }
+
+  async getPresentation(id: string, userId?: string): Promise<Presentation | undefined> {
+    const [presentation] = await db.select().from(presentations).where(eq(presentations.id, id));
+    return presentation;
+  }
+
+  async createPresentation(insertPresentation: InsertPresentation): Promise<Presentation> {
+    const [presentation] = await db
+      .insert(presentations)
+      .values(insertPresentation)
+      .returning();
+    return presentation;
+  }
+
+  async updatePresentation(id: string, updatePresentation: Partial<InsertPresentation>): Promise<Presentation | undefined> {
+    const [presentation] = await db
+      .update(presentations)
+      .set({
+        ...updatePresentation,
+        updatedAt: new Date(),
+      })
+      .where(eq(presentations.id, id))
+      .returning();
+    return presentation;
+  }
+
+  async deletePresentation(id: string): Promise<boolean> {
+    const result = await db.delete(presentations).where(eq(presentations.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
