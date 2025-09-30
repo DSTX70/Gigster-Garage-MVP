@@ -114,8 +114,11 @@ export default function CreateInvoice() {
         
         toast({
           title: "Invoice saved",
-          description: `Invoice saved successfully! Payment link generated.`,
+          description: `Invoice saved successfully! Saving to Filing Cabinet...`,
         });
+        
+        // Automatically save to Filing Cabinet
+        saveToFilingCabinetMutation.mutate(invoiceId);
       } else {
         console.error("Invalid response format:", responseData);
         toast({
