@@ -3673,21 +3673,18 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       // Create document record in Filing Cabinet 
       const fileUrl = `/storage/${objectKey}`;
       
-      // For presentations, we'll create a default client entry if needed
-      let clientId: string | null = null;
-      if (presentation.audience) {
-        console.log('Creating client for presentation Filing Cabinet document');
-        const clientData = {
-          name: `Presentation Audience: ${presentation.audience}`,
-          email: '',
-          phone: '',
-          address: '',
-          notes: `Auto-created from presentation ${presentation.title}`,
-          createdById: req.session.user!.id
-        };
-        const newClient = await storage.createClient(clientData);
-        clientId = newClient.id;
-      }
+      // Create client for Filing Cabinet document (presentations always create a new client entry)
+      console.log('Creating client for Filing Cabinet document');
+      const clientData = {
+        name: presentation.audience || 'General Audience',
+        email: '',
+        phone: '',
+        address: '',
+        notes: `Auto-created from presentation ${presentation.title}`,
+        createdById: req.session.user!.id
+      };
+      const newClient = await storage.createClient(clientData);
+      const clientId = newClient.id;
 
       // Create document in Filing Cabinet using correct schema
       const documentData = {
@@ -3708,9 +3705,9 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       console.log(`✅ Presentation PDF saved to Filing Cabinet: ${presentation.title}`);
 
       res.status(201).json({ 
+        success: true,
         message: "Presentation PDF saved to Filing Cabinet successfully",
-        documentId: document.id,
-        objectPath: objectPath
+        document
       });
     } catch (error) {
       console.error("Error saving presentation PDF to Filing Cabinet:", error);
