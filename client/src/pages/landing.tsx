@@ -197,34 +197,20 @@ export default function Landing() {
             <CardContent className="p-8">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div className="text-left">
-                  <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--garage-navy)' }}>Admin Demo Access</h3>
+                  <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--garage-navy)' }}>Regular User Demo</h3>
                   <p className="mb-6" style={{ color: 'var(--steel-gray)' }}>
-                    Experience the full power of Gigster Garage with admin privileges. 
-                    Create tasks, manage users, and explore all features.
+                    Experience Gigster Garage with our demo account. 
+                    Explore task management, notifications, and all core features.
                   </p>
                   
                   <div className="space-y-2 mb-6">
                     <div className="flex items-center">
                       <Badge style={{ backgroundColor: 'var(--garage-navy)', color: 'white' }} className="mr-2">Username</Badge>
-                      <code className="bg-white px-3 py-2 rounded shadow-sm border">admin</code>
+                      <code className="bg-white px-3 py-2 rounded shadow-sm border">demo</code>
                     </div>
                     <div className="flex items-center">
                       <Badge style={{ backgroundColor: 'var(--garage-navy)', color: 'white' }} className="mr-2">Password</Badge>
                       <code className="bg-white px-3 py-2 rounded shadow-sm border">password</code>
-                    </div>
-                  </div>
-                  
-                  <div className="text-left mt-4">
-                    <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--garage-navy)' }}>Regular User Demo</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <Badge style={{ backgroundColor: 'var(--garage-navy)', color: 'white' }} className="mr-2">Username</Badge>
-                        <code className="bg-white px-3 py-2 rounded shadow-sm border">demo</code>
-                      </div>
-                      <div className="flex items-center">
-                        <Badge style={{ backgroundColor: 'var(--garage-navy)', color: 'white' }} className="mr-2">Password</Badge>
-                        <code className="bg-white px-3 py-2 rounded shadow-sm border">password</code>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -232,11 +218,11 @@ export default function Landing() {
                 <div className="space-y-4">
                   <div className="flex items-center text-sm" style={{ color: 'var(--steel-gray)' }}>
                     <CheckCircle className="h-4 w-4 mr-2" style={{ color: 'var(--garage-navy)' }} />
-                    <span>Full admin dashboard access</span>
+                    <span>Smart task management</span>
                   </div>
                   <div className="flex items-center text-sm" style={{ color: 'var(--steel-gray)' }}>
                     <CheckCircle className="h-4 w-4 mr-2" style={{ color: 'var(--garage-navy)' }} />
-                    <span>User management capabilities</span>
+                    <span>Project organization</span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
