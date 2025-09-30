@@ -19,6 +19,7 @@ interface DemoDataIds {
   proposals: Record<string, string>;
   invoices: Record<string, string>;
   contracts: Record<string, string>;
+  timeLogs: Record<string, string>;
 }
 
 /**
@@ -103,7 +104,8 @@ export async function seedDemoData(demoUserId: string, demoSessionId?: string): 
       templates: {},
       proposals: {},
       invoices: {},
-      contracts: {}
+      contracts: {},
+      timeLogs: {}
     };
 
     // SECURE DEMO SEEDING WITH PROPER ISOLATION
@@ -124,8 +126,14 @@ export async function seedDemoData(demoUserId: string, demoSessionId?: string): 
     // 5. Create demo templates
     await createDemoTemplates(demoUserId, sessionId, demoIds);
 
+    // 6. Create demo time logs (for timesheet-to-invoice integration)
+    await createDemoTimeLogs(demoUserId, sessionId, demoIds);
+
+    // 7. Create demo invoices
+    await createDemoInvoices(demoUserId, sessionId, demoIds);
+
     console.log(`✅ Secure demo data seeded successfully for user: ${demoUserId}`);
-    console.log(`📊 Created: ${Object.keys(demoIds.clients).length} clients, ${Object.keys(demoIds.projects).length} projects, ${Object.keys(demoIds.tasks).length} tasks, ${Object.keys(demoIds.proposals).length} proposals, ${Object.keys(demoIds.templates).length} templates`);
+    console.log(`📊 Created: ${Object.keys(demoIds.clients).length} clients, ${Object.keys(demoIds.projects).length} projects, ${Object.keys(demoIds.tasks).length} tasks, ${Object.keys(demoIds.proposals).length} proposals, ${Object.keys(demoIds.templates).length} templates, ${Object.keys(demoIds.timeLogs).length} time logs, ${Object.keys(demoIds.invoices).length} invoices`);
     
     return demoIds;
   } catch (error) {
@@ -432,4 +440,170 @@ async function createDemoTemplates(demoUserId: string, demoSessionId: string, de
   }
   
   console.log(`✅ Created ${templates.length} demo templates with secure isolation`);
+}
+
+/**
+ * Create SECURE demo time logs with proper isolation
+ * Includes both invoiced and uninvoiced entries for timesheet-to-invoice demo
+ */
+async function createDemoTimeLogs(demoUserId: string, demoSessionId: string, demoIds: DemoDataIds): Promise<void> {
+  const timeLogs: InsertTimeLog[] = [
+    // Approved and uninvoiced - ready to import into invoice
+    {
+      userId: demoUserId,
+      taskId: demoIds.tasks["User Research & Analysis"],
+      projectId: demoIds.projects["TechFlow Platform Redesign"],
+      description: "Conducted user interviews and analyzed feedback",
+      startTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      endTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000), // 4 hours
+      duration: (4 * 60 * 60).toString(), // 4 hours in seconds
+      isActive: false,
+      isManualEntry: false,
+      approvalStatus: "approved",
+      approvedBy: demoUserId,
+      approvedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+      isSelectedForInvoice: false,
+      // Add demo tagging
+      ...({
+        isDemo: true,
+        demoSessionId: demoSessionId,
+        demoUserId: demoUserId
+      } as any)
+    },
+    {
+      userId: demoUserId,
+      taskId: demoIds.tasks["Wireframe Development"],
+      projectId: demoIds.projects["TechFlow Platform Redesign"],
+      description: "Created wireframes for main dashboard and navigation",
+      startTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000), // 6 hours
+      duration: (6 * 60 * 60).toString(),
+      isActive: false,
+      isManualEntry: false,
+      approvalStatus: "approved",
+      approvedBy: demoUserId,
+      approvedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      isSelectedForInvoice: false,
+      ...({
+        isDemo: true,
+        demoSessionId: demoSessionId,
+        demoUserId: demoUserId
+      } as any)
+    },
+    {
+      userId: demoUserId,
+      taskId: demoIds.tasks["Wireframe Development"],
+      projectId: demoIds.projects["TechFlow Platform Redesign"],
+      description: "Refined wireframes based on client feedback",
+      startTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000), // 3 hours
+      duration: (3 * 60 * 60).toString(),
+      isActive: false,
+      isManualEntry: false,
+      approvalStatus: "approved",
+      approvedBy: demoUserId,
+      approvedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      isSelectedForInvoice: false,
+      ...({
+        isDemo: true,
+        demoSessionId: demoSessionId,
+        demoUserId: demoUserId
+      } as any)
+    },
+    {
+      userId: demoUserId,
+      taskId: demoIds.tasks["Current State Assessment"],
+      projectId: demoIds.projects["Digital Transformation Strategy"],
+      description: "Analyzed current technology stack and processes",
+      startTime: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000), // 5 hours
+      duration: (5 * 60 * 60).toString(),
+      isActive: false,
+      isManualEntry: false,
+      approvalStatus: "approved",
+      approvedBy: demoUserId,
+      approvedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      isSelectedForInvoice: false,
+      ...({
+        isDemo: true,
+        demoSessionId: demoSessionId,
+        demoUserId: demoUserId
+      } as any)
+    },
+    // Pending approval - should not appear in invoice import
+    {
+      userId: demoUserId,
+      taskId: demoIds.tasks["Technology Roadmap Planning"],
+      projectId: demoIds.projects["Digital Transformation Strategy"],
+      description: "Started roadmap planning and stakeholder interviews",
+      startTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // 2 hours
+      duration: (2 * 60 * 60).toString(),
+      isActive: false,
+      isManualEntry: false,
+      approvalStatus: "pending",
+      isSelectedForInvoice: false,
+      ...({
+        isDemo: true,
+        demoSessionId: demoSessionId,
+        demoUserId: demoUserId
+      } as any)
+    }
+  ];
+
+  for (const timeLog of timeLogs) {
+    const created = await storage.createTimeLog(timeLog);
+    const key = `${timeLog.description.substring(0, 30)}`;
+    demoIds.timeLogs[key] = created.id;
+  }
+  
+  console.log(`✅ Created ${timeLogs.length} demo time logs (${timeLogs.filter(t => t.approvalStatus === 'approved').length} approved, ${timeLogs.filter(t => t.approvalStatus === 'pending').length} pending)`);
+}
+
+/**
+ * Create SECURE demo invoices with proper isolation
+ */
+async function createDemoInvoices(demoUserId: string, demoSessionId: string, demoIds: DemoDataIds): Promise<void> {
+  const invoices: InsertInvoice[] = [
+    {
+      invoiceNumber: `DEMO-INV-001`,
+      projectId: demoIds.projects["TechFlow Platform Redesign"],
+      clientId: demoIds.clients["TechFlow Solutions"],
+      clientName: "TechFlow Solutions",
+      clientEmail: "contact@techflowsolutions.com",
+      clientAddress: "1200 Innovation Drive\nSan Francisco, CA 94107",
+      status: "paid",
+      invoiceDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+      dueDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+      subtotal: "12500.00",
+      taxRate: "0.00",
+      taxAmount: "0.00",
+      discountAmount: "0.00",
+      totalAmount: "12500.00",
+      lineItems: [
+        {
+          id: 1,
+          description: "User Research Phase - Complete analysis and documentation",
+          quantity: 1,
+          rate: 12500,
+          amount: 12500
+        }
+      ] as LineItem[],
+      notes: "Thank you for your business!",
+      createdById: demoUserId,
+      // Add demo tagging
+      ...({
+        isDemo: true,
+        demoSessionId: demoSessionId,
+        demoUserId: demoUserId
+      } as any)
+    }
+  ];
+
+  for (const invoice of invoices) {
+    const created = await storage.createInvoice(invoice);
+    demoIds.invoices[invoice.invoiceNumber] = created.id;
+  }
+  
+  console.log(`✅ Created ${invoices.length} demo invoices with secure isolation`);
 }
