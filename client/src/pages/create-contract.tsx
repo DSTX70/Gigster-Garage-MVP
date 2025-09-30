@@ -119,7 +119,19 @@ export default function CreateContract() {
 
   const handleSave = () => {
     const contractData = {
-      ...formData,
+      title: formData.contractTitle || "Untitled Contract",
+      contractType: formData.contractType || "service",
+      projectId: formData.projectId || null,
+      clientName: formData.clientName || "Client",
+      clientEmail: formData.clientEmail && formData.clientEmail.includes('@') ? formData.clientEmail : null,
+      clientAddress: formData.clientAddress || null,
+      contractValue: formData.contractValue ? String(formData.contractValue) : null,
+      effectiveDate: formData.startDate || null,
+      expirationDate: formData.endDate || null,
+      paymentTerms: formData.paymentTerms || null,
+      confidentiality: formData.confidentiality || null,
+      disputeResolution: formData.disputeResolution || null,
+      governingLaw: formData.governingLaw || null,
       type: "contract"
     };
     saveContractMutation.mutate(contractData);
