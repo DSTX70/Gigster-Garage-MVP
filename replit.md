@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Timesheet-to-Invoice Integration** (Completed September 2025): Implemented seamless import of time entries into invoices with new "Import from Timesheet" button, automatic conversion of time logs to line items with configurable hourly rates, and comprehensive linking system that connects selected time entries to invoices with proper authorization and validation
 - **Presentation Filing Cabinet Integration** (Fixed September 2025): Resolved "Failed to save PDF to Filing Cabinet" errors by creating missing presentations database table, storage methods, and API routes; fixed undefined objectPath bug and clientId schema validation issues to enable automatic Filing Cabinet PDF saves for all presentations
 - **Invoice Builder Auto-Fill Enhancement** (Completed September 2025): Implemented comprehensive auto-fill functionality where company name and address entered at the top automatically populate invoice previews, streamlining invoice creation workflow
 - **Enhanced Company Information Fields** (Added September 2025): Added dedicated company information section with company name and address fields in invoice builder, organized with blue-styled visual grouping for easy identification
