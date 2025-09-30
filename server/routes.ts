@@ -3530,8 +3530,8 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(400).json({ error: "Invalid contract ID" });
       }
 
-      // Fetch contract with ownership check
-      let contract = await storage.getContract(req.params.id, req.session.user!.id);
+      // Fetch contract
+      let contract = await storage.getContract(req.params.id);
       if (!contract) {
         return res.status(404).json({ error: "Contract not found" });
       }
