@@ -9,12 +9,12 @@
 - Returns Response object (requires `.json()` call)
 - Simple error messages
 
-**After (ChatGPT Fix):**
-- ✅ Smart URL resolution with base URL support
+**After (ChatGPT Fix + Replit Adaptation):**
 - ✅ Returns parsed JSON directly (no `.json()` needed)
 - ✅ Better error messages with HTTP status and server message
 - ✅ Safe JSON stringify with BigInt support
 - ✅ Proper TypeScript generics for type safety
+- ✅ Simple URL resolution for Replit environment (relative paths)
 
 ```typescript
 // NEW: Returns parsed data directly
@@ -116,7 +116,33 @@ Now you can inspect the exact payload being sent in the browser console.
 
 ## 📝 Files Changed
 
-- ✅ `client/src/lib/queryClient.ts` - Improved API request function
+- ✅ `client/src/lib/queryClient.ts` - Improved API request function (adapted for Replit)
 - ✅ `client/src/pages/create-proposal.tsx` - Better error handling and payload prep
+- ✅ `client/src/pages/login.tsx` - Updated to use new apiRequest signature
+- ✅ `client/src/pages/signup.tsx` - Updated to use new apiRequest signature
+- ✅ `client/src/pages/onboarding.tsx` - Updated to use new apiRequest signature
 
-The code is now production-ready with ChatGPT's improvements!
+## 🔧 Additional Fixes (Replit Environment Adaptation)
+
+### URL Resolution Issue
+ChatGPT's original code tried to prepend `http://localhost:5000` to all URLs, which caused "Failed to fetch" errors in Replit's proxy environment.
+
+**The Fix:**
+```typescript
+// Simplified URL resolution for Replit
+const resolveUrl = (path: string): string => {
+  if (!path) throw new Error("apiRequest: empty path");
+  if (/^https?:\/\//i.test(path)) return path; // Keep absolute URLs
+  return path; // Use relative paths (Vite serves on same port)
+};
+```
+
+This works because Vite is configured to serve both frontend and backend on port 5000, so relative URLs like `/api/login` automatically go to the right place.
+
+## ✅ Everything Now Works!
+
+- **✅ Login/Signup** - Full authentication flow working
+- **✅ Proposal Save** - Improved error handling with actual server messages  
+- **✅ Error Debugging** - Browser console shows detailed error information
+
+**Try it now!** Login with **admin/admin123** or **demo/demo123** 🎉

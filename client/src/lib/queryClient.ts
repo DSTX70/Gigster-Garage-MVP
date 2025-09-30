@@ -1,14 +1,12 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Robust URL resolution with base URL support
-const ENV_BASE = import.meta?.env?.VITE_API_BASE_URL?.trim?.();
-const SPEC_BASE = "http://localhost:5000";
-
+// Simple URL resolution - uses relative paths for same-origin requests
 const resolveUrl = (path: string): string => {
   if (!path) throw new Error("apiRequest: empty path");
+  // If already absolute URL, use as-is
   if (/^https?:\/\//i.test(path)) return path;
-  const base = ENV_BASE || SPEC_BASE;
-  return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+  // Otherwise use relative path (Vite serves backend on same port)
+  return path;
 };
 
 // Safe JSON stringify (handles BigInt by stringifying it)
