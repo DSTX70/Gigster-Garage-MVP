@@ -135,8 +135,10 @@ export default function CreatePresentation() {
         setCreatedPresentationId(responseData.id);
         toast({
           title: "Presentation saved",
-          description: "Your presentation has been saved successfully.",
+          description: "Your presentation has been saved successfully. Saving to Filing Cabinet...",
         });
+        // Automatically save to Filing Cabinet
+        saveToFilingCabinetMutation.mutate(responseData.id);
       } else {
         toast({
           title: "Error",

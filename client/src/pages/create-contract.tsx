@@ -77,8 +77,10 @@ export default function CreateContract() {
         setCreatedContractId(responseData.id);
         toast({
           title: "Contract saved",
-          description: "Your contract has been saved successfully.",
+          description: "Your contract has been saved successfully. Saving to Filing Cabinet...",
         });
+        // Automatically save to Filing Cabinet
+        saveToFilingCabinetMutation.mutate(responseData.id);
       } else {
         toast({
           title: "Error",
