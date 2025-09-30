@@ -75,17 +75,30 @@ export function BulkOperationsToolbar({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentIds: selectedDocuments })
       });
-      if (!response.ok) throw new Error('Bulk delete failed');
-      return response.json();
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Bulk delete failed');
+      }
+      
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/client-documents"] });
-      toast({ title: "Documents deleted successfully" });
+      
+      if (data.completed > 0) {
+        toast({ 
+          title: `Successfully deleted ${data.completed} ${data.completed === 1 ? 'document' : 'documents'}` 
+        });
+      }
+      
       onBulkUpdate();
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Failed to delete documents",
+        description: error.message,
         variant: "destructive"
       });
     }

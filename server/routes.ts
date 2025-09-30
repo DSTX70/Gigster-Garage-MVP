@@ -3169,19 +3169,44 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
       let completed = 0;
       let errors = 0;
+      const failedIds: string[] = [];
 
       for (const id of documentIds) {
         try {
           const success = await storage.deleteClientDocument(id);
-          if (success) completed++;
-          else errors++;
+          if (success) {
+            completed++;
+          } else {
+            errors++;
+            failedIds.push(id);
+            console.error(`Failed to delete document ${id}: Document not found or delete operation failed`);
+          }
         } catch (error) {
           console.error(`Error deleting document ${id}:`, error);
           errors++;
+          failedIds.push(id);
         }
       }
 
-      res.json({ total: documentIds.length, completed, errors });
+      // Return error status if any deletions failed
+      if (errors > 0) {
+        console.error(`Bulk delete completed with ${errors} errors out of ${documentIds.length} documents`);
+        console.error(`Failed document IDs: ${failedIds.join(', ')}`);
+        return res.status(500).json({ 
+          message: `Failed to delete ${errors} of ${documentIds.length} documents`,
+          total: documentIds.length, 
+          completed, 
+          errors,
+          failedIds
+        });
+      }
+
+      res.json({ 
+        message: `Successfully deleted ${completed} documents`,
+        total: documentIds.length, 
+        completed, 
+        errors: 0 
+      });
     } catch (error) {
       console.error("Error in bulk delete documents:", error);
       res.status(500).json({ message: "Failed to delete documents" });
