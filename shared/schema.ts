@@ -922,7 +922,7 @@ export const generateProposalSchema = z.object({
 
 // Direct proposal creation schema (for form-based proposals)
 export const directProposalSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().transform(val => val?.trim() || "Untitled Proposal"),
   projectId: z.string().nullish(),
   clientName: z.string().nullish(),
   clientEmail: z.string().nullish(),
