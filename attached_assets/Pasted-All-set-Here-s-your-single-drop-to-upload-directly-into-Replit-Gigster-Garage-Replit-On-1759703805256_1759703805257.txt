@@ -1,0 +1,62 @@
+All set. Here’s your **single drop** to upload directly into Replit:
+
+* **Gigster Garage — Replit One Drop:** [GG_Replit_OneDrop_2025-10-05.zip](sandbox:/mnt/data/GG_Replit_OneDrop_2025-10-05.zip)
+
+### What’s inside
+
+* **README_REPLIT.md** — step-by-step setup + verification
+* **/public/**
+
+  * `feature_tiers_v1.json`
+* **/config/flags/**
+
+  * `feature-flags.staging.json` and `feature-flags.prod.json`
+* **/src/components/**
+
+  * `PricingTable.tsx` (ready to mount on `/pricing`)
+* **/src/lib/**
+
+  * `featureTiers.ts`, `featureFlags.ts`, `types.ts`
+* **/docs/** (skeletons you can assign to owners)
+
+  * ops (deploy/backup/rollback), security, launch (DoR, Go/No-Go), legal (ToS/Privacy/DPA), marketing (UTM), research (Founder Circuit), copy (pricing/empty states)
+* **/ops/pm/**
+
+  * `launch_board_asana_clickup.csv`, `launch_board_jira.csv`, `launch_board_linear.csv`, `Now_InProgress_StatusSheet.xlsx`
+* **verify_staging.sh** — runs headers/structure checks and bundles logs
+* **api_v1_openapi.yaml** — starter API spec
+* **db_erd.pdf** — ERD skeleton (replace with DB export later)
+
+### Quick start in Replit
+
+1. Upload and **extract** the ZIP at project root.
+2. Commit (if linked to Git):
+
+```bash
+git checkout -b staging || git checkout staging
+git add docs/ public/ config/flags/ src/components/PricingTable.tsx src/lib/*
+git commit -m "OneDrop: docs + pricing + flags + scripts"
+git push -u origin staging
+```
+
+3. Run your app and visit **`/pricing`**.
+4. In the browser console (on staging), test flags:
+
+```js
+window.__GG_FLAGS = {
+  "feature.analytics_insights": false,
+  "feature.automation_power": false
+}; 
+location.reload();
+```
+
+5. Optional: verify staging in one shot:
+
+```bash
+chmod +x verify_staging.sh
+STAGING_DOMAIN="your-staging.example.com" ./verify_staging.sh
+```
+
+It writes logs to `/tmp/gg_verify/` and a bundle at `/tmp/gg_verify/staging_verification_evidence.tgz`.
+
+If you want me to add a minimal route/page scaffolding that mounts `<PricingTable />` automatically (e.g., Next.js or Vite/React), say the word and tell me your frontend framework.
