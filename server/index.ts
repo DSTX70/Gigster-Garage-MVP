@@ -53,10 +53,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   // --- API routes (mounted BEFORE SPA fallback) ---
   const server = await registerRoutes(app);
 
-
-  // --- Vite middleware (dev) + static (prod) FIRST ---
-  await setupVite(app, server);
-  serveStatic(app);
+  // --- Conditionally use Vite (dev) OR static files (prod) ---
+  const isProduction = process.env.NODE_ENV === "production";
+  
+  if (isProduction) {
+    log("🚀 Production mode: serving static files");
+    serveStatic(app);
+  } else {
+    log("🔧 Development mode: using Vite middleware");
+    await setupVite(app, server);
+  }
 
   // --- SPA History Fallback for client routes (AFTER Vite) ---
   // why: Ensure /mobile and deep links render index.html, but only if Vite didn't handle it
