@@ -1,0 +1,7 @@
+{
+  "feature.analytics_insights": true,
+  "feature.automation_power": true,
+  "feature.proposal_templates": true,
+  "feature.ai_copy": true,
+  "feature.e_sign_handoff": true
+}
