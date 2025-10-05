@@ -210,7 +210,7 @@ export default function Landing() {
                     </div>
                     <div className="flex items-center">
                       <Badge style={{ backgroundColor: 'var(--garage-navy)', color: 'white' }} className="mr-2">Password</Badge>
-                      <code className="bg-white px-3 py-2 rounded shadow-sm border">password</code>
+                      <code className="bg-white px-3 py-2 rounded shadow-sm border">demo123</code>
                     </div>
                   </div>
                 </div>
