@@ -1,0 +1,78 @@
+GIGSTER GARAGE - CODE AUDIT PACKAGE
+File Manifest
+═══════════════════════════════════════════════════════════════
+
+DOCUMENTATION FILES:
+────────────────────────────────────────────────────────────────
+📄 QUICK_START.txt              Quick start guide (read this first!)
+📄 README.md                    Complete usage instructions
+📄 AUDIT_INSTRUCTIONS.md        Detailed audit guidelines
+📄 00_PROJECT_OVERVIEW.md       Project architecture and history
+
+BACKEND CODE FILES:
+────────────────────────────────────────────────────────────────
+🗄️  1_database_schema.ts        Database schema (53KB, 1,500+ lines)
+                                - All tables, relations, Zod schemas
+                                
+💾 2_storage_layer.ts           Storage layer (84KB, 2,500+ lines)
+                                - All CRUD operations
+                                - Business logic
+                                
+🔌 3_api_routes.ts              API Routes (318KB, 9,500+ lines)
+                                - All REST endpoints
+                                - Authentication
+                                - File uploads
+                                
+⚙️  4_server_entry.ts            Server config (3.6KB, 100+ lines)
+                                - Express setup
+                                - Middleware
+                                
+🎭 16_demo_data_service.ts      Demo data (23KB, 700+ lines)
+                                - Demo account setup
+
+FRONTEND CODE FILES:
+────────────────────────────────────────────────────────────────
+🏠 5_app_routing.tsx            App routing (8.1KB, 250+ lines)
+                                - Route configuration
+                                - Layout structure
+                                
+✅ 6_tasks_page.tsx             Tasks page (7.4KB, 220+ lines)
+                                - Task management UI
+                                
+📁 7_filing_cabinet_page.tsx    Filing Cabinet (37KB, 1,100+ lines)
+                                - Document management
+                                - Advanced search
+                                - Bulk operations
+                                
+💰 8_invoice_builder_page.tsx   Invoice Builder (39KB, 1,200+ lines)
+                                - Invoice creation
+                                - Auto-fill feature
+                                - PDF generation
+                                
+📝 9_proposal_builder_page.tsx  Proposal Builder (51KB, 1,500+ lines)
+                                - AI-powered proposals
+                                - Template management
+                                
+⚡ 12_workflow_automation_page.tsx  Workflow Automation (31KB, 950+ lines)
+                                    - Visual rule builder
+                                    
+🤖 13_garage_assistant_page.tsx Garage Assistant (20KB, 600+ lines)
+                                - AI assistant interface
+
+COMPONENT FILES:
+────────────────────────────────────────────────────────────────
+🔧 14_bulk_operations_component.tsx  Bulk Operations (16KB, 480+ lines)
+                                     - Mass delete
+                                     - Mass download
+                                     
+⏱️  15_time_import_dialog.tsx   Time Import Dialog (13KB, 390+ lines)
+                                - Timesheet integration
+
+CONFIGURATION:
+────────────────────────────────────────────────────────────────
+📦 11_dependencies.json         All npm packages and versions
+
+═══════════════════════════════════════════════════════════════
+TOTAL: 19 files, 19,250+ lines of code
+ARCHIVE SIZE: 133KB (compressed)
+═══════════════════════════════════════════════════════════════
