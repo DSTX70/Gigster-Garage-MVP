@@ -55,6 +55,7 @@ import EmailManagement from "@/pages/email-management";
 import SlackIntegration from "@/pages/slack-integration";
 import PerformanceDashboard from "@/pages/performance-dashboard";
 import PayInvoice from "@/pages/pay-invoice";
+import PricingTable from "@/components/PricingTable";
 
 // Mobile Pages
 import MobileHome from "@/pages/mobile-home";
@@ -111,6 +112,7 @@ function Router() {
       <Switch>
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
+        <Route path="/pricing" component={PricingTable} />
         <Route path="/test-404" component={Test404} />
         <Route path="/pay-invoice" component={PayInvoice} />
         <Route component={Landing} />
@@ -162,6 +164,7 @@ function Router() {
       <Route path="/email-management" component={EmailManagement} />
       <Route path="/slack-integration" component={SlackIntegration} />
       <Route path="/performance-dashboard" component={PerformanceDashboard} />
+      <Route path="/pricing" component={PricingTable} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />

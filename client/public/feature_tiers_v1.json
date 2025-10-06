@@ -1,0 +1,68 @@
+{
+  "version": "1.0.0",
+  "updated": "2025-10-05",
+  "tiers": {
+    "core": {
+      "label": "Core Features",
+      "features": [
+        { "key": "task_management", "name": "Task Management", "notes": "Create, track, and organize tasks" },
+        { "key": "time_tracking", "name": "Time Tracking", "notes": "Log hours and track productivity" },
+        { "key": "basic_invoicing", "name": "Basic Invoicing", "notes": "Create and send invoices" },
+        { "key": "filing_cabinet", "name": "Filing Cabinet", "notes": "Store and organize documents" }
+      ]
+    },
+    "expansion_packs": [
+      {
+        "slug": "proposals_ai",
+        "label": "Proposals & AI",
+        "pricing_hint": "Included in Plus & Pro",
+        "features": [
+          { "key": "proposal_templates", "name": "Proposal Templates", "notes": "Pre-built proposal templates" },
+          { "key": "ai_copy", "name": "AI Content Generation", "notes": "AI-powered proposal content" }
+        ]
+      },
+      {
+        "slug": "client_portal",
+        "label": "Client Portal",
+        "pricing_hint": "Included in Plus & Pro",
+        "features": [
+          { "key": "client_access", "name": "Client Portal Access", "notes": "Secure client login and dashboard" },
+          { "key": "document_sharing", "name": "Document Sharing", "notes": "Share files with clients" }
+        ]
+      },
+      {
+        "slug": "analytics_insights",
+        "label": "Analytics & Insights",
+        "pricing_hint": "Pro only",
+        "features": [
+          { "key": "analytics_insights", "name": "Advanced Analytics", "notes": "Detailed reports and insights" },
+          { "key": "productivity_reports", "name": "Productivity Reports", "notes": "Team performance metrics" }
+        ]
+      },
+      {
+        "slug": "automation_power",
+        "label": "Automation Power",
+        "pricing_hint": "Pro only",
+        "features": [
+          { "key": "automation_power", "name": "Workflow Automation", "notes": "Automated workflows and triggers" },
+          { "key": "smart_notifications", "name": "Smart Notifications", "notes": "Intelligent alert system" }
+        ]
+      }
+    ],
+    "partner_delegated": {
+      "label": "Partner Integrations",
+      "integrations": [
+        {
+          "category": "Payments",
+          "partners": ["Stripe"],
+          "events": ["payment.succeeded", "payment.failed"]
+        },
+        {
+          "category": "Communication",
+          "partners": ["Slack", "Twilio"],
+          "events": ["message.sent", "notification.delivered"]
+        }
+      ]
+    }
+  }
+}
