@@ -1,0 +1,102 @@
+What’s inside
+
+verify_staging.sh — end-to-end verifier; saves logs to /tmp/gg_verify/<timestamp>/ and creates /tmp/gg_verify/staging_verification_evidence.tgz.
+
+.env.sample — put your domain, token, and (optional) DB + file-cabinet endpoints here.
+
+sql/idempotency_check.sql — the DB query for duplicate timelog lines.
+
+curl_snippets.md — one-liners for manual pokes.
+
+README.md — quick start.
+
+Quick start
+tar -xzf gg_phase1_hardening_kit.tgz
+cd gg_phase1_hardening_kit
+cp .env.sample .env
+# edit .env with your values (domain, token, DB URL, optional file-cabinet endpoints)
+chmod +x verify_staging.sh
+source .env
+./verify_staging.sh
+
+What the script does (mapped to your checklist)
+
+Security headers & TLS
+
+Pulls full headers and a filtered view for:
+
+strict-transport-security
+
+content-security-policy
+
+x-content-type-options
+
+x-frame-options / frame-ancestors
+
+referrer-policy
+
+set-cookie flags
+
+Saves to 01_headers.txt and leaves a note to grab the securityheaders.com grade screenshot.
+
+Rate-limit / bulk-ops smoke
+
+Executes the 40-request loop against BULK_DELETE_ENDPOINT (default /api/client-documents/bulk-delete), tallies status codes, and saves counts to 02_rate_limit_counts.txt.
+
+✅ Expect several 200 then 429.
+
+Idempotent Time→Invoice import
+
+Calls POST /api/invoices twice with the same timelog IDs; saves both raw responses with status lines to 03_invoice_create_first.txt and 03_invoice_create_second.txt.
+
+If psql and DATABASE_URL are available, runs sql/idempotency_check.sql and saves output to 03_db_idempotency_check.txt.
+
+✅ Expect the first call 201, second a fail/no-op; the SQL should return 0 rows.
+
+Filing Cabinet soft-delete + restore (optional—enable by setting endpoints in .env)
+
+Uploads a small text file, soft-deletes it via bulk endpoint, confirms it disappears from default list, restores it, and confirms it reappears.
+
+Saves 04_file_upload.txt, 04_file_bulk_delete.txt, 04_file_list_after_delete.txt, 04_file_restore.txt, 04_file_list_after_restore.txt.
+
+Leaves a reminder to grab a short GIF/screenshot + audit-log entry.
+
+/healthz + /readyz
+
+Saves probe status lines to 05_probes.txt.
+
+✅ Expect healthz:200 and readyz:200.
+
+Observability & Evidence bundle
+
+Zips the entire run directory to /tmp/gg_verify/staging_verification_evidence.tgz for upload here.
+
+Notes / knobs you can tweak in .env
+
+STAGING_DOMAIN, AUTH_TOKEN (required)
+
+Endpoints:
+
+BULK_DELETE_ENDPOINT, INVOICE_CREATE_ENDPOINT
+
+HEALTHZ_ENDPOINT, READYZ_ENDPOINT
+
+File cabinet (optional): FILE_UPLOAD_ENDPOINT, FILE_LIST_ENDPOINT, FILE_BULK_DELETE_ENDPOINT, FILE_RESTORE_ENDPOINT, plus FILE_UPLOAD_JSON/FILE_RESTORE_JSON_TEMPLATE
+
+DB:
+
+DATABASE_URL (preferred) or PG* vars if you want the SQL check to run.
+
+Definition of Done (what you’ll have after running)
+
+01_headers.txt shows all required headers; you add the securityheaders.com screenshot.
+
+02_rate_limit_counts.txt shows 429s after the burst.
+
+03_* files show idempotent invoice behavior + DB query returning 0 rows.
+
+04_* files (if enabled) show soft-delete/restore, plus you attach a GIF/screenshot + audit-log capture.
+
+05_probes.txt shows both probes at 200.
+
+Evidence bundle ready: /tmp/gg_verify/staging_verification_evidence.tgz.
