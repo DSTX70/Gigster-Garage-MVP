@@ -8,6 +8,25 @@ Gigster Garage is a comprehensive time tracker and workflow management system bu
 
 Preferred communication style: Simple, everyday language.
 
+## ⚠️ Pre-Publication Security Checklist
+
+**CRITICAL: Remove before publishing to public repositories or sharing externally:**
+
+1. **Strategic Analysis Documents**: Any competitive analysis, market sizing, or business strategy reports
+2. **Patent Information**: Patent strategies, claims, IP documentation, or innovation assessments
+3. **Financial Projections**: Revenue models, pricing strategies, market opportunity calculations
+4. **Competitive Intelligence**: Detailed competitor comparisons or differentiation strategies
+5. **Internal URLs**: Production deployment URLs, staging environments, admin credentials
+6. **Demo Credentials**: Remove or rotate all demo user passwords before public launch
+7. **API Keys**: Verify all secrets are in Replit Secrets, not in code or .env files
+8. **Hardening Kit Materials**: Remove staging verification scripts if they expose architecture details
+
+**Safe to Keep**:
+- Technical architecture documentation
+- Feature descriptions and user-facing documentation
+- Development setup instructions
+- Open source licenses and attributions
+
 ## Recent Changes
 
 - **Pricing & Feature Flags System** (Completed October 2025): Integrated environment-aware feature flags and pricing table component; feature flags automatically load based on environment (development/staging/preview → staging flags, production → prod flags); pricing page displays three-tier system (Core, Plus, Pro) with feature comparison matrix; all data served as static JSON from client/public directory for optimal performance
