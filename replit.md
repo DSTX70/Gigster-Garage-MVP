@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Pricing & Feature Flags System** (Completed October 2025): Integrated environment-aware feature flags and pricing table component; feature flags automatically load based on environment (development/staging/preview → staging flags, production → prod flags); pricing page displays three-tier system (Core, Plus, Pro) with feature comparison matrix; all data served as static JSON from client/public directory for optimal performance
 - **Production Deployment** (Completed October 2025): Successfully deployed Gigster Garage to production using Replit Autoscale deployment with production database; fixed server environment detection to properly serve static files in production vs Vite middleware in development; demo credentials are username: `demo`, password: `demo123`
 - **Timesheet-to-Invoice Integration** (Completed September 2025): Implemented seamless import of time entries into invoices with new "Import from Timesheet" button, automatic conversion of time logs to line items with configurable hourly rates, and comprehensive linking system that connects selected time entries to invoices with proper authorization and validation
 - **Presentation Filing Cabinet Integration** (Fixed September 2025): Resolved "Failed to save PDF to Filing Cabinet" errors by creating missing presentations database table, storage methods, and API routes; fixed undefined objectPath bug and clientId schema validation issues to enable automatic Filing Cabinet PDF saves for all presentations

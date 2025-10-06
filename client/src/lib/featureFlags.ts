@@ -20,8 +20,8 @@ export async function loadFeatureFlags(env: "staging" | "prod" = inferEnv()): Pr
   if (rt) return rt;
   
   const path = env === "staging" 
-    ? "/config/flags/feature-flags.staging.json" 
-    : "/config/flags/feature-flags.prod.json";
+    ? "/feature-flags.staging.json" 
+    : "/feature-flags.prod.json";
   
   try { 
     const res = await fetch(path, { cache: "no-store" }); 
