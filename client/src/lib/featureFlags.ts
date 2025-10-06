@@ -1,10 +1,15 @@
 export type FeatureFlags = Record<string, boolean>;
 
 export function inferEnv(): "staging" | "prod" { 
+  // Check for explicit staging flag first, then fallback to NODE_ENV
   const val = (typeof window !== "undefined" 
-    ? import.meta.env.VITE_APP_ENV 
-    : process.env.NODE_ENV) || "prod"; 
-  return String(val).toLowerCase().includes("stag") ? "staging" : "prod"; 
+    ? import.meta.env.MODE 
+    : process.env.NODE_ENV) || "production";
+  const envStr = String(val).toLowerCase();
+  // Treat dev, development, staging, and preview as staging
+  return (envStr.includes("dev") || envStr.includes("stag") || envStr.includes("preview")) 
+    ? "staging" 
+    : "prod"; 
 }
 
 export async function loadFeatureFlags(env: "staging" | "prod" = inferEnv()): Promise<FeatureFlags> {

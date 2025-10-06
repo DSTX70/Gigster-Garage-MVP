@@ -22,7 +22,7 @@ export default function PricingTable() {
       ]);
       setTiers(t); 
       setFlags(f);
-      setEnv(import.meta.env.VITE_APP_ENV || "prod");
+      setEnv(import.meta.env.MODE || "production");
     })();
   }, []);
 
