@@ -94,8 +94,14 @@ export default function Landing() {
               </Button>
             </Link>
             
+            <Link href="/pricing">
+              <Button variant="outline" size="lg" className="border-white/30 bg-white/10 text-white hover:bg-white/20 px-8 py-3" style={{ fontFamily: 'var(--font-display)' }}>
+                View Pricing
+              </Button>
+            </Link>
+            
             <Link href="/login">
-              <Button variant="outline" size="lg" className="border-white/30 bg-white px-8 py-3" style={{ color: 'var(--garage-navy)', fontFamily: 'var(--font-display)' }}>
+              <Button variant="ghost" size="lg" className="text-white hover:bg-white/10 px-8 py-3" style={{ fontFamily: 'var(--font-display)' }}>
                 Sign In
               </Button>
             </Link>
