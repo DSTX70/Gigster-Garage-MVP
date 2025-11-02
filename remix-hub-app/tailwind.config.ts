@@ -1,0 +1,3 @@
+import type { Config } from 'tailwindcss';
+import tokens from './app/tokens/design-tokens.json';
+export default { content: ['./app/**/*.{ts,tsx,jsx,js}'], theme: { extend: { colors: { brand: { primary: tokens.colors.primary, secondary: tokens.colors.secondary, accent: tokens.colors.accent, surface: tokens.colors.surface, text: tokens.colors.text } }, fontFamily: { heading: [tokens.typography.heading, 'ui-sans-serif', 'system-ui'], body: [tokens.typography.body, 'ui-sans-serif', 'system-ui'] }, borderRadius: { xl: tokens.radius.xl } } }, plugins: [] } satisfies Config;

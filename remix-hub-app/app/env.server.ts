@@ -1,0 +1,1 @@
+export const ENV = { HUB_BASE_URL: process.env.HUB_BASE_URL ?? 'http://localhost:8000', USE_MOCKS: process.env.USE_MOCKS === 'true', MOCK_FALLBACK: process.env.MOCK_FALLBACK !== 'false' };

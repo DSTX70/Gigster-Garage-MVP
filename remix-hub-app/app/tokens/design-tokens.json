@@ -1,0 +1,16 @@
+{
+  "colors": {
+    "primary": "#2EC5C2",
+    "secondary": "#7573F8",
+    "accent": "#FFD449",
+    "surface": "#F9F5F1",
+    "text": "#1A1A1A"
+  },
+  "typography": {
+    "heading": "Inter",
+    "body": "Inter"
+  },
+  "radius": {
+    "xl": "1rem"
+  }
+}

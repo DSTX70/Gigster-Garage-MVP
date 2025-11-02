@@ -12,8 +12,8 @@ build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
 [[ports]]
-localPort = 5000
-externalPort = 80
+localPort = 3000
+externalPort = 3000
 
 [[ports]]
 localPort = 33133
@@ -90,6 +90,10 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Remix Hub App"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -98,6 +102,18 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Remix Hub App"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd remix-hub-app && PORT=3000 npm run dev"
+waitForPort = 3000
 
 [agent]
 integrations = ["javascript_stripe==1.0.0", "javascript_database==1.0.0", "javascript_websocket==1.0.0", "javascript_object_storage==1.0.0", "javascript_openai==1.0.0", "javascript_log_in_with_replit==1.0.0", "javascript_slack==1.0.0"]
