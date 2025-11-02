@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Gigster Garage - Complete Features Guide</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>90</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+/* Page Setup */
+@page {
+    size: 8.5in 11in;
+    margin: 1in 1in 1in 1in;
+    mso-header-margin: 0.5in;
+    mso-footer-margin: 0.5in;
+}
+
+body {
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333333;
+    background-color: white;
+    margin: 0;
+    padding: 40px;
+    font-size: 11pt;
+}
+
+/* Header Section */
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 4px solid #004C6D;
+}
+
+.logo {
+    max-width: 300px;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.title {
+    color: #004C6D;
+    font-size: 28pt;
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+}
+
+.subtitle {
+    color: #0B1D3A;
+    font-size: 16pt;
+    font-weight: 600;
+    margin: 10px 0;
+}
+
+.intro {
+    color: #555555;
+    font-size: 12pt;
+    font-style: italic;
+    margin-top: 15px;
+}
+
+/* Section Headers */
+h2 {
+    color: #004C6D;
+    font-size: 18pt;
+    font-weight: bold;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #0B1D3A;
+    page-break-after: avoid;
+}
+
+h3 {
+    color: #0B1D3A;
+    font-size: 14pt;
+    font-weight: 600;
+    margin-top: 20px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+}
+
+/* Content */
+p {
+    margin: 10px 0;
+    text-align: justify;
+}
+
+ul {
+    margin: 10px 0;
+    padding-left: 30px;
+}
+
+li {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+strong {
+    color: #004C6D;
+    font-weight: 600;
+}
+
+/* Emoji Styling */
+.emoji {
+    font-size: 14pt;
+    margin-right: 8px;
+}
+
+/* Special Sections */
+.highlight-box {
+    background-color: #F0F8FF;
+    border-left: 4px solid #004C6D;
+    padding: 15px 20px;
+    margin: 20px 0;
+    page-break-inside: avoid;
+}
+
+.note {
+    background-color: #FFF9E6;
+    border-left: 4px solid #FFA500;
+    padding: 12px 18px;
+    margin: 15px 0;
+    font-style: italic;
+}
+
+/* Footer */
+.footer {
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 3px solid #004C6D;
+    text-align: center;
+    color: #666666;
+}
+
+.footer-title {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #004C6D;
+}
+
+.footer-tagline {
+    font-size: 11pt;
+    font-style: italic;
+    color: #0B1D3A;
+}
+
+/* Page Breaks */
+.page-break {
+    page-break-before: always;
+}
+
+/* Numbered Lists */
+ol {
+    margin: 10px 0;
+    padding-left: 30px;
+}
+
+ol li {
+    margin: 10px 0;
+}
+
+/* Prevent widows and orphans */
+p, li {
+    orphans: 3;
+    widows: 3;
+}
+
+h2, h3 {
+    orphans: 4;
+    widows: 4;
+}
+</style>
+</head>
+<body>
+
+<!-- Header Section -->
+<div class="header">
+    <img src="client/src/assets/gigster-logo-orange.png" alt="Gigster Garage Logo" class="logo">
+    <h1 class="title">Gigster Garage</h1>
+    <div class="subtitle">Complete Features Guide</div>
+    <p class="intro">Your All-in-One Business Management Platform<br>
+    This guide explains everything Gigster Garage can do for your business,<br>written in plain English without technical jargon.</p>
+</div>
+
+<!-- Task & Project Management -->
+<h2><span class="emoji">📋</span> Task &amp; Project Management</h2>
+
+<h3>Task Creation &amp; Organization</h3>
+<ul>
+    <li><strong>Create tasks</strong> with titles, descriptions, and detailed notes</li>
+    <li><strong>Set priorities</strong> (Low, Medium, High, Urgent) to focus on what matters most</li>
+    <li><strong>Add due dates and times</strong> so nothing falls through the cracks</li>
+    <li><strong>Organize by projects</strong> to group related work together</li>
+    <li><strong>Assign tasks to team members</strong> so everyone knows their responsibilities</li>
+    <li><strong>Track task status</strong> (To Do, In Progress, Completed) at a glance</li>
+</ul>
+
+<h3>Rich Task Details</h3>
+<ul>
+    <li><strong>Add notes</strong> to capture important information and context</li>
+    <li><strong>Attach files</strong> like documents, images, or PDFs directly to tasks</li>
+    <li><strong>Include web links</strong> to reference websites, resources, or client materials</li>
+    <li><strong>Log progress updates</strong> with dated comments to track how work is evolving</li>
+    <li><strong>Create subtasks</strong> to break large jobs into manageable pieces</li>
+    <li><strong>Set task dependencies</strong> so work flows in the right order</li>
+</ul>
+
+<h3>Project Dashboards</h3>
+<ul>
+    <li><strong>Visual project boards</strong> showing all tasks organized by status</li>
+    <li><strong>Progress tracking</strong> with completion percentages and statistics</li>
+    <li><strong>Project timeline views</strong> (Gantt charts) to see the big picture</li>
+    <li><strong>Kanban boards</strong> for drag-and-drop task organization</li>
+    <li><strong>Project cards</strong> on your home page for quick access to active work</li>
+    <li><strong>Team collaboration</strong> with shared project visibility</li>
+</ul>
+
+<h3>Smart Organization</h3>
+<ul>
+    <li><strong>Filter and search</strong> to find exactly what you need quickly</li>
+    <li><strong>View by project</strong> to focus on one client or initiative at a time</li>
+    <li><strong>See all your tasks</strong> or just the ones assigned to you</li>
+    <li><strong>Color-coded priorities</strong> so urgent items stand out visually</li>
+    <li><strong>Status badges</strong> showing overdue, due soon, or completed tasks</li>
+</ul>
+
+<!-- Time Tracking -->
+<h2><span class="emoji">⏱️</span> Time Tracking</h2>
+
+<h3>Track Your Hours</h3>
+<ul>
+    <li><strong>Start and stop timers</strong> for any task with one click</li>
+    <li><strong>Manual time entry</strong> if you forgot to start the timer</li>
+    <li><strong>Automatic time calculations</strong> so you never have to do math</li>
+    <li><strong>Time logs by project</strong> to see where your hours are going</li>
+    <li><strong>Edit or delete entries</strong> if you made a mistake</li>
+    <li><strong>Add descriptions</strong> to remember what you were working on</li>
+</ul>
+
+<h3>Timesheet Management</h3>
+<ul>
+    <li><strong>View timesheets</strong> organized by date, project, or client</li>
+    <li><strong>Filter time entries</strong> to find specific work periods</li>
+    <li><strong>See total hours</strong> for any time period automatically</li>
+    <li><strong>Export time data</strong> for payroll or billing purposes</li>
+    <li><strong>Link time entries to invoices</strong> for accurate client billing</li>
+    <li><strong>Import timesheets into invoices</strong> with one button click</li>
+</ul>
+
+<h3>Productivity Insights</h3>
+<ul>
+    <li><strong>See how you spend your time</strong> across different projects</li>
+    <li><strong>Identify your most time-consuming work</strong> to improve efficiency</li>
+    <li><strong>Track billable vs. non-billable hours</strong> for better profitability</li>
+    <li><strong>Review time allocation</strong> to balance your workload</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- Invoicing & Payments -->
+<h2><span class="emoji">💰</span> Invoicing &amp; Payments</h2>
+
+<h3>Professional Invoice Creation</h3>
+<ul>
+    <li><strong>Generate beautiful invoices</strong> in minutes, not hours</li>
+    <li><strong>Auto-fill company information</strong> from your profile</li>
+    <li><strong>Import time entries</strong> from your timesheet automatically</li>
+    <li><strong>Set hourly rates</strong> that apply to your logged time</li>
+    <li><strong>Add line items</strong> for products, services, or expenses</li>
+    <li><strong>Calculate totals automatically</strong> including subtotals and tax</li>
+    <li><strong>Apply discounts</strong> as percentages or fixed amounts</li>
+</ul>
+
+<h3>Client Management</h3>
+<ul>
+    <li><strong>Store client information</strong> so you don't have to retype it</li>
+    <li><strong>Track which invoices</strong> belong to which clients</li>
+    <li><strong>See payment history</strong> for each customer</li>
+    <li><strong>Manage multiple clients</strong> from one central location</li>
+</ul>
+
+<h3>Payment Processing</h3>
+<ul>
+    <li><strong>Accept credit card payments</strong> through Stripe integration</li>
+    <li><strong>Track payment status</strong> (Paid, Pending, Overdue)</li>
+    <li><strong>Record manual payments</strong> for checks or cash</li>
+    <li><strong>Send invoices</strong> to clients electronically</li>
+    <li><strong>Download PDFs</strong> to email or print</li>
+    <li><strong>Auto-save to Filing Cabinet</strong> for easy record-keeping</li>
+</ul>
+
+<h3>Invoice Features</h3>
+<ul>
+    <li><strong>Sequential invoice numbering</strong> handled automatically</li>
+    <li><strong>Due date tracking</strong> so you know when to follow up</li>
+    <li><strong>Add notes or terms</strong> like "Net 30" or payment instructions</li>
+    <li><strong>Professional previews</strong> before sending to clients</li>
+    <li><strong>Edit or delete drafts</strong> before finalizing</li>
+</ul>
+
+<!-- Proposals & Contracts -->
+<h2><span class="emoji">📄</span> Proposals &amp; Contracts</h2>
+
+<h3>AI-Powered Content Creation</h3>
+<ul>
+    <li><strong>Generate proposals</strong> using our intelligent AI assistant</li>
+    <li><strong>Answer simple questions</strong> about your project</li>
+    <li><strong>Get customized content</strong> based on your specific business and client needs</li>
+    <li><strong>Choose Basic or Advanced mode</strong> depending on how detailed you need</li>
+    <li><strong>Project-specific questions</strong> that adapt to your industry (construction, marketing, consulting, etc.)</li>
+</ul>
+
+<h3>Proposal Builder</h3>
+<ul>
+    <li><strong>Create professional proposals</strong> without starting from scratch</li>
+    <li><strong>Include project details</strong> like scope, timeline, and deliverables</li>
+    <li><strong>Add pricing information</strong> to show value clearly</li>
+    <li><strong>Attach supporting documents</strong> or portfolio samples</li>
+    <li><strong>Preview before sending</strong> to ensure everything looks perfect</li>
+    <li><strong>Generate PDFs</strong> for professional presentation</li>
+</ul>
+
+<h3>Contract Management</h3>
+<ul>
+    <li><strong>Draft contracts</strong> with AI assistance or manual entry</li>
+    <li><strong>Store all agreements</strong> in one secure location</li>
+    <li><strong>Link contracts to projects</strong> for easy reference</li>
+    <li><strong>Track contract status</strong> (Draft, Sent, Signed, Active)</li>
+    <li><strong>Access contract history</strong> whenever you need it</li>
+</ul>
+
+<div class="highlight-box">
+<h3>Smart AI Questionnaire</h3>
+<ul>
+    <li><strong>Business context saved</strong> once (your city, business type, industry, target market)</li>
+    <li><strong>Reusable answers</strong> across multiple proposals and contracts</li>
+    <li><strong>Intelligent follow-up questions</strong> that dig deeper based on your responses</li>
+    <li><strong>Conversation history</strong> so you can review and refine past sessions</li>
+    <li><strong>10 basic questions</strong> for quick proposals</li>
+    <li><strong>10 advanced questions</strong> that are specific to your project type:
+        <ul>
+            <li><strong>Construction:</strong> Materials, building specs, permits, timeline</li>
+            <li><strong>Marketing:</strong> Target customers, unique selling points, campaign goals</li>
+            <li><strong>Consulting:</strong> Client challenges, desired outcomes, your approach</li>
+            <li>And more industry-specific templates</li>
+        </ul>
+    </li>
+</ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- Presentations & Filing Cabinet -->
+<h2><span class="emoji">📊</span> Presentations &amp; Filing Cabinet</h2>
+
+<h3>Presentation Creator</h3>
+<ul>
+    <li><strong>Build slide decks</strong> for client meetings or pitches</li>
+    <li><strong>Add multiple slides</strong> with titles and content</li>
+    <li><strong>Organize slide order</strong> to tell your story effectively</li>
+    <li><strong>Generate professional PDFs</strong> ready to present</li>
+    <li><strong>Save automatically</strong> to your Filing Cabinet</li>
+</ul>
+
+<h3>Filing Cabinet (Document Storage)</h3>
+<ul>
+    <li><strong>Store all business documents</strong> in one secure place</li>
+    <li><strong>Organize by type</strong> (Proposals, Contracts, Invoices, Presentations, Reports)</li>
+    <li><strong>Upload files</strong> of any type (PDFs, images, spreadsheets, etc.)</li>
+    <li><strong>Search and filter</strong> to find documents quickly</li>
+    <li><strong>Download anytime</strong> you need a copy</li>
+    <li><strong>Automatic archiving</strong> of generated documents</li>
+    <li><strong>Link documents to clients or projects</strong> for easy organization</li>
+</ul>
+
+<h3>Document Management</h3>
+<ul>
+    <li><strong>Track document versions</strong> so you never lose important edits</li>
+    <li><strong>See creation dates</strong> to maintain records</li>
+    <li><strong>Control who can access</strong> sensitive documents (coming soon)</li>
+    <li><strong>Bulk actions</strong> to organize multiple files at once</li>
+    <li><strong>Preview documents</strong> without downloading</li>
+</ul>
+
+<!-- Workflow Automation -->
+<h2><span class="emoji">🤖</span> Workflow Automation</h2>
+
+<h3>Automate Repetitive Tasks</h3>
+<ul>
+    <li><strong>Create automation rules</strong> without coding</li>
+    <li><strong>Set triggers</strong> like "when a high-priority task is created"</li>
+    <li><strong>Define actions</strong> like "send a notification" or "assign to a team member"</li>
+    <li><strong>Save time</strong> by letting the system handle routine work</li>
+    <li><strong>Reduce mistakes</strong> with consistent, automatic processes</li>
+</ul>
+
+<h3>Smart Notifications</h3>
+<ul>
+    <li><strong>Email alerts</strong> for high-priority tasks</li>
+    <li><strong>SMS notifications</strong> for urgent deadlines (when enabled)</li>
+    <li><strong>Browser notifications</strong> for reminders</li>
+    <li><strong>24-hour advance warning</strong> for upcoming due dates</li>
+    <li><strong>1-hour urgent alerts</strong> for imminent deadlines</li>
+    <li><strong>Customizable preferences</strong> so you get only the alerts you want</li>
+</ul>
+
+<h3>Workflow Builder</h3>
+<ul>
+    <li><strong>Visual rule creation</strong> - click to build, no coding required</li>
+    <li><strong>Multiple trigger types</strong> based on task creation, updates, or deadlines</li>
+    <li><strong>Flexible conditions</strong> to control when rules activate</li>
+    <li><strong>Chain multiple actions</strong> for complex workflows</li>
+    <li><strong>Enable or disable rules</strong> as your needs change</li>
+</ul>
+
+<!-- Team Collaboration -->
+<h2><span class="emoji">👥</span> Team Collaboration</h2>
+
+<h3>User Management</h3>
+<ul>
+    <li><strong>Add team members</strong> to your workspace</li>
+    <li><strong>Assign roles</strong> (Admin, User) with appropriate permissions</li>
+    <li><strong>Create user accounts</strong> for employees or contractors</li>
+    <li><strong>Control access</strong> to sensitive features</li>
+    <li><strong>Track who's working on what</strong> at a glance</li>
+</ul>
+
+<h3>Task Assignment</h3>
+<ul>
+    <li><strong>Assign tasks to anyone</strong> on your team</li>
+    <li><strong>See your personal task list</strong> separate from team tasks</li>
+    <li><strong>Filter by assignee</strong> to check individual workloads</li>
+    <li><strong>Reassign work</strong> if priorities change</li>
+    <li><strong>Team dashboards</strong> showing all activity</li>
+</ul>
+
+<h3>Communication</h3>
+<ul>
+    <li><strong>Task comments</strong> for discussion and updates</li>
+    <li><strong>Progress notes</strong> to keep everyone informed</li>
+    <li><strong>@mentions</strong> to notify specific team members (coming soon)</li>
+    <li><strong>Activity feeds</strong> showing recent changes</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- Notifications & Reminders -->
+<h2><span class="emoji">🔔</span> Notifications &amp; Reminders</h2>
+
+<h3>Stay on Top of Deadlines</h3>
+<ul>
+    <li><strong>Automatic reminders</strong> for tasks with due dates</li>
+    <li><strong>Yellow alerts</strong> 24 hours before a task is due</li>
+    <li><strong>Red urgent alerts</strong> 1 hour before deadline</li>
+    <li><strong>Browser notifications</strong> even when you're not actively using the app</li>
+    <li><strong>Email notifications</strong> for high-priority tasks</li>
+    <li><strong>SMS alerts</strong> for critical deadlines (optional)</li>
+</ul>
+
+<h3>Notification Preferences</h3>
+<ul>
+    <li><strong>Choose email or SMS</strong> based on your preferences</li>
+    <li><strong>Opt in or out</strong> during account setup or in settings</li>
+    <li><strong>Control notification frequency</strong> to avoid overload</li>
+    <li><strong>Test notifications</strong> to ensure they're working</li>
+    <li><strong>Update preferences</strong> anytime you need</li>
+</ul>
+
+<!-- Business Profile & Context -->
+<h2><span class="emoji">🏢</span> Business Profile &amp; Context</h2>
+
+<h3>Your Business Information</h3>
+<ul>
+    <li><strong>Company name and address</strong> saved once, used everywhere</li>
+    <li><strong>Business type</strong> (Contractor, Consultant, Freelancer, Agency, etc.)</li>
+    <li><strong>Entity type</strong> (LLC, Corporation, Sole Proprietor, etc.)</li>
+    <li><strong>Location</strong> (City and State) for local context</li>
+    <li><strong>Industry</strong> and <strong>target market</strong> for personalized AI assistance</li>
+</ul>
+
+<h3>Smart Auto-Fill</h3>
+<ul>
+    <li><strong>Invoices populate automatically</strong> with your business details</li>
+    <li><strong>Proposals include</strong> your company information</li>
+    <li><strong>No retyping</strong> the same information over and over</li>
+    <li><strong>Professional consistency</strong> across all documents</li>
+    <li><strong>Update once, apply everywhere</strong></li>
+</ul>
+
+<!-- Garage Assistant -->
+<h2><span class="emoji">🎯</span> Garage Assistant (AI Helper)</h2>
+
+<h3>Intelligent Business Assistant</h3>
+<ul>
+    <li><strong>Real-time insights</strong> from your business data</li>
+    <li><strong>Quick answers</strong> to questions about projects, tasks, or time</li>
+    <li><strong>Suggestions</strong> for improving productivity</li>
+    <li><strong>Data visualization</strong> showing key metrics</li>
+    <li><strong>Contextual help</strong> based on what you're working on</li>
+</ul>
+
+<h3>AI-Powered Features</h3>
+<ul>
+    <li><strong>Proposal generation</strong> based on your business context</li>
+    <li><strong>Contract suggestions</strong> tailored to your industry</li>
+    <li><strong>Content recommendations</strong> that match your style</li>
+    <li><strong>Smart questions</strong> that adapt to your project type</li>
+    <li><strong>Learning system</strong> that improves with use</li>
+</ul>
+
+<!-- Security & User Accounts -->
+<h2><span class="emoji">🔐</span> Security &amp; User Accounts</h2>
+
+<h3>Secure Login</h3>
+<ul>
+    <li><strong>Password protection</strong> for all accounts</li>
+    <li><strong>Session management</strong> that logs you out automatically when inactive</li>
+    <li><strong>Role-based access</strong> so users only see what they should</li>
+    <li><strong>Secure password storage</strong> using industry best practices</li>
+</ul>
+
+<h3>Account Types</h3>
+<ul>
+    <li><strong>Admin accounts</strong> with full access to all features</li>
+    <li><strong>User accounts</strong> with access to assigned work only</li>
+    <li><strong>Demo account</strong> to try the platform before committing</li>
+    <li><strong>Multiple users</strong> can work in the same workspace</li>
+</ul>
+
+<h3>Data Privacy</h3>
+<ul>
+    <li><strong>Your data belongs to you</strong> - we never share it</li>
+    <li><strong>Secure database</strong> with automatic backups</li>
+    <li><strong>Encrypted connections</strong> for all data transmission</li>
+    <li><strong>User isolation</strong> so teams can't see each other's data</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- Interface & Usability -->
+<h2><span class="emoji">📱</span> Interface &amp; Usability</h2>
+
+<h3>Clean, Professional Design</h3>
+<ul>
+    <li><strong>Garage Navy branding</strong> with a consistent, professional look</li>
+    <li><strong>Intuitive navigation</strong> - find what you need in seconds</li>
+    <li><strong>Responsive layout</strong> that works on desktop, tablet, and mobile</li>
+    <li><strong>Clear visual hierarchy</strong> so important information stands out</li>
+    <li><strong>Minimal clutter</strong> - see only what you need</li>
+</ul>
+
+<h3>Easy Navigation</h3>
+<ul>
+    <li><strong>Home page</strong> with quick access to active projects</li>
+    <li><strong>Task list</strong> showing all your work</li>
+    <li><strong>Admin panel</strong> for user and business management</li>
+    <li><strong>Quick add buttons</strong> to create tasks, invoices, or proposals</li>
+    <li><strong>Back buttons</strong> on every page for easy navigation</li>
+    <li><strong>Search functionality</strong> to find anything quickly</li>
+</ul>
+
+<h3>User-Friendly Features</h3>
+<ul>
+    <li><strong>Tooltips and help text</strong> when you need guidance</li>
+    <li><strong>Error messages</strong> that explain what went wrong</li>
+    <li><strong>Success confirmations</strong> so you know your changes saved</li>
+    <li><strong>Keyboard shortcuts</strong> for power users (coming soon)</li>
+    <li><strong>Undo options</strong> when you make a mistake</li>
+</ul>
+
+<!-- Pricing & Plans -->
+<h2><span class="emoji">💳</span> Pricing &amp; Plans</h2>
+
+<h3>Flexible Pricing Tiers</h3>
+<ul>
+    <li><strong>Core Plan</strong> - Essential features for individuals and small teams</li>
+    <li><strong>Plus Plan</strong> - Advanced features for growing businesses</li>
+    <li><strong>Pro Plan</strong> - Full features for professional organizations</li>
+    <li><strong>Feature comparison</strong> table to help you choose</li>
+    <li><strong>Clear pricing</strong> with no hidden fees</li>
+</ul>
+
+<h3>Environment-Aware Features</h3>
+<ul>
+    <li><strong>Development/Staging</strong> - Test new features before they go live</li>
+    <li><strong>Production</strong> - Stable, reliable platform for daily use</li>
+    <li><strong>Feature flags</strong> that enable/disable capabilities by plan</li>
+    <li><strong>Automatic pricing updates</strong> based on your subscription</li>
+</ul>
+
+<!-- Getting Started -->
+<h2><span class="emoji">🚀</span> Getting Started</h2>
+
+<h3>Quick Onboarding</h3>
+<ul>
+    <li><strong>First-time setup wizard</strong> walks you through account creation</li>
+    <li><strong>Notification preferences</strong> collected during signup</li>
+    <li><strong>Demo credentials</strong> available to try before creating an account</li>
+    <li><strong>Sample data</strong> to see how features work (in demo mode)</li>
+</ul>
+
+<h3>Support Resources</h3>
+<ul>
+    <li><strong>Landing page</strong> explaining platform benefits</li>
+    <li><strong>Feature overview</strong> showing what's possible</li>
+    <li><strong>Welcome screens</strong> for new users</li>
+    <li><strong>In-app guidance</strong> when you need help</li>
+</ul>
+
+<!-- Reporting & Analytics -->
+<h2><span class="emoji">📈</span> Reporting &amp; Analytics (Coming Soon)</h2>
+
+<h3>Business Insights</h3>
+<ul>
+    <li><strong>Time tracking reports</strong> showing productivity trends</li>
+    <li><strong>Invoice summaries</strong> by client, project, or time period</li>
+    <li><strong>Project progress reports</strong> with completion metrics</li>
+    <li><strong>Team performance</strong> dashboards</li>
+    <li><strong>Revenue tracking</strong> to see business growth</li>
+</ul>
+
+<!-- Integration Capabilities -->
+<h2><span class="emoji">🔄</span> Integration Capabilities</h2>
+
+<h3>Connected Services</h3>
+<ul>
+    <li><strong>Stripe</strong> for payment processing</li>
+    <li><strong>SendGrid</strong> for email notifications</li>
+    <li><strong>Twilio</strong> for SMS alerts</li>
+    <li><strong>OpenAI</strong> for AI-powered content generation</li>
+    <li><strong>Google Cloud Storage</strong> for file management</li>
+    <li><strong>Slack</strong> integration (configured, needs setup)</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- What Makes Gigster Garage Special -->
+<h2><span class="emoji">✨</span> What Makes Gigster Garage Special</h2>
+
+<div class="highlight-box">
+<h3>All-in-One Platform</h3>
+<p>You get time tracking, task management, invoicing, proposals, contracts, presentations, and document storage in <strong>one integrated system</strong>. No juggling between different apps or services.</p>
+</div>
+
+<div class="highlight-box">
+<h3>AI-Powered Intelligence</h3>
+<p>Our AI assistant doesn't just generate generic content - it learns about <strong>your specific business</strong> (location, industry, entity type) and asks <strong>project-specific questions</strong> based on what you're building.</p>
+</div>
+
+<div class="highlight-box">
+<h3>Built for Real Businesses</h3>
+<p>Every feature is designed for how businesses actually work - from importing timesheets into invoices to auto-saving presentations to your filing cabinet.</p>
+</div>
+
+<div class="highlight-box">
+<h3>Time-Saving Automation</h3>
+<p>Set up workflows once, and let the system handle reminders, notifications, and routine tasks automatically.</p>
+</div>
+
+<div class="highlight-box">
+<h3>Professional Results</h3>
+<p>Generate client-facing documents that look polished and professional without hiring a designer or learning complex software.</p>
+</div>
+
+<div class="highlight-box">
+<h3>Flexible and Scalable</h3>
+<p>Whether you're a solo freelancer or a growing team, Gigster Garage adapts to your needs.</p>
+</div>
+
+<!-- Best Practices -->
+<h2><span class="emoji">🎓</span> Best Practices for Using Gigster Garage</h2>
+
+<h3>Start Simple</h3>
+<ol>
+    <li><strong>Create your first project</strong> to organize your work</li>
+    <li><strong>Add a few tasks</strong> to get comfortable with the interface</li>
+    <li><strong>Track some time</strong> to see how the timesheet works</li>
+    <li><strong>Generate an invoice</strong> using your time entries</li>
+    <li><strong>Try the AI assistant</strong> to create a proposal</li>
+</ol>
+
+<h3>Build Good Habits</h3>
+<ul>
+    <li><strong>Update task status</strong> regularly so your dashboards stay accurate</li>
+    <li><strong>Log time as you work</strong> instead of trying to remember later</li>
+    <li><strong>Fill out your business profile</strong> so AI can help you better</li>
+    <li><strong>Use projects</strong> to keep client work separate</li>
+    <li><strong>Set realistic due dates</strong> and let reminders keep you on track</li>
+</ul>
+
+<h3>Maximize Efficiency</h3>
+<ul>
+    <li><strong>Create workflow rules</strong> for tasks you do repeatedly</li>
+    <li><strong>Use the Filing Cabinet</strong> to keep all documents searchable</li>
+    <li><strong>Link related items</strong> (tasks to projects, time to invoices)</li>
+    <li><strong>Review your timesheets</strong> before importing to invoices</li>
+    <li><strong>Reuse AI conversation answers</strong> for similar projects</li>
+</ul>
+
+<h3>Stay Organized</h3>
+<ul>
+    <li><strong>Archive completed projects</strong> to reduce clutter</li>
+    <li><strong>Regularly review</strong> overdue or pending tasks</li>
+    <li><strong>Update client information</strong> as relationships evolve</li>
+    <li><strong>Back up important documents</strong> by downloading from Filing Cabinet</li>
+    <li><strong>Clean up old data</strong> periodically to keep the system fast</li>
+</ul>
+
+<!-- Getting Help -->
+<h2><span class="emoji">📞</span> Getting Help</h2>
+
+<div class="note">
+<h3>Demo Account</h3>
+<p>Try the platform with demo credentials:</p>
+<ul>
+    <li><strong>Username:</strong> <code>demo</code></li>
+    <li><strong>Password:</strong> <code>demo123</code></li>
+</ul>
+</div>
+
+<h3>Documentation</h3>
+<p>This comprehensive guide covers all major features. For specific questions, explore each feature in the app to see tooltips and contextual help.</p>
+
+<!-- Footer -->
+<div class="footer">
+    <div class="footer-title">Gigster Garage: Simplified Workflow Hub</div>
+    <div class="footer-tagline">Your complete business management solution in one powerful platform.</div>
+</div>
+
+</body>
+</html>
