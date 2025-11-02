@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>i³ Collective — New Pod Intake Form (vNext 2025 Q4)</title>
+<style>
+  :root{
+    --ember:#FF7A1A;
+    --indigo:#4B4DE6;
+    --lav:#6F5AE8;
+    --teal:#0FA3B1;
+    --coral:#E4572E;
+    --grey:#333333;
+    --light:#FAFAFA;
+  }
+  body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin:0; color:#222;}
+  header{
+    background: linear-gradient(90deg, var(--ember), var(--indigo));
+    color:#fff; padding:18px 24px;
+  }
+  header h1{ margin:0; font-size: 20px; }
+  header p{ margin:6px 0 0; opacity:0.9; font-size: 12px; }
+  .container{ max-width:1100px; margin:22px auto; padding:0 16px 40px; }
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+  .card{ background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.06); padding:16px 16px 6px; }
+  .card h3{ margin:4px 0 10px; font-size:14px; color:var(--grey); }
+  label{ display:block; font-size:12px; color:#555; margin:10px 0 6px; }
+  input[type="text"], input[type="number"], select, textarea{
+    width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:13px; outline:none;
+  }
+  textarea{ min-height:70px; }
+  .row{ display:flex; gap:12px; }
+  .row > div{ flex:1; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .chip{ display:inline-flex; gap:8px; align-items:center; background:#f2f2f6; border:1px solid #e6e6ee; padding:8px 10px; border-radius:999px; font-size:12px; }
+  .chip input{ transform: scale(1.1); }
+  .section-title{ margin:26px 0 8px; font-weight:700; color:#222; font-size:15px; }
+  .footer{
+    background:#fafafa; border:1px solid #eee; border-radius:10px; padding:12px 14px; margin-top:18px;
+  }
+  .footer h4{ margin:0 0 8px; font-size:13px; color:#333; }
+  .footer li{ font-size:12px; margin:4px 0; }
+  .actions{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  button{
+    border:0; background: var(--indigo); color:#fff; border-radius:10px; padding:10px 14px; font-size:13px; cursor:pointer;
+    box-shadow:0 2px 8px rgba(75,77,230,0.25);
+  }
+  button.secondary{ background:#fff; color:#333; border:1px solid #ddd; box-shadow:none; }
+  .pillars{ display:flex; gap:8px; font-size:12px; }
+  .pillars span{ padding:6px 10px; border-radius:999px; color:#fff; }
+  .pillars .imag{ background: var(--lav); }
+  .pillars .inno{ background: var(--teal); }
+  .pillars .imp{ background: var(--coral); }
+  pre{ background:#0b1220; color:#e6f1ff; border-radius:8px; padding:12px; overflow:auto; font-size:12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>i³ Collective — New Pod Intake Form (vNext 2025 Q4)</h1>
+    <p>Imagination × Innovation × Impact</p>
+  </header>
+
+  <div class="container">
+    <div class="pillars">
+      <span class="imag">Imagination</span>
+      <span class="inno">Innovation</span>
+      <span class="imp">Impact</span>
+    </div>
+
+    <div class="section-title">Section 1. Pod Identity</div>
+    <div class="grid">
+      <div class="card">
+        <label>Pod Name</label>
+        <input id="podName" type="text" placeholder="e.g., Packaging & Pre‑Press Pod" />
+
+        <label>Pillar</label>
+        <select id="pillar">
+          <option>Imagination</option>
+          <option>Innovation</option>
+          <option>Impact</option>
+        </select>
+
+        <label>Purpose Statement</label>
+        <textarea id="purpose" placeholder="What is the pod’s purpose and the value it delivers?"></textarea>
+
+        <label>Type</label>
+        <select id="type">
+          <option>New</option>
+          <option>Expansion</option>
+          <option>Replacement</option>
+          <option>Reorg</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <label>Priority</label>
+        <select id="priority">
+          <option>High</option>
+          <option>Medium</option>
+          <option>Low</option>
+        </select>
+
+        <label>Starter Roles (names or agent titles)</label>
+        <textarea id="starterRoles" placeholder="e.g., Packaging/Pre‑press Lead (L2), Vendor QA (L1)"></textarea>
+
+        <div class="row">
+          <div>
+            <label>Autonomy Level</label>
+            <select id="autonomy">
+              <option value="L0">L0 — Advisor</option>
+              <option value="L1" selected>L1 — Operator</option>
+              <option value="L2">L2 — Executor</option>
+              <option value="L3">L3 — Orchestrator</option>
+            </select>
+          </div>
+          <div>
+            <label>Budget & Duration</label>
+            <input id="budget" type="text" placeholder="$, timeframe (e.g., $5k · 3 months)" />
+          </div>
+        </div>
+
+        <label>Assigned Owner / Sponsor</label>
+        <input id="owner" type="text" placeholder="Name / Role" />
+      </div>
+    </div>
+
+    <div class="section-title">Section 3. Service Links</div>
+    <div class="grid">
+      <div class="card">
+        <label>Linked Business Units (multi-select)</label>
+        <div class="chips" id="bus">
+          <!-- BUs -->
+        </div>
+
+        <label>Cross-Pod Dependencies</label>
+        <textarea id="dependencies" placeholder="Pods that must collaborate or deliver prerequisites"></textarea>
+      </div>
+      <div class="card">
+        <label>Shared Services Needed</label>
+        <div class="chips" id="services">
+          <!-- Services -->
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Section 4. Definition of Done</div>
+    <div class="grid">
+      <div class="card">
+        <label>Success Criteria / KPIs</label>
+        <textarea id="kpis" placeholder="How will we know this pod delivered value?"></textarea>
+
+        <label>Key Deliverables</label>
+        <textarea id="deliverables" placeholder="Spec packs, dashboards, captions, MOUs, etc."></textarea>
+      </div>
+      <div class="card">
+        <label>First Month Milestones</label>
+        <textarea id="milestones" placeholder="What gets done in the first 30 days?"></textarea>
+      </div>
+    </div>
+
+    <div class="footer">
+      <h4>Impact Eligibility Rubric (ALL must apply)</h4>
+      <ul>
+        <li>1) <b>Intent</b>: Societal/cultural benefit (not revenue-first).</li>
+        <li>2) <b>Direct Service</b>: Serves people/communities directly.</li>
+        <li>3) <b>Measurement</b>: Tracks outcomes (books/jobs/adoptions).</li>
+        <li>4) <b>Access & Equity</b>: Removes barriers via pricing/access/inclusion.</li>
+        <li>5) <b>Governance</b>: Named lead, budget, public summary.</li>
+      </ul>
+      <div class="actions">
+        <button id="exportJson">Export JSON</button>
+        <button id="exportCsv" class="secondary">Export CSV</button>
+        <button id="preview">Preview Manifest</button>
+      </div>
+    </div>
+
+    <div id="previewBox" style="display:none; margin-top:16px;">
+      <h3>Manifest Preview</h3>
+      <pre id="manifestOut">{}</pre>
+    </div>
+  </div>
+
+<script>
+  const servicesList = [
+    "Finance & BizOps","Legal/IP","Security & Compliance","HR/Ops","Marketing & PR","Tech Infra"
+  ];
+  const buList = [
+    "Fab Card Co.","TFBC","dreamshitter.com","OUAS","SparkBooks","Studio DS Creative",
+    "SymbiosoAi","Dream Team Hub","iCadence","Parallax Translate","Gigster Garage",
+    "GlobalCollabs","Think Tank Ai","vSuite HQ","MindOrchestra"
+  ];
+
+  function buildChips(id, list){
+    const el = document.getElementById(id);
+    list.forEach(name=>{
+      const wrap = document.createElement('label');
+      wrap.className = 'chip';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = name;
+      const span = document.createElement('span');
+      span.textContent = name;
+      wrap.appendChild(input);
+      wrap.appendChild(span);
+      el.appendChild(wrap);
+    });
+  }
+  buildChips('services', servicesList);
+  buildChips('bus', buList);
+
+  function collect(){
+    const checked = (rootId)=>[...document.querySelectorAll('#'+rootId+' input:checked')].map(x=>x.value);
+    const data = {
+      podName: document.getElementById('podName').value.trim(),
+      pillar: document.getElementById('pillar').value,
+      purpose: document.getElementById('purpose').value.trim(),
+      type: document.getElementById('type').value,
+      priority: document.getElementById('priority').value,
+      starterRoles: document.getElementById('starterRoles').value.trim(),
+      autonomy: document.getElementById('autonomy').value,
+      budget: document.getElementById('budget').value.trim(),
+      owner: document.getElementById('owner').value.trim(),
+      linkedBUs: checked('bus'),
+      sharedServices: checked('services'),
+      dependencies: document.getElementById('dependencies').value.trim(),
+      kpis: document.getElementById('kpis').value.trim(),
+      deliverables: document.getElementById('deliverables').value.trim(),
+      milestones: document.getElementById('milestones').value.trim(),
+      version: "vNext_2025Q4"
+    };
+    return data;
+  }
+
+  function download(filename, text){
+    const a = document.createElement('a');
+    a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    a.setAttribute('download', filename);
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function toCSV(obj){
+    const order = ["podName","pillar","purpose","type","priority","starterRoles","autonomy","budget","owner","linkedBUs","sharedServices","dependencies","kpis","deliverables","milestones","version"];
+    const header = order.join(",");
+    const row = order.map(k=>{
+      let v = obj[k];
+      if(Array.isArray(v)) v = v.join("|");
+      v = (v||"").toString().replaceAll('"','""');
+      return `"${v}"`;
+    }).join(",");
+    return header + "\n" + row;
+  }
+
+  document.getElementById('exportJson').addEventListener('click', ()=>{
+    const data = collect();
+    download("pod_intake.json", JSON.stringify(data, null, 2));
+  });
+
+  document.getElementById('exportCsv').addEventListener('click', ()=>{
+    const data = collect();
+    download("pod_intake.csv", toCSV(data));
+  });
+
+  document.getElementById('preview').addEventListener('click', ()=>{
+    const data = collect();
+    document.getElementById('previewBox').style.display = 'block';
+    document.getElementById('manifestOut').textContent = JSON.stringify(data, null, 2);
+    window.scrollTo({top:document.body.scrollHeight, behavior:"smooth"});
+  });
+</script>
+</body>
+</html>

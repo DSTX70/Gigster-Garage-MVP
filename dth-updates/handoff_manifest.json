@@ -1,0 +1,114 @@
+{
+  "version": "vNext_2025Q4",
+  "pods": [
+    {
+      "name": "Impact Programs Office (IPO)",
+      "pillar": "Impact",
+      "autonomy": "L2",
+      "starter_roles": [
+        "Impact Programs Lead (L2)",
+        "Impact Data Analyst (L1)",
+        "Coalition PM (L2)"
+      ]
+    },
+    {
+      "name": "Education & Cohorts Pod",
+      "pillar": "Impact",
+      "autonomy": "L2",
+      "starter_roles": [
+        "Education Programs Manager (L2)",
+        "Cohort Ops Lead (L1)"
+      ]
+    },
+    {
+      "name": "Accessibility & Captioning Pod",
+      "pillar": "Impact",
+      "autonomy": "L1",
+      "starter_roles": [
+        "Accessibility Lead (L1)",
+        "Captioning Producer (L1)"
+      ]
+    },
+    {
+      "name": "Packaging & Pre-Press Pod",
+      "pillar": "Imagination",
+      "autonomy": "L2",
+      "starter_roles": [
+        "Packaging/Pre-press Lead (L2)",
+        "Vendor QA (L1)"
+      ]
+    },
+    {
+      "name": "WMS / 3PL Ops Pod",
+      "pillar": "Imagination",
+      "autonomy": "L1",
+      "starter_roles": [
+        "3PL Integration Owner (L1)",
+        "Returns/Kitting Coordinator (L1)"
+      ]
+    },
+    {
+      "name": "Channel Integrations Pod",
+      "pillar": "Innovation",
+      "autonomy": "L1",
+      "starter_roles": [
+        "Channel Integrations Lead (L1)",
+        "QA (L0)"
+      ]
+    },
+    {
+      "name": "Author Platform Studio",
+      "pillar": "Imagination",
+      "autonomy": "L1",
+      "starter_roles": [
+        "Author Platform Producer (L1)",
+        "Copy/Design (L0)"
+      ]
+    },
+    {
+      "name": "Music Rights & Distribution Pod",
+      "pillar": "Imagination",
+      "autonomy": "L1",
+      "starter_roles": [
+        "Rights Admin (L1)",
+        "Distro Ops (L0)"
+      ]
+    },
+    {
+      "name": "Agent Governance Pod",
+      "pillar": "Innovation",
+      "autonomy": "L2",
+      "starter_roles": [
+        "Governance Designer (L2)",
+        "Policy Librarian (L1)"
+      ]
+    },
+    {
+      "name": "Tenant & Billing Pod",
+      "pillar": "Innovation",
+      "autonomy": "L2",
+      "starter_roles": [
+        "Tenant/Billing PM (L2)",
+        "Billing Engineer (L1)"
+      ]
+    },
+    {
+      "name": "GlobalCollabs Partnerships Pod",
+      "pillar": "Impact",
+      "autonomy": "L2",
+      "starter_roles": [
+        "Partner Ops (L2)",
+        "Contracts Desk (L1)"
+      ]
+    },
+    {
+      "name": "Data Stewardship & Metrics Pod",
+      "pillar": "Innovation",
+      "autonomy": "L1",
+      "starter_roles": [
+        "Data Steward (L1)",
+        "Analyst (L1)"
+      ]
+    }
+  ]
+}

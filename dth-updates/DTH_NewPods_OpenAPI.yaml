@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  title: Dream Team Hub — New Pods & Intake API
+  description: Engine endpoints for creating pods, agents, and bulk imports (vNext · 2025 Q4)
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local Engine
+paths:
+  /v1/pods:
+    post:
+      summary: Create a new pod
+      operationId: createPod
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntakePod'
+      responses:
+        '201':
+          description: Pod created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  pod: { type: string }
+        '400':
+          description: Validation error
+  /v1/agents:
+    post:
+      summary: Create a new agent
+      operationId: createAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentCreate'
+      responses:
+        '201':
+          description: Agent created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: string, format: uuid }
+        '400':
+          description: Validation error
+  /v1/import/new-pods:
+    post:
+      summary: Bulk import pods from manifest or Excel
+      operationId: importPods
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              description: >-
+                For JSON manifest import, post the contents of handoff_manifest.json.
+                For Excel import, call a server-side job that reads the .xlsx from storage.
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  createdPods:
+                    type: integer
+                  createdAgents:
+                    type: integer
+components:
+  schemas:
+    IntakePod:
+      type: object
+      required: [podName, pillar, type, priority, autonomy]
+      properties:
+        podName: { type: string, minLength: 2 }
+        pillar:
+          type: string
+          enum: [Imagination, Innovation, Impact]
+        purpose: { type: string }
+        type:
+          type: string
+          enum: [New, Expansion, Replacement, Reorg]
+        priority:
+          type: string
+          enum: [High, Medium, Low]
+        starterRoles: { type: string, description: 'Comma/semicolon/line-separated names or titles' }
+        autonomy:
+          type: string
+          enum: [L0, L1, L2, L3]
+        budget: { type: string }
+        owner: { type: string }
+        linkedBUs:
+          type: array
+          items: { type: string }
+        sharedServices:
+          type: array
+          items: { type: string }
+        dependencies: { type: string }
+        kpis: { type: string }
+        deliverables: { type: string }
+        milestones: { type: string }
+        version:
+          type: string
+          example: vNext_2025Q4
+    AgentCreate:
+      type: object
+      required: [title, autonomy, podName]
+      properties:
+        name: { type: string }
+        title: { type: string }
+        autonomy:
+          type: string
+          enum: [L0, L1, L2, L3]
+        podName: { type: string }
+        status:
+          type: string
+          enum: [active, inactive]
+          default: active

@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dth
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./dth_seed_vNext_2025Q4.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+
+  engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.engine
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/dth
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    environment:
+      ENGINE_BASE: http://engine:8000
+      INTAKE_HTML_PATH: /app/i3_NewPod_IntakeForm_vNext_2025Q4.html
+    volumes:
+      - ./i3_NewPod_IntakeForm_vNext_2025Q4.html:/app/i3_NewPod_IntakeForm_vNext_2025Q4.html:ro
+    depends_on:
+      - engine
+    ports:
+      - "5000:5000"
+
+volumes:
+  db_data:

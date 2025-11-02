@@ -1,0 +1,90 @@
+{
+  "info": {
+    "name": "DTH New Pods & Intake API (vNext 2025 Q4)",
+    "_postman_id": "dth-newpods-collection-2025q4",
+    "description": "Endpoints for intake, pods, and agents for Dream Team Hub.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET /intake/new-pod (App)",
+      "request": {
+        "method": "GET",
+        "url": "{{app_base}}/intake/new-pod"
+      }
+    },
+    {
+      "name": "POST /api/intake/pod (App)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{app_base}}/api/intake/pod",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"podName\": \"Packaging & Pre-Press Pod\",\n  \"pillar\": \"Imagination\",\n  \"purpose\": \"Designs dielines and pre-press QA for print SKUs.\",\n  \"type\": \"New\",\n  \"priority\": \"High\",\n  \"starterRoles\": \"Packaging/Pre-press Lead (L2); Vendor QA (L1)\",\n  \"autonomy\": \"L2\",\n  \"budget\": \"$5k \\u00b7 3 months\",\n  \"owner\": \"Packaging Lead\",\n  \"linkedBUs\": [\n    \"Fab Card Co.\",\n    \"TFBC\",\n    \"dreamshitter.com\"\n  ],\n  \"sharedServices\": [\n    \"Finance & BizOps\",\n    \"Tech Infra\"\n  ],\n  \"dependencies\": \"Vendors on file; spec library\",\n  \"kpis\": \"<1% print defects; On-time PO%\",\n  \"deliverables\": \"Dieline library; Spec packs; QA checklist\",\n  \"milestones\": \"Finalize vendor proofs\",\n  \"version\": \"vNext_2025Q4\"\n}"
+        }
+      }
+    },
+    {
+      "name": "POST /v1/pods (Engine)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{engine_base}}/v1/pods",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"podName\": \"Impact Programs Office (IPO)\",\n  \"pillar\": \"Impact\",\n  \"purpose\": \"Manages portfolio OKRs and reporting for Impact tracks.\",\n  \"type\": \"New\",\n  \"priority\": \"High\",\n  \"starterRoles\": \"Impact Programs Lead (L2); Impact Data Analyst (L1); Coalition PM (L2)\",\n  \"autonomy\": \"L2\",\n  \"budget\": \"$8k \\u00b7 3 months\",\n  \"owner\": \"Impact Lead\",\n  \"linkedBUs\": [\n    \"OUAS\",\n    \"SparkBooks\",\n    \"GlobalCollabs\"\n  ],\n  \"sharedServices\": [\n    \"Finance & BizOps\",\n    \"Legal/IP\",\n    \"Security & Compliance\"\n  ],\n  \"dependencies\": \"None\",\n  \"kpis\": \"Programs baseline + quarterly deltas; dashboards live\",\n  \"deliverables\": \"Public summary; KPI packet\",\n  \"milestones\": \"Publish baseline\",\n  \"version\": \"vNext_2025Q4\"\n}"
+        }
+      }
+    },
+    {
+      "name": "POST /v1/agents (Engine)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{engine_base}}/v1/agents",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Governance Designer\",\n  \"title\": \"Governance Designer\",\n  \"autonomy\": \"L2\",\n  \"podName\": \"Agent Governance Pod\",\n  \"status\": \"active\"\n}"
+        }
+      }
+    },
+    {
+      "name": "POST /v1/import/new-pods (Engine)",
+      "request": {
+        "method": "POST",
+        "url": "{{engine_base}}/v1/import/new-pods",
+        "description": "Bulk import from handoff_manifest.json or .xlsx",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "app_base",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "engine_base",
+      "value": "http://localhost:8000"
+    }
+  ]
+}
