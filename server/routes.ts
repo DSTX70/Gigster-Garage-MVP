@@ -48,6 +48,7 @@ import { loadBalancer } from './load-balancer';
 import passport from 'passport';
 import { seedDemoData, clearDemoData } from './demoDataService';
 import { demoSessionService } from './demoSessionService';
+import { aiAssistantService } from './ai-assistant-service';
 
 // Initialize OpenAI client
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -8918,6 +8919,161 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
       console.error("❌ Error initializing default users:", error);
     }
   }
+
+  // ==================== AI QUESTIONNAIRE API ROUTES ====================
+  
+  // Zod schemas for AI questionnaire validation
+  const startConversationSchema = z.object({
+    contentType: z.string().min(1),
+    questionLevel: z.enum(["basic", "advanced"]),
+    projectType: z.string().optional(),
+    entityId: z.string().optional(),
+  });
+
+  const submitAnswerSchema = z.object({
+    conversationId: z.string().uuid(),
+    answer: z.string().min(1),
+    currentQuestionIndex: z.number().int().min(0),
+  });
+
+  const generateContentSchema = z.object({
+    conversationId: z.string().uuid(),
+  });
+  
+  // Start new AI conversation
+  app.post("/api/ai-questionnaire/start", async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Validate request body
+      const validated = startConversationSchema.parse(req.body);
+
+      const result = await aiAssistantService.startConversation({
+        userId: req.session.user.id,
+        contentType: validated.contentType,
+        questionLevel: validated.questionLevel,
+        projectType: validated.projectType,
+        entityId: validated.entityId,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error starting AI conversation:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      res.status(500).json({ message: error.message || "Failed to start conversation" });
+    }
+  });
+
+  // Submit answer and get next question
+  app.post("/api/ai-questionnaire/answer", async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Validate request body
+      const validated = submitAnswerSchema.parse(req.body);
+
+      const result = await aiAssistantService.submitAnswer(
+        validated.conversationId,
+        req.session.user.id, // Pass userId for ownership verification
+        validated.answer,
+        validated.currentQuestionIndex
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error submitting answer:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      if (error.message?.includes("Unauthorized")) {
+        return res.status(403).json({ message: error.message });
+      }
+      res.status(500).json({ message: error.message || "Failed to submit answer" });
+    }
+  });
+
+  // Generate final content
+  app.post("/api/ai-questionnaire/generate", async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Validate request body
+      const validated = generateContentSchema.parse(req.body);
+
+      const content = await aiAssistantService.generateContent(
+        validated.conversationId,
+        req.session.user.id // Pass userId for ownership verification
+      );
+
+      res.json({ content });
+    } catch (error: any) {
+      console.error("Error generating content:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      if (error.message?.includes("Unauthorized")) {
+        return res.status(403).json({ message: error.message });
+      }
+      res.status(500).json({ message: error.message || "Failed to generate content" });
+    }
+  });
+
+  // Get conversation history
+  app.get("/api/ai-questionnaire/history", async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { contentType } = req.query;
+
+      const history = await aiAssistantService.getConversationHistory(
+        req.session.user.id,
+        contentType as string | undefined
+      );
+
+      res.json(history);
+    } catch (error: any) {
+      console.error("Error fetching conversation history:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch history" });
+    }
+  });
+
+  // Update user business profile
+  app.patch("/api/users/profile", async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { city, state, businessType, entityType, industry, targetMarket } = req.body;
+
+      const updatedUser = await storage.updateUser(req.session.user.id, {
+        city,
+        state,
+        businessType,
+        entityType,
+        industry,
+        targetMarket,
+      });
+
+      // Update session
+      req.session.user = updatedUser;
+
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: error.message || "Failed to update profile" });
+    }
+  });
 
   // Initialize default users on startup
   await initializeDefaultUsers();

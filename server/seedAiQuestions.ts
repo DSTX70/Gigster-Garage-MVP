@@ -9,7 +9,7 @@ export async function seedAiQuestions() {
     // Basic Questions (Generic for all proposals)
     {
       contentType: "proposal",
-      questionLevel: "basic",
+      questionLevel: "basic" as const,
       questionText: "What problem does this project solve for the client?",
       orderIndex: 1,
       projectTypeFilter: [],
