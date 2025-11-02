@@ -52,6 +52,13 @@ export const users = pgTable("users", {
   phone: varchar("phone"),
   emailOptIn: boolean("email_opt_in").default(true),
   smsOptIn: boolean("sms_opt_in").default(false),
+  // Business context fields for AI personalization
+  city: varchar("city"),
+  state: varchar("state"),
+  businessType: varchar("business_type"),
+  entityType: varchar("entity_type"),
+  industry: varchar("industry"),
+  targetMarket: text("target_market"),
   // Demo session fields
   isDemo: boolean("is_demo").default(false),
   demoSessionId: varchar("demo_session_id"),
@@ -1262,3 +1269,90 @@ export const apiUsage = pgTable("api_usage", {
 
 export type ApiUsage = typeof apiUsage.$inferSelect;
 export type InsertApiUsage = typeof apiUsage.$inferInsert;
+
+// AI Question Templates - Pre-seeded questions for different content types
+export const aiQuestionTemplates = pgTable("ai_question_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contentType: varchar("content_type").notNull(), // "proposal", "contract", "invoice", "presentation", "task", "project"
+  questionLevel: varchar("question_level", { enum: ["basic", "advanced"] }).notNull(),
+  questionText: text("question_text").notNull(),
+  orderIndex: integer("order_index").notNull(), // Question order (1-10)
+  projectTypeFilter: jsonb("project_type_filter").$type<string[]>().default([]), // Empty = all types, or specific like ["construction", "marketing"]
+  placeholder: varchar("placeholder"), // Example answer
+  helpText: text("help_text"), // Additional guidance
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AiQuestionTemplate = typeof aiQuestionTemplates.$inferSelect;
+export type InsertAiQuestionTemplate = typeof aiQuestionTemplates.$inferInsert;
+
+// AI User Responses - Store answers to questions for reuse
+export const aiUserResponses = pgTable("ai_user_responses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  questionTemplateId: varchar("question_template_id").references(() => aiQuestionTemplates.id),
+  conversationId: varchar("conversation_id").references(() => aiConversations.id, { onDelete: "cascade" }),
+  questionText: text("question_text").notNull(), // Snapshot of question asked
+  responseText: text("response_text").notNull(), // User's answer
+  context: jsonb("context").$type<{
+    contentType?: string;
+    entityId?: string; // proposal/contract/project ID
+    projectType?: string;
+  }>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AiUserResponse = typeof aiUserResponses.$inferSelect;
+export type InsertAiUserResponse = typeof aiUserResponses.$inferInsert;
+
+// AI Conversations - Full conversation history with AI
+export const aiConversations = pgTable("ai_conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  contentType: varchar("content_type").notNull(), // "proposal", "contract", etc.
+  questionLevel: varchar("question_level", { enum: ["basic", "advanced"] }).notNull(),
+  entityId: varchar("entity_id"), // proposal/contract/project ID if linked
+  projectType: varchar("project_type"), // "construction", "marketing", "consulting", etc.
+  messages: jsonb("messages").$type<Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+    timestamp: string;
+  }>>().default([]),
+  generatedContent: text("generated_content"), // Final AI-generated content
+  userProfile: jsonb("user_profile").$type<{
+    city?: string;
+    state?: string;
+    businessType?: string;
+    entityType?: string;
+    industry?: string;
+    targetMarket?: string;
+  }>(), // Snapshot of user profile at time of conversation
+  status: varchar("status", { enum: ["in_progress", "completed", "cancelled"] }).default("in_progress"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AiConversation = typeof aiConversations.$inferSelect;
+export type InsertAiConversation = typeof aiConversations.$inferInsert;
+
+// Zod schemas for AI questionnaire
+export const insertAiQuestionTemplateSchema = createInsertSchema(aiQuestionTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAiUserResponseSchema = createInsertSchema(aiUserResponses).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAiConversationSchema = createInsertSchema(aiConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+});
