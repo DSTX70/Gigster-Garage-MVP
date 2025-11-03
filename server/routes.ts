@@ -8696,6 +8696,11 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
   await cacheWarmingService.startCacheWarming();
   cacheWarmingService.scheduleCacheWarming();
 
+  // Start switchboard service for agent KPI monitoring and auto-promotion
+  console.log("🚀 Starting Switchboard service...");
+  const { switchboard } = await import("./switchboard-service");
+  switchboard.start();
+
   const httpServer = createServer(app);
 
   // **NEW: ROBUST COLLABORATION SERVICE INITIALIZATION**
@@ -9344,17 +9349,76 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
             }
           }
           
+          // Initialize sample KPI data for each agent
+          const sampleKpis = [
+            {
+              agentId: 'agent.itsa',
+              onTimeMilestoneRate: '0.98',
+              gateEscapeRate: '0.005',
+              incidentCount30d: 0,
+              status: 'green' as const,
+            },
+            {
+              agentId: 'agent.ssk',
+              onTimeMilestoneRate: '0.92',
+              gateEscapeRate: '0.015',
+              incidentCount30d: 1,
+              status: 'amber' as const,
+            },
+            {
+              agentId: 'agent.exec_orchestrator',
+              onTimeMilestoneRate: '0.96',
+              gateEscapeRate: '0.008',
+              incidentCount30d: 0,
+              status: 'green' as const,
+            },
+            {
+              agentId: 'agent.planner',
+              onTimeMilestoneRate: '0.75',
+              gateEscapeRate: '0.08',
+              incidentCount30d: 3,
+              status: 'red' as const,
+            },
+            {
+              agentId: 'agent.ledger',
+              onTimeMilestoneRate: '0.88',
+              gateEscapeRate: '0.03',
+              incidentCount30d: 2,
+              status: 'amber' as const,
+            },
+            {
+              agentId: 'agent.sentinel',
+              onTimeMilestoneRate: '0.97',
+              gateEscapeRate: '0.007',
+              incidentCount30d: 0,
+              status: 'green' as const,
+            },
+          ];
+
+          let kpisCreated = 0;
+          for (const kpiData of sampleKpis) {
+            try {
+              const existingKpi = await storage.getAgentKpi(kpiData.agentId);
+              if (!existingKpi) {
+                await storage.createAgentKpi(kpiData);
+                kpisCreated++;
+              }
+            } catch (error: any) {
+              results.errors.push(`Error creating KPI for ${kpiData.agentId}: ${error.message}`);
+            }
+          }
+          
           await logAuditEvent(
             req.session.user!.id,
             "system",
             "agents",
             "data_imported",
             {
-              results,
+              results: { ...results, kpisCreated },
             }
           );
           
-          res.json(results);
+          res.json({ ...results, kpisCreated });
         });
     } catch (error: any) {
       console.error("Error importing agent data:", error);
@@ -9428,6 +9492,152 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
     } catch (error: any) {
       console.error("Error updating graduation plan:", error);
       res.status(500).json({ message: "Failed to update graduation plan" });
+    }
+  });
+
+  // Agent KPI routes
+  app.get("/api/agents/kpis", requireAdmin, async (req, res) => {
+    try {
+      const kpis = await storage.getAgentKpis();
+      res.json(kpis);
+    } catch (error: any) {
+      console.error("Error fetching KPIs:", error);
+      res.status(500).json({ message: "Failed to fetch KPIs" });
+    }
+  });
+
+  app.get("/api/agents/:id/kpi", requireAdmin, async (req, res) => {
+    try {
+      const kpi = await storage.getAgentKpi(req.params.id);
+      if (!kpi) {
+        return res.status(404).json({ message: "KPI not found" });
+      }
+      res.json(kpi);
+    } catch (error: any) {
+      console.error("Error fetching KPI:", error);
+      res.status(500).json({ message: "Failed to fetch KPI" });
+    }
+  });
+
+  app.post("/api/agents/:id/kpi", requireAdmin, async (req, res) => {
+    try {
+      const { onTimeMilestoneRate, gateEscapeRate, incidentCount30d } = req.body;
+      
+      // Calculate status based on thresholds
+      let status: "green" | "amber" | "red" = "amber";
+      const onTime = parseFloat(onTimeMilestoneRate);
+      const gateEscape = parseFloat(gateEscapeRate);
+      const incidents = parseInt(incidentCount30d);
+      
+      // Graduation criteria: on_time >= 0.95 AND gate_escape <= 0.01 AND incidents == 0
+      if (onTime >= 0.95 && gateEscape <= 0.01 && incidents === 0) {
+        status = "green";
+      } else if (onTime < 0.80 || gateEscape > 0.05 || incidents > 2) {
+        status = "red";
+      }
+      
+      const existingKpi = await storage.getAgentKpi(req.params.id);
+      
+      let kpi;
+      if (existingKpi) {
+        kpi = await storage.updateAgentKpi(req.params.id, {
+          agentId: req.params.id,
+          onTimeMilestoneRate,
+          gateEscapeRate,
+          incidentCount30d,
+          status,
+        });
+      } else {
+        kpi = await storage.createAgentKpi({
+          agentId: req.params.id,
+          onTimeMilestoneRate,
+          gateEscapeRate,
+          incidentCount30d,
+          status,
+        });
+      }
+      
+      await logAuditEvent(
+        req.session.user!.id,
+        "agent",
+        req.params.id,
+        existingKpi ? "kpi_updated" : "kpi_created",
+        {
+          agentId: req.params.id,
+          status,
+          onTimeMilestoneRate,
+          gateEscapeRate,
+          incidentCount30d,
+        }
+      );
+      
+      res.status(existingKpi ? 200 : 201).json(kpi);
+    } catch (error: any) {
+      console.error("Error updating KPI:", error);
+      res.status(500).json({ message: "Failed to update KPI" });
+    }
+  });
+
+  app.post("/api/agents/:id/promote", requireAdmin, async (req, res) => {
+    try {
+      const agent = await storage.getAgent(req.params.id);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      const kpi = await storage.getAgentKpi(req.params.id);
+      const graduationPlan = await storage.getAgentGraduationPlan(req.params.id);
+      
+      // Check graduation criteria
+      if (kpi && kpi.status !== "green") {
+        return res.status(400).json({
+          message: "Agent does not meet graduation criteria (KPI status must be green)",
+          kpi,
+        });
+      }
+      
+      // Update visibility flags to expose to users
+      const visibilityFlag = await storage.getAgentVisibilityFlag(req.params.id);
+      if (visibilityFlag) {
+        await storage.updateAgentVisibilityFlag(req.params.id, {
+          exposeToUsers: true,
+          dashboardCard: true,
+        });
+      } else {
+        await storage.createAgentVisibilityFlag({
+          agentId: req.params.id,
+          exposeToUsers: true,
+          dashboardCard: true,
+        });
+      }
+      
+      // Mark graduation plan as completed if it exists
+      if (graduationPlan) {
+        await storage.updateAgentGraduationPlan(graduationPlan.id, {
+          completedAt: new Date(),
+        });
+      }
+      
+      await logAuditEvent(
+        req.session.user!.id,
+        "agent",
+        req.params.id,
+        "agent_promoted",
+        {
+          agentId: req.params.id,
+          targetTool: graduationPlan?.targetTool,
+          kpiStatus: kpi?.status,
+        }
+      );
+      
+      res.json({
+        success: true,
+        message: "Agent promoted successfully",
+        agent,
+      });
+    } catch (error: any) {
+      console.error("Error promoting agent:", error);
+      res.status(500).json({ message: "Failed to promote agent" });
     }
   });
 

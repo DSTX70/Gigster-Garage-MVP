@@ -1430,3 +1430,24 @@ export const insertAgentGraduationPlanSchema = createInsertSchema(agentGraduatio
   updatedAt: true,
   completedAt: true,
 });
+
+// Agent KPIs - Track performance metrics for graduation decisions
+export const agentKpis = pgTable("agent_kpis", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").references(() => agents.id, { onDelete: "cascade" }).notNull().unique(),
+  onTimeMilestoneRate: decimal("on_time_milestone_rate", { precision: 5, scale: 4 }).default("0"), // 0.0000 to 1.0000
+  gateEscapeRate: decimal("gate_escape_rate", { precision: 5, scale: 4 }).default("0"), // 0.0000 to 1.0000
+  incidentCount30d: integer("incident_count_30d").default(0),
+  status: varchar("status", { enum: ["green", "amber", "red"] }).default("amber"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AgentKpi = typeof agentKpis.$inferSelect;
+export type InsertAgentKpi = typeof agentKpis.$inferInsert;
+
+export const insertAgentKpiSchema = createInsertSchema(agentKpis).omit({
+  id: true,
+  createdAt: true,
+  lastUpdated: true,
+});

@@ -1,8 +1,8 @@
 import { eq, and, or, desc, gte, lte, isNull, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, contracts, presentations, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage, fileAttachments, documentVersions, agents, agentVisibilityFlags, agentGraduationPlans } from "@shared/schema";
-import type { User, UpsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, Contract, InsertContract, Presentation, InsertPresentation, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage, FileAttachment, InsertFileAttachment, DocumentVersion, InsertDocumentVersion, Agent, InsertAgent, AgentVisibilityFlag, InsertAgentVisibilityFlag, AgentGraduationPlan, InsertAgentGraduationPlan } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, contracts, presentations, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage, fileAttachments, documentVersions, agents, agentVisibilityFlags, agentGraduationPlans, agentKpis } from "@shared/schema";
+import type { User, UpsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, Contract, InsertContract, Presentation, InsertPresentation, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage, FileAttachment, InsertFileAttachment, DocumentVersion, InsertDocumentVersion, Agent, InsertAgent, AgentVisibilityFlag, InsertAgentVisibilityFlag, AgentGraduationPlan, InsertAgentGraduationPlan, AgentKpi, InsertAgentKpi } from "@shared/schema";
 
 // Advanced search types for client documents
 export interface DocumentSearchParams {
@@ -333,6 +333,13 @@ export interface IStorage {
   createAgentGraduationPlan(insertPlan: InsertAgentGraduationPlan): Promise<AgentGraduationPlan>;
   updateAgentGraduationPlan(id: string, updatePlan: Partial<InsertAgentGraduationPlan>): Promise<AgentGraduationPlan | undefined>;
   deleteAgentGraduationPlan(id: string): Promise<boolean>;
+
+  // Agent KPIs
+  getAgentKpis(): Promise<AgentKpi[]>;
+  getAgentKpi(agentId: string): Promise<AgentKpi | undefined>;
+  createAgentKpi(insertKpi: InsertAgentKpi): Promise<AgentKpi>;
+  updateAgentKpi(agentId: string, updateKpi: Partial<InsertAgentKpi>): Promise<AgentKpi | undefined>;
+  deleteAgentKpi(agentId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2680,6 +2687,46 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(agentGraduationPlans)
       .where(eq(agentGraduationPlans.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Agent KPI operations
+  async getAgentKpis(): Promise<AgentKpi[]> {
+    return await db
+      .select()
+      .from(agentKpis)
+      .orderBy(agentKpis.agentId);
+  }
+
+  async getAgentKpi(agentId: string): Promise<AgentKpi | undefined> {
+    const [kpi] = await db
+      .select()
+      .from(agentKpis)
+      .where(eq(agentKpis.agentId, agentId));
+    return kpi;
+  }
+
+  async createAgentKpi(insertKpi: InsertAgentKpi): Promise<AgentKpi> {
+    const [kpi] = await db
+      .insert(agentKpis)
+      .values({ ...insertKpi, lastUpdated: new Date() })
+      .returning();
+    return kpi;
+  }
+
+  async updateAgentKpi(agentId: string, updateKpi: Partial<InsertAgentKpi>): Promise<AgentKpi | undefined> {
+    const [kpi] = await db
+      .update(agentKpis)
+      .set({ ...updateKpi, lastUpdated: new Date() })
+      .where(eq(agentKpis.agentId, agentId))
+      .returning();
+    return kpi;
+  }
+
+  async deleteAgentKpi(agentId: string): Promise<boolean> {
+    const result = await db
+      .delete(agentKpis)
+      .where(eq(agentKpis.agentId, agentId));
     return result.rowCount > 0;
   }
 }

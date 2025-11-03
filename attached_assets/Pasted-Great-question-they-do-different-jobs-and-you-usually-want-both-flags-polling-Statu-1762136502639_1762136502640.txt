@@ -1,0 +1,273 @@
+Great question — they do different jobs, and you usually want **both**:
+
+* **`/flags` polling (Status Widget):** read-only. Keeps the UI in sync with the Hub so your traffic-lights (green/amber/red) and “exposed to users” state stay fresh without manual refresh.
+* **`/admin/flags/{agent}` POST (Promote button):** write action. Flips `expose_to_users: true` (and optionally sets `external_tool_id`) and appends an **audit** line on the Hub.
+
+**Recommendation:** ship both. Gate the write path behind `VITE_ADMIN_WRITE=true` so it’s safe in demos and CI.
+
+---
+
+## Paste-ready: one tiny file that does both
+
+Drop this into your Vite app as `src/features/switchboard/StatusPanel.tsx`, then import it in `App.tsx`.
+
+```tsx
+// src/features/switchboard/StatusPanel.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+type AgentStatus = "green" | "amber" | "red";
+interface AgentFlags {
+  enabled: boolean;
+  expose_to_users: boolean;
+  external_tool_id: string | null;
+  status: AgentStatus;
+  updated: string;
+}
+interface FlagsResponse {
+  agents: Record<string, AgentFlags>;
+}
+
+const HUB = (import.meta.env.VITE_HUB_BASE_URL?.replace(/\/$/, "") ?? "") as string;
+const USE_MOCKS = String(import.meta.env.VITE_USE_MOCKS ?? "false") === "true";
+const MOCK_FALLBACK = String(import.meta.env.VITE_MOCK_FALLBACK ?? "true") === "true";
+const ADMIN_WRITE = String(import.meta.env.VITE_ADMIN_WRITE ?? "false") === "true";
+
+function statusDot(s: AgentStatus) {
+  switch (s) {
+    case "green":
+      return "bg-green-500";
+    case "amber":
+      return "bg-amber-500";
+    case "red":
+      return "bg-red-500";
+    default:
+      return "bg-gray-400";
+  }
+}
+
+async function timeoutFetch(url: string, options: RequestInit = {}, ms = 5000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+// ---- READ: /flags polling hook --------------------------------------------
+export function useFlags(pollMs = 5000) {
+  const [data, setData] = useState<FlagsResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  const fetchOnce = async () => {
+    setLoading(true);
+    setError(null);
+
+    // Try Hub first (unless forced to mocks)
+    if (!USE_MOCKS && HUB) {
+      try {
+        const res = await timeoutFetch(`${HUB}/flags`, {}, 5000);
+        if (res.ok) {
+          setData((await res.json()) as FlagsResponse);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        /* fallthrough */
+      }
+    }
+
+    // Fallback to the public file
+    if (MOCK_FALLBACK) {
+      try {
+        const res2 = await timeoutFetch(`/visibility_flags.json`, {}, 3000);
+        if (res2.ok) {
+          setData((await res2.json()) as FlagsResponse);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        /* fallthrough */
+      }
+    }
+
+    setError("Unable to load flags from Hub or public fallback.");
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchOnce();
+    timerRef.current = window.setInterval(fetchOnce, pollMs);
+    return () => {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+    };
+  }, [pollMs]);
+
+  return { data, loading, error, refresh: fetchOnce };
+}
+
+// ---- WRITE: /admin/flags/{agent} helper (Promote) --------------------------
+export async function promoteAgent(agentId: string, externalToolId?: string) {
+  if (!ADMIN_WRITE) throw new Error("Admin writes disabled (VITE_ADMIN_WRITE=false).");
+  if (!HUB) throw new Error("Missing VITE_HUB_BASE_URL.");
+
+  const body: Record<string, unknown> = { expose_to_users: true };
+  if (externalToolId) body.external_tool_id = externalToolId;
+
+  const res = await fetch(`${HUB}/admin/flags/${encodeURIComponent(agentId)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Promote failed: ${res.status} ${txt}`);
+  }
+  return (await res.json()) as { ok: boolean };
+}
+
+// ---- UI: Status Panel (polls + promote) ------------------------------------
+export default function StatusPanel() {
+  const { data, loading, error, refresh } = useFlags(5000);
+  const [pending, setPending] = useState<string | null>(null);
+  const [toolIds, setToolIds] = useState<Record<string, string>>({});
+
+  const rows =
+    useMemo(
+      () =>
+        data
+          ? Object.entries(data.agents).map(([id, f]) => ({ id, ...f }))
+          : [],
+      [data]
+    ) ?? [];
+
+  const doPromote = async (id: string) => {
+    try {
+      setPending(id);
+      const tool = toolIds[id]?.trim() || undefined;
+      await promoteAgent(id, tool);
+      await refresh();
+    } catch (e: any) {
+      alert(e?.message ?? "Promote failed");
+    } finally {
+      setPending(null);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-4xl mx-auto p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xl font-semibold">Status &amp; Switchboard</h2>
+        <div className="text-sm opacity-70">{loading ? "refreshing…" : "live"}</div>
+      </div>
+
+      {error && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="rounded-xl border bg-white overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-3">Agent</th>
+              <th className="text-left p-3">Status</th>
+              <th className="text-left p-3">Exposed</th>
+              <th className="text-left p-3">External Tool</th>
+              <th className="text-right p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t">
+                <td className="p-3 font-medium">{r.id}</td>
+                <td className="p-3">
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      aria-label={r.status}
+                      className={`h-2.5 w-2.5 rounded-full ${statusDot(r.status)}`}
+                    />
+                    <span className="capitalize">{r.status}</span>
+                  </span>
+                </td>
+                <td className="p-3">{r.expose_to_users ? "Yes" : "No"}</td>
+                <td className="p-3">
+                  {r.external_tool_id ?? "—"}
+                  {!r.expose_to_users && ADMIN_WRITE && (
+                    <div className="mt-1">
+                      <input
+                        className="w-full max-w-[14rem] rounded-md border px-2 py-1 text-xs"
+                        placeholder="(optional) external_tool_id e.g. ShipBot"
+                        value={toolIds[r.id] ?? ""}
+                        onChange={(e) =>
+                          setToolIds((m) => ({ ...m, [r.id]: e.target.value }))
+                        }
+                      />
+                    </div>
+                  )}
+                </td>
+                <td className="p-3 text-right">
+                  <button
+                    disabled={!ADMIN_WRITE || r.expose_to_users || pending === r.id}
+                    onClick={() => doPromote(r.id)}
+                    className="rounded-lg border px-3 py-1.5 disabled:opacity-40"
+                    title={
+                      !ADMIN_WRITE
+                        ? "Enable VITE_ADMIN_WRITE to allow promotes"
+                        : r.expose_to_users
+                        ? "Already exposed"
+                        : "Promote to external"
+                    }
+                  >
+                    {pending === r.id ? "Promoting…" : "Promote"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={5} className="p-6 text-center text-gray-500">
+                  No agents found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-2 text-xs text-gray-500">
+        Admin writes: <b>{String(ADMIN_WRITE)}</b>
+      </div>
+    </div>
+  );
+}
+```
+
+**Use it**
+
+```tsx
+// src/App.tsx
+import StatusPanel from "./features/switchboard/StatusPanel";
+
+export default function App() {
+  return <StatusPanel />;
+}
+```
+
+**Env switches**
+
+```
+VITE_HUB_BASE_URL=http://localhost:8000
+VITE_USE_MOCKS=false
+VITE_MOCK_FALLBACK=true
+VITE_ADMIN_WRITE=true   # enables the Promote POST
+```
+
+### TL;DR
+
+* **Polling snippet** = live read sync → include it by default.
+* **POST helper** = controlled write to flip exposure → include it, but gate behind `VITE_ADMIN_WRITE` and rely on your Hub’s audit log (already wired).
