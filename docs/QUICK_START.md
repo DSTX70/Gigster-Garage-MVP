@@ -218,9 +218,112 @@ Install the TypeScript client: `npm install @gigster-garage/api-client`. See Use
 5. **Automate Workflows**: Set up rules to save time on repetitive tasks
 6. **Use Templates**: Create invoice templates for recurring clients
 7. **Enable Notifications**: Stay on top of deadlines and updates
+8. **Leverage Agents**: Let the 17 AI agents automate routine operations (Admin)
+9. **Command Palette**: Master `Cmd+K` for blazing-fast navigation
+
+---
+
+## For Developers
+
+### API Integration
+
+Gigster Garage provides a professional TypeScript client for API integration:
+
+```bash
+npm install @gigster-garage/api-client
+```
+
+**Quick Example:**
+```typescript
+import { createClient } from '@gigster-garage/api-client';
+
+const client = createClient({
+  baseUrl: 'https://your-instance.com'
+});
+
+// Create a task
+const task = await client.postApiTasks({
+  body: {
+    title: 'API Integration',
+    priority: 'high'
+  }
+});
+
+// Generate blueprint (Packsmith)
+const blueprint = await client.postApiPacksByPackIdBlueprint({
+  params: { packId: 'pack_123' },
+  body: { includeDoD: true, includeKPIs: true }
+});
+```
+
+### Repository Seed
+
+Download the **governed edition** package seed for a complete setup:
+- 30 files with TypeScript client
+- 6 GitHub workflows (CI/CD, CodeQL, release automation)
+- CODEOWNERS, auto-assign, stale management
+- Issue/PR templates, security policy
+- Auto-merge Release PRs after CI passes
+
+See **User Manual → API Documentation** for complete details.
+
+### API Endpoints
+
+**Packsmith API** (8 endpoints):
+- Create/manage service packs
+- Generate blueprints (L1 draft)
+- Seed tasks from blueprints
+
+**Importer API** (8 endpoints):
+- CSV/XLSX import workflow
+- Column mapping & validation
+- Staged import with approval
+
+**iCadence API** (6 endpoints):
+- Marketing channel wizard
+- UTM preset management
+- Spend log ingestion
+
+---
+
+## Plan Tiers
+
+Gigster Garage offers three plans with different feature access:
+
+### Free Plan
+- ✅ Unlimited tasks and projects
+- ✅ Basic time tracking
+- ✅ Invoice generation
+- ✅ 2 team members
+- ❌ No workflow automation
+- ❌ No AI features
+- ❌ Basic reporting
+
+### Pro Plan ($20/month)
+- ✅ Everything in Free
+- ✅ **Workflow Automation** with custom rules
+- ✅ **AI Content Generation** (GPT-4o)
+- ✅ Advanced reporting & analytics
+- ✅ Unlimited team members
+- ✅ Priority support
+- ✅ API access (1000 req/hour)
+
+### Enterprise Plan ($99/month)
+- ✅ Everything in Pro
+- ✅ **Agent Management** (17 AI agents)
+- ✅ Advanced agent automation
+- ✅ Custom integrations
+- ✅ Dedicated support
+- ✅ SLA guarantees
+- ✅ API access (10000 req/hour)
+- ✅ On-premise deployment option
+
+**Upgrade:** Settings → Billing → Change Plan
 
 ---
 
 **You're all set!** Start creating tasks, tracking time, and managing your workflow. For detailed feature documentation, see the [User Manual](USER_MANUAL.md).
 
 **Need help?** Press `?` anywhere in the app or check the User Manual for comprehensive guides.
+
+**Developers:** See User Manual → API Documentation for complete API reference and TypeScript client setup.

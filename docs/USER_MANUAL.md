@@ -889,6 +889,34 @@ Gigster Garage features 17 specialized AI agents that automate workflows across 
 
 ---
 
+### Agent Summary Table
+
+| Agent | Autonomy | Type | Tasks | API | Status |
+|-------|----------|------|-------|-----|--------|
+| **ITSA** | L0/L1 | Int/Ext | 4 | - | ✅ Ready |
+| **SSK** | L1 | Int/Ext | 3 | - | ⏳ CI integration |
+| **Planner** | L0/L1 | Int/Ext | 3 | - | ✅ Ready |
+| **Exec Orchestrator** | L0/L1 | Int/Ext | 3 | - | ⏳ Rollback hooks |
+| **Sentinel** | L0/L1 | Int/Ext | 3 | - | ✅ Ready |
+| **Ledger** | L0/L1 | Int/Ext | 3 | - | ✅ Ready |
+| **Helm** | L0/L1 | Internal | 2 | - | ✅ Active |
+| **Packsmith** | L0/L1 | Internal | 1 | ✅ | ✅ Active |
+| **iCadence** | L1 | Int/Ext | 2 | ✅ | ⏳ Sandbox |
+| **Customer Success** | L0/L1 | External | 1 | - | ✅ Ready |
+| **Experimenter** | L0/L1 | Internal | 1 | - | ✅ Active |
+| **Template Lib** | L0/L1 | Internal | 1 | - | ✅ Active |
+| **Importer** | L1 | Int/Ext | 2 | ✅ | ⏳ Wizard dev |
+| **Accessibility** | L0/L1 | Internal | 1 | - | ✅ Active |
+| **Evidence Archive** | L1 | Internal | 1 | - | ✅ Active |
+| **Review Miner** | L0/L1 | External | 1 | - | ⏳ Approval flow |
+| **SSO/Licensing** | L1 | Internal | 1 | - | ✅ Active |
+
+**Legend:**
+- **Autonomy**: L0 = Supervised, L1 = Semi-autonomous
+- **Type**: Int = Internal, Ext = External (user-facing), Int/Ext = Both
+- **API**: ✅ = Has REST API endpoints
+- **Status**: ✅ Ready/Active, ⏳ Pending/Development
+
 ### All Agents (17 Total)
 
 #### ITSA (Intake & Triage)
@@ -1674,6 +1702,39 @@ git push
 - Marks inactive issues/PRs stale after **30 days**
 - Auto-closes after **7 more days**
 - Exempts: `security`, `good first issue`, `pinned`
+
+#### Complete Package Structure
+
+The governed edition includes **30 files** organized for enterprise-grade automation:
+
+```
+@gigster-garage/api-client/
+├── src/index.ts                         # Client (22 endpoints)
+├── test/                                # Vitest scaffolds
+│   ├── packsmith.spec.ts
+│   ├── importer.spec.ts
+│   └── icadence.spec.ts
+├── .github/
+│   ├── workflows/                       # 9 automated workflows
+│   │   ├── ci.yml                       # Lint/test/build
+│   │   ├── release.yml                  # npm publish
+│   │   ├── release-please.yml           # Auto-version
+│   │   ├── docs-pages.yml               # GitHub Pages
+│   │   ├── codeql.yml                   # Security scan
+│   │   ├── release-gh-packages.yml      # GitHub Packages
+│   │   ├── auto-assign.yml              # Reviewer assign
+│   │   ├── automerge-release-pr.yml     # Release auto-merge
+│   │   └── stale.yml                    # Issue cleanup
+│   ├── ISSUE_TEMPLATE/                  # Issue templates
+│   ├── CODEOWNERS                       # Review requirements
+│   ├── PULL_REQUEST_TEMPLATE.md         # PR checklist
+│   └── auto_assign.yml                  # Assignment config
+├── CONTRIBUTING.md                      # Contributor guide
+├── SECURITY.md                          # Security policy
+├── PUBLISHING.md                        # Release guide
+├── README.md                            # Package readme
+└── Configuration files (6)              # npm, TS, TypeDoc, etc.
+```
 
 ---
 
