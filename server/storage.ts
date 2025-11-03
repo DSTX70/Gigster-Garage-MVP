@@ -2584,6 +2584,104 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return usage;
   }
+
+  // Agent operations
+  async getAgents(): Promise<Agent[]> {
+    return await db.select().from(agents).orderBy(agents.id);
+  }
+
+  async getAgent(id: string): Promise<Agent | undefined> {
+    const [agent] = await db.select().from(agents).where(eq(agents.id, id));
+    return agent;
+  }
+
+  async createAgent(insertAgent: InsertAgent): Promise<Agent> {
+    const [agent] = await db
+      .insert(agents)
+      .values(insertAgent)
+      .returning();
+    return agent;
+  }
+
+  async updateAgent(id: string, updateAgent: Partial<InsertAgent>): Promise<Agent | undefined> {
+    const [agent] = await db
+      .update(agents)
+      .set({ ...updateAgent, updatedAt: new Date() })
+      .where(eq(agents.id, id))
+      .returning();
+    return agent;
+  }
+
+  async deleteAgent(id: string): Promise<boolean> {
+    const result = await db.delete(agents).where(eq(agents.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Agent Visibility Flag operations
+  async getAgentVisibilityFlag(agentId: string): Promise<AgentVisibilityFlag | undefined> {
+    const [flag] = await db
+      .select()
+      .from(agentVisibilityFlags)
+      .where(eq(agentVisibilityFlags.agentId, agentId));
+    return flag;
+  }
+
+  async createAgentVisibilityFlag(insertFlag: InsertAgentVisibilityFlag): Promise<AgentVisibilityFlag> {
+    const [flag] = await db
+      .insert(agentVisibilityFlags)
+      .values(insertFlag)
+      .returning();
+    return flag;
+  }
+
+  async updateAgentVisibilityFlag(agentId: string, updateFlag: Partial<InsertAgentVisibilityFlag>): Promise<AgentVisibilityFlag | undefined> {
+    const [flag] = await db
+      .update(agentVisibilityFlags)
+      .set({ ...updateFlag, updatedAt: new Date() })
+      .where(eq(agentVisibilityFlags.agentId, agentId))
+      .returning();
+    return flag;
+  }
+
+  // Agent Graduation Plan operations
+  async getAgentGraduationPlans(): Promise<AgentGraduationPlan[]> {
+    return await db
+      .select()
+      .from(agentGraduationPlans)
+      .orderBy(agentGraduationPlans.targetDate);
+  }
+
+  async getAgentGraduationPlan(agentId: string): Promise<AgentGraduationPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(agentGraduationPlans)
+      .where(eq(agentGraduationPlans.agentId, agentId));
+    return plan;
+  }
+
+  async createAgentGraduationPlan(insertPlan: InsertAgentGraduationPlan): Promise<AgentGraduationPlan> {
+    const [plan] = await db
+      .insert(agentGraduationPlans)
+      .values(insertPlan)
+      .returning();
+    return plan;
+  }
+
+  async updateAgentGraduationPlan(id: string, updatePlan: Partial<InsertAgentGraduationPlan>): Promise<AgentGraduationPlan | undefined> {
+    const [plan] = await db
+      .update(agentGraduationPlans)
+      .set({ ...updatePlan, updatedAt: new Date() })
+      .where(eq(agentGraduationPlans.id, id))
+      .returning();
+    return plan;
+  }
+
+  async deleteAgentGraduationPlan(id: string): Promise<boolean> {
+    const result = await db
+      .delete(agentGraduationPlans)
+      .where(eq(agentGraduationPlans.id, id));
+    return result.rowCount > 0;
+  }
 }
 
 export const storage = new DatabaseStorage();
