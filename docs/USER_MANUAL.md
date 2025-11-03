@@ -847,14 +847,14 @@ Plans control access to:
 
 ### Overview
 
-View and manage internal system agents that power automation features.
+Gigster Garage features 17 specialized AI agents that automate workflows across the development lifecycle. Agents operate at different autonomy levels (L0 supervised, L1 semi-autonomous) and are governed by policy-based exposure rules.
 
 ### Agent Tabs
 
 #### 1. Overview
-- **All Agents**: Complete list
-- **Status**: Operational status
-- **Visibility**: Exposed to users
+- **All Agents**: Complete list of 17 agents
+- **Status**: Operational status (Green/Amber/Red)
+- **Visibility**: Exposed to users or internal-only
 - **Dashboard Card**: Widget enabled
 - **Target Tool**: External integration
 
@@ -866,21 +866,20 @@ View and manage internal system agents that power automation features.
 
 #### 3. Graduation Roadmap
 - **Phase**: Current development phase
-- **Target Tool**: Goal platform
+- **Target Tool**: Goal platform (Packsmith, iCadence, etc.)
 - **Target Date**: Expected graduation
 - **Criteria**: Requirements for promotion
 - **Owner**: Responsible team member
 
 #### 4. KPIs & Metrics
-- **On-Time Rate**: Milestone completion
-- **Gate Escape**: Quality metrics
-- **Incidents**: Error count (30 days)
-- **Status**: Green, Amber, Red
-- **Promotion**: Ready for advancement
+- **On-Time Rate**: Milestone completion percentage
+- **Gate Escape**: Quality control metrics
+- **Incidents**: Error count (30-day rolling)
+- **Status**: Green (good), Amber (warning), Red (critical)
+- **Promotion**: Ready for advancement indicator
 
 #### 5. Exposure Policy
-- **Policy-Based Governance**: L0/L1 autonomy levels
-- **7 Agents**: ITSA, SSK, Planner, Exec Orchestrator, Sentinel, Ledger, Helm
+- **Policy-Based Governance**: L0/L1 autonomy framework
 - **Policy Gates**: Required system implementations
   - `plan_enforcement`: ✅ Active
   - `privacy_center`: ✅ Active
@@ -888,44 +887,353 @@ View and manage internal system agents that power automation features.
   - `rate_limits`: ✅ Active
   - `rollback_hooks`: ⏳ Pending
 
-### Agent Details
+---
 
-Each agent card shows:
-- **Allowed Autonomy**: L0 (supervised) or L1 (semi-autonomous)
-- **Internal Actions**: Factory operations (backend)
-- **External Surfaces**: Customer-facing features (frontend)
-- **Requires Approval**: Actions needing human approval
-- **Exposure Rule**: Criteria for user exposure
-- **Promotion Criteria**:
-  - KPI thresholds (95% on-time, ≤1% gate escape, 0 incidents)
-  - Required policy gates
+### All Agents (17 Total)
+
+#### ITSA (Intake & Triage)
+**Autonomy**: L0/L1 | **Type**: Internal & External
+
+**Tasks**:
+1. **Segment Auto-Draft + Risk Heatmap** (Internal, L0/L1)
+   - Creates JSON summary with red/amber/green risk flags
+   - **Metric**: % intakes with all required assets on first pass
+   - **DoD**: Risk flags posted
+
+2. **Readiness Score** (Internal, L0/L1)
+   - Scores publish path, payments, and first channel (0-100 scale)
+   - **Metric**: Average readiness on first submission
+   - **DoD**: Score + gaps list
+
+3. **Pack/Pod Recommender** (Internal, L0/L1)
+   - Suggests packs with price deltas and DoD
+   - **Metric**: Attach rate within 7 days
+   - **DoD**: Options table with DoD per option
+
+4. **Client-Facing Intake Summary** (External, L0/L1)
+   - Shareable read-only summary page
+   - **Metric**: Client completion time to 'all assets present'
+   - **Exposure Rule**: When review_SLA_hours ≤ 24
+
+**Status**: ✅ Ready for promotion (all gates active)
+
+---
+
+#### SSK (Starter & Scaffold Kit)
+**Autonomy**: L1 | **Type**: Internal & External
+
+**Tasks**:
+1. **Inject Brand-Lock Tokens** (Internal, L1)
+   - Creates PR with brand tokens + Tailwind config
+   - **Metric**: CI 'brandlock' pass-rate
+   - **DoD**: PR with tokens applied
+
+2. **Scaffold Sanity Suite** (Internal, L1)
+   - Validates routes/env/guards in new scaffolds
+   - **Metric**: % scaffolds passing on first run
+   - **DoD**: Checklist green for scaffold
+
+3. **Starter Preview Diff** (External, L0/L1)
+   - Shows files/README before generation
+   - **Metric**: Preview→approve conversion rate
+   - **Exposure Rule**: When ci_preflight_pass_rate ≥ 0.95 && sentinel_checks_passed
+
+**Status**: ⏳ Awaiting CI integration
+
+---
+
+#### Planner (Evidence & DoD)
+**Autonomy**: L0/L1 | **Type**: Internal & External
+
+**Tasks**:
+1. **Evidence Pack Planner** (Internal, L0/L1)
+   - Adds evidence checklist to sprints
+   - **Metric**: % evidence captured by sprint end
+   - **DoD**: Checklist added to sprint
+
+2. **Risk Timers on DoD Items** (Internal, L0/L1)
+   - Creates auto-reminders for DoD items
+   - **Metric**: On-time DoD close rate
+   - **DoD**: Auto-reminders created
+
+3. **Client DoD Acknowledgement** (External, L0/L1)
+   - Captures client acknowledgement of deliverables
+   - **Metric**: Time from draft→acknowledgement
+   - **Exposure Rule**: When DoD_templates_locked
+
+**Status**: ✅ Ready for promotion
+
+---
+
+#### Exec Orchestrator (Runbooks & Releases)
+**Autonomy**: L0/L1 | **Type**: Internal & External
+
+**Tasks**:
+1. **Pre-Flight Blast Radius Estimator** (Internal, L0/L1)
+   - Estimates deployment impact before release
+   - **Metric**: % releases with rollback defined
+   - **DoD**: Pre-flight report attached
+
+2. **Staged Artifact Verifier** (Internal, L1)
+   - Validates artifact hashes and manifests
+   - **Metric**: Mismatch rate (~0 target)
+   - **DoD**: Manifest + hashes posted
+
+3. **Release Window Request** (External, L0/L1)
+   - Client-facing release scheduling (preview/request only)
+   - **Metric**: Approval turnaround time
+   - **Exposure Rule**: Preview/request only (no auto-deploy)
+
+**Status**: ⏳ Pending (needs rollback_hooks)
+
+---
+
+#### Sentinel (Security & Compliance)
+**Autonomy**: L0/L1 | **Type**: Internal & External
+
+**Tasks**:
+1. **Rate-Limit Coverage Audit** (Internal, L0/L1)
+   - Audits route groups for rate-limit coverage
+   - **Metric**: Coverage percentage
+   - **DoD**: Table of covered/uncovered routes
+
+2. **PII Finder Dry-Run** (Internal, L0/L1)
+   - Scans for PII issues, suggests PR fixes
+   - **Metric**: PII issues resolved per sprint
+   - **DoD**: Report + PR hints
+
+3. **Security Scorecard** (External, L0/L1)
+   - Read-only security scorecard for clients
+   - **Metric**: Client acknowledgements
+   - **Exposure Rule**: After privacy_center_live
+
+**Status**: ✅ Ready for promotion
+
+---
+
+#### Ledger (Budgets & Invoices)
+**Autonomy**: L0/L1 | **Type**: Internal & External
+
+**Tasks**:
+1. **Variance Commentator** (Internal, L0)
+   - Adds notes on budget vs. actuals variance
+   - **Metric**: Time-to-approve invoice
+   - **DoD**: Note added to snapshot
+
+2. **Cap-Breach Early Warning** (Internal, L1)
+   - Creates alerts when budgets approach limits
+   - **Metric**: Avoided cap breaches
+   - **DoD**: Alert task created
+
+3. **Draft Invoice Review** (External, L0/L1)
+   - Client-facing invoice review with 'needs change' feedback
+   - **Metric**: Revisions per invoice
+   - **Exposure Rule**: When plan_entitlements_enforced
+
+**Status**: ✅ Ready for promotion
+
+---
+
+#### Helm (Go-Live & Promotion)
+**Autonomy**: L0/L1 | **Type**: Internal
+
+**Tasks**:
+1. **What's Blocking Go-Live Compiler** (Internal, L0/L1)
+   - Compiles blockers list with owners and dates
+   - **Metric**: Blockers resolved <48h
+   - **DoD**: List with owners/dates
+
+2. **Promotion Readiness Report** (Internal, L0/L1)
+   - One-sheet with policy gaps for agent promotion
+   - **Metric**: Time from green→exposed
+   - **DoD**: One-sheet with policy gaps
+
+**Status**: ✅ Active
+
+---
+
+#### Packsmith (Pack Creation)
+**Autonomy**: L0/L1 | **Type**: Internal
+
+**Tasks**:
+1. **Create Pack Blueprint + Seed Tasks** (Internal, L0/L1)
+   - Generates blueprint.json and seeds initial tasks
+   - **Metric**: Time-to-first-value per pack
+   - **DoD**: Blueprint + seeded tasks
+
+**API**: `/api/packs/*` (see API Documentation section)
+
+**Status**: ✅ Active
+
+---
+
+#### iCadence Connector (Channel Management)
+**Autonomy**: L1 | **Type**: Internal & External
+
+**Tasks**:
+1. **Connect Channels + UTM Presets** (Internal, L1)
+   - Connects channels, stores UTM presets and spend logs
+   - **Metric**: % posts with valid UTM
+   - **DoD**: Channel connected, presets stored
+
+2. **Channel Connection Wizard** (External, L0/L1)
+   - Client-facing wizard for channel setup
+   - **Metric**: Channel connect rate
+   - **Exposure Rule**: When rate_limits && audit_ui live (sandbox)
+
+**API**: `/api/icadence/*` (see API Documentation section)
+
+**Status**: ⏳ Sandbox mode
+
+---
+
+#### Customer Success Desk
+**Autonomy**: L0/L1 | **Type**: External
+
+**Tasks**:
+1. **Status Feed + Gates + Invoice Drafts** (External, L0/L1)
+   - Read-only customer portal surface
+   - **Metric**: PM time saved, client satisfaction
+   - **Exposure Rule**: When plan_enforcement && privacy_center && audit_ui
+
+**Status**: ✅ Ready for promotion
+
+---
+
+#### Experimenter (A/B Testing)
+**Autonomy**: L0/L1 | **Type**: Internal
+
+**Tasks**:
+1. **1-Page Experiment Plan** (Internal, L0/L1)
+   - Creates plan.md + tracking params + tasks
+   - **Metric**: Time-to-decision, uplift delta
+   - **DoD**: plan.md + tasks created
+
+**Status**: ✅ Active
+
+---
+
+#### Template Librarian
+**Autonomy**: L0/L1 | **Type**: Internal
+
+**Tasks**:
+1. **Lint, Version, Publish Templates** (Internal, L0/L1)
+   - Manages canonical templates
+   - **Metric**: Template error rate
+   - **DoD**: Templates marked canonical & published
+
+**Status**: ✅ Active
+
+---
+
+#### Importer (Data Import)
+**Autonomy**: L1 | **Type**: Internal & External
+
+**Tasks**:
+1. **CSV/Sheets Mapping** (Internal, L1)
+   - Maps incoming data → staged import
+   - **Metric**: Import success rate
+   - **DoD**: Validated mapping + staged records
+
+2. **Client Upload Wizard** (External, L0/L1)
+   - Upload → mapping preview → pending import
+   - **Metric**: Average fix-time for bad rows
+   - **Exposure Rule**: When audit_ui && rate_limits
+
+**API**: `/api/import/*` (see API Documentation section)
+
+**Status**: ⏳ Wizard development
+
+---
+
+#### Accessibility Auditor (WCAG)
+**Autonomy**: L0/L1 | **Type**: Internal
+
+**Tasks**:
+1. **WCAG Lint + PR Hints** (Internal, L0/L1)
+   - Scans for accessibility issues
+   - **Metric**: Issues fixed per sprint, AA coverage
+   - **DoD**: AA report + suggested fixes
+
+**Status**: ✅ Active
+
+---
+
+#### Evidence Archivist
+**Autonomy**: L1 | **Type**: Internal
+
+**Tasks**:
+1. **Scoop Artifacts + Index** (Internal, L1)
+   - Collects artifacts, generates SHA256, creates zip + index
+   - **Metric**: Evidence completeness %
+   - **DoD**: evidence_{sprint}.zip + index.md
+
+**Status**: ✅ Active
+
+---
+
+#### Review Miner (Customer Feedback)
+**Autonomy**: L0/L1 | **Type**: External
+
+**Tasks**:
+1. **Post-Purchase Review Outreach** (External, L0/L1)
+   - Drafts review request emails
+   - **Metric**: Review velocity, response rate
+   - **Exposure Rule**: When rate_limits && audit_ui
+
+**Status**: ⏳ Pending approval workflow
+
+---
+
+#### SSO/Licensing Handshake
+**Autonomy**: L1 | **Type**: Internal
+
+**Tasks**:
+1. **Verify License JWT** (Internal, L1)
+   - Verifies license tokens, sets entitlements
+   - **Metric**: Entitlement errors/month, handshake latency
+   - **DoD**: License verified, entitlements set
+
+**Status**: ✅ Active
+
+---
 
 ### Promoting Agents
 
 1. Navigate to **Agent Management → Exposure Policy**
-2. Review agent card
+2. Review agent card for:
+   - Current autonomy level
+   - Required policy gates
+   - KPI metrics
+   - Exposure rules
 3. Check **Policy Badge**:
-   - ✅ Green "Policy Check: OK": All gates active
-   - ❌ Red "Policy Check: Missing": Gates pending
+   - ✅ Green "Policy Check: OK": All required gates active
+   - ❌ Red "Policy Check: Missing": Some gates pending
 4. If eligible, click **"Request Exposure"**
-5. Agent promoted to user-facing status
+5. Agent transitions to user-facing status
 
-### Agent Examples
+### Agent Status Summary
 
-**ITSA (Intake & Triage)**
-- **Purpose**: Parse requests, create tickets, route work
-- **Autonomy**: L0, L1
-- **Status**: Ready for promotion (all gates active)
+**Ready for Promotion (4 policy gates active)**:
+- ITSA
+- Planner
+- Sentinel
+- Ledger
+- Helm
+- Packsmith
+- Customer Success Desk
+- Experimenter
+- Template Librarian
+- Accessibility Auditor
+- Evidence Archivist
+- SSO/Licensing Handshake
 
-**Ledger (Budgets & Invoices)**
-- **Purpose**: Manage finances, create invoices
-- **Autonomy**: L0, L1
-- **Status**: Ready for promotion (all gates active)
-
-**Exec Orchestrator (Runbooks & Releases)**
-- **Purpose**: Deployment automation
-- **Autonomy**: L0, L1
-- **Status**: Pending (needs rollback_hooks)
+**Pending Development**:
+- Exec Orchestrator (needs rollback_hooks)
+- SSK (awaiting CI integration)
+- iCadence Connector (sandbox mode)
+- Importer (wizard development)
+- Review Miner (approval workflow)
 
 ---
 
