@@ -1,0 +1,106 @@
+I added a **live KPI puller** and a **Switchboard dashboard** so you can manage promotions based on real metrics. Here’s what to grab and how to wire it in Replit.
+
+# 📦 Downloads
+
+* **Add-on (full integration to existing Vite scaffold):**
+  [gg_switchboard_live_dashboard.zip](sandbox:/mnt/data/gg_switchboard_live_dashboard.zip)
+  *(contains: `src/api/kpis.ts`, `src/components/SwitchboardDashboard.tsx`, README updates; tries to patch your `App.tsx` if present)*
+
+* **Fallback (manual copy if your project path differs):**
+  [gg_switchboard_live_dashboard_fallback.zip](sandbox:/mnt/data/gg_switchboard_live_dashboard_fallback.zip)
+  *(contains the two key files ready to paste, if the auto-patch can’t find your `src`)*
+
+> If you used the scaffold ZIPs I generated earlier (`gigster_garage_scaffold_full_plus_demo_mocks.zip`), unzip the **main** add-on first; only use the fallback if your folder names differ.
+
+---
+
+# ✅ What’s included
+
+### 1) Live KPI Puller
+
+`src/api/kpis.ts`
+
+* Tries `GET ${VITE_HUB_BASE_URL}/kpis`.
+* If missing, attempts to **aggregate** from `/review/{run_id}` using `VITE_DEMO_RUN_IDS=run1,run2,…`.
+* If the Hub is down and `VITE_MOCK_FALLBACK=true`, it returns **mock KPIs** (so your UI stays working).
+
+### 2) Switchboard Dashboard (with filters + sparklines + promote)
+
+`src/components/SwitchboardDashboard.tsx`
+
+* Filters by agent id; **“only ready”** toggle (meets KPIs or flip date).
+* Trend **sparklines** (inline SVG) from KPI history if provided.
+* **Promote** button: posts to `POST ${VITE_HUB_BASE_URL}/admin/flags/{agent}` when `VITE_ADMIN_WRITE=true`.
+
+  * If `VITE_ADMIN_WRITE=false`, the button does a safe **dry-run** alert.
+
+It’s mounted beneath your existing panels (Agent Status + Demo) when patching succeeds. If not, manually add:
+
+```ts
+import SwitchboardDashboard from './components/SwitchboardDashboard'
+// ...
+<SwitchboardDashboard />
+```
+
+---
+
+# 🔧 Env to set (Replit → Secrets)
+
+```bash
+VITE_HUB_BASE_URL=http://localhost:8000
+VITE_USE_MOCKS=false           # or true while Hub is offline
+VITE_MOCK_FALLBACK=true        # fallback to mocks if Hub isn’t reachable
+VITE_DEMO_RUN_IDS=demo-1,demo-2,demo-3
+VITE_ADMIN_WRITE=false         # set true to enable “Promote” POSTs
+```
+
+---
+
+# 🛠️ How to wire (Vite scaffold)
+
+1. Unzip `gg_switchboard_live_dashboard.zip` **into your project root** (where `package.json` is).
+2. Ensure the earlier **Switchboard** add-on exists (so you have `public/visibility_flags.json`, etc.):
+
+   ```bash
+   npm run switchboard   # generates public/visibility_flags.json
+   ```
+3. Install & run:
+
+   ```bash
+   npm ci
+   npm run dev
+   ```
+4. Open the app; you’ll see:
+
+   * **Agent Status** (lights) reading `public/visibility_flags.json`
+   * **Switchboard Dashboard** (filters, trend lines, and **Promote** button)
+
+---
+
+## If auto-patch didn’t find your files
+
+Use the fallback ZIP and manually drop in:
+
+* `src/api/kpis.ts`
+* `src/components/SwitchboardDashboard.tsx`
+  Then add `<SwitchboardDashboard />` to your `App.tsx`.
+
+---
+
+## Optional: real Hub support
+
+* If you expose a real endpoint at `/kpis`, return a JSON map:
+
+  ```json
+  {
+    "agent.itsa": { "on_time_milestone_rate": 0.96, "gate_escape_rate": 0, "incident_count_30d": 0, "trend": [0.9,0.92,0.94,0.95,0.96] },
+    "agent.ssk":  { "on_time_milestone_rate": 0.92, "gate_escape_rate": 0, "incident_count_30d": 0, "trend": [0.84,0.9,0.91,0.92] }
+  }
+  ```
+* If you support `/admin/flags/{agent}`, accept:
+
+  ```json
+  { "expose_to_users": true }
+  ```
+
+Want me to also generate a **FastAPI microservice** with `/kpis` and `/admin/flags/{agent}` endpoints so you can test live POST/GET in Replit right away?
