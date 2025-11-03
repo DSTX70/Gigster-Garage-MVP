@@ -95,10 +95,18 @@ export default function AgentManagement() {
     const externalToolId = externalToolIds[agentId]?.trim() || undefined;
     
     try {
-      await apiRequest(`/api/agents/${agentId}/promote`, {
+      const response = await fetch(`/api/agents/${agentId}/promote`, {
         method: "POST",
+        credentials: "include",
+        headers: { 
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({}),
       });
+      
+      if (!response.ok) {
+        throw new Error(`Promotion failed: ${response.statusText}`);
+      }
       
       if (ADMIN_WRITE && import.meta.env.VITE_HUB_BASE_URL) {
         try {
@@ -517,7 +525,7 @@ export default function AgentManagement() {
                           </div>
                         </TableCell>
                         <TableCell className="text-foreground dark:text-foreground">
-                          {kpi ? (
+                          {kpi && kpi.onTimeMilestoneRate ? (
                             <span className="font-medium text-sm">
                               {(parseFloat(kpi.onTimeMilestoneRate) * 100).toFixed(1)}%
                             </span>
@@ -526,7 +534,7 @@ export default function AgentManagement() {
                           )}
                         </TableCell>
                         <TableCell className="text-foreground dark:text-foreground">
-                          {kpi ? (
+                          {kpi && kpi.gateEscapeRate ? (
                             <span className="font-medium text-sm">
                               {(parseFloat(kpi.gateEscapeRate) * 100).toFixed(2)}%
                             </span>
