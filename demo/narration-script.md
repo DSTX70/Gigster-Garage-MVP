@@ -14,8 +14,8 @@
 
 **On-screen Action:**
 - Navigate to login page
-- Type email: admin@gigster.com
-- Type password: admin123
+- Type email: demo@gigster.com
+- Type password: demo123
 - Click login button
 - Transition to dashboard
 
@@ -273,7 +273,7 @@
 
 ### Pre-Production
 - [ ] Server running and responsive
-- [ ] Demo account set up (admin@gigster.com)
+- [ ] Demo account set up (demo@gigster.com)
 - [ ] Sample data populated
 - [ ] Browser cache cleared
 - [ ] Screen resolution set (1920x1080)

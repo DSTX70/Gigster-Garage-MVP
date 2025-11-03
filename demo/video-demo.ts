@@ -85,11 +85,11 @@ const scenes: DemoScene[] = [
       frame = await waitWithCapture(page, 2000, frame);
       
       // Type email
-      frame = await typeWithCapture(page, 'input[data-testid="input-email"]', 'admin@gigster.com', frame);
+      frame = await typeWithCapture(page, 'input[data-testid="input-email"]', 'demo@gigster.com', frame);
       frame = await waitWithCapture(page, 500, frame);
       
       // Type password
-      frame = await typeWithCapture(page, 'input[data-testid="input-password"]', 'admin123', frame);
+      frame = await typeWithCapture(page, 'input[data-testid="input-password"]', 'demo123', frame);
       frame = await waitWithCapture(page, 500, frame);
       
       // Click login
