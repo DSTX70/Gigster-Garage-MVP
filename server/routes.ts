@@ -13,7 +13,7 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF, generateContractPDF, generatePresentationPDF } from "./pdfService";
-import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertPresentationSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema } from "@shared/schema";
+import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertPresentationSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema, insertAgentSchema, insertAgentVisibilityFlagSchema, insertAgentGraduationPlanSchema } from "@shared/schema";
 import { saveToFilingCabinet, fetchFromFilingCabinet } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
@@ -9072,6 +9072,245 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
     } catch (error: any) {
       console.error("Error updating user profile:", error);
       res.status(500).json({ message: error.message || "Failed to update profile" });
+    }
+  });
+
+  // Agent Management Routes
+  app.get("/api/agents", requireAdmin, async (req, res) => {
+    try {
+      const agents = await storage.getAgents();
+      
+      // Fetch visibility flags and graduation plans for each agent
+      const agentsWithDetails = await Promise.all(
+        agents.map(async (agent) => {
+          const visibilityFlag = await storage.getAgentVisibilityFlag(agent.id);
+          const graduationPlan = await storage.getAgentGraduationPlan(agent.id);
+          return {
+            ...agent,
+            visibilityFlag,
+            graduationPlan,
+          };
+        })
+      );
+      
+      res.json(agentsWithDetails);
+    } catch (error: any) {
+      console.error("Error fetching agents:", error);
+      res.status(500).json({ message: "Failed to fetch agents" });
+    }
+  });
+
+  app.get("/api/agents/:id", requireAdmin, async (req, res) => {
+    try {
+      const agent = await storage.getAgent(req.params.id);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      const visibilityFlag = await storage.getAgentVisibilityFlag(agent.id);
+      const graduationPlan = await storage.getAgentGraduationPlan(agent.id);
+      
+      res.json({
+        ...agent,
+        visibilityFlag,
+        graduationPlan,
+      });
+    } catch (error: any) {
+      console.error("Error fetching agent:", error);
+      res.status(500).json({ message: "Failed to fetch agent" });
+    }
+  });
+
+  app.post("/api/agents", requireAdmin, async (req, res) => {
+    try {
+      const agentData = insertAgentSchema.parse(req.body);
+      const agent = await storage.createAgent(agentData);
+      
+      await logAuditEvent(
+        req.session.user!.id,
+        "agent",
+        agent.id,
+        "agent_created",
+        {
+          agentId: agent.id,
+          name: agent.name,
+        }
+      );
+      
+      res.status(201).json(agent);
+    } catch (error: any) {
+      console.error("Error creating agent:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create agent" });
+    }
+  });
+
+  app.patch("/api/agents/:id", requireAdmin, async (req, res) => {
+    try {
+      const updateData = req.body;
+      const agent = await storage.updateAgent(req.params.id, updateData);
+      
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      await logAuditEvent(
+        req.session.user!.id,
+        "agent",
+        agent.id,
+        "agent_updated",
+        {
+          agentId: agent.id,
+          changes: updateData,
+        }
+      );
+      
+      res.json(agent);
+    } catch (error: any) {
+      console.error("Error updating agent:", error);
+      res.status(500).json({ message: "Failed to update agent" });
+    }
+  });
+
+  app.delete("/api/agents/:id", requireAdmin, async (req, res) => {
+    try {
+      const success = await storage.deleteAgent(req.params.id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      await logAuditEvent(
+        req.session.user!.id,
+        "agent",
+        req.params.id,
+        "agent_deleted",
+        {
+          agentId: req.params.id,
+        }
+      );
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting agent:", error);
+      res.status(500).json({ message: "Failed to delete agent" });
+    }
+  });
+
+  // Agent Visibility Flag Routes
+  app.patch("/api/agents/:id/visibility", requireAdmin, async (req, res) => {
+    try {
+      const { exposeToUsers, dashboardCard, externalToolId } = req.body;
+      
+      let visibilityFlag = await storage.getAgentVisibilityFlag(req.params.id);
+      
+      if (visibilityFlag) {
+        visibilityFlag = await storage.updateAgentVisibilityFlag(req.params.id, {
+          exposeToUsers,
+          dashboardCard,
+          externalToolId,
+        });
+      } else {
+        const flagData = insertAgentVisibilityFlagSchema.parse({
+          agentId: req.params.id,
+          exposeToUsers,
+          dashboardCard,
+          externalToolId,
+        });
+        visibilityFlag = await storage.createAgentVisibilityFlag(flagData);
+      }
+      
+      await logAuditEvent(
+        req.session.user!.id,
+        "agent",
+        req.params.id,
+        "agent_visibility_updated",
+        {
+          agentId: req.params.id,
+          exposeToUsers,
+          dashboardCard,
+          externalToolId,
+        }
+      );
+      
+      res.json(visibilityFlag);
+    } catch (error: any) {
+      console.error("Error updating agent visibility:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update visibility" });
+    }
+  });
+
+  // Agent Graduation Plan Routes
+  app.get("/api/agents/graduation-plans", requireAdmin, async (req, res) => {
+    try {
+      const plans = await storage.getAgentGraduationPlans();
+      res.json(plans);
+    } catch (error: any) {
+      console.error("Error fetching graduation plans:", error);
+      res.status(500).json({ message: "Failed to fetch graduation plans" });
+    }
+  });
+
+  app.post("/api/agents/:id/graduation-plan", requireAdmin, async (req, res) => {
+    try {
+      const planData = insertAgentGraduationPlanSchema.parse({
+        ...req.body,
+        agentId: req.params.id,
+      });
+      
+      const plan = await storage.createAgentGraduationPlan(planData);
+      
+      await logAuditEvent(
+        req.session.user!.id,
+        "agent",
+        req.params.id,
+        "graduation_plan_created",
+        {
+          agentId: req.params.id,
+          targetTool: plan.targetTool,
+          targetDate: plan.targetDate,
+        }
+      );
+      
+      res.status(201).json(plan);
+    } catch (error: any) {
+      console.error("Error creating graduation plan:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create graduation plan" });
+    }
+  });
+
+  app.patch("/api/agents/graduation-plans/:planId", requireAdmin, async (req, res) => {
+    try {
+      const updateData = req.body;
+      const plan = await storage.updateAgentGraduationPlan(req.params.planId, updateData);
+      
+      if (!plan) {
+        return res.status(404).json({ message: "Graduation plan not found" });
+      }
+      
+      await logAuditEvent(
+        req.session.user!.id,
+        "agent",
+        plan.agentId,
+        "graduation_plan_updated",
+        {
+          planId: req.params.planId,
+          changes: updateData,
+        }
+      );
+      
+      res.json(plan);
+    } catch (error: any) {
+      console.error("Error updating graduation plan:", error);
+      res.status(500).json({ message: "Failed to update graduation plan" });
     }
   });
 
