@@ -93,6 +93,7 @@ The application incorporates the Garage Navy branding with #004C6D and #0B1D3A a
 - **Invoice Builder**: Auto-fill functionality for company and client information.
 - **Task Management**: Advanced task features including priority levels, due dates, task assignments, notes, file attachments, URL links, intelligent reminder notifications, subtask hierarchies, and circular dependency prevention.
 - **Agent KPI Tracking**: Monitoring system with automated graduation tracking and real-time Hub API integration for status synchronization.
+- **Agent Exposure Policy**: Policy-based agent governance system with autonomy levels (L0/L1), exposure rules, and promotion criteria. Located at `policy/agent_exposure_policy.json` and displayed in Agent Management → Exposure Policy tab. Includes 7 agents (ITSA, SSK, Planner, Exec Orchestrator, Sentinel, Ledger, Helm) with defined internal actions, external surfaces, approval requirements, and policy gates. Agents can only be promoted when all required policy gates are active (plan_enforcement, privacy_center, audit_ui, rate_limits, rollback_hooks).
 - **Pricing & Feature Flags**: Environment-aware feature flags and a three-tier pricing comparison matrix.
 - **Notifications**: Email notifications (via SendGrid) for high-priority tasks and integrated SMS notifications (Twilio).
 - **User Management**: Multi-user authentication, role-based access, user onboarding, and an admin dashboard for user and task management.
