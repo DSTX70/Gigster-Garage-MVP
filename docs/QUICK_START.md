@@ -165,11 +165,13 @@ Always accessible from bottom-right:
 5. **Set Up Integrations**: Settings → Integrations
 
 ### Explore Advanced Features
-- **Workflow Automation**: Automate repetitive tasks
+- **Workflow Automation**: Automate repetitive tasks (Pro/Enterprise)
 - **Custom Fields**: Add fields specific to your workflow
-- **AI Content Generation**: Let AI draft proposals (Pro plan)
-- **Advanced Reporting**: Insights into productivity and revenue
+- **AI Content Generation**: Let AI draft proposals (Pro/Enterprise)
+- **Advanced Reporting**: Insights into productivity and revenue (Pro/Enterprise)
 - **Team Collaboration**: Real-time collaboration features
+- **Agent Management**: View 17 AI agents and their automation tasks (Admin)
+- **API Integration**: Use the TypeScript client for custom integrations
 
 ### Get Help
 - **User Manual**: See `USER_MANUAL.md` for comprehensive documentation
@@ -185,7 +187,7 @@ Always accessible from bottom-right:
 Settings → Account → Change Password
 
 ### How do I add team members?
-Settings → User Management → Add User
+Settings → User Management → Add User (Admin only)
 
 ### Can I customize the dashboard?
 Yes! Click the "Customize" button on the dashboard to add/remove widgets.
@@ -198,6 +200,12 @@ Check Settings → Account to see your current plan (Free/Pro/Enterprise)
 
 ### How do I enable AI features?
 AI features require a Pro or Enterprise plan. Upgrade in Settings → Billing.
+
+### What are agents?
+Agents are 17 specialized AI systems that automate workflows. Admins can view them in Agent Management.
+
+### How do I use the API?
+Install the TypeScript client: `npm install @gigster-garage/api-client`. See User Manual → API Documentation for details.
 
 ---
 
