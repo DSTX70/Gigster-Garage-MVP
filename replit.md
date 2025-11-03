@@ -51,6 +51,15 @@ The project uses:
 
 The application incorporates the Garage Navy branding with #004C6D and #0B1D3A as primary colors, applied consistently across components and pages. It features an enhanced invoice builder with auto-fill, a redesigned Workflow Automation page, and integrated Garage Assistant UI. Project dashboards include Kanban boards and Gantt chart timeline views, adapting to screen sizes.
 
+**Recent UI/UX Enhancements (November 2025):**
+- **Command Palette (Cmd+K/Ctrl+K)**: Global search and quick actions accessible from anywhere. Search tasks, projects, clients, invoices, and execute common actions without navigating. Features recent pages tracking and keyboard navigation.
+- **Settings/Preferences Page**: Centralized account management with 5 sections (Account, Notifications, Appearance, Integrations, Data). Includes password updates, notification preferences, quiet hours, timezone/date format customization, and data export.
+- **Keyboard Shortcuts Guide (?)**: Press '?' to view comprehensive keyboard shortcuts overlay with categorized shortcuts (General, Quick Actions, Navigation).
+- **Quick Action Button (FAB)**: Floating action button in bottom-right corner for instant access to common actions (New Task, Start Timer, Create Invoice, etc.) from any page.
+- **Offline Mode Indicator**: Automatic banner notification when internet connection is lost/restored, with clear messaging about data sync status.
+- **Empty States Component**: Reusable empty state component with icons, descriptions, and action buttons to guide users when lists/pages are empty.
+- **UX Polish**: Enhanced tooltips, loading states, keyboard accessibility, and improved visual feedback throughout the application.
+
 ### Feature Specifications
 
 - **Time Tracking**: Comprehensive time tracking with project allocation and productivity reporting.

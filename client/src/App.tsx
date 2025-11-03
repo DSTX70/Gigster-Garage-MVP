@@ -57,6 +57,11 @@ import PerformanceDashboard from "@/pages/performance-dashboard";
 import PayInvoice from "@/pages/pay-invoice";
 import PricingTable from "@/components/PricingTable";
 import AgentManagement from "@/pages/AgentManagement";
+import Settings from "@/pages/settings";
+import { CommandPalette } from "@/components/CommandPalette";
+import { KeyboardShortcutsGuide } from "@/components/KeyboardShortcutsGuide";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { QuickActionButton } from "@/components/QuickActionButton";
 
 // Mobile Pages
 import MobileHome from "@/pages/mobile-home";
@@ -166,6 +171,7 @@ function Router() {
       <Route path="/slack-integration" component={SlackIntegration} />
       <Route path="/performance-dashboard" component={PerformanceDashboard} />
       <Route path="/pricing" component={PricingTable} />
+      <Route path="/settings" component={Settings} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/agent-management" component={AgentManagement} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
@@ -183,6 +189,10 @@ function App() {
             <DemoModeStatusBar />
             <DemoModeBanner />
             <DemoSessionWarning />
+            <CommandPalette />
+            <KeyboardShortcutsGuide />
+            <OfflineIndicator />
+            <QuickActionButton />
             <Toaster />
             <Router />
           </TooltipProvider>
