@@ -379,6 +379,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const client = await storage.getClient(clientId);
     return client !== undefined; // Any authenticated user can access if it exists
   };
+  
+  // ========== PLAN ENFORCEMENT MIDDLEWARE ==========
+  // Import plan configuration (defined at top of file after imports)
+  
+  /**
+   * Middleware to check if user's plan allows access to a feature
+   * Returns 402 Payment Required if plan insufficient
+   */
+  const requirePlan = (minPlan: "free" | "pro" | "enterprise") => {
+    return (req: any, res: any, next: any) => {
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Admin always has access
+      if (user.role === 'admin') {
+        return next();
+      }
+      
+      const userPlan = user.plan || "free";
+      const planHierarchy = { free: 0, pro: 1, enterprise: 2 };
+      
+      if (planHierarchy[userPlan] >= planHierarchy[minPlan]) {
+        return next();
+      }
+      
+      return res.status(402).json({ 
+        error: "Plan upgrade required",
+        message: `This feature requires the ${minPlan} plan or higher`,
+        currentPlan: userPlan,
+        requiredPlan: minPlan,
+      });
+    };
+  };
+  
+  /**
+   * Check if user has access to a specific feature (with overrides)
+   * More granular than requirePlan - checks specific feature flags
+   */
+  const hasFeature = (user: any, feature: string): boolean => {
+    if (user.role === 'admin') return true;
+    
+    const plan = user.plan || "free";
+    const overrides = user.featuresOverride || {};
+    
+    // Check override first
+    if (overrides[feature] !== undefined) {
+      return overrides[feature];
+    }
+    
+    // Import from shared/plans.ts would go here
+    // For now, basic plan mapping
+    const planFeatures: Record<string, string[]> = {
+      free: [],
+      pro: ["workflow_automation", "ai_proposals", "advanced_reporting"],
+      enterprise: ["workflow_automation", "ai_proposals", "advanced_reporting", "sso", "custom_branding"],
+    };
+    
+    return planFeatures[plan]?.includes(feature) || false;
+  };
 
   // Error tracking endpoints for audit purposes (after session middleware)
   app.get('/api/_audit/errors/top', requireAdmin, (req, res) => {
@@ -6433,7 +6494,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   });
 
   // AI Proposal Generation Route
-  app.post("/api/ai/generate-proposal", requireAuth, async (req, res) => {
+  app.post("/api/ai/generate-proposal", requireAuth, requirePlan("pro"), async (req, res) => {
     try {
       const { projectTitle, clientName, projectDescription, totalBudget, timeline, scope, requirements } = req.body;
 
@@ -6511,7 +6572,7 @@ Make it professional, persuasive, and tailored to the client's needs. Use clear 
   });
 
   // AI Content Generation Route
-  app.post("/api/ai/generate-content", requireAuth, async (req, res) => {
+  app.post("/api/ai/generate-content", requireAuth, requirePlan("pro"), async (req, res) => {
     try {
       const { type, projectTitle, clientName, projectDescription, totalBudget, timeline, context } = req.body;
 
@@ -6799,7 +6860,7 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
     }
   });
 
-  app.post('/api/workflow-automations', requireAuth, async (req, res) => {
+  app.post('/api/workflow-automations', requireAuth, requirePlan("pro"), async (req, res) => {
     try {
       const workflowData = {
         ...req.body,
@@ -6907,7 +6968,7 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
     }
   });
 
-  app.post('/api/reports/generate', requireAuth, async (req, res) => {
+  app.post('/api/reports/generate', requireAuth, requirePlan("pro"), async (req, res) => {
     try {
       const { template, timeRange, filters } = req.body;
       

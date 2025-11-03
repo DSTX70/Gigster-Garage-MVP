@@ -47,6 +47,14 @@ The application implements a two-tier resource permission model:
 
 **Invoice Financial Calculations**: All invoice totals are recalculated server-side using `server/utils/invoice-calculations.ts` to prevent client-side tampering. Client-side calculations are display-only.
 
+**Plan Enforcement**: The application implements a three-tier pricing model (Free, Pro, Enterprise) with feature gating:
+- **Plan Tiers**: Defined in `shared/plans.ts` with specific feature entitlements and limits.
+- **Middleware**: `requirePlan(tier)` middleware enforces plan requirements on expensive endpoints.
+- **Protected Features**: AI content generation, workflow automation, advanced reporting require Pro+ plans.
+- **Database Fields**: Users table includes `plan`, `planExpiresAt`, and `featuresOverride` for custom entitlements.
+- **Admin Override**: Admins bypass all plan restrictions.
+- **Note**: Database migration pending - run `npm run db:push --force` to apply schema changes.
+
 ### Database Design
 
 The application uses PostgreSQL with Drizzle ORM, featuring:

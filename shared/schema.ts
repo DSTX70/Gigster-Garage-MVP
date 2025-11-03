@@ -63,6 +63,10 @@ export const users = pgTable("users", {
   isDemo: boolean("is_demo").default(false),
   demoSessionId: varchar("demo_session_id"),
   sessionExpiresAt: timestamp("session_expires_at"),
+  // Subscription plan fields
+  plan: varchar("plan", { enum: ["free", "pro", "enterprise"] }).default("free"),
+  planExpiresAt: timestamp("plan_expires_at"),
+  featuresOverride: jsonb("features_override").$type<Record<string, boolean>>(),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
