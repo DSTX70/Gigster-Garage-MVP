@@ -1,0 +1,233 @@
+{
+  "version": "0.1.0",
+  "updated": "2025-11-02",
+  "notes": "Internal vs External exposure rules for L0/L1 (human-in-the-loop). No L2 autonomy surfaces included.",
+  "autonomy_levels": ["L0", "L1"],
+  "agents": [
+    {
+      "id": "agent.itsa",
+      "name": "ITSA",
+      "title": "Intake & Triage",
+      "allowed_autonomy": ["L0", "L1"],
+      "internal_actions": [
+        "parse_request",
+        "segment_guess",
+        "recommend_packs_pods",
+        "flag_missing_assets_and_caps",
+        "create_intake_ticket",
+        "create_baseline_tasks",
+        "file_assets",
+        "route_to_pod_queue_pending"
+      ],
+      "external_surfaces": [
+        "guided_intake_form_preview",
+        "customer_intake_summary_readonly",
+        "dod_preview_readonly"
+      ],
+      "require_approval": [
+        "assign_billable_pod_sprint",
+        "change_plan_entitlements",
+        "send_external_emails"
+      ],
+      "exposure_rule": "Expose when review_SLA_hours <= 24",
+      "promotion_criteria": {
+        "kpi": {
+          "on_time_milestone_rate": ">=0.95",
+          "gate_escape_rate": "<=0.01",
+          "incident_count_30d": "=0"
+        },
+        "policy_gates": ["plan_enforcement", "privacy_center", "audit_ui"]
+      }
+    },
+    {
+      "id": "agent.ssk",
+      "name": "SSK",
+      "title": "Spec → Starter (Scaffolder)",
+      "allowed_autonomy": ["L0", "L1"],
+      "internal_actions": [
+        "propose_scaffold",
+        "propose_ci_gates",
+        "produce_starter_spec",
+        "generate_repo_scaffold_dev",
+        "add_ci_preflight",
+        "open_initial_pr"
+      ],
+      "external_surfaces": [
+        "starter_preview_filelist",
+        "sandbox_repo_pr_preview"
+      ],
+      "require_approval": [
+        "merge_protected_branches",
+        "enable_prod_envs",
+        "spend_external_services"
+      ],
+      "exposure_rule": "Expose when ci_preflight_pass_rate >= 0.95 AND sentinel_checks_passed=true",
+      "promotion_criteria": {
+        "kpi": {
+          "on_time_milestone_rate": ">=0.95",
+          "gate_escape_rate": "<=0.01",
+          "incident_count_30d": "=0"
+        },
+        "policy_gates": ["plan_enforcement", "rate_limits", "audit_ui"]
+      }
+    },
+    {
+      "id": "agent.planner",
+      "name": "Planner",
+      "title": "Milestones, DoD & Evidence",
+      "allowed_autonomy": ["L0", "L1"],
+      "internal_actions": [
+        "draft_milestones",
+        "draft_definition_of_done",
+        "identify_evidence_artifacts",
+        "create_milestone_tickets",
+        "link_checklists",
+        "set_kpi_baseline_tasks"
+      ],
+      "external_surfaces": [
+        "project_plan_readonly",
+        "dod_ack_readonly",
+        "evidence_upload_dropzone"
+      ],
+      "require_approval": [
+        "shift_dates_beyond_guardrails",
+        "scope_increase_affecting_spend"
+      ],
+      "exposure_rule": "Expose when DoD_templates_locked=true",
+      "promotion_criteria": {
+        "kpi": {
+          "on_time_milestone_rate": ">=0.95",
+          "gate_escape_rate": "<=0.01",
+          "incident_count_30d": "=0"
+        },
+        "policy_gates": ["plan_enforcement", "audit_ui"]
+      }
+    },
+    {
+      "id": "agent.exec_orchestrator",
+      "name": "Exec Orchestrator",
+      "title": "Runbooks & Releases (Guarded)",
+      "allowed_autonomy": ["L0", "L1"],
+      "internal_actions": [
+        "propose_runbook",
+        "propose_rollback_plan",
+        "stage_release_artifacts",
+        "generate_release_notes",
+        "dry_run_validations"
+      ],
+      "external_surfaces": [
+        "release_preview_readonly",
+        "request_release_window"
+      ],
+      "require_approval": [
+        "deploy_to_envs",
+        "flip_feature_flags_external",
+        "run_costly_external_actions"
+      ],
+      "exposure_rule": "Expose only as preview/request UI (no direct deploy)",
+      "promotion_criteria": {
+        "kpi": {
+          "on_time_milestone_rate": ">=0.95",
+          "gate_escape_rate": "<=0.01",
+          "incident_count_30d": "=0"
+        },
+        "policy_gates": ["rollback_hooks", "rate_limits", "audit_ui"]
+      }
+    },
+    {
+      "id": "agent.sentinel",
+      "name": "Sentinel",
+      "title": "Security & Policy Gates",
+      "allowed_autonomy": ["L0", "L1"],
+      "internal_actions": [
+        "policy_coverage_report",
+        "oss_license_scan",
+        "annotate_prs_with_findings",
+        "enable_non_destructive_protections_dev"
+      ],
+      "external_surfaces": [
+        "security_scorecard_readonly",
+        "policy_upload_and_status"
+      ],
+      "require_approval": [
+        "enable_breaking_gates_prod",
+        "rotate_secrets",
+        "block_endpoints"
+      ],
+      "exposure_rule": "Expose after privacy_center_live=true",
+      "promotion_criteria": {
+        "kpi": {
+          "on_time_milestone_rate": ">=0.95",
+          "gate_escape_rate": "<=0.01",
+          "incident_count_30d": "=0"
+        },
+        "policy_gates": ["privacy_center", "rate_limits", "audit_ui"]
+      }
+    },
+    {
+      "id": "agent.ledger",
+      "name": "Ledger",
+      "title": "Budgets, Invoices & KPIs",
+      "allowed_autonomy": ["L0", "L1"],
+      "internal_actions": [
+        "propose_budget_splits",
+        "compute_gm_snapshot",
+        "cap_warnings",
+        "create_draft_invoices",
+        "link_timelogs_and_expenses",
+        "post_finance_snapshot"
+      ],
+      "external_surfaces": [
+        "budget_progress_readonly",
+        "invoice_review_and_approval",
+        "billing_profile_update",
+        "statement_download"
+      ],
+      "require_approval": [
+        "send_invoices",
+        "refunds_or_credits",
+        "raise_budget_caps"
+      ],
+      "exposure_rule": "Expose when plan_entitlements_enforced=true",
+      "promotion_criteria": {
+        "kpi": {
+          "on_time_milestone_rate": ">=0.95",
+          "gate_escape_rate": "<=0.01",
+          "incident_count_30d": "=0"
+        },
+        "policy_gates": ["plan_enforcement", "rate_limits", "audit_ui"]
+      }
+    },
+    {
+      "id": "agent.helm",
+      "name": "Helm",
+      "title": "Orchestration (Coordinator)",
+      "allowed_autonomy": ["L0", "L1"],
+      "internal_actions": [
+        "propose_sprint_sequence",
+        "promotion_readiness_report",
+        "compile_weekly_status",
+        "log_decisions",
+        "trigger_cross_agent_dry_runs"
+      ],
+      "external_surfaces": [
+        "status_hub_readonly",
+        "gate_approvals",
+        "schedule_windows"
+      ],
+      "require_approval": [
+        "promote_expose_to_users",
+        "cross_agent_actions_spend"
+      ],
+      "exposure_rule": "Expose when gate_approvals_wired_to_policy=true",
+      "promotion_criteria": {
+        "kpi": {
+          "on_time_milestone_rate": ">=0.95",
+          "gate_escape_rate": "<=0.01",
+          "incident_count_30d": "=0"
+        },
+        "policy_gates": ["plan_enforcement", "rate_limits", "audit_ui"]
+      }
+    }
+  ]
+}

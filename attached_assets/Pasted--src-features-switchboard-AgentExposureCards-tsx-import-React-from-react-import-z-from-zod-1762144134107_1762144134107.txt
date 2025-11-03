@@ -1,0 +1,236 @@
+// src/features/switchboard/AgentExposureCards.tsx
+import React from "react";
+import { z } from "zod";
+
+/** ──────────────────────────────────────────────────────────────────────────
+ * Zod Schema (tiny, strict enough for our use)
+ * ────────────────────────────────────────────────────────────────────────── */
+const ZPromotion = z.object({
+  kpi: z.record(z.string()).optional(),
+  policy_gates: z.array(z.string()).optional(),
+});
+
+const ZAgent = z.object({
+  id: z.string(),
+  name: z.string(),
+  title: z.string().optional(),
+  allowed_autonomy: z.array(z.enum(["L0", "L1"])),
+  internal_actions: z.array(z.string()),
+  external_surfaces: z.array(z.string()),
+  require_approval: z.array(z.string()),
+  exposure_rule: z.string(),
+  promotion_criteria: ZPromotion
+});
+
+const ZPolicy = z.object({
+  version: z.string(),
+  updated: z.string(),
+  agents: z.array(ZAgent)
+});
+
+export type Policy = z.infer<typeof ZPolicy>;
+export type PolicyAgent = z.infer<typeof ZAgent>;
+
+type AgentFlags = {
+  enabled: boolean;
+  expose_to_users: boolean;
+  external_tool_id: string | null;
+  status: "green" | "amber" | "red";
+  updated: string;
+};
+type FlagsResponse = { agents: Record<string, AgentFlags> };
+
+/** Status dot */
+function statusDot(s?: "green" | "amber" | "red") {
+  switch (s) {
+    case "green": return "bg-green-500";
+    case "amber": return "bg-amber-500";
+    case "red": return "bg-red-500";
+    default: return "bg-gray-300";
+  }
+}
+
+/** Compute missing gates for an agent given currently active gates */
+function getMissingGates(agent: PolicyAgent, activePolicyGates: string[]): string[] {
+  const required = agent.promotion_criteria.policy_gates ?? [];
+  const active = new Set(activePolicyGates || []);
+  return required.filter(g => !active.has(g));
+}
+
+/** Badge: green if all gates present; red if any missing */
+function PolicyBadge({ missing }: { missing: string[] }) {
+  const ok = missing.length === 0;
+  return (
+    <span
+      className={
+        "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border " +
+        (ok
+          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+          : "bg-red-50 text-red-700 border-red-200")
+      }
+      title={
+        ok
+          ? "All required promotion gates present"
+          : `Missing gates: ${missing.join(", ")}`
+      }
+    >
+      {ok ? "Policy Check: OK" : "Policy Check: Missing"}
+    </span>
+  );
+}
+
+export default function AgentExposureCards({
+  policy,
+  flags,
+  activePolicyGates = [],
+  onPromote
+}: {
+  /** Raw JSON loaded from /policy/agent_exposure_policy.json */
+  policy: unknown;
+  /** Optional current flags (/flags or /visibility_flags.json) */
+  flags?: FlagsResponse;
+  /** e.g., ["plan_enforcement","privacy_center","audit_ui"] */
+  activePolicyGates?: string[];
+  /** Optional promote handler */
+  onPromote?: (agentId: string) => Promise<void> | void;
+}) {
+  // Validate policy JSON (throws a readable error if invalid)
+  const parsed = ZPolicy.safeParse(policy);
+  if (!parsed.success) {
+    return (
+      <div className="p-4 rounded-lg border bg-red-50 text-red-700 text-sm">
+        Policy JSON failed validation. Please fix <code>agent_exposure_policy.json</code>.<br/>
+        <pre className="mt-2 whitespace-pre-wrap text-xs">
+{JSON.stringify(parsed.error.format(), null, 2)}
+        </pre>
+      </div>
+    );
+  }
+  const validPolicy = parsed.data;
+
+  const map = new Map(validPolicy.agents.map(a => [a.id, a]));
+  const ids = validPolicy.agents.map(a => a.id);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {ids.map((id) => {
+        const pa = map.get(id)!;
+        const f = flags?.agents?.[id];
+        const exposed = !!f?.expose_to_users;
+        const s = f?.status;
+        const missingGates = getMissingGates(pa, activePolicyGates);
+
+        return (
+          <div key={id} className="rounded-2xl border shadow-sm bg-white overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+              <div className="flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${statusDot(s)}`} />
+                <div>
+                  <div className="text-sm font-semibold">{pa.name}{pa.title ? ` — ${pa.title}` : ""}</div>
+                  <div className="text-xs text-gray-500">{id}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <PolicyBadge missing={missingGates} />
+                <span className={`text-xs px-2 py-1 rounded-full border ${exposed ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-700 border-gray-200"}`}>
+                  {exposed ? "Exposed to users" : "Internal only"}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <section>
+                <div className="text-xs font-semibold text-gray-600 mb-1">Allowed Autonomy</div>
+                <div className="flex flex-wrap gap-2">
+                  {pa.allowed_autonomy.map(l => (
+                    <span key={l} className="px-2 py-1 text-xs rounded-full border bg-gray-50">{l}</span>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <div className="text-xs font-semibold text-gray-600 mb-1">Internal (factory)</div>
+                <ul className="list-disc ml-5 text-sm text-gray-800 space-y-1">
+                  {pa.internal_actions.map(a => <li key={a}>{a.replaceAll("_"," ")}</li>)}
+                </ul>
+              </section>
+
+              <section>
+                <div className="text-xs font-semibold text-gray-600 mb-1">External (customer-facing surfaces)</div>
+                <ul className="list-disc ml-5 text-sm text-gray-800 space-y-1">
+                  {pa.external_surfaces.map(a => <li key={a}>{a.replaceAll("_"," ")}</li>)}
+                </ul>
+              </section>
+
+              <section>
+                <div className="text-xs font-semibold text-gray-600 mb-1">Requires Approval</div>
+                <ul className="list-disc ml-5 text-sm text-gray-800 space-y-1">
+                  {pa.require_approval.map(a => <li key={a}>{a.replaceAll("_"," ")}</li>)}
+                </ul>
+              </section>
+
+              <section className="text-sm">
+                <div className="text-xs font-semibold text-gray-600 mb-1">Exposure Rule</div>
+                <div className="text-gray-800">{pa.exposure_rule}</div>
+              </section>
+
+              <section className="text-sm">
+                <div className="text-xs font-semibold text-gray-600 mb-1">Promotion Criteria</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">KPI</div>
+                    <ul className="list-disc ml-5 text-sm">
+                      {Object.entries(pa.promotion_criteria.kpi || {}).map(([k,v]) => (
+                        <li key={k}><span className="font-mono">{k}</span> {v}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Policy Gates</div>
+                    <div className="flex flex-wrap gap-1">
+                      {(pa.promotion_criteria.policy_gates || []).map(g => (
+                        <span key={g} className={
+                          "px-2 py-0.5 text-xs rounded-full border " +
+                          (missingGates.includes(g) ? "bg-red-50 text-red-700 border-red-200" : "bg-gray-50")
+                        }>
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="text-xs text-gray-500">
+                  Updated: {f?.updated ? new Date(f.updated).toLocaleString() : "—"}
+                </div>
+                <div className="flex items-center gap-2">
+                  {onPromote && !exposed && missingGates.length === 0 && (
+                    <button
+                      onClick={() => onPromote(id)}
+                      className="px-3 py-1.5 text-sm rounded-lg border hover:bg-gray-50"
+                      title="Request exposure (all required gates present)"
+                    >
+                      Request Exposure
+                    </button>
+                  )}
+                  {onPromote && !exposed && missingGates.length > 0 && (
+                    <button
+                      disabled
+                      className="px-3 py-1.5 text-sm rounded-lg border bg-gray-100 text-gray-400 cursor-not-allowed"
+                      title={`Resolve missing gates first: ${missingGates.join(", ")}`}
+                    >
+                      Resolve Gates
+                    </button>
+                  )}
+                  {exposed && <span className="text-xs text-emerald-700">Live (read-only surfaces)</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
