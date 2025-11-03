@@ -1,0 +1,11 @@
+Scope,Status,Notes
+Positioning & Plans,⚠️ Partial,Plans/UI exist; enforce entitlements on server; upsell attach flow to checkout.
+Core System,⚠️ Partial,CRM/Invoices/Analytics/Templates solid; Storefront/public catalog thin.
+Agent Packs (5 named),🚫 Missing,Create /api/packs; seed 5 packs w/ DoD and UI cards.
+Pods (5) + DoD,⚠️ Partial,Add Pods marketplace; sprint DoD; billing tie-in.
+Autonomy & Policy,⚠️ Partial,Central policy model; Mirror-Backs panel; budget caps enforced.
+Onboarding & Intake,⚠️ Partial,Go-Live wizard (7–14d); segment kits; route to Pods.
+"Integrations (iCadence, vSuite, P&P)",⚠️ Partial,Channels/UTMs; license handshake; signed webhooks.
+Impact Track,🚫 Missing,Models for subsidies & uplift; intake toggle + reporting.
+Telemetry & Metrics,⚠️ Partial,Define lifecycle events; attach-rate; basic ROAS.
+Security & Compliance,⚠️ Partial,Rate limits; privacy center; CSRF/CORS tighten; audit ✅ strong.

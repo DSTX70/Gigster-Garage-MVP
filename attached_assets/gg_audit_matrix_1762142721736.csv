@@ -1,0 +1,46 @@
+Feature,Status,Evidence,Explanation,Issues,Recommendations
+Time Tracking,⚠️ Partial,"server time APIs (start/stop/get…), analytics endpoints; UI widgets (timer, import dialog)",Core endpoints + summaries exist; approvals/invoice linking coded.,No desktop 'approve+bulk add to invoice' path; permissions not enforced on all lists.,Add Review & Approve table; lock edits by role; bulk 'Add to Invoice' action in desktop.
+Workflow Automation,⚠️ Partial,workflowRules/workflowExecutions tables; routes for CRUD/execute,CRUD+execute present; visual builder unclear.,No drag-drop UI; background runner for events limited.,Ship node/edge rule canvas; subscribe task/issue events; retries & dead-letter queue.
+AI Content Generation,⚠️ Partial,AI routes (generate-proposal/content); agency endpoints,Endpoints robust; depends on OpenAI keys.,No rate limits/cost guards; error UX thin.,Add quotas/tokens meter; queue long jobs; surface failures gracefully.
+Invoice Builder,⚠️ Partial,"invoices CRUD, PDF, send, payment links; Stripe webhook",Full flow coded; Stripe config required.,Duplicate send variants; totals calc scattered; status transitions inconsistent.,Consolidate send; centralize totals; sandbox toggle; refund/cancel hooks; status chips.
+Task Management,✅ Working,"tasks schema (priority, deps, subtasks), routes, bulk ops",CRUD + deps + bulk + UI lists/grids present.,No dependency graph visual.,Add graph view; SLA/overdue badges; quick-assign; keyboard triage.
+Agent KPI & Graduation,⚠️ Partial,agentKpis/visibility flags; switchboard service; admin routes,Backend complete; UI exposure flags present.,No trend charts; audits not surfaced in UI.,Add KPI line charts; promotion audit drawer; criteria editor.
+Pricing & Feature Flags,⚠️ Partial,PricingTable component; env flags,UI present; server-side gating light.,Features accessible regardless of tier.,Middleware to enforce plan; attach plan to user; tests.
+Notifications (email/SMS),⚠️ Partial,smartNotificationsService; SendGrid/Twilio hooks,Framework exists; keys needed.,No delivery dashboard; no retries.,Outbox + status UI; queue with retries/backoff.
+User Management & RBAC,✅ Working,auth routes; permissions-service; audits,Admin-only routes guarded; user CRUD ok.,Some routes rely only on requireAuth.,Expand requirePermission coverage; impersonation audit.
+Command Palette,✅ Working,CommandPalette.tsx; /api/search,Searchable commands functional.,Relevance basic; no recency weighting.,Boost based on recent/frequent; keyboard hints.
+Settings/Preferences,✅ Working,settings page; onboarding route,Core preferences in place.,Missing data export/danger zone.,Add export/delete data; danger zone.
+Keyboard Shortcuts Guide,✅ Working,KeyboardShortcutsGuide.tsx,Guide visible.,,
+Quick Action FAB,✅ Working,QuickActionButton.tsx,Creates common items quickly.,,
+Offline Indicator,✅ Working,OfflineIndicator.tsx,Network status reflected.,,
+Empty States,✅ Working,EmptyState.tsx,Helpful blank slates.,,
+Proposals,✅ Working,proposals routes; PDF; share links; email,End-to-end flow works.,Template vs form-builder drift risk.,One canonical generator; versioning banner.
+Contracts,⚠️ Partial,contracts routes with statuses,Lifecycle modeled.,No e-sign provider hooked; status polling manual.,Integrate DocuSign/Dropbox Sign; webhooks for status.
+Presentations,✅ Working,presentations routes; PDF; filing save,Slides lifecycle intact.,,
+Clients & Filing Cabinet (docs),✅ Working,clients + client-documents routes; search/facets,CRUD + search good.,Bulk download not implemented.,ZIP bundler + progress UI.
+Payments & Links,⚠️ Partial,public invoice link; Stripe; payments API,Core payment path present.,Expired-link UX; hardcoded USD.,Expired UX; multi-currency; test hooks.
+Search (global),✅ Working,api/search joins/fuzzy,Cross-entity search functional.,,
+Analytics (productivity/tasks),✅ Working,analytics routes; charts,KPIs viewable.,,
+Advanced Reporting,⚠️ Partial,advanced-reporting service; /api/reports,Reports exist.,Heavy queries; synchronous rendering.,Async jobs + cache; CSV/PDF export queue.
+Predictive Analytics,⚠️ Partial,predictive-analytics routes,Endpoints present.,Model provenance/governance unspecified.,Model cards; input/output logging.
+Smart Scheduling,⚠️ Partial,smart-scheduling API,Compute exists.,No calendar GUI/undo.,Calendar grid + apply preview; conflict resolver.
+SSO,⚠️ Partial,sso routes; SAML metadata,Scaffolded.,Setup UI absent; keys/domains required.,Admin wizard; test harness.
+Permissions (fine-grained),⚠️ Partial,permissions-service; some route guards,Policy present.,Inconsistent enforcement.,Audit all routes; policy map; tests.
+Audit Logging & Compliance,✅ Working,audit export & compliance reports,Strong backbone.,,
+Backup & Recovery,⚠️ Partial,backup-service; /api/backup,Backups configurable.,Restore flows not exposed.,Restore wizard + dry-run.
+Internationalization,⚠️ Partial,i18n routes; cache; stats; export,Server side ok.,Frontend keys unverified; pluralization gaps.,Extract keys; locale switcher; ICU tests.
+White-Label/Multi-Tenant,⚠️ Partial,tenants API; CSS generator; domain resolver,Multi-tenant basics.,Asset theming/storage segregation unclear.,Per-tenant buckets; theme tokens; preview.
+Webhooks & Integrations,⚠️ Partial,webhook-service; webhooks API; Slack mock,Framework exists.,Retries/DLQ missing; Slack mocked.,Persist deliveries; retry policy; templates.
+Inbound Email,⚠️ Partial,inbound-email endpoint; messages API,Parsing path exists.,UA brittle; multipart simplified; attachments limited.,Verified signatures; robust multipart; AV scan.
+Mobile API,✅ Working,mobile endpoints with pagination/filters; mobile pages,Mobile-ready endpoints.,,
+Performance & Monitoring,✅ Working,perf middleware; error tracker; perf API,Observability in place.,,
+Cache Layer,✅ Working,cache-service; TTL on routes; flush/invalidate,Cache controls functional.,,
+CDN Controls,⚠️ Partial,cdn-service; cdn API,Interface present.,Provider not wired; metrics mocked.,Bind Cloudflare/Fastly; auth/purge keys.
+Database Optimizer,⚠️ Partial,database-optimizer; /api/database,Maintenance/indices helpers.,Safety checks unclear.,Explain plan UI; safe-mode approvals.
+Load Balancer (simulated),⚠️ Partial,load-balancer API,Simulation endpoints.,Not connected to infra.,Gate behind 'lab mode'; label clearly.
+Agency Hub,⚠️ Partial,agency routes; OpenAI deps; filing save,Create/write/promote present.,Image storage path presumes bucket; error paths thin.,Persist to storage; signed URLs; quotas/cost controls.
+Templates (system-wide),✅ Working,templates API; variable/form mapping,Template system functional.,,
+CSV Import/Export,⚠️ Partial,import/export APIs,I/O present.,Memory upload; no schema mapping UI.,Column-mapper UI; background jobs; error rows.
+Calendar Export (iCal),✅ Working,calendar/export (ICS),iCal output OK.,,
+Filing Cabinet (objects+ACL),⚠️ Partial,object storage helpers; public/private routes,ACL checks exist.,Filesystem/bucket mix; no AV; MIME lax on serve.,Centralize provider; AV scan; strict content-type.
+Brand-Lock / Tokens,⚠️ Partial,branding tokens referenced across UI,Brand-lock present conceptually.,No single token source; drift risk.,design-tokens.json + Tailwind plugin + visual spec tests.
