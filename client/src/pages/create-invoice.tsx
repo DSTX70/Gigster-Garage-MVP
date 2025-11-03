@@ -91,6 +91,9 @@ export default function CreateInvoice() {
     }));
   };
 
+  // NOTE: These client-side calculations are for PREVIEW/DISPLAY only
+  // The server will RECALCULATE and VALIDATE all totals before saving
+  // See: server/utils/invoice-calculations.ts for the authoritative calculation logic
   const getSubtotal = () => {
     return lineItems.reduce((total, item) => total + (item.amount || 0), 0);
   };

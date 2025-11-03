@@ -14,6 +14,7 @@ import { storage } from "./storage";
 import { sendHighPriorityTaskNotification, sendSMSNotification, sendProposalEmail, sendInvoiceEmail, sendMessageAsEmail, parseInboundEmail } from "./emailService";
 import { generateInvoicePDF, generateProposalPDF, generateContractPDF, generatePresentationPDF } from "./pdfService";
 import { taskSchema, insertTaskSchema, insertProjectSchema, insertTemplateSchema, insertProposalSchema, insertClientSchema, insertClientDocumentSchema, insertInvoiceSchema, insertPaymentSchema, insertContractSchema, insertPresentationSchema, insertUserSchema, onboardingSchema, updateTaskSchema, updateTemplateSchema, updateProposalSchema, updateTimeLogSchema, startTimerSchema, stopTimerSchema, generateProposalSchema, sendProposalSchema, directProposalSchema, insertMessageSchema, insertAgentSchema, insertAgentVisibilityFlagSchema, insertAgentGraduationPlanSchema } from "@shared/schema";
+import { calculateInvoiceTotals, validateInvoiceTotals, calculateBalanceDue } from "./utils/invoice-calculations";
 import { saveToFilingCabinet, fetchFromFilingCabinet } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import type { User } from "@shared/schema";
@@ -3431,6 +3432,34 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
   // Invoice Management Endpoints
   
+  // Calculate invoice totals (validation endpoint)
+  app.post("/api/invoices/calculate", requireAuth, async (req, res) => {
+    try {
+      const { lineItems, taxRate, discountAmount } = req.body;
+      
+      if (!Array.isArray(lineItems)) {
+        return res.status(400).json({ error: "lineItems must be an array" });
+      }
+      
+      const calculated = calculateInvoiceTotals({
+        lineItems,
+        taxRate: taxRate || 0,
+        discountAmount: discountAmount || 0,
+      });
+      
+      res.json({
+        success: true,
+        ...calculated,
+      });
+    } catch (error) {
+      console.error("Invoice calculation error:", error);
+      res.status(400).json({ 
+        error: "Invoice calculation failed", 
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
   // Create draft invoice
   app.post("/api/invoices", requireAuth, async (req, res) => {
     try {
@@ -3438,6 +3467,30 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       
       // Sanitize foreign key fields to prevent empty string constraint violations
       const normalizedInvoiceData = sanitizeForeignKeys(invoiceData, ['projectId', 'clientId', 'proposalId']);
+
+      // RECALCULATE TOTALS ON SERVER to ensure accuracy
+      if (normalizedInvoiceData.lineItems && Array.isArray(normalizedInvoiceData.lineItems)) {
+        try {
+          const calculatedTotals = calculateInvoiceTotals({
+            lineItems: normalizedInvoiceData.lineItems as any[],
+            taxRate: normalizedInvoiceData.taxRate || 0,
+            discountAmount: normalizedInvoiceData.discountAmount || 0,
+          });
+          
+          // Override client-provided totals with server-calculated values
+          normalizedInvoiceData.subtotal = calculatedTotals.subtotal;
+          normalizedInvoiceData.taxAmount = calculatedTotals.taxAmount;
+          normalizedInvoiceData.totalAmount = calculatedTotals.totalAmount;
+          normalizedInvoiceData.discountAmount = calculatedTotals.discountAmount;
+          normalizedInvoiceData.balanceDue = calculatedTotals.totalAmount; // Initial balance = total
+        } catch (calcError) {
+          console.error("Invoice calculation error during creation:", calcError);
+          return res.status(400).json({ 
+            error: "Invalid invoice calculations", 
+            details: calcError instanceof Error ? calcError.message : "Unknown error"
+          });
+        }
+      }
 
       // Ensure status is draft for new invoices
       const draftInvoice = {
@@ -3962,15 +4015,26 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       // Sanitize foreign key fields to prevent empty string constraint violations
       const sanitizedUpdateData = sanitizeForeignKeys(updateData, ['projectId', 'clientId', 'proposalId']);
       
-      // Calculate totals if line items are updated
+      // Calculate totals if line items are updated (CENTRALIZED CALCULATION)
       if (sanitizedUpdateData.lineItems) {
-        const subtotal = Array.isArray(sanitizedUpdateData.lineItems) ? sanitizedUpdateData.lineItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0) : 0;
-        const taxAmount = subtotal * Number(sanitizedUpdateData.taxRate || invoice.taxRate || 0) / 100;
-        const totalAmount = subtotal + taxAmount - Number(sanitizedUpdateData.discountAmount || 0);
-        
-        sanitizedUpdateData.subtotal = subtotal.toString();
-        sanitizedUpdateData.taxAmount = taxAmount.toString();
-        sanitizedUpdateData.totalAmount = totalAmount.toString();
+        try {
+          const calculatedTotals = calculateInvoiceTotals({
+            lineItems: sanitizedUpdateData.lineItems as any[],
+            taxRate: sanitizedUpdateData.taxRate || invoice.taxRate || 0,
+            discountAmount: sanitizedUpdateData.discountAmount || 0,
+          });
+          
+          sanitizedUpdateData.subtotal = calculatedTotals.subtotal;
+          sanitizedUpdateData.taxAmount = calculatedTotals.taxAmount;
+          sanitizedUpdateData.totalAmount = calculatedTotals.totalAmount;
+          sanitizedUpdateData.discountAmount = calculatedTotals.discountAmount;
+        } catch (calcError) {
+          console.error("Invoice calculation error:", calcError);
+          return res.status(400).json({ 
+            error: "Invalid invoice calculations", 
+            details: calcError instanceof Error ? calcError.message : "Unknown error"
+          });
+        }
       }
 
       const updatedInvoice = await storage.updateInvoice(req.params.id, sanitizedUpdateData, req.session.user!.id);
@@ -5062,12 +5126,12 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         const invoice = await storage.getInvoice(payment.invoiceId);
         if (invoice) {
           const totalPaid = parseFloat(invoice.amountPaid || "0") + parseFloat(payment.amount);
-          const balanceDue = parseFloat(invoice.totalAmount || "0") - totalPaid;
-          const status = balanceDue <= 0 ? "paid" : "sent";
+          const balanceDue = calculateBalanceDue(invoice.totalAmount || "0", totalPaid.toString());
+          const status = parseFloat(balanceDue) <= 0 ? "paid" : "sent";
           
           await storage.updateInvoice(payment.invoiceId, {
             amountPaid: totalPaid.toFixed(2),
-            balanceDue: balanceDue.toFixed(2),
+            balanceDue: balanceDue,
             status: status,
             paidAt: balanceDue <= 0 ? new Date() : invoice.paidAt
           });
