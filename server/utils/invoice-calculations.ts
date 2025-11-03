@@ -56,19 +56,24 @@ export function calculateInvoiceTotals(input: InvoiceCalculationInput): InvoiceC
   }
 
   // Calculate subtotal from line items
-  // Use reduce with proper number conversion
+  // SECURITY: Calculate from quantity * rate, NEVER trust client-provided amount
   const subtotalRaw = input.lineItems.reduce((sum, item) => {
     const quantity = Number(item.quantity) || 0;
     const rate = Number(item.rate) || 0;
-    const amount = Number(item.amount) || 0;
-
-    // Validate line item amounts match quantity * rate
-    const expectedAmount = roundTo2Decimals(quantity * rate);
-    if (Math.abs(amount - expectedAmount) > 0.01) {
-      console.warn(`Line item amount mismatch: ${item.description}. Expected ${expectedAmount}, got ${amount}`);
+    
+    // CRITICAL: Calculate amount from quantity * rate - ignore client-provided amount
+    const calculatedAmount = roundTo2Decimals(quantity * rate);
+    
+    // Log warning if client sent different amount (potential tampering)
+    const clientAmount = Number(item.amount) || 0;
+    if (Math.abs(clientAmount - calculatedAmount) > 0.01) {
+      console.warn(
+        `⚠️ SECURITY: Line item amount tampering detected for "${item.description}". ` +
+        `Client sent ${clientAmount}, server calculated ${calculatedAmount}. Using calculated value.`
+      );
     }
 
-    return sum + amount;
+    return sum + calculatedAmount;  // Use calculated amount, not client-provided
   }, 0);
 
   // Calculate tax amount (percentage of subtotal)
