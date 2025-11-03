@@ -1588,11 +1588,92 @@ await client.postApiPacksByPackIdBlueprint({
 
 #### Features
 
-- **Full TypeScript support** with generated type definitions
-- **ESM and CJS builds** for maximum compatibility
-- **Unit test scaffolds** included (Vitest)
-- **Mocked fetch** for testing
-- **Auto-build** with tsup bundler
+**Core Client:**
+- ✅ **Full TypeScript support** with generated type definitions  
+- ✅ **ESM and CJS builds** for maximum compatibility  
+- ✅ **22 API endpoints** (Packsmith, Importer, iCadence)  
+- ✅ **Unit test scaffolds** included (Vitest with mocked fetch)  
+- ✅ **Auto-build** with tsup bundler
+
+**CI/CD Automation:**
+- ✅ **CI pipeline** - Lint/test/build on every PR and push to main  
+- ✅ **CodeQL security scanning** - Weekly + on every PR  
+- ✅ **Dual registry support** - Publish to npm + GitHub Packages  
+- ✅ **Auto-versioning** via release-please (conventional commits)  
+- ✅ **GitHub Pages docs** - Auto-deployed TypeDoc on release  
+- ✅ **NPM provenance** - Supply chain security attestation
+
+**Governance & Workflow:**
+- ✅ **CODEOWNERS** - Enforces team code review requirements  
+- ✅ **Auto-assign reviewers** - Assigns 2 reviewers to every PR  
+- ✅ **Auto-merge Release PRs** - Merges release-please PRs after CI  
+- ✅ **Stale issue management** - Auto-closes after 30+7 days  
+- ✅ **Issue templates** - Bug reports and feature requests  
+- ✅ **PR template** - Standardized checklist  
+- ✅ **Security policy** - Responsible disclosure (SECURITY.md)  
+- ✅ **Contribution guide** - Onboarding docs (CONTRIBUTING.md)
+
+#### Setup Instructions (Governed Edition)
+
+After unzipping and pushing the governed package, configure these placeholders:
+
+**1. Configure CODEOWNERS** (`.github/CODEOWNERS`):
+```bash
+# Replace YOUR_ORG with your organization slug (e.g., gigster-garage)
+*                @gigster-garage/maintainers
+/src/**          @gigster-garage/api @gigster-garage/maintainers
+/test/**         @gigster-garage/qa @gigster-garage/maintainers
+/.github/**      @gigster-garage/devops @gigster-garage/maintainers
+```
+
+**2. Configure Auto-Assign** (`.github/auto_assign.yml`):
+```yaml
+# Replace YOUR_HANDLE_1/2 with actual GitHub usernames
+reviewers:
+  - alice-dev
+  - bob-reviewer
+team_reviewers:
+  - gigster-garage/maintainers
+numberOfReviewers: 2
+```
+
+**3. Repository Settings:**
+- **Branch Protection** (Settings → Branches → main):
+  - ✅ Require PR before merging
+  - ✅ Require status checks: `ci`, `test`, `build`
+  - ✅ Require code owner reviews
+- **GitHub Pages** (Settings → Pages):
+  - Source: **GitHub Actions**
+- **Secrets** (Settings → Secrets → Actions):
+  - Add `NPM_TOKEN` from npmjs.com (Automation token)
+
+**4. Automated Workflows:**
+
+Once configured, everything runs automatically:
+
+```bash
+# Developer creates PR
+git checkout -b feat/new-feature
+git commit -m "feat: add feature X"
+git push
+
+# Automatic actions:
+# → Auto-assigns 2 reviewers
+# → Runs CI (lint/test/build)
+# → Runs CodeQL security scan
+# → Requires code owner approval
+# → After merge: release-please opens Release PR
+# → Auto-merge workflow waits for CI
+# → Auto-merges Release PR
+# → Creates tag vX.Y.Z
+# → Publishes to npm + GitHub Pages
+```
+
+**5. Stale Management:**
+- Runs Monday-Friday at 3:30 AM
+- Marks inactive issues/PRs stale after **30 days**
+- Auto-closes after **7 more days**
+- Exempts: `security`, `good first issue`, `pinned`
 
 ---
 

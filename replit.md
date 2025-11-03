@@ -98,6 +98,15 @@ The application incorporates the Garage Navy branding with #004C6D and #0B1D3A a
 - **Notifications**: Email notifications (via SendGrid) for high-priority tasks and integrated SMS notifications (Twilio).
 - **User Management**: Multi-user authentication, role-based access, user onboarding, and an admin dashboard for user and task management.
 
+## NPM Client Package
+
+A professional TypeScript client package is available for API integration:
+- **Package**: `@gigster-garage/api-client`
+- **Repository Seed**: `gigster-garage-api-client_super-seed_governed.zip` (complete with CI/CD)
+- **Features**: 30 files including TypeScript client, Vitest tests, 6 GitHub workflows, CODEOWNERS, auto-assign, stale management, auto-merge Release PRs, issue/PR templates, security policy, and contribution guidelines.
+- **Endpoints**: 22 API endpoints (Packsmith, Importer, iCadence)
+- **Documentation**: See `docs/USER_MANUAL.md` → API Documentation section
+
 ## External Dependencies
 
 - **@neondatabase/serverless**: PostgreSQL database connection.
