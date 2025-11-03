@@ -1,0 +1,169 @@
+import React from "react";
+
+type AgentFlags = {
+  enabled: boolean;
+  expose_to_users: boolean;
+  external_tool_id: string | null;
+  status: "green" | "amber" | "red";
+  updated: string;
+};
+
+type FlagsResponse = {
+  agents: Record<string, AgentFlags>;
+};
+
+type PolicyAgent = {
+  id: string;
+  name: string;
+  title?: string;
+  allowed_autonomy: ("L0" | "L1")[];
+  internal_actions: string[];
+  external_surfaces: string[];
+  require_approval: string[];
+  exposure_rule: string;
+  promotion_criteria: {
+    kpi?: Record<string, string>;
+    policy_gates?: string[];
+  };
+};
+
+type Policy = {
+  version: string;
+  updated: string;
+  agents: PolicyAgent[];
+};
+
+function statusDot(s?: "green" | "amber" | "red") {
+  switch (s) {
+    case "green":
+      return "bg-green-500";
+    case "amber":
+      return "bg-amber-500";
+    case "red":
+      return "bg-red-500";
+    default:
+      return "bg-gray-300";
+  }
+}
+
+export default function AgentExposureCards({
+  policy,
+  flags,
+  onPromote
+}: {
+  policy: Policy;
+  flags?: FlagsResponse;
+  onPromote?: (agentId: string) => Promise<void> | void;
+}) {
+  const map = new Map(policy.agents.map(a => [a.id, a]));
+  const ids = policy.agents.map(a => a.id);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {ids.map((id) => {
+        const pa = map.get(id)!;
+        const f = flags?.agents?.[id];
+        const exposed = !!f?.expose_to_users;
+        const s = f?.status;
+
+        return (
+          <div key={id} className="rounded-2xl border shadow-sm bg-white overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+              <div className="flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${statusDot(s)}`} />
+                <div>
+                  <div className="text-sm font-semibold">{pa.name}{pa.title ? ` — ${pa.title}` : ""}</div>
+                  <div className="text-xs text-gray-500">{id}</div>
+                </div>
+              </div>
+              <div className="text-xs">
+                <span className={`px-2 py-1 rounded-full ${exposed ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-700 border border-gray-200"}`}>
+                  {exposed ? "Exposed to users" : "Internal only"}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <section>
+                <div className="text-xs font-semibold text-gray-600 mb-1">Allowed Autonomy</div>
+                <div className="flex flex-wrap gap-2">
+                  {pa.allowed_autonomy.map(l => (
+                    <span key={l} className="px-2 py-1 text-xs rounded-full border bg-gray-50">{l}</span>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <div className="text-xs font-semibold text-gray-600 mb-1">Internal (factory)</div>
+                <ul className="list-disc ml-5 text-sm text-gray-800 space-y-1">
+                  {pa.internal_actions.map(a => <li key={a}>{a.replaceAll("_"," ")}</li>)}
+                </ul>
+              </section>
+
+              <section>
+                <div className="text-xs font-semibold text-gray-600 mb-1">External (customer-facing surfaces)</div>
+                <ul className="list-disc ml-5 text-sm text-gray-800 space-y-1">
+                  {pa.external_surfaces.map(a => <li key={a}>{a.replaceAll("_"," ")}</li>)}
+                </ul>
+              </section>
+
+              <section>
+                <div className="text-xs font-semibold text-gray-600 mb-1">Requires Approval</div>
+                <ul className="list-disc ml-5 text-sm text-gray-800 space-y-1">
+                  {pa.require_approval.map(a => <li key={a}>{a.replaceAll("_"," ")}</li>)}
+                </ul>
+              </section>
+
+              <section className="text-sm">
+                <div className="text-xs font-semibold text-gray-600 mb-1">Exposure Rule</div>
+                <div className="text-gray-800">{pa.exposure_rule}</div>
+              </section>
+
+              <section className="text-sm">
+                <div className="text-xs font-semibold text-gray-600 mb-1">Promotion Criteria</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">KPI</div>
+                    <ul className="list-disc ml-5 text-sm">
+                      {Object.entries(pa.promotion_criteria.kpi || {}).map(([k,v]) => (
+                        <li key={k}><span className="font-mono">{k}</span> {v}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Policy Gates</div>
+                    <div className="flex flex-wrap gap-1">
+                      {(pa.promotion_criteria.policy_gates || []).map(g => (
+                        <span key={g} className="px-2 py-0.5 text-xs rounded-full border bg-gray-50">{g}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="text-xs text-gray-500">
+                  Updated: {flags?.agents?.[id]?.updated ? new Date(flags.agents[id].updated).toLocaleString() : "—"}
+                </div>
+                <div className="flex items-center gap-2">
+                  {onPromote && !exposed && (
+                    <button
+                      onClick={() => onPromote(id)}
+                      className="px-3 py-1.5 text-sm rounded-lg border hover:bg-gray-50"
+                      title="Request exposure per policy"
+                    >
+                      Request Exposure
+                    </button>
+                  )}
+                  {exposed && (
+                    <span className="text-xs text-emerald-700">Live (read-only surfaces)</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
