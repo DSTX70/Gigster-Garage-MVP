@@ -5,11 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Download, RefreshCw, Calendar, Target, Users, Eye, EyeOff, TrendingUp, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import type { Agent, AgentVisibilityFlag, AgentGraduationPlan, AgentKpi } from "@shared/schema";
+import { useHubFlags, promoteAgentToHub, ADMIN_WRITE } from "@/hooks/use-hub-flags";
 
 interface AgentWithDetails extends Agent {
   visibilityFlag?: AgentVisibilityFlag | null;
@@ -20,6 +22,8 @@ interface AgentWithDetails extends Agent {
 export default function AgentManagement() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const [externalToolIds, setExternalToolIds] = useState<Record<string, string>>({});
+  const [promotingAgent, setPromotingAgent] = useState<string | null>(null);
 
   const { data: agents, isLoading } = useQuery<AgentWithDetails[]>({
     queryKey: ["/api/agents"],
@@ -28,6 +32,8 @@ export default function AgentManagement() {
   const { data: kpis } = useQuery<AgentKpi[]>({
     queryKey: ["/api/agents/kpis"],
   });
+
+  const { data: hubFlags, loading: hubLoading, error: hubError, refresh: refreshHub } = useHubFlags(5000);
 
   const importDataMutation = useMutation({
     mutationFn: async () => {
@@ -83,30 +89,43 @@ export default function AgentManagement() {
     },
   });
 
-  const promoteMutation = useMutation({
-    mutationFn: async (agentId: string) => {
-      const response = await apiRequest(`/api/agents/${agentId}/promote`, {
+  const handlePromote = async (agentId: string) => {
+    setPromotingAgent(agentId);
+    const agentName = agents?.find(a => a.id === agentId)?.name || agentId;
+    const externalToolId = externalToolIds[agentId]?.trim() || undefined;
+    
+    try {
+      await apiRequest(`/api/agents/${agentId}/promote`, {
         method: "POST",
         body: JSON.stringify({}),
       });
-      return response;
-    },
-    onSuccess: (data: any, agentId: string) => {
+      
+      if (ADMIN_WRITE && import.meta.env.VITE_HUB_BASE_URL) {
+        try {
+          await promoteAgentToHub(agentId, externalToolId);
+        } catch (hubError: any) {
+          console.warn("Hub promotion failed (non-critical):", hubError);
+        }
+      }
+      
+      await refreshHub();
       queryClient.invalidateQueries({ queryKey: ["/api/agents"] });
       queryClient.invalidateQueries({ queryKey: ["/api/agents/kpis"] });
+      
       toast({
         title: "Agent promoted!",
-        description: `Successfully promoted ${agents?.find(a => a.id === agentId)?.name}`,
+        description: `Successfully promoted ${agentName}`,
       });
-    },
-    onError: (error: any) => {
+    } catch (error: any) {
       toast({
         title: "Promotion failed",
         description: error.message || "Failed to promote agent",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setPromotingAgent(null);
+    }
+  };
 
   const getPhaseStatusBadge = (phase?: string) => {
     if (phase?.includes("External GA")) return "default";
@@ -441,12 +460,26 @@ export default function AgentManagement() {
         <TabsContent value="kpis" className="space-y-4" data-testid="tab-content-kpis">
           <Card className="bg-card dark:bg-card border-border dark:border-border" data-testid="card-kpis">
             <CardHeader>
-              <CardTitle className="text-card-foreground dark:text-card-foreground">
-                Agent Performance Metrics
-              </CardTitle>
-              <CardDescription className="text-muted-foreground dark:text-muted-foreground">
-                Track KPIs and promote agents that meet graduation criteria
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-card-foreground dark:text-card-foreground">
+                    Agent Performance Metrics
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground dark:text-muted-foreground">
+                    Real-time KPI tracking and promotion management
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {hubLoading && <RefreshCw className="h-3 w-3 animate-spin" />}
+                  {hubError ? (
+                    <span className="text-amber-600">Hub: offline (using local data)</span>
+                  ) : hubFlags ? (
+                    <span className="text-green-600">Hub: live</span>
+                  ) : (
+                    <span>Hub: connecting...</span>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -454,17 +487,20 @@ export default function AgentManagement() {
                   <TableRow className="border-border dark:border-border">
                     <TableHead className="text-foreground dark:text-foreground">Agent</TableHead>
                     <TableHead className="text-foreground dark:text-foreground">On-Time Rate</TableHead>
-                    <TableHead className="text-foreground dark:text-foreground">Gate Escape Rate</TableHead>
-                    <TableHead className="text-foreground dark:text-foreground">Incidents (30d)</TableHead>
+                    <TableHead className="text-foreground dark:text-foreground">Gate Escape</TableHead>
+                    <TableHead className="text-foreground dark:text-foreground">Incidents</TableHead>
                     <TableHead className="text-foreground dark:text-foreground">Status</TableHead>
+                    <TableHead className="text-foreground dark:text-foreground">External Tool</TableHead>
                     <TableHead className="text-foreground dark:text-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {agents?.map((agent) => {
                     const kpi = kpis?.find(k => k.agentId === agent.id);
-                    const hasGreenStatus = kpi?.status === "green";
-                    const isAlreadyPromoted = agent.visibilityFlag?.exposeToUsers;
+                    const hubFlag = hubFlags?.agents[agent.id];
+                    const hasGreenStatus = kpi?.status === "green" || hubFlag?.status === "green";
+                    const isAlreadyPromoted = agent.visibilityFlag?.exposeToUsers || hubFlag?.expose_to_users;
+                    const currentExternalTool = agent.visibilityFlag?.externalToolId || hubFlag?.external_tool_id;
                     
                     return (
                       <TableRow
@@ -475,52 +511,71 @@ export default function AgentManagement() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium text-foreground dark:text-foreground">{agent.name}</span>
-                            <span className="text-sm text-muted-foreground dark:text-muted-foreground font-mono">
+                            <span className="text-xs text-muted-foreground dark:text-muted-foreground font-mono">
                               {agent.id}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-foreground dark:text-foreground">
                           {kpi ? (
-                            <span className="font-medium">
+                            <span className="font-medium text-sm">
                               {(parseFloat(kpi.onTimeMilestoneRate) * 100).toFixed(1)}%
                             </span>
                           ) : (
-                            <span className="text-muted-foreground dark:text-muted-foreground">—</span>
+                            <span className="text-muted-foreground dark:text-muted-foreground text-sm">—</span>
                           )}
                         </TableCell>
                         <TableCell className="text-foreground dark:text-foreground">
                           {kpi ? (
-                            <span className="font-medium">
+                            <span className="font-medium text-sm">
                               {(parseFloat(kpi.gateEscapeRate) * 100).toFixed(2)}%
                             </span>
                           ) : (
-                            <span className="text-muted-foreground dark:text-muted-foreground">—</span>
+                            <span className="text-muted-foreground dark:text-muted-foreground text-sm">—</span>
                           )}
                         </TableCell>
                         <TableCell className="text-foreground dark:text-foreground">
                           {kpi ? (
-                            <span className="font-medium">{kpi.incidentCount30d}</span>
+                            <span className="font-medium text-sm">{kpi.incidentCount30d}</span>
                           ) : (
-                            <span className="text-muted-foreground dark:text-muted-foreground">—</span>
+                            <span className="text-muted-foreground dark:text-muted-foreground text-sm">—</span>
                           )}
                         </TableCell>
                         <TableCell>
-                          {kpi ? (
+                          {(kpi || hubFlag) ? (
                             <Badge
-                              variant={kpi.status === "green" ? "default" : kpi.status === "amber" ? "secondary" : "destructive"}
+                              variant={(kpi?.status || hubFlag?.status) === "green" ? "default" : (kpi?.status || hubFlag?.status) === "amber" ? "secondary" : "destructive"}
                               className="flex items-center gap-1 w-fit"
                               data-testid={`badge-status-${agent.id}`}
                             >
-                              {kpi.status === "green" && <CheckCircle className="h-3 w-3" />}
-                              {kpi.status === "amber" && <AlertCircle className="h-3 w-3" />}
-                              {kpi.status === "red" && <XCircle className="h-3 w-3" />}
-                              {kpi.status.toUpperCase()}
+                              {(kpi?.status || hubFlag?.status) === "green" && <CheckCircle className="h-3 w-3" />}
+                              {(kpi?.status || hubFlag?.status) === "amber" && <AlertCircle className="h-3 w-3" />}
+                              {(kpi?.status || hubFlag?.status) === "red" && <XCircle className="h-3 w-3" />}
+                              {(kpi?.status || hubFlag?.status || "").toUpperCase()}
                             </Badge>
                           ) : (
                             <Badge variant="outline" data-testid={`badge-status-${agent.id}`}>
                               NO DATA
                             </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {currentExternalTool ? (
+                            <span className="text-sm font-medium text-foreground dark:text-foreground">
+                              {currentExternalTool}
+                            </span>
+                          ) : !isAlreadyPromoted && ADMIN_WRITE ? (
+                            <Input
+                              className="max-w-[160px] h-8 text-xs"
+                              placeholder="e.g. ShipBot"
+                              value={externalToolIds[agent.id] || ""}
+                              onChange={(e) =>
+                                setExternalToolIds((m) => ({ ...m, [agent.id]: e.target.value }))
+                              }
+                              data-testid={`input-external-tool-${agent.id}`}
+                            />
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -533,13 +588,13 @@ export default function AgentManagement() {
                             <Button
                               size="sm"
                               variant="default"
-                              onClick={() => promoteMutation.mutate(agent.id)}
-                              disabled={promoteMutation.isPending}
+                              onClick={() => handlePromote(agent.id)}
+                              disabled={promotingAgent === agent.id}
                               data-testid={`button-promote-${agent.id}`}
                               className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
                             >
                               <TrendingUp className="h-3 w-3 mr-1" />
-                              Promote
+                              {promotingAgent === agent.id ? "Promoting..." : "Promote"}
                             </Button>
                           ) : (
                             <span className="text-sm text-muted-foreground dark:text-muted-foreground">
