@@ -1,0 +1,65 @@
+🔥 Perfect. I dropped in your kickoff verbatim and moved straight to the “Next Actions.” Here’s a ready-to-run package with the **Hub stubs**, **Switchboard**, **API contracts**, and **wireframes**—so you can light up the Status + Switchboard panels immediately.
+
+**Download the bundle:**
+[gg_hub_switchboard_drop_v1.zip](sandbox:/mnt/data/gg_hub_switchboard_drop_v1.zip)
+
+### What’s inside
+
+* **hub/** (FastAPI microservice)
+
+  * `main.py` → `GET /kpis`, `GET /flags`, `POST /admin/flags/{agent}`, `GET /review/{run_id}`
+  * `data/kpis.json` (stub metrics), `data/review/demo-*.json` (fallback aggregates)
+  * `data/flip_schedule.json` (date-based flips + external_tool_id mapping)
+  * `data/audit.log` (flag update audit lines)
+* **scripts/**
+
+  * `switchboard.mjs` → pulls `/kpis`, applies graduation rules, writes `public/visibility_flags.json`
+* **public/**
+
+  * `visibility_flags.json` (generated/updated)
+* **api/contracts/**
+
+  * `smart_scoper_contract.json`, `launchpad_contract.json`, `shipbot_contract.json` (API JSON contracts)
+* **wireframes/**
+
+  * PNG + SVG wireframes for **Smart Scoper**, **LaunchPad**, **ShipBot**
+    *(footer-stamped: “Confidential and proprietary and copyright Dustin Sparks 2025”)*
+* `.env.example`, `package.json`, `README.md`
+
+### Run steps (Replit or local)
+
+1. **Start the Hub (port 8000)**
+
+```bash
+pip install -r hub/requirements.txt
+uvicorn hub.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+2. **Run Switchboard (Node 18+)**
+
+```bash
+npm install
+npm run switchboard
+```
+
+This writes **public/visibility_flags.json** based on KPI thresholds or `flip_schedule.json`.
+
+3. **Point your Vite app**
+
+```
+VITE_HUB_BASE_URL=http://localhost:8000
+VITE_USE_MOCKS=false
+VITE_MOCK_FALLBACK=true
+VITE_DEMO_RUN_IDS=demo-1,demo-2,demo-3
+VITE_ADMIN_WRITE=true   # enables UI “Promote” POSTs to /admin/flags/{agent}
+```
+
+### Notes
+
+* **Graduation criteria** (wired in both Hub + Switchboard):
+
+  * `on_time_milestone_rate ≥ 0.95` **and** `gate_escape_rate ≤ 0.01` **and** `incident_count_30d = 0`, **or** `flip_on` date reached.
+* **Status colors** in `/kpis` are computed (`green/amber/red`) and mirrored in `public/visibility_flags.json`.
+* `/admin/flags/{agent}` persists flags and appends an audit line.
+
+If you want, I can also drop a tiny **/flags** polling snippet for your Status Widget (React) or wire a minimal **/admin/flags** POST helper for the “Promote” button—but you’re good to roll with this bundle now.
