@@ -1,8 +1,8 @@
 import { eq, and, or, desc, gte, lte, isNull, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, contracts, presentations, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage, fileAttachments, documentVersions } from "@shared/schema";
-import type { User, UpsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, Contract, InsertContract, Presentation, InsertPresentation, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage, FileAttachment, InsertFileAttachment, DocumentVersion, InsertDocumentVersion } from "@shared/schema";
+import { users, tasks, projects, taskDependencies, templates, proposals, clients, clientDocuments, invoices, payments, contracts, presentations, timeLogs, messages, customFieldDefinitions, customFieldValues, workflowRules, workflowExecutions, comments, activities, apiKeys, apiUsage, fileAttachments, documentVersions, agents, agentVisibilityFlags, agentGraduationPlans } from "@shared/schema";
+import type { User, UpsertUser, Task, InsertTask, Project, InsertProject, TaskDependency, InsertTaskDependency, Template, InsertTemplate, Proposal, InsertProposal, Client, InsertClient, ClientDocument, InsertClientDocument, Invoice, InsertInvoice, Payment, InsertPayment, Contract, InsertContract, Presentation, InsertPresentation, TimeLog, InsertTimeLog, UpdateTask, UpdateTemplate, UpdateProposal, UpdateTimeLog, TaskWithRelations, TemplateWithRelations, ProposalWithRelations, TimeLogWithRelations, Message, InsertMessage, MessageWithRelations, CustomFieldDefinition, InsertCustomFieldDefinition, CustomFieldValue, InsertCustomFieldValue, WorkflowRule, InsertWorkflowRule, WorkflowExecution, InsertWorkflowExecution, Comment, InsertComment, Activity, InsertActivity, ApiKey, InsertApiKey, ApiUsage, InsertApiUsage, FileAttachment, InsertFileAttachment, DocumentVersion, InsertDocumentVersion, Agent, InsertAgent, AgentVisibilityFlag, InsertAgentVisibilityFlag, AgentGraduationPlan, InsertAgentGraduationPlan } from "@shared/schema";
 
 // Advanced search types for client documents
 export interface DocumentSearchParams {
@@ -314,6 +314,25 @@ export interface IStorage {
   // Payment link management
   generatePaymentLink(invoiceId: string): Promise<string>;
   getInvoiceByPaymentLink(paymentLink: string): Promise<Invoice | undefined>;
+
+  // Agent management
+  getAgents(): Promise<Agent[]>;
+  getAgent(id: string): Promise<Agent | undefined>;
+  createAgent(insertAgent: InsertAgent): Promise<Agent>;
+  updateAgent(id: string, updateAgent: Partial<InsertAgent>): Promise<Agent | undefined>;
+  deleteAgent(id: string): Promise<boolean>;
+
+  // Agent Visibility Flags
+  getAgentVisibilityFlag(agentId: string): Promise<AgentVisibilityFlag | undefined>;
+  createAgentVisibilityFlag(insertFlag: InsertAgentVisibilityFlag): Promise<AgentVisibilityFlag>;
+  updateAgentVisibilityFlag(agentId: string, updateFlag: Partial<InsertAgentVisibilityFlag>): Promise<AgentVisibilityFlag | undefined>;
+
+  // Agent Graduation Plans
+  getAgentGraduationPlans(): Promise<AgentGraduationPlan[]>;
+  getAgentGraduationPlan(agentId: string): Promise<AgentGraduationPlan | undefined>;
+  createAgentGraduationPlan(insertPlan: InsertAgentGraduationPlan): Promise<AgentGraduationPlan>;
+  updateAgentGraduationPlan(id: string, updatePlan: Partial<InsertAgentGraduationPlan>): Promise<AgentGraduationPlan | undefined>;
+  deleteAgentGraduationPlan(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
