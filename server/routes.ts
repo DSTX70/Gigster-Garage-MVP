@@ -9245,6 +9245,123 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
     }
   });
 
+  // Agent Data Import Route
+  app.post("/api/agents/import-data", requireAdmin, async (req, res) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Read and parse JSON visibility flags
+      const jsonPath = path.join(process.cwd(), 'attached_assets', 'gg_visibility_flags_patch_1762134396262.json');
+      const csvPath = path.join(process.cwd(), 'attached_assets', 'gg_agent_graduation_roadmap_1762134396262.csv');
+      
+      const jsonData = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+      
+      const results = {
+        agents: 0,
+        visibilityFlags: 0,
+        graduationPlans: 0,
+        errors: [] as string[],
+      };
+      
+      // First, create agents based on the JSON data
+      for (const patch of jsonData.visibility_patches) {
+        try {
+          const agentId = patch.id;
+          const agentName = agentId.replace('agent.', '').split('_').map((word: string) => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ');
+          
+          // Check if agent exists, if not create it
+          let agent = await storage.getAgent(agentId);
+          if (!agent) {
+            agent = await storage.createAgent({
+              id: agentId,
+              name: agentName,
+              description: `${agentName} internal agent`,
+              status: 'active',
+            });
+            results.agents++;
+          }
+          
+          // Create visibility flag
+          const visibilityData = {
+            agentId: agent.id,
+            exposeToUsers: patch.visibility.expose_to_users,
+            dashboardCard: patch.visibility.dashboard_card,
+            externalToolId: null,
+          };
+          
+          let visibilityFlag = await storage.getAgentVisibilityFlag(agent.id);
+          if (!visibilityFlag) {
+            await storage.createAgentVisibilityFlag(visibilityData);
+            results.visibilityFlags++;
+          }
+        } catch (error: any) {
+          results.errors.push(`Error processing agent ${patch.id}: ${error.message}`);
+        }
+      }
+      
+      // Now read CSV for graduation plans
+      const csvResults: any[] = [];
+      const readStream = fs.createReadStream(csvPath);
+      
+      readStream
+        .pipe(csvParser())
+        .on('data', (data: any) => csvResults.push(data))
+        .on('end', async () => {
+          for (const row of csvResults) {
+            try {
+              const agentId = row['Internal Agent'];
+              const agent = await storage.getAgent(agentId);
+              
+              if (!agent) {
+                results.errors.push(`Agent ${agentId} not found for graduation plan`);
+                continue;
+              }
+              
+              // Parse dates
+              const startDate = new Date(row['Start']);
+              const endDate = new Date(row['End']);
+              
+              // Check if graduation plan exists
+              const existingPlan = await storage.getAgentGraduationPlan(agentId);
+              
+              if (!existingPlan) {
+                await storage.createAgentGraduationPlan({
+                  agentId: agent.id,
+                  targetTool: row['External Toolkit'],
+                  phase: row['Phase'],
+                  targetDate: endDate,
+                  criteria: row['Graduation Criteria'],
+                  owner: row['Owner'],
+                  status: 'planning',
+                });
+                results.graduationPlans++;
+              }
+            } catch (error: any) {
+              results.errors.push(`Error processing graduation plan for ${row['Internal Agent']}: ${error.message}`);
+            }
+          }
+          
+          await logAuditEvent(
+            req.session.user!.id,
+            "system",
+            "agents",
+            "data_imported",
+            {
+              results,
+            }
+          );
+          
+          res.json(results);
+        });
+    } catch (error: any) {
+      console.error("Error importing agent data:", error);
+      res.status(500).json({ message: "Failed to import data", error: error.message });
+    }
+  });
+
   // Agent Graduation Plan Routes
   app.get("/api/agents/graduation-plans", requireAdmin, async (req, res) => {
     try {
