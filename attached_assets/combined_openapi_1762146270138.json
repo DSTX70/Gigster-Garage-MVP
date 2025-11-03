@@ -1,0 +1,1075 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Gigster Garage \u2014 Combined API (Packsmith + Importer + iCadence)",
+    "version": "0.1.0",
+    "description": "L0/L1-safe endpoints. All state-changing ops require human approvals and are audited."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000"
+    }
+  ],
+  "tags": [
+    {
+      "name": "packsmith"
+    },
+    {
+      "name": "importer"
+    },
+    {
+      "name": "icadence"
+    }
+  ],
+  "paths": {
+    "/api/packs": {
+      "get": {
+        "tags": [
+          "packsmith"
+        ],
+        "summary": "List available packs",
+        "operationId": "listPacks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "packsmith"
+        ],
+        "summary": "Create a new Pack definition (draft)",
+        "operationId": "createPack",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pack"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/packs/{packId}": {
+      "get": {
+        "tags": [
+          "packsmith"
+        ],
+        "summary": "Get pack definition",
+        "operationId": "getPack",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "packId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pack"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "packsmith"
+        ],
+        "summary": "Update pack definition (draft)",
+        "operationId": "updatePack",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "packId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pack"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/packs/{packId}/blueprint": {
+      "post": {
+        "tags": [
+          "packsmith"
+        ],
+        "summary": "Generate Pack blueprint (DoD, KPIs, tasks) \u2014 L1 draft",
+        "operationId": "generateBlueprint",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "packId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlueprintRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Blueprint"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "packsmith"
+        ],
+        "summary": "Get Pack blueprint (latest)",
+        "operationId": "getBlueprint",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "packId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Blueprint"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/packs/{packId}/seed": {
+      "post": {
+        "tags": [
+          "packsmith"
+        ],
+        "summary": "Seed tasks/checklists from blueprint \u2014 creates draft tasks",
+        "operationId": "seedFromBlueprint",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "packId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/sessions": {
+      "post": {
+        "tags": [
+          "importer"
+        ],
+        "summary": "Start an import session",
+        "operationId": "startImportSession",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportSession"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/sessions/{sessionId}": {
+      "get": {
+        "tags": [
+          "importer"
+        ],
+        "summary": "Get session status",
+        "operationId": "getImportSession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportSession"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "importer"
+        ],
+        "summary": "Cancel session",
+        "operationId": "cancelImportSession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/import/sessions/{sessionId}/upload": {
+      "post": {
+        "tags": [
+          "importer"
+        ],
+        "summary": "Upload CSV/Sheet file",
+        "operationId": "uploadImportFile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/sessions/{sessionId}/map": {
+      "post": {
+        "tags": [
+          "importer"
+        ],
+        "summary": "Map incoming columns \u2192 entities/fields",
+        "operationId": "mapColumns",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ColumnMapping"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MappingResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/sessions/{sessionId}/validate": {
+      "post": {
+        "tags": [
+          "importer"
+        ],
+        "summary": "Validate mapped rows (returns errors/warnings)",
+        "operationId": "validateImport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/sessions/{sessionId}/stage": {
+      "post": {
+        "tags": [
+          "importer"
+        ],
+        "summary": "Stage valid rows for approval",
+        "operationId": "stageImport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/sessions/{sessionId}/commit": {
+      "post": {
+        "tags": [
+          "importer"
+        ],
+        "summary": "Commit staged rows (requires approval)",
+        "operationId": "commitImport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommitResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/icadence/channels": {
+      "get": {
+        "tags": [
+          "icadence"
+        ],
+        "summary": "List connected channels",
+        "operationId": "listChannels",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "icadence"
+        ],
+        "summary": "Start channel connection (wizard)",
+        "operationId": "startChannelConnection",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelSession"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/icadence/channels/{channelId}": {
+      "get": {
+        "tags": [
+          "icadence"
+        ],
+        "summary": "Get channel details",
+        "operationId": "getChannel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channelId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/icadence/channels/{channelId}/utms": {
+      "put": {
+        "tags": [
+          "icadence"
+        ],
+        "summary": "Set UTM presets for a channel",
+        "operationId": "setUTMPresets",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channelId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UTMPresets"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/icadence/channels/{channelId}/test-post": {
+      "post": {
+        "tags": [
+          "icadence"
+        ],
+        "summary": "Post a test message (sandbox)",
+        "operationId": "testPost",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channelId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestPost"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/icadence/spend": {
+      "post": {
+        "tags": [
+          "icadence"
+        ],
+        "summary": "Ingest spend logs for attribution",
+        "operationId": "ingestSpend",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpendBatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PackList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Pack"
+            }
+          }
+        }
+      },
+      "PackDraft": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      },
+      "PackUpdate": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "active",
+              "archived"
+            ]
+          }
+        }
+      },
+      "Pack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "BlueprintRequest": {
+        "type": "object",
+        "properties": {
+          "includeDoD": {
+            "type": "boolean"
+          },
+          "includeKPIs": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Blueprint": {
+        "type": "object",
+        "properties": {
+          "packId": {
+            "type": "string"
+          },
+          "dod": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kpis": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        }
+      },
+      "SeedResult": {
+        "type": "object",
+        "properties": {
+          "createdTasks": {
+            "type": "integer"
+          },
+          "checklists": {
+            "type": "integer"
+          }
+        }
+      },
+      "ImportStart": {
+        "type": "object",
+        "properties": {
+          "entity": {
+            "type": "string",
+            "enum": [
+              "tasks",
+              "contacts",
+              "products"
+            ]
+          }
+        }
+      },
+      "ImportSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entity": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "UploadResult": {
+        "type": "object",
+        "properties": {
+          "rowsDetected": {
+            "type": "integer"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ColumnMapping": {
+        "type": "object",
+        "properties": {
+          "mappings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MappingResult": {
+        "type": "object",
+        "properties": {
+          "unmapped": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ValidationReport": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "validCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "StageResult": {
+        "type": "object",
+        "properties": {
+          "staged": {
+            "type": "integer"
+          }
+        }
+      },
+      "CommitResult": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "integer"
+          },
+          "rejected": {
+            "type": "integer"
+          }
+        }
+      },
+      "ChannelList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Channel"
+            }
+          }
+        }
+      },
+      "ChannelStart": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "facebook",
+              "instagram",
+              "tiktok",
+              "x",
+              "linkedin",
+              "google_ads",
+              "meta_ads"
+            ]
+          }
+        }
+      },
+      "ChannelSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "authorized",
+              "failed"
+            ]
+          }
+        }
+      },
+      "Channel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "utms": {
+            "$ref": "#/components/schemas/UTMPresets"
+          }
+        }
+      },
+      "UTMPresets": {
+        "type": "object",
+        "properties": {
+          "utm_source": {
+            "type": "string"
+          },
+          "utm_medium": {
+            "type": "string"
+          },
+          "utm_campaign": {
+            "type": "string"
+          },
+          "utm_content": {
+            "type": "string"
+          },
+          "utm_term": {
+            "type": "string"
+          }
+        }
+      },
+      "TestPost": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "mediaUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PostResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "echo": {
+            "type": "string"
+          }
+        }
+      },
+      "SpendBatch": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "spend": {
+                  "type": "number"
+                },
+                "clicks": {
+                  "type": "integer"
+                },
+                "impressions": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

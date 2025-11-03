@@ -1,0 +1,34 @@
+Agent,Task,Internal/External,Level,DoD,Metric,Exposure Rule
+ITSA,Segment auto-draft + risk heatmap,Internal,L0/L1,JSON summary + red/amber/green flags posted,% intakes with all required assets on first pass,
+ITSA,"Readiness Score (publish path, payments, 1st channel)",Internal,L0/L1,0–100 score + gaps list,Avg readiness on first submission,
+ITSA,Pack/Pod recommender with price deltas and DoD,Internal,L0/L1,Options table with DoD per option,Attach-rate within 7 days,
+ITSA,Client-facing Intake Summary,External,L0/L1,Shareable read-only summary page,Client completion time to 'all assets present',Expose when review_SLA_hours <= 24
+SSK,Inject brand-lock tokens into new repos,Internal,L1,PR with tokens + Tailwind config,CI 'brandlock' pass-rate,
+SSK,Scaffold sanity suite (routes/env/guards),Internal,L1,Checklist green for scaffold,% scaffolds passing on first run,
+SSK,Starter Preview diff (files/README before generation),External,L0/L1,Preview page rendered,Preview→approve conversion,Expose when ci_preflight_pass_rate >= 0.95 && sentinel_checks_passed
+Planner,Evidence Pack planner,Internal,L0/L1,Evidence checklist added to sprint,% evidence captured by sprint end,
+Planner,Risk timers on DoD items,Internal,L0/L1,Auto-reminders created,On-time DoD close rate,
+Planner,Client DoD Acknowledgement,External,L0/L1,Ack status captured,Time draft→ack,Expose when DoD_templates_locked
+Exec Orchestrator,Pre-flight blast radius estimator,Internal,L0/L1,Pre-flight report attached,% releases with rollback defined,
+Exec Orchestrator,Staged artifact verifier (hash + manifest),Internal,L1,Manifest + hashes posted,Mismatch rate (~0 target),
+Exec Orchestrator,Release Window Request (client),External,L0/L1,Window captured (pending approval),Approval turnaround time,Expose as preview/request only (no deploy)
+Sentinel,Rate-limit coverage audit by route group,Internal,L0/L1,Table of covered/uncovered routes,Coverage %,
+Sentinel,PII finder dry-run,Internal,L0/L1,Report + PR hints,PII issues resolved / sprint,
+Sentinel,Security Scorecard (read-only),External,L0/L1,Scorecard visible to client,Client acknowledgements,Expose after privacy_center_live
+Ledger,Variance commentator (budget vs actuals),Internal,L0,Note added to snapshot,Time-to-approve invoice,
+Ledger,Cap-breach early warning,Internal,L1,Alert task created,Avoided cap breaches,
+Ledger,Draft invoice review + 'needs change',External,L0/L1,Review captured,Revisions per invoice,Expose when plan_entitlements_enforced
+Helm,What's blocking Go-Live compiler,Internal,L0/L1,List with owners/dates,Blockers resolved <48h,
+Helm,Promotion readiness report,Internal,L0/L1,One-sheet with policy gaps,Time green→exposed,
+Packsmith,Create pack blueprint + seed tasks,Internal,L0/L1,blueprint.json + seeded tasks,Time-to-first-value per pack,
+iCadence Connector,Connect channels + UTM presets + spend logs,Internal,L1,Channel connected; presets stored,% posts with valid UTM,
+iCadence Connector,Channel connection wizard (client),External,L0/L1,Wizard completes to 'pending approval',Channel connect rate,Expose when rate_limits && audit_ui live (sandbox)
+Customer Success Desk,Status feed + gates + invoice drafts,External,L0/L1,Read-only surface online,PM time saved; client satisfaction,Expose when plan_enforcement && privacy_center && audit_ui
+Experimenter,1-page experiment plan + tracking params,Internal,L0/L1,plan.md + tasks created,Time-to-decision; uplift delta,
+Template Librarian,"Lint, version, publish canonical templates",Internal,L0/L1,Templates marked canonical & published,Template error rate,
+Importer,CSV/Sheets mapping → staged import,Internal,L1,Validated mapping + staged records,Import success rate,
+Importer,Client upload wizard (mapping preview),External,L0/L1,Upload → mapping preview → pending import,Avg fix-time for bad rows,Expose when audit_ui && rate_limits
+Accessibility Auditor,WCAG lint + PR hints,Internal,L0/L1,AA report + suggested fixes,Issues fixed per sprint; AA coverage,
+Evidence Archivist,"Scoop artifacts, SHA256, index & zip",Internal,L1,evidence_{sprint}.zip + index.md,Evidence completeness %,
+Review Miner,Draft post-purchase review outreach,External,L0/L1,Schedule preview + pending send,Review velocity; response rate,Expose when rate_limits && audit_ui
+SSO/Licensing Handshake,"Verify license JWT, set entitlements",Internal,L1,License verified; entitlements set,Entitlement errors/mo; handshake latency,
