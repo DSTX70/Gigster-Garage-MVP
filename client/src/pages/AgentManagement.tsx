@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Download, RefreshCw, Calendar, Target, Users, Eye, EyeOff, TrendingUp, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Download, RefreshCw, Calendar, Target, Users, Eye, EyeOff, TrendingUp, CheckCircle, XCircle, AlertCircle, Shield } from "lucide-react";
 import type { Agent, AgentVisibilityFlag, AgentGraduationPlan, AgentKpi } from "@shared/schema";
 import { useHubFlags, promoteAgentToHub, ADMIN_WRITE } from "@/hooks/use-hub-flags";
+import AgentExposureCards from "@/components/agent-exposure/AgentExposureCards";
+import agentExposurePolicy from "../../../policy/agent_exposure_policy.json";
 
 interface AgentWithDetails extends Agent {
   visibilityFlag?: AgentVisibilityFlag | null;
@@ -247,6 +249,10 @@ export default function AgentManagement() {
           </TabsTrigger>
           <TabsTrigger value="kpis" data-testid="tab-trigger-kpis">
             KPIs & Metrics
+          </TabsTrigger>
+          <TabsTrigger value="exposure-policy" data-testid="tab-trigger-exposure-policy">
+            <Shield className="h-4 w-4 mr-2" />
+            Exposure Policy
           </TabsTrigger>
         </TabsList>
 
@@ -626,6 +632,45 @@ export default function AgentManagement() {
                   <li>• Zero incidents in last 30 days</li>
                 </ul>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="exposure-policy" className="space-y-4" data-testid="tab-content-exposure-policy">
+          <Card className="bg-card dark:bg-card border-border dark:border-border">
+            <CardHeader>
+              <CardTitle className="text-card-foreground dark:text-card-foreground flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Agent Exposure Policy
+              </CardTitle>
+              <CardDescription className="text-muted-foreground dark:text-muted-foreground">
+                Policy-based agent governance with autonomy levels (L0/L1), exposure rules, and promotion criteria.
+                Agents require specific policy gates to be implemented before exposure to users.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  Active Policy Gates
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {["plan_enforcement", "privacy_center", "audit_ui", "rate_limits"].map((gate) => (
+                    <Badge key={gate} variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-100 dark:border-green-700">
+                      {gate}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                  Policy gates marked as active have been implemented in the system. Agents require all their specified gates to be active before promotion.
+                </p>
+              </div>
+
+              <AgentExposureCards
+                policy={agentExposurePolicy}
+                flags={hubFlags ? { agents: hubFlags.agents } : undefined}
+                activePolicyGates={["plan_enforcement", "privacy_center", "audit_ui", "rate_limits"]}
+                onPromote={handlePromote}
+              />
             </CardContent>
           </Card>
         </TabsContent>
