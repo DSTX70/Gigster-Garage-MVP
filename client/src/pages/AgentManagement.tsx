@@ -178,20 +178,20 @@ export default function AgentManagement() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-muted dark:bg-muted">
-          <TabsTrigger value="overview" data-testid="tab-overview">
+        <TabsList className="bg-muted dark:bg-muted" data-testid="tabs-agent-management">
+          <TabsTrigger value="overview" data-testid="tab-trigger-overview">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="visibility" data-testid="tab-visibility">
+          <TabsTrigger value="visibility" data-testid="tab-trigger-visibility">
             Visibility Controls
           </TabsTrigger>
-          <TabsTrigger value="graduation" data-testid="tab-graduation">
+          <TabsTrigger value="graduation" data-testid="tab-trigger-graduation">
             Graduation Roadmap
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <Card className="bg-card dark:bg-card border-border dark:border-border">
+        <TabsContent value="overview" className="space-y-4" data-testid="tab-content-overview">
+          <Card className="bg-card dark:bg-card border-border dark:border-border" data-testid="card-agents-overview">
             <CardHeader>
               <CardTitle className="text-card-foreground dark:text-card-foreground">All Agents</CardTitle>
               <CardDescription className="text-muted-foreground dark:text-muted-foreground">
@@ -253,8 +253,8 @@ export default function AgentManagement() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="visibility" className="space-y-4">
-          <Card className="bg-card dark:bg-card border-border dark:border-border">
+        <TabsContent value="visibility" className="space-y-4" data-testid="tab-content-visibility">
+          <Card className="bg-card dark:bg-card border-border dark:border-border" data-testid="card-visibility-controls">
             <CardHeader>
               <CardTitle className="text-card-foreground dark:text-card-foreground">
                 Visibility Controls
@@ -298,7 +298,7 @@ export default function AgentManagement() {
                               value: checked,
                             })
                           }
-                          data-testid={`switch-expose-${agent.id}`}
+                          data-testid={`switch-expose-users-${agent.id}`}
                         />
                       </TableCell>
                       <TableCell>
@@ -311,7 +311,7 @@ export default function AgentManagement() {
                               value: checked,
                             })
                           }
-                          data-testid={`switch-dashboard-${agent.id}`}
+                          data-testid={`switch-dashboard-card-${agent.id}`}
                         />
                       </TableCell>
                       <TableCell className="text-foreground dark:text-foreground">
@@ -325,8 +325,8 @@ export default function AgentManagement() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="graduation" className="space-y-4">
-          <Card className="bg-card dark:bg-card border-border dark:border-border">
+        <TabsContent value="graduation" className="space-y-4" data-testid="tab-content-graduation">
+          <Card className="bg-card dark:bg-card border-border dark:border-border" data-testid="card-graduation-roadmap">
             <CardHeader>
               <CardTitle className="text-card-foreground dark:text-card-foreground">
                 Graduation Roadmap
