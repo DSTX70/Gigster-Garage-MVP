@@ -30,6 +30,23 @@ The server-side uses Express.js with TypeScript in an ESM module setup:
 - **API Design**: RESTful endpoints.
 The backend implements a clean architecture with separated concerns for routes, storage, and business logic.
 
+### Security & Permission Model
+
+The application implements a two-tier resource permission model:
+
+**OWNED Resources** (with `createdById` field):
+- **Invoices**: Users can only access/modify invoices they created. Enforced via storage layer filtering `getInvoice(id, userId)`.
+- **Tasks**: Users can access tasks they created (`createdById`) OR are assigned to (`assignedToId`). Enforced via `checkTaskOwnership()` helper.
+- **Proposals**: Similar ownership model (if implemented).
+
+**SHARED Resources** (no ownership field):
+- **Projects**: Organization-wide access. All authenticated users can view/edit any project.
+- **Clients**: Organization-wide access. All authenticated users can view/edit any client.
+
+**Admin Override**: Admin role (`role === 'admin'`) bypasses all ownership checks and can access all resources.
+
+**Invoice Financial Calculations**: All invoice totals are recalculated server-side using `server/utils/invoice-calculations.ts` to prevent client-side tampering. Client-side calculations are display-only.
+
 ### Database Design
 
 The application uses PostgreSQL with Drizzle ORM, featuring:

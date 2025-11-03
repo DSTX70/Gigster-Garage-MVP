@@ -324,6 +324,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.user = req.session.user;
     next();
   };
+  
+  // ========== PERMISSION ENFORCEMENT HELPERS ==========
+  // NOTE: Two resource models exist in this app:
+  // 1. OWNED resources (invoices, tasks, proposals) - have createdById field
+  // 2. SHARED resources (projects, clients) - org-wide access, no ownership
+  
+  /**
+   * Check if user owns a resource or is admin
+   * Used for resources with createdById field
+   */
+  const canAccessResource = (resourceCreatedById: string | null, currentUserId: string, userRole: string): boolean => {
+    if (userRole === 'admin') return true;
+    if (!resourceCreatedById) return false; // Null safety
+    return resourceCreatedById === currentUserId;
+  };
+  
+  /**
+   * Check task ownership - user must be creator or assignee
+   * Tasks have createdById AND assignedToId
+   */
+  const checkTaskOwnership = async (taskId: string, userId: string, userRole: string): Promise<boolean> => {
+    if (userRole === 'admin') return true;
+    const task = await storage.getTask(taskId);
+    if (!task) return false;
+    // User can access if they created it OR it's assigned to them
+    return task.createdById === userId || task.assignedToId === userId;
+  };
+  
+  /**
+   * Check invoice ownership - must match createdById
+   * Invoices have createdById field (storage layer already filters)
+   */
+  const checkInvoiceOwnership = async (invoiceId: string, userId: string, userRole: string): Promise<boolean> => {
+    if (userRole === 'admin') return true;
+    const invoice = await storage.getInvoice(invoiceId, userId);
+    return invoice !== undefined; // If storage returned it, user owns it
+  };
+  
+  /**
+   * Projects are SHARED resources - all authenticated users can access
+   * No createdById field exists in schema
+   */
+  const canAccessProject = async (projectId: string): Promise<boolean> => {
+    const project = await storage.getProject(projectId);
+    return project !== undefined; // Any authenticated user can access if it exists
+  };
+  
+  /**
+   * Clients are SHARED resources - all authenticated users can access
+   * No createdById field exists in schema
+   */
+  const canAccessClient = async (clientId: string): Promise<boolean> => {
+    const client = await storage.getClient(clientId);
+    return client !== undefined; // Any authenticated user can access if it exists
+  };
 
   // Error tracking endpoints for audit purposes (after session middleware)
   app.get('/api/_audit/errors/top', requireAdmin, (req, res) => {
@@ -1170,16 +1225,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check permissions
+      // First check if task exists (404), then check permission (403)
       const user = req.session.user!;
       const existingTask = await storage.getTask(id);
       if (!existingTask) {
         return res.status(404).json({ message: "Task not found" });
       }
-
-      // Users can only update tasks assigned to them, admins can update all
-      if (user.role !== 'admin' && existingTask.assignedToId !== user.id) {
-        return res.status(403).json({ message: "Access denied" });
+      
+      // Now check if user has permission to update
+      const hasAccess = await checkTaskOwnership(id, user.id, user.role);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied: You can only update tasks you created or are assigned to" });
       }
 
       const { progress, ...updateData } = result.data;
@@ -1238,16 +1294,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
-      // Check permissions
+      // First check if task exists (404), then check permission (403)
       const user = req.session.user!;
       const existingTask = await storage.getTask(id);
       if (!existingTask) {
         return res.status(404).json({ message: "Task not found" });
       }
-
-      // Only admins can delete tasks
-      if (user.role !== 'admin') {
-        return res.status(403).json({ message: "Access denied" });
+      
+      // Now check if user has permission to delete
+      const hasAccess = await checkTaskOwnership(id, user.id, user.role);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied: You can only delete tasks you created or are assigned to" });
       }
 
       const success = await storage.deleteTask(id);
