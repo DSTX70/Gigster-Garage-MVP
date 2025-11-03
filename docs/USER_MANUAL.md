@@ -1537,13 +1537,69 @@ Press `?` anywhere to view this guide.
 
 ## API Documentation
 
-### REST API
+### Overview
 
-Base URL: `https://your-instance.com/api`
+Gigster Garage provides comprehensive REST APIs for automation and integration. The API includes three specialized agent services plus core functionality.
 
-#### Authentication
+**Base URL**: `http://localhost:8000/api` (development)  
+**Authentication**: Session-based (HTTP-only cookies)  
+**Format**: JSON  
+**Version**: 0.1.0
+
+### NPM Client Package
+
+**Official TypeScript Client**: `@gigster-garage/api-client`
+
+A type-safe, NPM-ready client library with full TypeScript support (ESM + CJS + type definitions).
+
+#### Installation
+
 ```bash
-# Login
+npm install @gigster-garage/api-client
+```
+
+#### Quick Start
+
+```typescript
+import { createClient } from "@gigster-garage/api-client";
+
+const client = createClient({ 
+  baseUrl: "http://localhost:8000" 
+});
+
+// Create a pack
+await client.postApiPacks({ 
+  body: { 
+    name: "Local Lift", 
+    summary: "Starter pack", 
+    price: 499 
+  }
+});
+
+// Generate blueprint
+await client.postApiPacksByPackIdBlueprint({ 
+  params: { packId: "abc" }, 
+  body: { 
+    includeDoD: true, 
+    includeKPIs: true 
+  }
+});
+```
+
+#### Features
+
+- **Full TypeScript support** with generated type definitions
+- **ESM and CJS builds** for maximum compatibility
+- **Unit test scaffolds** included (Vitest)
+- **Mocked fetch** for testing
+- **Auto-build** with tsup bundler
+
+---
+
+### Authentication API
+
+#### Login
+```bash
 POST /api/auth/login
 {
   "email": "user@example.com",
@@ -1621,6 +1677,375 @@ POST /api/invoices/:id/payments
   "paymentMethod": "check"
 }
 ```
+
+---
+
+### Packsmith API
+
+**Agent**: Packsmith  
+**Purpose**: Create and manage service packs with automated blueprint generation
+
+#### List Packs
+```bash
+GET /api/packs
+
+# Response
+{
+  "items": [
+    {
+      "id": "pack_123",
+      "name": "Local Lift",
+      "summary": "Starter pack",
+      "price": 499,
+      "status": "active"
+    }
+  ]
+}
+```
+
+#### Create Pack (Draft)
+```bash
+POST /api/packs
+{
+  "name": "Local Lift",
+  "summary": "Website starter pack",
+  "price": 499
+}
+
+# Response: 201 Created
+{
+  "id": "pack_123",
+  "name": "Local Lift",
+  "summary": "Website starter pack",
+  "price": 499,
+  "status": "draft"
+}
+```
+
+#### Get Pack
+```bash
+GET /api/packs/{packId}
+
+# Response
+{
+  "id": "pack_123",
+  "name": "Local Lift",
+  "summary": "Website starter pack",
+  "price": 499,
+  "status": "active"
+}
+```
+
+#### Update Pack
+```bash
+PATCH /api/packs/{packId}
+{
+  "summary": "Updated description",
+  "price": 599,
+  "status": "active"
+}
+
+# Status options: draft, active, archived
+```
+
+#### Generate Blueprint (L1 Draft)
+```bash
+POST /api/packs/{packId}/blueprint
+{
+  "includeDoD": true,
+  "includeKPIs": true
+}
+
+# Response
+{
+  "packId": "pack_123",
+  "dod": [
+    "Landing page deployed",
+    "Contact form working",
+    "Analytics installed"
+  ],
+  "kpis": [
+    "Page load time < 2s",
+    "Mobile responsive",
+    "WCAG AA compliant"
+  ],
+  "tasks": [
+    "Setup hosting",
+    "Configure DNS",
+    "Install SSL certificate"
+  ],
+  "updatedAt": "2025-11-03T12:00:00Z"
+}
+```
+
+#### Get Blueprint
+```bash
+GET /api/packs/{packId}/blueprint
+
+# Returns latest blueprint
+```
+
+#### Seed Tasks from Blueprint
+```bash
+POST /api/packs/{packId}/seed
+
+# Creates draft tasks in the system
+# Response: 201 Created
+{
+  "createdTasks": 12,
+  "checklists": 3
+}
+```
+
+---
+
+### Importer API
+
+**Agent**: Importer  
+**Purpose**: Import data from CSV/Google Sheets with mapping and validation
+
+#### Start Import Session
+```bash
+POST /api/import/sessions
+{
+  "entity": "tasks"  # or "contacts", "products"
+}
+
+# Response: 201 Created
+{
+  "id": "session_abc",
+  "entity": "tasks",
+  "status": "created",
+  "createdAt": "2025-11-03T12:00:00Z"
+}
+```
+
+#### Get Session Status
+```bash
+GET /api/import/sessions/{sessionId}
+
+# Response
+{
+  "id": "session_abc",
+  "entity": "tasks",
+  "status": "mapping",  # created, uploaded, mapping, validated, staged, committed
+  "createdAt": "2025-11-03T12:00:00Z"
+}
+```
+
+#### Upload File
+```bash
+POST /api/import/sessions/{sessionId}/upload
+Content-Type: multipart/form-data
+
+file: [CSV or XLSX file]
+
+# Response
+{
+  "rowsDetected": 150,
+  "columns": [
+    "Task Name",
+    "Priority",
+    "Due Date",
+    "Assigned To"
+  ]
+}
+```
+
+#### Map Columns
+```bash
+POST /api/import/sessions/{sessionId}/map
+{
+  "mappings": [
+    { "from": "Task Name", "to": "title" },
+    { "from": "Priority", "to": "priority" },
+    { "from": "Due Date", "to": "dueDate" },
+    { "from": "Assigned To", "to": "assignedTo" }
+  ]
+}
+
+# Response
+{
+  "unmapped": []  # columns not mapped
+}
+```
+
+#### Validate Import
+```bash
+POST /api/import/sessions/{sessionId}/validate
+
+# Response
+{
+  "errors": [
+    {
+      "row": 5,
+      "column": "priority",
+      "message": "Invalid priority value"
+    }
+  ],
+  "warnings": [
+    {
+      "row": 12,
+      "column": "dueDate",
+      "message": "Date format unusual"
+    }
+  ],
+  "validRows": 145,
+  "invalidRows": 5
+}
+```
+
+#### Stage Import
+```bash
+POST /api/import/sessions/{sessionId}/stage
+
+# Stages valid rows for approval
+# Response: 201 Created
+{
+  "stagedRows": 145,
+  "pendingApproval": true
+}
+```
+
+#### Commit Import (Requires Approval)
+```bash
+POST /api/import/sessions/{sessionId}/commit
+
+# Commits staged rows to database
+# Response: 202 Accepted
+{
+  "status": "processing",
+  "importedRows": 145
+}
+```
+
+#### Cancel Session
+```bash
+DELETE /api/import/sessions/{sessionId}
+
+# Response: 204 No Content
+```
+
+---
+
+### iCadence API
+
+**Agent**: iCadence Connector  
+**Purpose**: Manage marketing channels with UTM tracking and spend attribution
+
+#### List Channels
+```bash
+GET /api/icadence/channels
+
+# Response
+{
+  "items": [
+    {
+      "id": "channel_123",
+      "name": "Facebook Ads",
+      "platform": "facebook",
+      "status": "connected",
+      "utmPresets": {
+        "utm_source": "facebook",
+        "utm_medium": "paid"
+      }
+    }
+  ]
+}
+```
+
+#### Start Channel Connection (Wizard)
+```bash
+POST /api/icadence/channels
+{
+  "platform": "facebook",  # or "google", "twitter", "linkedin"
+  "name": "Facebook Ads Campaign"
+}
+
+# Response: 201 Created
+{
+  "id": "session_xyz",
+  "platform": "facebook",
+  "status": "pending_auth",
+  "authUrl": "https://facebook.com/oauth/authorize?..."
+}
+```
+
+#### Get Channel Details
+```bash
+GET /api/icadence/channels/{channelId}
+
+# Response
+{
+  "id": "channel_123",
+  "name": "Facebook Ads",
+  "platform": "facebook",
+  "status": "connected",
+  "connectedAt": "2025-11-03T12:00:00Z",
+  "utmPresets": {
+    "utm_source": "facebook",
+    "utm_medium": "paid",
+    "utm_campaign": "fall2025"
+  }
+}
+```
+
+#### Set UTM Presets
+```bash
+PUT /api/icadence/channels/{channelId}/utms
+{
+  "utm_source": "facebook",
+  "utm_medium": "paid",
+  "utm_campaign": "fall2025",
+  "utm_term": "software",
+  "utm_content": "carousel_ad"
+}
+
+# Response
+{
+  "id": "channel_123",
+  "utmPresets": { /* updated presets */ }
+}
+```
+
+#### Test Post (Sandbox)
+```bash
+POST /api/icadence/channels/{channelId}/test-post
+{
+  "message": "Test post content",
+  "utmParams": {
+    "utm_campaign": "test_campaign"
+  }
+}
+
+# Response
+{
+  "status": "posted",
+  "postId": "post_456",
+  "previewUrl": "https://platform.com/posts/456"
+}
+```
+
+#### Ingest Spend Logs
+```bash
+POST /api/icadence/spend
+{
+  "entries": [
+    {
+      "channelId": "channel_123",
+      "date": "2025-11-03",
+      "amount": 150.00,
+      "currency": "USD",
+      "impressions": 50000,
+      "clicks": 1200
+    }
+  ]
+}
+
+# Response: 202 Accepted
+```
+
+---
 
 ### Rate Limiting
 
