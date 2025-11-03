@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gigster Garage - Demo Hub</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0B1D3A 0%, #004C6D 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      margin-bottom: 15px;
+      background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 1.3rem;
+      color: #94A3B8;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+      margin-top: 40px;
+    }
+
+    .demo-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 30px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .demo-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(96, 165, 250, 0.3);
+      border-color: #60A5FA;
+    }
+
+    .demo-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .demo-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      color: #60A5FA;
+    }
+
+    .demo-card p {
+      color: #CBD5E1;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .demo-link {
+      display: inline-block;
+      padding: 10px 20px;
+      background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .demo-link:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(96, 165, 250, 0.4);
+    }
+
+    .docs-section {
+      margin-top: 50px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .docs-section h3 {
+      color: #60A5FA;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+
+    .docs-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .docs-list li {
+      background: rgba(96, 165, 250, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .docs-list a {
+      color: #60A5FA;
+      text-decoration: none;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .docs-list a:hover {
+      color: #93C5FD;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #FBBF24;
+      color: #0B1D3A;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-left: 8px;
+    }
+
+    footer {
+      margin-top: 50px;
+      text-align: center;
+      color: #94A3B8;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+
+      .demo-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 Gigster Garage</h1>
+      <p class="subtitle">Demo & Tutorial Hub</p>
+    </header>
+
+    <div class="demo-grid">
+      <div class="demo-card" onclick="window.location.href='interactive-tutorial.html'">
+        <span class="demo-icon">🎓</span>
+        <h2>Interactive Tutorial <span class="badge">Recommended</span></h2>
+        <p>Step-by-step walkthrough with 10 chapters covering all features. Perfect for learning at your own pace.</p>
+        <a href="interactive-tutorial.html" class="demo-link">Start Tutorial →</a>
+      </div>
+
+      <div class="demo-card">
+        <span class="demo-icon">🎬</span>
+        <h2>Video Demo</h2>
+        <p>Automated video demo (90 seconds). Requires running the demo script. See README for instructions.</p>
+        <a href="README.md" class="demo-link">View Instructions →</a>
+      </div>
+
+      <div class="demo-card">
+        <span class="demo-icon">📝</span>
+        <h2>Narration Script</h2>
+        <p>Complete voiceover script with timestamps. Great for creating custom demos or live presentations.</p>
+        <a href="narration-script.md" class="demo-link">Read Script →</a>
+      </div>
+
+      <div class="demo-card" onclick="window.location.href='../'">
+        <span class="demo-icon">🏠</span>
+        <h2>Launch Gigster Garage</h2>
+        <p>Ready to try it yourself? Launch the full application and start managing your workflow.</p>
+        <a href="../" class="demo-link">Open App →</a>
+      </div>
+    </div>
+
+    <div class="docs-section">
+      <h3>📚 Documentation</h3>
+      <ul class="docs-list">
+        <li>
+          <a href="../docs/QUICK_START.md">
+            <span>⚡</span> Quick Start Guide
+          </a>
+        </li>
+        <li>
+          <a href="../docs/USER_MANUAL.md">
+            <span>📖</span> User Manual
+          </a>
+        </li>
+        <li>
+          <a href="README.md">
+            <span>🎥</span> Demo README
+          </a>
+        </li>
+        <li>
+          <a href="../replit.md">
+            <span>🏗️</span> Architecture Docs
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="docs-section">
+      <h3>🎯 Key Features</h3>
+      <ul class="docs-list">
+        <li>✅ Task Management</li>
+        <li>⏱️ Time Tracking</li>
+        <li>💰 Invoicing</li>
+        <li>🤖 Workflow Automation (Pro)</li>
+        <li>🤖 17 AI Agents (Enterprise)</li>
+        <li>🔌 TypeScript API Client</li>
+        <li>📊 Advanced Analytics</li>
+        <li>👥 Team Collaboration</li>
+      </ul>
+    </div>
+
+    <footer>
+      <p>Gigster Garage &copy; 2025 | Built with ❤️ for productivity</p>
+      <p style="margin-top: 10px;">
+        <a href="https://github.com/gigster-garage" style="color: #60A5FA;">GitHub</a> · 
+        <a href="../docs/USER_MANUAL.md" style="color: #60A5FA;">Documentation</a> · 
+        <a href="../" style="color: #60A5FA;">Live App</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '1') window.location.href = 'interactive-tutorial.html';
+      if (e.key === '2') window.location.href = 'README.md';
+      if (e.key === '3') window.location.href = '../';
+    });
+
+    // Check if video exists
+    fetch('../attached_assets/demo/gigster-garage-demo.mp4')
+      .then(response => {
+        if (response.ok) {
+          const videoCard = document.querySelectorAll('.demo-card')[1];
+          const link = videoCard.querySelector('.demo-link');
+          link.href = '../attached_assets/demo/gigster-garage-demo.mp4';
+          link.textContent = 'Watch Video →';
+          link.onclick = null;
+
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.textContent = 'Ready';
+          badge.style.background = '#10B981';
+          videoCard.querySelector('h2').appendChild(badge);
+        }
+      })
+      .catch(() => {
+        // Video doesn't exist, keep default state
+      });
+  </script>
+</body>
+</html>

@@ -107,6 +107,30 @@ A professional TypeScript client package is available for API integration:
 - **Endpoints**: 22 API endpoints (Packsmith, Importer, iCadence)
 - **Documentation**: See `docs/USER_MANUAL.md` → API Documentation section
 
+## Demo & Tutorial System
+
+Comprehensive demo materials for user onboarding, sales, and training:
+
+**Interactive HTML Tutorial** (Recommended):
+- **File**: `demo/interactive-tutorial.html`
+- **Features**: 10-chapter guided walkthrough, self-contained, zero dependencies
+- **Use Cases**: User onboarding, sales demonstrations, training
+- **Access**: Open directly in browser or deploy to static hosting
+
+**Automated Video Demo** (Advanced):
+- **Script**: `demo/video-demo.ts` (Puppeteer + ffmpeg)
+- **Duration**: ~90 seconds, 9 scenes
+- **Output**: MP4 video, narration script, individual screenshots
+- **Command**: `npm run demo:video`
+- **Note**: Uses deterministic selector-based waits for SPA navigation (data-testid, role attributes, XPath)
+
+**Documentation**:
+- `demo/README.md` - Complete setup, deployment, troubleshooting
+- `demo/narration-script.md` - Professional voiceover script with production notes
+- `demo/index.html` - Demo hub landing page
+
+**Coverage**: Login, dashboard, task creation, time tracking, invoicing, command palette, workflow automation, AI agents, settings
+
 ## External Dependencies
 
 - **@neondatabase/serverless**: PostgreSQL database connection.
