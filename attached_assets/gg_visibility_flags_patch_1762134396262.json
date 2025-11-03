@@ -1,0 +1,92 @@
+{
+  "brand": "Gigster Garage",
+  "generated_on": "2025-11-03",
+  "visibility_patches": [
+    {
+      "id": "agent.itsa",
+      "visibility": {
+        "expose_to_users": false,
+        "dashboard_card": true,
+        "graduation_plan": {
+          "target_tool": "Smart Scoper",
+          "phase": "Pilot\u2192External Beta",
+          "flip_on": "2026-03-01"
+        }
+      }
+    },
+    {
+      "id": "agent.ssk",
+      "visibility": {
+        "expose_to_users": false,
+        "dashboard_card": true,
+        "graduation_plan": {
+          "target_tool": "LaunchPad",
+          "phase": "Pilot\u2192External Beta",
+          "flip_on": "2026-04-01"
+        }
+      }
+    },
+    {
+      "id": "agent.exec_orchestrator",
+      "visibility": {
+        "expose_to_users": false,
+        "dashboard_card": true,
+        "graduation_plan": {
+          "target_tool": "ShipBot",
+          "phase": "Internal GA\u2192External Pilot",
+          "flip_on": "2026-06-01"
+        }
+      }
+    },
+    {
+      "id": "agent.planner",
+      "visibility": {
+        "expose_to_users": false,
+        "dashboard_card": true,
+        "graduation_plan": {
+          "target_tool": "Planner Pro",
+          "phase": "Pilot\u2192External Beta",
+          "flip_on": "2026-03-15"
+        }
+      }
+    },
+    {
+      "id": "agent.ledger",
+      "visibility": {
+        "expose_to_users": false,
+        "dashboard_card": true,
+        "graduation_plan": {
+          "target_tool": "Optimizer.AI",
+          "phase": "Internal Beta\u2192External Pilot",
+          "flip_on": "2026-07-01"
+        }
+      }
+    },
+    {
+      "id": "agent.sentinel",
+      "visibility": {
+        "expose_to_users": false,
+        "dashboard_card": true,
+        "graduation_plan": {
+          "target_tool": "LicenseLens",
+          "phase": "Internal GA\u2192External Beta",
+          "flip_on": "2026-05-01"
+        }
+      }
+    }
+  ],
+  "flag_templates": {
+    "feature_flags": {
+      "agents.{id}.enabled": true,
+      "agents.{id}.expose_to_users": "{bool}",
+      "agents.{id}.external_tool_id": "{string|null}"
+    },
+    "promotion_rule_example": {
+      "all_true": [
+        "kpi.on_time_milestone_rate >= 0.95",
+        "kpi.gate_escape_rate <= 0.01",
+        "ops.incident_count_30d == 0"
+      ]
+    }
+  }
+}

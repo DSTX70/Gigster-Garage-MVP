@@ -1,0 +1,7 @@
+Internal Agent,External Toolkit,Phase,Start,End,Owner,Graduation Criteria
+agent.itsa,Smart Scoper,Pilot → External Beta,2025-11-03,2026-02-28,OS/Helm + Prism,≥90% scope accept-rate; <10% rework; SLA ≤48h
+agent.ssk,LaunchPad,Pilot → External Beta,2025-11-10,2026-03-31,Helm + Forge,CI green on first boot ≥85%; time-to-boot ≤30m
+agent.exec_orchestrator,ShipBot,Internal GA → External Pilot,2026-01-15,2026-05-31,Helm,Gate escape rate <1%; rollback <5m; audit logs 100%
+agent.planner,Planner Pro,Pilot → External Beta,2025-12-01,2026-03-15,Lume,Plan accept-rate ≥95%; DoD attached 100%
+agent.ledger,Optimizer.AI,Internal Beta → External Pilot,2026-02-01,2026-06-30,Ledger,GM% within band; cost/req ↓ 20%
+agent.sentinel,LicenseLens,Internal GA → External Beta,2026-01-05,2026-04-30,Sentinel/Aegis,Policy pass-rate ≥99%; notices auto-gen
