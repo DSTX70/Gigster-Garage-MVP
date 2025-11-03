@@ -1356,3 +1356,77 @@ export const insertAiConversationSchema = createInsertSchema(aiConversations).om
   updatedAt: true,
   completedAt: true,
 });
+
+// Agent Management - Internal agents and their visibility/graduation tracking
+export const agents = pgTable("agents", {
+  id: varchar("id").primaryKey(), // e.g., "agent.itsa", "agent.ssk"
+  name: varchar("name").notNull(), // Display name
+  description: text("description"),
+  category: varchar("category"), // e.g., "scoping", "execution", "governance"
+  status: varchar("status", { enum: ["pilot", "internal_beta", "internal_ga", "external_pilot", "external_beta", "external_ga", "deprecated"] }).default("pilot"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Agent = typeof agents.$inferSelect;
+export type InsertAgent = typeof agents.$inferInsert;
+
+// Agent Visibility Flags - Control what users see
+export const agentVisibilityFlags = pgTable("agent_visibility_flags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").references(() => agents.id, { onDelete: "cascade" }).notNull(),
+  exposeToUsers: boolean("expose_to_users").default(false),
+  dashboardCard: boolean("dashboard_card").default(true),
+  externalToolId: varchar("external_tool_id"), // Linked external toolkit name
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AgentVisibilityFlag = typeof agentVisibilityFlags.$inferSelect;
+export type InsertAgentVisibilityFlag = typeof agentVisibilityFlags.$inferInsert;
+
+// Agent Graduation Plans - Track progression from internal to external
+export const agentGraduationPlans = pgTable("agent_graduation_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").references(() => agents.id, { onDelete: "cascade" }).notNull(),
+  targetTool: varchar("target_tool").notNull(), // e.g., "Smart Scoper", "LaunchPad"
+  phase: varchar("phase").notNull(), // e.g., "Pilot→External Beta"
+  startDate: date("start_date"),
+  targetDate: date("target_date"), // When to flip on
+  endDate: date("end_date"),
+  owner: varchar("owner"), // Team/person responsible
+  graduationCriteria: text("graduation_criteria"), // Success criteria
+  currentProgress: jsonb("current_progress").$type<{
+    acceptRate?: number;
+    reworkRate?: number;
+    slaCompliance?: number;
+    gateEscapeRate?: number;
+    incidentCount?: number;
+    [key: string]: any;
+  }>().default({}),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AgentGraduationPlan = typeof agentGraduationPlans.$inferSelect;
+export type InsertAgentGraduationPlan = typeof agentGraduationPlans.$inferInsert;
+
+// Zod schemas for agents
+export const insertAgentSchema = createInsertSchema(agents).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAgentVisibilityFlagSchema = createInsertSchema(agentVisibilityFlags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAgentGraduationPlanSchema = createInsertSchema(agentGraduationPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+});
