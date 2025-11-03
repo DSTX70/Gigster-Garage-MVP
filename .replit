@@ -96,23 +96,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Remix Hub App"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Start application"
-
-[[workflows.workflow]]
-name = "Remix Hub App"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd remix-hub-app && PORT=3000 npm run dev"
-waitForPort = 3000
 
 [[workflows.workflow]]
 name = "Start application"

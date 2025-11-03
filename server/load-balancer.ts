@@ -545,22 +545,16 @@ export class LoadBalancer {
   }
 
   private initializeDefaultServers(): void {
-    // Add some default server instances
-    this.addServer({
-      host: 'localhost',
-      port: 3001,
-      weight: 100,
-      maxConnections: 1000
-    });
+    // NOTE: Default servers disabled in single-instance deployment
+    // In production multi-instance setup, configure actual server instances here
+    // this.addServer({
+    //   host: 'localhost',
+    //   port: 3001,
+    //   weight: 100,
+    //   maxConnections: 1000
+    // });
 
-    this.addServer({
-      host: 'localhost',
-      port: 3002,
-      weight: 100,
-      maxConnections: 1000
-    });
-
-    console.log('⚖️ Default servers initialized');
+    console.log('⚖️ Load balancer ready (no default servers in single-instance mode)');
   }
 
   private startHealthChecks(): void {

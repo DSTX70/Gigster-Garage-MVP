@@ -1,0 +1,46 @@
+{
+  "agents": {
+    "agent.itsa": {
+      "enabled": true,
+      "expose_to_users": false,
+      "external_tool_id": null,
+      "status": "green",
+      "updated": "2025-11-03T00:00:00Z"
+    },
+    "agent.ssk": {
+      "enabled": true,
+      "expose_to_users": false,
+      "external_tool_id": null,
+      "status": "amber",
+      "updated": "2025-11-03T00:00:00Z"
+    },
+    "agent.exec_orchestrator": {
+      "enabled": true,
+      "expose_to_users": false,
+      "external_tool_id": null,
+      "status": "red",
+      "updated": "2025-11-03T00:00:00Z"
+    },
+    "agent.planner": {
+      "enabled": true,
+      "expose_to_users": false,
+      "external_tool_id": null,
+      "status": "green",
+      "updated": "2025-11-03T00:00:00Z"
+    },
+    "agent.ledger": {
+      "enabled": true,
+      "expose_to_users": false,
+      "external_tool_id": null,
+      "status": "amber",
+      "updated": "2025-11-03T00:00:00Z"
+    },
+    "agent.sentinel": {
+      "enabled": true,
+      "expose_to_users": false,
+      "external_tool_id": null,
+      "status": "green",
+      "updated": "2025-11-03T00:00:00Z"
+    }
+  }
+}
