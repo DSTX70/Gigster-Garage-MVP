@@ -1,0 +1,31 @@
+Title,Body,Labels,Assignees,Estimate,Branch
+GG-101 — Platform SDKs → Live Posting (X/IG/LinkedIn),"DoD: Posts succeed on 3 platforms; env secrets; retryable errors; audit lines; README updated.
+Branch: `feature/social-platform-adapters`
+Estimate: 8 pts","GG-101,feature,integrations,social","forge,bridge",8,feature/social-platform-adapters
+GG-102 — Worker Autoscale + Durability,"DoD: Stateless worker; CONCURRENCY env; FOR UPDATE SKIP LOCKED; graceful shutdown; no dupes in soak test.
+Branch: `feat/social-worker-scale`
+Estimate: 5 pts","GG-102,infra,worker,scaling","pulse,forge",5,feat/social-worker-scale
+GG-103 — Alerting & SLOs (Social Queue),"DoD: Error budget alert (>5%/hr), queue age (>30m), RL saturation; weekly ops digest email.
+Branch: `ops/alerts-social-queue`
+Estimate: 3 pts","GG-103,ops,SLO,alerts","sentinel,pulse",3,ops/alerts-social-queue
+GG-104 — RFP Responder → Draft Generator (E2E),"DoD: `rfp.requested` → Proposal draft w/ sections + attachments; assignee notified; ingest page shows entry.
+Branch: `feature/rfp-drafts-e2e`
+Estimate: 5 pts","GG-104,feature,rfp","switchboard,codeblock",5,feature/rfp-drafts-e2e
+GG-105 — Loyalty Ledger → Points UI + Rules,"DoD: `/loyalty` admin shows history; payment webhook awards points; adjust/redeem; CSV export.
+Branch: `feature/loyalty-ui-rules`
+Estimate: 5 pts","GG-105,feature,loyalty","bridge,lume",5,feature/loyalty-ui-rules
+GG-106 — Brand & Voice Polish (Top 20 Screens),"DoD: Zero token/contrast/copy variances; shared components updated; screenshots attached.
+Branch: `chore/brand-voice-pass`
+Estimate: 3 pts","GG-106,design,brand,copy","nova,prism,storybloom,chiesan",3,chore/brand-voice-pass
+GG-107 — SSO Hardening + Org-Binding UX,"DoD: Stronger ACS validator; `requiresOrgBinding` flow; edge-case tests green.
+Branch: `feat/sso-org-binding`
+Estimate: 3 pts","GG-107,auth,sso","verifier,lume",3,feat/sso-org-binding
+GG-108 — Pricing Page + Paywall Fences,"DoD: Free/Pro/Studio enforced server+client; pricing page live; upgrade prompts wired.
+Branch: `feature/pricing-and-fences`
+Estimate: 5 pts","GG-108,pricing,fences","ledger,foundry,prism",5,feature/pricing-and-fences
+GG-109 — Competitive Matrix + GTM Starter Pack,"DoD: Matrix w/ sources; 10 influencer briefs; affiliate one-pager; 30-day content plan; deck exported.
+Branch: `gtm/launch-pack`
+Estimate: 5 pts","GG-109,gtm,marketing","prism,foundry,storybloom,amani",5,gtm/launch-pack
+GG-110 — IP Snapshot (Provisional + Trade Secrets),"DoD: Claims outline; figure list; TS register; filing-order memo.
+Branch: `ip/provisional-snapshot`
+Estimate: 5 pts","GG-110,ip,legal","aegis,atlas,archivist,coda",5,ip/provisional-snapshot

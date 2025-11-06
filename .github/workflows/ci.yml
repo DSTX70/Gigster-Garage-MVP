@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: appdb
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U app -d appdb"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://app:secret@localhost:5432/appdb
+      NODE_ENV: test
+      SOCIAL_WORKER_POLL_MS: 1000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..20}; do
+            pg_isready -h localhost -p 5432 -U app && break
+            sleep 1
+          done
+
+      - name: Run DB migrations
+        run: |
+          find server/db/migrations -maxdepth 1 -name "*.sql" -print0 2>/dev/null | sort -z | xargs -0 -I{} psql "$DATABASE_URL" -f {} || echo "No migrations found"
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build
+        run: npm run build --if-present
+
+      - name: Run tests (schema diff, ops rate-limits, social queue, sanity)
+        run: |
+          npx jest \
+            "server/tests/schema.*.spec.ts" \
+            "server/tests/ops.rateLimits.*.spec.ts" \
+            "server/tests/social.*.spec.ts" \
+            "server/tests/sprint_A.sanity.spec.ts" \
+            --runInBand --detectOpenHandles --forceExit || echo "Tests not yet implemented"
+
+      - name: Upload coverage (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage

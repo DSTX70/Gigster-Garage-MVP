@@ -1,0 +1,312 @@
+here are drop-in assets for bulk issue creation and a CI workflow that runs the new tests (ops.rateLimits.*, schema diffs, social queue).
+
+1) Bulk GitHub issues — two formats
+A) JSON (for gh CLI loop)
+
+/ops/github/issues.json
+
+[
+  {
+    "title": "GG-101 — Platform SDKs → Live Posting (X/IG/LinkedIn)",
+    "labels": ["GG-101","feature","integrations","social"],
+    "assignees": ["forge","bridge"],
+    "body": "DoD: Posts succeed on 3 platforms; env secrets; retryable errors; audit lines; README updated.\nBranch: `feature/social-platform-adapters`\nEstimate: 8 pts"
+  },
+  {
+    "title": "GG-102 — Worker Autoscale + Durability",
+    "labels": ["GG-102","infra","worker","scaling"],
+    "assignees": ["pulse","forge"],
+    "body": "DoD: Stateless worker; CONCURRENCY env; FOR UPDATE SKIP LOCKED; graceful shutdown; no dupes in soak test.\nBranch: `feat/social-worker-scale`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-103 — Alerting & SLOs (Social Queue)",
+    "labels": ["GG-103","ops","SLO","alerts"],
+    "assignees": ["sentinel","pulse"],
+    "body": "DoD: Error budget alert (>5%/hr), queue age (>30m), RL saturation; weekly ops digest email.\nBranch: `ops/alerts-social-queue`\nEstimate: 3 pts"
+  },
+  {
+    "title": "GG-104 — RFP Responder → Draft Generator (E2E)",
+    "labels": ["GG-104","feature","rfp"],
+    "assignees": ["switchboard","codeblock"],
+    "body": "DoD: `rfp.requested` → Proposal draft w/ sections + attachments; assignee notified; ingest page shows entry.\nBranch: `feature/rfp-drafts-e2e`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-105 — Loyalty Ledger → Points UI + Rules",
+    "labels": ["GG-105","feature","loyalty"],
+    "assignees": ["bridge","lume"],
+    "body": "DoD: `/loyalty` admin shows history; payment webhook awards points; adjust/redeem; CSV export.\nBranch: `feature/loyalty-ui-rules`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-106 — Brand & Voice Polish (Top 20 Screens)",
+    "labels": ["GG-106","design","brand","copy"],
+    "assignees": ["nova","prism","storybloom","chiesan"],
+    "body": "DoD: Zero token/contrast/copy variances; shared components updated; screenshots attached.\nBranch: `chore/brand-voice-pass`\nEstimate: 3 pts"
+  },
+  {
+    "title": "GG-107 — SSO Hardening + Org-Binding UX",
+    "labels": ["GG-107","auth","sso"],
+    "assignees": ["verifier","lume"],
+    "body": "DoD: Stronger ACS validator; `requiresOrgBinding` flow; edge-case tests green.\nBranch: `feat/sso-org-binding`\nEstimate: 3 pts"
+  },
+  {
+    "title": "GG-108 — Pricing Page + Paywall Fences",
+    "labels": ["GG-108","pricing","fences"],
+    "assignees": ["ledger","foundry","prism"],
+    "body": "DoD: Free/Pro/Studio enforced server+client; pricing page live; upgrade prompts wired.\nBranch: `feature/pricing-and-fences`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-109 — Competitive Matrix + GTM Starter Pack",
+    "labels": ["GG-109","gtm","marketing"],
+    "assignees": ["prism","foundry","storybloom","amani"],
+    "body": "DoD: Matrix w/ sources; 10 influencer briefs; affiliate one-pager; 30-day content plan; deck exported.\nBranch: `gtm/launch-pack`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-110 — IP Snapshot (Provisional + Trade Secrets)",
+    "labels": ["GG-110","ip","legal"],
+    "assignees": ["aegis","atlas","archivist","coda"],
+    "body": "DoD: Claims outline; figure list; TS register; filing-order memo.\nBranch: `ip/provisional-snapshot`\nEstimate: 5 pts"
+  }
+]
+
+
+Importer script (uses gh CLI):
+
+/ops/github/import_issues.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+FILE="${1:-ops/github/issues.json}"
+
+which gh >/dev/null || { echo "Please install GitHub CLI: https://cli.github.com/"; exit 1; }
+
+jq -c '.[]' "$FILE" | while read -r issue; do
+  TITLE=$(echo "$issue" | jq -r '.title')
+  BODY=$(echo "$issue"  | jq -r '.body')
+  LABELS=$(echo "$issue"| jq -r '.labels | join(",")')
+  ASSIGNEES=$(echo "$issue" | jq -r '.assignees | join(",")')
+  gh issue create --title "$TITLE" --body "$BODY" \
+    ${LABELS:+--label "$LABELS"} \
+    ${ASSIGNEES:+--assignee "$ASSIGNEES"}
+done
+
+
+Run:
+
+chmod +x ops/github/import_issues.sh
+./ops/github/import_issues.sh ops/github/issues.json
+
+B) Markdown with frontmatter (one file, many issues)
+
+/.gh-issues.md
+
+---
+title: GG-101 — Platform SDKs → Live Posting (X/IG/LinkedIn)
+labels: [GG-101, feature, integrations, social]
+assignees: [forge, bridge]
+---
+DoD: Posts succeed on 3 platforms; env secrets; retryable errors; audit lines; README updated.  
+Branch: `feature/social-platform-adapters`  
+Estimate: 8 pts
+
+---
+title: GG-102 — Worker Autoscale + Durability
+labels: [GG-102, infra, worker, scaling]
+assignees: [pulse, forge]
+---
+DoD: Stateless worker; CONCURRENCY env; FOR UPDATE SKIP LOCKED; graceful shutdown; no dupes in soak test.  
+Branch: `feat/social-worker-scale`  
+Estimate: 5 pts
+
+---
+title: GG-103 — Alerting & SLOs (Social Queue)
+labels: [GG-103, ops, SLO, alerts]
+assignees: [sentinel, pulse]
+---
+DoD: Error budget alert (>5%/hr), queue age (>30m), RL saturation; weekly ops digest email.  
+Branch: `ops/alerts-social-queue`  
+Estimate: 3 pts
+
+---
+title: GG-104 — RFP Responder → Draft Generator (E2E)
+labels: [GG-104, feature, rfp]
+assignees: [switchboard, codeblock]
+---
+DoD: `rfp.requested` → Proposal draft w/ sections + attachments; assignee notified; ingest page shows entry.  
+Branch: `feature/rfp-drafts-e2e`  
+Estimate: 5 pts
+
+---
+title: GG-105 — Loyalty Ledger → Points UI + Rules
+labels: [GG-105, feature, loyalty]
+assignees: [bridge, lume]
+---
+DoD: `/loyalty` admin shows history; payment webhook awards points; adjust/redeem; CSV export.  
+Branch: `feature/loyalty-ui-rules`  
+Estimate: 5 pts
+
+---
+title: GG-106 — Brand & Voice Polish (Top 20 Screens)
+labels: [GG-106, design, brand, copy]
+assignees: [nova, prism, storybloom, chiesan]
+---
+DoD: Zero token/contrast/copy variances; shared components updated; screenshots attached.  
+Branch: `chore/brand-voice-pass`  
+Estimate: 3 pts
+
+---
+title: GG-107 — SSO Hardening + Org-Binding UX
+labels: [GG-107, auth, sso]
+assignees: [verifier, lume]
+---
+DoD: Stronger ACS validator; `requiresOrgBinding` flow; edge-case tests green.  
+Branch: `feat/sso-org-binding`  
+Estimate: 3 pts
+
+---
+title: GG-108 — Pricing Page + Paywall Fences
+labels: [GG-108, pricing, fences]
+assignees: [ledger, foundry, prism]
+---
+DoD: Free/Pro/Studio enforced server+client; pricing page live; upgrade prompts wired.  
+Branch: `feature/pricing-and-fences`  
+Estimate: 5 pts
+
+---
+title: GG-109 — Competitive Matrix + GTM Starter Pack
+labels: [GG-109, gtm, marketing]
+assignees: [prism, foundry, storybloom, amani]
+---
+DoD: Matrix w/ sources; 10 influencer briefs; affiliate one-pager; 30-day content plan; deck exported.  
+Branch: `gtm/launch-pack`  
+Estimate: 5 pts
+
+---
+title: GG-110 — IP Snapshot (Provisional + Trade Secrets)
+labels: [GG-110, ip, legal]
+assignees: [aegis, atlas, archivist, coda]
+---
+DoD: Claims outline; figure list; TS register; filing-order memo.  
+Branch: `ip/provisional-snapshot`  
+Estimate: 5 pts
+
+
+You can paste each block into New Issue → “Convert to Issue” with some GitHub project plugins, or run a small parser to create issues via API.
+
+2) GitHub Actions — CI for ops.rateLimits.*, schema diffs, social queue
+
+/.github/workflows/ci.yml
+
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: appdb
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U app -d appdb"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://app:secret@localhost:5432/appdb
+      NODE_ENV: test
+      SOCIAL_WORKER_POLL_MS: 1000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..20}; do
+            pg_isready -h localhost -p 5432 -U app && break
+            sleep 1
+          done
+
+      - name: Run DB migrations
+        run: |
+          # Include all SQL migrations your repo has (add more as needed)
+          find server/db/migrations -maxdepth 1 -name "*.sql" -print0 | sort -z | xargs -0 -I{} psql "$DATABASE_URL" -f {}
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build
+        run: npm run build --if-present
+
+      - name: Tests — rate-limits + schema + social queue
+        run: |
+          npx jest \
+            "server/tests/ops.rateLimits.*.spec.ts" \
+            "server/tests/schema.*.spec.ts" \
+            "server/tests/social.*.spec.ts" \
+            --runInBand --detectOpenHandles --forceExit
+
+      - name: Upload coverage (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+
+
+Notes:
+
+The workflow brings up Postgres and runs all SQL migrations in server/db/migrations/.
+
+It runs three test globs:
+
+ops.rateLimits.*.spec.ts (your dashboard/CSV/window tests)
+
+schema.*.spec.ts (response vs Zod)
+
+social.*.spec.ts (social queue tests)
+
+Adjust paths if your repo differs.
+
+3) Optional: tiny parser for .gh-issues.md → create issues
+
+/ops/github/create_from_md.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+FILE="${1:-.gh-issues.md}"
+
+# Requires: yq, gh
+which yq >/dev/null || { echo "Install yq: https://mikefarah.gitbook.io/yq/"; exit 1; }
+which gh >/dev/null || { echo "Install gh: https://cli.github.com/"; exit 1; }
+
+awk -v RS="---\n" 'NR>1{print >("issue_" NR ".md")}' "$FILE"
+
+for f in issue_*.md; do
+  title=$(yq '.title' "$f")
+  labels=$(yq -o=csv '.labels' "$f" | tr -d '"')
+  assignees=$(yq -o=csv '.assignees' "$f" | tr -d '"')
+  body=$(awk 'BEGIN{p=0} /^---$/{p=1;next} {if(p)print}' "$f")
+  gh issue create --title "$title" --body "$body" \
+    ${labels:+--label "$labels"} \
+    ${assignees:+--assignee "$assignees"}
+  rm "$f"
+done

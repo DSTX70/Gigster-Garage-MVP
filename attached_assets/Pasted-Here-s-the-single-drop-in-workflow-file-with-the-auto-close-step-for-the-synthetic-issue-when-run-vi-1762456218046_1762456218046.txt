@@ -1,0 +1,193 @@
+Here’s the single drop-in workflow file with the auto-close step for the synthetic issue when run via workflow_dispatch.
+Save as .github/workflows/auto-project-add.yml:
+name: Auto Project Add + Triage (with Self-Test & Auto-Close)
+
+on:
+  issues:
+    types: [opened, edited, labeled, assigned]
+  workflow_dispatch:
+    inputs:
+      test_title:
+        description: "Synthetic issue title (e.g., 'GG-101 P1: test issue')"
+        required: true
+        default: "GG-101 P1: synthetic test"
+      test_body:
+        description: "Synthetic issue body"
+        required: false
+        default: "Synthetic issue created by workflow_dispatch self-test."
+      test_labels:
+        description: "Comma-separated labels (e.g., 'priority:P1,pts:5')"
+        required: false
+        default: "priority:P1,pts:5"
+      test_assignees:
+        description: "Comma-separated assignees (usernames)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      ORG: your-org            # <-- CHANGE: your org handle
+      PROJECT_NUMBER: 1        # <-- CHANGE: your project number
+      DEFAULT_STATUS: "Todo"
+      ESTIMATE_FIELD: "Estimate"
+      OWNER_FIELD: "Owner"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup gh
+        uses: cli/cli-action@v2
+        with:
+          version: latest
+
+      - name: Authenticate gh
+        run: gh auth status || gh auth login --with-token <<<"$GITHUB_TOKEN"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Create a synthetic issue (self-test path)
+      - name: Create synthetic issue (self-test path)
+        id: synth
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TITLE: ${{ inputs.test_title }}
+          BODY: ${{ inputs.test_body }}
+          LABELS: ${{ inputs.test_labels }}
+          ASSIGNEES: ${{ inputs.test_assignees }}
+        run: |
+          REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+          LABEL_ARGS=""
+          if [ -n "$LABELS" ]; then LABEL_ARGS="--label $(echo "$LABELS" | tr -d ' ' )"; fi
+          ASSIGNEE_ARGS=""
+          if [ -n "$ASSIGNEES" ]; then ASSIGNEE_ARGS="--assignee $(echo "$ASSIGNEES" | tr -d ' ' )"; fi
+          URL=$(gh issue create --repo "$REPO" --title "$TITLE" --body "$BODY" $LABEL_ARGS $ASSIGNEE_ARGS --json url --jq .url)
+          echo "issue_url=$URL" >> $GITHUB_OUTPUT
+          echo "synthetic_issue_url=$URL"
+
+      - name: Resolve Project + Field IDs
+        id: meta
+        run: |
+          gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){
+                projectV2(number:$num){
+                  id
+                  fields(first:50){
+                    nodes{
+                      id name dataType
+                      ... on ProjectV2SingleSelectField { options { id name } }
+                      ... on ProjectV2IterationField { configuration { iterations { id title startDate duration state } } }
+                    }
+                  }
+                }
+              }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" > project.json
+
+          PROJECT_ID=$(jq -r '.data.organization.projectV2.id' project.json)
+          STATUS_FIELD_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name=="Status")   | .id' project.json)
+          ESTIMATE_FIELD_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name=="Estimate")| .id' project.json)
+          OWNER_FIELD_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name=="Owner")     | .id' project.json)
+          PRIORITY_FIELD_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name=="Priority") | .id' project.json)
+          SPRINT_FIELD_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name=="Sprint")    | .id' project.json)
+
+          STATUS_OPTION_ID=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){
+                projectV2(number:$num){
+                  field(name:"Status"){ ... on ProjectV2SingleSelectField { options { id name } } }
+                }
+              }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq ".data.organization.projectV2.field.options[] | select(.name==\"$DEFAULT_STATUS\") | .id")
+
+          PRIORITY_P1_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name=="Priority") | .options[]? | select(.name=="P1") | .id' project.json)
+          SPRINT_CURRENT_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name=="Sprint") | .configuration.iterations[]? | select(.state=="CURRENT") | .id' project.json)
+
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "status_field_id=$STATUS_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "estimate_field_id=$ESTIMATE_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "owner_field_id=$OWNER_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "status_option_id=$STATUS_OPTION_ID" >> $GITHUB_OUTPUT
+          echo "priority_field_id=$PRIORITY_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "priority_p1_id=$PRIORITY_P1_ID" >> $GITHUB_OUTPUT
+          echo "sprint_field_id=$SPRINT_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "sprint_current_id=$SPRINT_CURRENT_ID" >> $GITHUB_OUTPUT
+
+      - name: Project add + defaults + triage
+        env:
+          ORG: ${{ env.ORG }}
+          PROJECT_NUMBER: ${{ env.PROJECT_NUMBER }}
+          STATUS_FIELD_ID:   ${{ steps.meta.outputs.status_field_id }}
+          ESTIMATE_FIELD_ID: ${{ steps.meta.outputs.estimate_field_id }}
+          OWNER_FIELD_ID:    ${{ steps.meta.outputs.owner_field_id }}
+          STATUS_OPTION_ID:  ${{ steps.meta.outputs.status_option_id }}
+          PRIORITY_FIELD_ID: ${{ steps.meta.outputs.priority_field_id }}
+          PRIORITY_P1_ID:    ${{ steps.meta.outputs.priority_p1_id }}
+          SPRINT_FIELD_ID:   ${{ steps.meta.outputs.sprint_field_id }}
+          SPRINT_CURRENT_ID: ${{ steps.meta.outputs.sprint_current_id }}
+        run: |
+          # Determine issue URL (event vs synthetic)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ISSUE_URL="${{ steps.synth.outputs.issue_url }}"
+            TITLE="${{ inputs.test_title }}"
+            LABELS_CSV="${{ inputs.test_labels }}"
+            ASSIGNEES_CSV="${{ inputs.test_assignees }}"
+          else
+            ISSUE_URL="${{ github.event.issue.html_url }}"
+            TITLE='${{ github.event.issue.title }}'
+            LABELS_CSV=$(jq -r '[.issue.labels[].name // ""] | join(",")' <<< '${{ toJson(github.event) }}')
+            ASSIGNEES_CSV=$(jq -r '[.issue.assignees[].login // ""] | join(",")' <<< '${{ toJson(github.event) }}')
+          fi
+
+          # Add to project
+          ITEM_ID=$(gh project item-add --owner "$ORG" --project-number "$PROJECT_NUMBER" --url "$ISSUE_URL" --format json --jq .id)
+
+          # Defaults
+          gh project item-edit --id "$ITEM_ID" --field-id "$STATUS_FIELD_ID" --single-select-option-id "$STATUS_OPTION_ID"
+          OWNER=$(echo "$ASSIGNEES_CSV" | awk -F',' '{print $1}')
+          if [ -n "$OWNER" ]; then
+            gh project item-edit --id "$ITEM_ID" --field-id "$OWNER_FIELD_ID" --value "$OWNER"
+          fi
+          EST=$(echo "$LABELS_CSV" | tr ',' '\n' | grep -Eoi '^(pts|estimate):[0-9]+' | head -n1 | sed -E 's/^[^:]+://')
+          if [ -n "$EST" ]; then
+            gh project item-edit --id "$ITEM_ID" --field-id "$ESTIMATE_FIELD_ID" --value "$EST"
+          fi
+
+          # Auto-triage
+          if echo "$TITLE" | grep -qi 'P1:' || echo "$LABELS_CSV" | tr ',' '\n' | grep -qi '^priority:P1$'; then
+            if [ -n "$PRIORITY_FIELD_ID" ] && [ -n "$PRIORITY_P1_ID" ]; then
+              gh project item-edit --id "$ITEM_ID" --field-id "$PRIORITY_FIELD_ID" --single-select-option-id "$PRIORITY_P1_ID"
+            fi
+          fi
+          if echo "$TITLE" | grep -qi '^GG-10'; then
+            if [ -n "$SPRINT_FIELD_ID" ] && [ -n "$SPRINT_CURRENT_ID" ]; then
+              gh project item-edit --id "$ITEM_ID" --field-id "$SPRINT_FIELD_ID" --iteration-id "$SPRINT_CURRENT_ID"
+            fi
+          fi
+
+      # NEW: Auto-close synthetic issue after test run
+      - name: Auto-close synthetic issue (self-test cleanup)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          gh issue close "${{ steps.synth.outputs.issue_url }}" --comment "Closed by self-test cleanup."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Echo success
+        run: echo "Issue triaged and added to project. (Synthetic issue closed if self-test.)"
+
+Quick tips:
+
+
+Set ORG and PROJECT_NUMBER in the env: block.
+
+
+Ensure your repo’s Actions token can edit org Projects (Repo → Settings → Actions → Workflow permissions → “Read and write”).
+
+
+Run “Run workflow” to validate end-to-end; it will create, triage, add to Project, and then auto-close the synthetic issue.
+

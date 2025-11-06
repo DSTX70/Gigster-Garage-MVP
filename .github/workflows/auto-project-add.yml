@@ -1,0 +1,95 @@
+name: Auto Project Add
+
+on:
+  issues:
+    types: [opened, edited, labeled, assigned]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  add_to_project:
+    runs-on: ubuntu-latest
+    env:
+      ORG: your-org                      # <-- set to your org
+      PROJECT_NUMBER: 1                  # <-- set to your project number
+      DEFAULT_STATUS: "Todo"             # Must match an option in the Status field
+      ESTIMATE_FIELD: "Estimate"
+      OWNER_FIELD: "Owner"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup gh
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+
+      - name: Authenticate gh
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Resolve Project + Field IDs
+        id: meta
+        run: |
+          PID=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){ projectV2(number:$num){ id title fields(first:50){ nodes{ id name dataType } } }
+              }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq '.data.organization.projectV2.id')
+          FIELDS=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){ projectV2(number:$num){ fields(first:50){ nodes{ id name dataType } } } }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq '.data.organization.projectV2.fields.nodes')
+          STATUS_FIELD=$(echo "$FIELDS" | jq -r '.[] | select(.name=="Status") | .id')
+          EST_FIELD=$(echo "$FIELDS" | jq -r ".[] | select(.name==\"$ESTIMATE_FIELD\") | .id")
+          OWNER_FIELD=$(echo "$FIELDS" | jq -r ".[] | select(.name==\"$OWNER_FIELD\") | .id")
+          STATUS_OPT=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){
+                projectV2(number:$num){
+                  field(name:"Status"){ ... on ProjectV2SingleSelectField { options { id name } } }
+                }
+              }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq ".data.organization.projectV2.field.options[] | select(.name==\"$DEFAULT_STATUS\") | .id")
+          echo "project_id=$PID" >> $GITHUB_OUTPUT
+          echo "status_field_id=$STATUS_FIELD" >> $GITHUB_OUTPUT
+          echo "estimate_field_id=$EST_FIELD" >> $GITHUB_OUTPUT
+          echo "owner_field_id=$OWNER_FIELD" >> $GITHUB_OUTPUT
+          echo "status_option_id=$STATUS_OPT" >> $GITHUB_OUTPUT
+
+      - name: Add issue to Project and set defaults
+        if: github.event.issue != null
+        env:
+          PID: ${{ steps.meta.outputs.project_id }}
+          STATUS_FIELD_ID: ${{ steps.meta.outputs.status_field_id }}
+          ESTIMATE_FIELD_ID: ${{ steps.meta.outputs.estimate_field_id }}
+          OWNER_FIELD_ID: ${{ steps.meta.outputs.owner_field_id }}
+          STATUS_OPTION_ID: ${{ steps.meta.outputs.status_option_id }}
+          ORG: ${{ env.ORG }}
+          PROJECT_NUMBER: ${{ env.PROJECT_NUMBER }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_URL="${{ github.event.issue.html_url }}"
+          # Add to project (id returned)
+          ITEM_ID=$(gh project item-add --owner "$ORG" --project-number "$PROJECT_NUMBER" --url "$ISSUE_URL" --format json --jq .id)
+
+          # Status → Todo (single select)
+          gh project item-edit --id "$ITEM_ID" --field-id "$STATUS_FIELD_ID" --single-select-option-id "$STATUS_OPTION_ID"
+
+          # Owner (text): use first assignee if present
+          OWNER=$(jq -r '.issue.assignee.login // empty' <<< '${{ toJson(github.event) }}')
+          if [ -n "$OWNER" ]; then
+            gh project item-edit --id "$ITEM_ID" --field-id "$OWNER_FIELD_ID" --value "$OWNER"
+          fi
+
+          # Estimate (number): try to parse label like "pts:5" or "estimate:5"
+          EST_LABEL=$(jq -r '[.issue.labels[].name // ""] | map(select(test("^(pts|estimate):[0-9]+$"))) | .[0] // ""' <<< '${{ toJson(github.event) }}')
+          if [ -n "$EST_LABEL" ]; then
+            VAL=$(echo "$EST_LABEL" | sed -E 's/^[^:]+://')
+            gh project item-edit --id "$ITEM_ID" --field-id "$ESTIMATE_FIELD_ID" --value "$VAL"
+          fi

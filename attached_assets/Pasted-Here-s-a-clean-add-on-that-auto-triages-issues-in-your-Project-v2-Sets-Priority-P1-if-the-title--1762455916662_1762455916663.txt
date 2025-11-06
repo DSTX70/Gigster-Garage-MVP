@@ -1,0 +1,125 @@
+Here’s a clean add-on that auto-triages issues in your Project v2:
+
+Sets Priority = P1 if the title contains P1: or it’s labeled priority:P1
+
+Routes any GG-10x issue (title starts with GG-10) into the current Sprint iteration
+
+Below are drop-in patches for your existing auto-project-add.yml. I’m only showing the new/changed parts so you can paste them in.
+
+1) Expand the “Resolve Project + Field IDs” step
+
+Add Priority (single-select) and Sprint (iteration) field lookups, plus the P1 option and current Sprint iteration:
+
+      - name: Resolve Project + Field IDs
+        id: meta
+        run: |
+          PID=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){
+                projectV2(number:$num){
+                  id
+                  fields(first:50){
+                    nodes{ id name dataType ... on ProjectV2SingleSelectField { options { id name } } ... on ProjectV2IterationField { configuration { iterations { id title startDate duration state } } } }
+                  }
+                }
+              }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq '.data.organization.projectV2')
+
+          echo "$PID" > project.json
+
+          STATUS_FIELD_ID=$(jq -r '.fields.nodes[] | select(.name=="Status")   | .id' project.json)
+          ESTIMATE_FIELD_ID=$(jq -r '.fields.nodes[] | select(.name=="Estimate")| .id' project.json)
+          OWNER_FIELD_ID=$(jq   -r '.fields.nodes[] | select(.name=="Owner")    | .id' project.json)
+          PRIORITY_FIELD_ID=$(jq -r '.fields.nodes[] | select(.name=="Priority") | .id' project.json)
+          SPRINT_FIELD_ID=$(jq   -r '.fields.nodes[] | select(.name=="Sprint")   | .id' project.json)
+
+          STATUS_OPTION_ID=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){ projectV2(number:$num){ field(name:"Status"){ ... on ProjectV2SingleSelectField { options { id name } } } } }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq '.data.organization.projectV2.field.options[] | select(.name=="'"$DEFAULT_STATUS"'") | .id')
+
+          PRIORITY_P1_ID=$(jq -r '.fields.nodes[] | select(.name=="Priority") | .options[]? | select(.name=="P1") | .id' project.json)
+
+          # Current Sprint iteration option
+          SPRINT_CURRENT_ID=$(jq -r '.fields.nodes[] | select(.name=="Sprint") | .configuration.iterations[]? | select(.state=="CURRENT") | .id' project.json)
+
+          echo "project_id=$(jq -r .id project.json)" >> $GITHUB_OUTPUT
+          echo "status_field_id=$STATUS_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "estimate_field_id=$ESTIMATE_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "owner_field_id=$OWNER_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "status_option_id=$STATUS_OPTION_ID" >> $GITHUB_OUTPUT
+          echo "priority_field_id=$PRIORITY_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "priority_p1_id=$PRIORITY_P1_ID" >> $GITHUB_OUTPUT
+          echo "sprint_field_id=$SPRINT_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "sprint_current_id=$SPRINT_CURRENT_ID" >> $GITHUB_OUTPUT
+
+2) Extend the “Add issue to Project and set defaults” step
+
+Add logic to:
+
+detect P1 (title or label) and set Priority
+
+detect GG-10x and assign current Sprint
+
+      - name: Add issue to Project and set defaults + triage
+        if: github.event.issue != null
+        env:
+          PID:                 ${{ steps.meta.outputs.project_id }}
+          STATUS_FIELD_ID:     ${{ steps.meta.outputs.status_field_id }}
+          ESTIMATE_FIELD_ID:   ${{ steps.meta.outputs.estimate_field_id }}
+          OWNER_FIELD_ID:      ${{ steps.meta.outputs.owner_field_id }}
+          STATUS_OPTION_ID:    ${{ steps.meta.outputs.status_option_id }}
+          PRIORITY_FIELD_ID:   ${{ steps.meta.outputs.priority_field_id }}
+          PRIORITY_P1_ID:      ${{ steps.meta.outputs.priority_p1_id }}
+          SPRINT_FIELD_ID:     ${{ steps.meta.outputs.sprint_field_id }}
+          SPRINT_CURRENT_ID:   ${{ steps.meta.outputs.sprint_current_id }}
+          ORG:                 ${{ env.ORG }}
+          PROJECT_NUMBER:      ${{ env.PROJECT_NUMBER }}
+        run: |
+          ISSUE_URL="${{ github.event.issue.html_url }}"
+          TITLE=$(jq -r '.issue.title' <<< '${{ toJson(github.event) }}')
+          LABELS_JSON='${{ toJson(github.event.issue.labels) }}'
+          HAS_P1_LABEL=$(echo "$LABELS_JSON" | jq -r 'map(.name)|index("priority:P1")|not|not')
+          HAS_P1_TITLE=$(echo "$TITLE" | grep -qi '^.*P1:' && echo yes || echo no)
+          IS_GG_10X=$(echo "$TITLE" | grep -qi '^GG-10' && echo yes || echo no)
+
+          # Add to project
+          ITEM_ID=$(gh project item-add --owner "$ORG" --project-number "$PROJECT_NUMBER" --url "$ISSUE_URL" --format json --jq .id)
+
+          # Status → Todo
+          gh project item-edit --id "$ITEM_ID" --field-id "$STATUS_FIELD_ID" --single-select-option-id "$STATUS_OPTION_ID"
+
+          # Owner (first assignee)
+          OWNER=$(jq -r '.issue.assignees[0].login // empty' <<< '${{ toJson(github.event) }}')
+          if [ -n "$OWNER" ]; then
+            gh project item-edit --id "$ITEM_ID" --field-id "$OWNER_FIELD_ID" --value "$OWNER"
+          fi
+
+          # Estimate from labels like "pts:5" or "estimate:3"
+          EST_LABEL=$(jq -r '[.issue.labels[].name // ""] | map(select(test("^(pts|estimate):[0-9]+$"; "i"))) | .[0] // ""' <<< '${{ toJson(github.event) }}')
+          if [ -n "$EST_LABEL" ]; then
+            VAL=$(echo "$EST_LABEL" | sed -E 's/^[^:]+://')
+            gh project item-edit --id "$ITEM_ID" --field-id "$ESTIMATE_FIELD_ID" --value "$VAL"
+          fi
+
+          # Priority P1 if title contains "P1:" OR label contains priority:P1
+          if [ "$HAS_P1_TITLE" = "yes" ] || [ "$HAS_P1_LABEL" = "true" ]; then
+            if [ -n "$PRIORITY_P1_ID" ] && [ -n "$PRIORITY_FIELD_ID" ]; then
+              gh project item-edit --id "$ITEM_ID" --field-id "$PRIORITY_FIELD_ID" --single-select-option-id "$PRIORITY_P1_ID"
+            fi
+          fi
+
+          # Route GG-10x issues to CURRENT Sprint iteration
+          if [ "$IS_GG_10X" = "yes" ] && [ -n "$SPRINT_FIELD_ID" ] && [ -n "$SPRINT_CURRENT_ID" ]; then
+            gh project item-edit --id "$ITEM_ID" --field-id "$SPRINT_FIELD_ID" --iteration-id "$SPRINT_CURRENT_ID"
+          fi
+
+Notes & tips
+
+Priority field must already include an option named “P1” (your template JSON sets it up).
+
+Sprint field is an Iteration field (also created by the template). The workflow picks the CURRENT iteration automatically.
+
+Estimates are parsed from labels like pts:5 or estimate:3. If you want to parse from the title too (e.g., [5pts]), I can add a tiny regex.
+
+If your org requires elevated permissions for Actions to edit Projects, set repository → Actions → Workflow permissions to allow Read and write permissions, and (if needed) use a PAT in secrets.GH_TOKEN and swap the auth line to echo "$GH_TOKEN" | gh auth login --with-token.

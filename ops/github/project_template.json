@@ -1,0 +1,30 @@
+{
+  "org": "your-org",
+  "project_name": "Gigster Garage — Sprint Board",
+  "project_description": "Project v2: GG-101..GG-110 + future sprints",
+  "fields": [
+    { "name": "Status",   "type": "SINGLE_SELECT", "options": ["Todo","In Progress","In Review","Blocked","Done"] },
+    { "name": "Estimate", "type": "NUMBER" },
+    { "name": "Owner",    "type": "TEXT" },
+    { "name": "Priority", "type": "SINGLE_SELECT", "options": ["P0","P1","P2","P3"] },
+    { "name": "Sprint",   "type": "ITERATION", "config": { "duration": 7, "start_day": "monday" } }
+  ],
+  "default_field_values": {
+    "Status": "Todo"
+  },
+  "views": [
+    {
+      "name": "Board",
+      "type": "BOARD",
+      "filter": "is:issue",
+      "layout": { "group_by": "Status" },
+      "sort":   { "field": "Priority", "direction": "asc" }
+    },
+    {
+      "name": "List",
+      "type": "LIST",
+      "filter": "is:issue",
+      "sort":   { "field": "Priority", "direction": "asc" }
+    }
+  ]
+}

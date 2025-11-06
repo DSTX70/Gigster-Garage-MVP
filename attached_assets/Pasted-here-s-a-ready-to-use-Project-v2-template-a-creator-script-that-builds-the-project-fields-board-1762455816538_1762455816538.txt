@@ -1,0 +1,250 @@
+here’s a ready-to-use Project v2 template + a creator script that builds the project (fields + board view) from JSON, and a GitHub Actions workflow that auto-adds every new issue to the project and sets default fields (Status=Todo, Owner, Estimate).
+
+1) Project Template JSON (fields + board view)
+
+ops/github/project_template.json
+
+{
+  "org": "your-org",                      // <-- change to your GitHub org
+  "project_name": "Gigster Garage — Sprint Board",
+  "project_description": "Project v2: GG-101..GG-110 + future sprints",
+  "fields": [
+    { "name": "Status",   "type": "SINGLE_SELECT", "options": ["Todo","In Progress","In Review","Blocked","Done"] },
+    { "name": "Estimate", "type": "NUMBER" },
+    { "name": "Owner",    "type": "TEXT" },
+    { "name": "Priority", "type": "SINGLE_SELECT", "options": ["P0","P1","P2","P3"] },
+    { "name": "Sprint",   "type": "ITERATION", "config": { "duration": 7, "start_day": "monday" } }
+  ],
+  "default_field_values": {
+    "Status": "Todo"
+  },
+  "views": [
+    {
+      "name": "Board",
+      "type": "BOARD",
+      "filter": "is:issue",
+      "layout": { "group_by": "Status" },         // columns by Status
+      "sort":   { "field": "Priority", "direction": "asc" }
+    },
+    {
+      "name": "List",
+      "type": "LIST",
+      "filter": "is:issue",
+      "sort":   { "field": "Priority", "direction": "asc" }
+    }
+  ]
+}
+
+2) Creator script — builds the Project from the template
+
+Uses the gh CLI (v2.32+). No GraphQL hand-rolling needed.
+
+ops/github/create_project_from_template.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+TEMPLATE_JSON="${1:-ops/github/project_template.json}"
+
+need() { command -v "$1" >/dev/null || { echo "Missing $1"; exit 1; }; }
+need gh; need jq
+
+ORG=$(jq -r '.org' "$TEMPLATE_JSON")
+NAME=$(jq -r '.project_name' "$TEMPLATE_JSON")
+DESC=$(jq -r '.project_description' "$TEMPLATE_JSON")
+
+# 1) Create Project v2 (org-level)
+PROJECT_URL=$(gh project create --owner "$ORG" --title "$NAME" --format json --jq .url)
+PROJECT_NUMBER=$(echo "$PROJECT_URL" | sed -E 's#.*/projects/([0-9]+)$#\1#')
+
+# 2) Create fields
+jq -c '.fields[]' "$TEMPLATE_JSON" | while read -r field; do
+  F_NAME=$(echo "$field" | jq -r '.name')
+  F_TYPE=$(echo "$field" | jq -r '.type')
+  case "$F_TYPE" in
+    TEXT|NUMBER)
+      gh project field-create --owner "$ORG" --project-number "$PROJECT_NUMBER" --name "$F_NAME" --data-type "$F_TYPE" >/dev/null
+      ;;
+    SINGLE_SELECT)
+      gh project field-create --owner "$ORG" --project-number "$PROJECT_NUMBER" --name "$F_NAME" --data-type SINGLE_SELECT >/dev/null
+      # Add options
+      jq -r '.options[]' <<<"$field" | while read -r opt; do
+        gh project field-update --owner "$ORG" --project-number "$PROJECT_NUMBER" --name "$F_NAME" --add-option "$opt" >/dev/null
+      done
+      ;;
+    ITERATION)
+      DURATION=$(echo "$field" | jq -r '.config.duration // 7')
+      START_DAY=$(echo "$field" | jq -r '.config.start_day // "monday"')
+      gh project field-create --owner "$ORG" --project-number "$PROJECT_NUMBER" \
+        --name "$F_NAME" --data-type ITERATION --iteration-duration "$DURATION" --iteration-start-day "$START_DAY" >/dev/null
+      ;;
+    *)
+      echo "Unknown field type: $F_TYPE" ;;
+  esac
+done
+
+# 3) Create views
+jq -c '.views[]' "$TEMPLATE_JSON" | while read -r view; do
+  V_NAME=$(echo "$view" | jq -r '.name')
+  V_TYPE=$(echo "$view" | jq -r '.type')
+  V_FILTER=$(echo "$view" | jq -r '.filter // ""')
+
+  # Create an empty view first
+  gh project view-create --owner "$ORG" --project-number "$PROJECT_NUMBER" --title "$V_NAME" --type "$V_TYPE" >/dev/null
+
+  # Apply filter (if supported by current gh version)
+  if [ -n "$V_FILTER" ] && [ "$V_FILTER" != "null" ]; then
+    gh project view-update --owner "$ORG" --project-number "$PROJECT_NUMBER" --title "$V_NAME" --filter "$V_FILTER" >/dev/null || true
+  fi
+
+  # Apply layout (group by Status for Board)
+  GROUP_BY=$(echo "$view" | jq -r '.layout.group_by // ""')
+  if [ "$V_TYPE" = "BOARD" ] && [ -n "$GROUP_BY" ] && [ "$GROUP_BY" != "null" ]; then
+    gh project view-update --owner "$ORG" --project-number "$PROJECT_NUMBER" --title "$V_NAME" --group-by "$GROUP_BY" >/dev/null || true
+  fi
+
+  # Sort (optional)
+  SORT_FIELD=$(echo "$view" | jq -r '.sort.field // ""')
+  SORT_DIR=$(echo "$view"   | jq -r '.sort.direction // "asc"')
+  if [ -n "$SORT_FIELD" ] && [ "$SORT_FIELD" != "null" ]; then
+    gh project view-update --owner "$ORG" --project-number "$PROJECT_NUMBER" --title "$V_NAME" --sort-by "$SORT_FIELD" --sort-direction "$SORT_DIR" >/dev/null || true
+  fi
+done
+
+echo "Project created: $PROJECT_URL"
+echo "Project number: $PROJECT_NUMBER"
+
+
+Run:
+
+chmod +x ops/github/create_project_from_template.sh
+ops/github/create_project_from_template.sh ops/github/project_template.json
+
+
+After creation, note the Project Number (needed below). Also make sure your repo has permission to write to the org project (the default GITHUB_TOKEN needs “Organization Projects: Read & Write” in repo settings → Actions).
+
+3) Actions workflow — auto-add new issues to the Project with defaults
+
+.github/workflows/auto-project-add.yml
+
+name: Auto Project Add
+
+on:
+  issues:
+    types: [opened, edited, labeled, assigned]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  # Needed to edit org-level Projects (enable in Org/Repo settings if required):
+  # id-token: write
+
+jobs:
+  add_to_project:
+    runs-on: ubuntu-latest
+    env:
+      ORG: your-org                      # <-- set to your org
+      PROJECT_NUMBER: 1                  # <-- set to your project number
+      DEFAULT_STATUS: "Todo"             # Must match an option in the Status field
+      ESTIMATE_FIELD: "Estimate"
+      OWNER_FIELD: "Owner"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup gh
+        uses: cli/cli-action@v2
+        with:
+          version: latest
+
+      - name: Authenticate gh
+        run: gh auth status || gh auth login --with-token <<<"$GITHUB_TOKEN"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve Project + Field IDs
+        id: meta
+        run: |
+          PID=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){ projectV2(number:$num){ id title fields(first:50){ nodes{ id name dataType } } }
+              }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq '.data.organization.projectV2.id')
+          FIELDS=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){ projectV2(number:$num){ fields(first:50){ nodes{ id name dataType } } } }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq '.data.organization.projectV2.fields.nodes')
+          STATUS_FIELD=$(echo "$FIELDS" | jq -r '.[] | select(.name=="Status") | .id')
+          EST_FIELD=$(echo "$FIELDS" | jq -r ".[] | select(.name==\"$ESTIMATE_FIELD\") | .id")
+          OWNER_FIELD=$(echo "$FIELDS" | jq -r ".[] | select(.name==\"$OWNER_FIELD\") | .id")
+          STATUS_OPT=$(gh api graphql -f query='
+            query($org:String!,$num:Int!){
+              organization(login:$org){
+                projectV2(number:$num){
+                  field(name:"Status"){ ... on ProjectV2SingleSelectField { options { id name } } }
+                }
+              }
+            }' -F org="$ORG" -F num="$PROJECT_NUMBER" --jq ".data.organization.projectV2.field.options[] | select(.name==\"$DEFAULT_STATUS\") | .id")
+          echo "project_id=$PID" >> $GITHUB_OUTPUT
+          echo "status_field_id=$STATUS_FIELD" >> $GITHUB_OUTPUT
+          echo "estimate_field_id=$EST_FIELD" >> $GITHUB_OUTPUT
+          echo "owner_field_id=$OWNER_FIELD" >> $GITHUB_OUTPUT
+          echo "status_option_id=$STATUS_OPT" >> $GITHUB_OUTPUT
+
+      - name: Add issue to Project and set defaults
+        if: github.event.issue != null
+        env:
+          PID: ${{ steps.meta.outputs.project_id }}
+          STATUS_FIELD_ID: ${{ steps.meta.outputs.status_field_id }}
+          ESTIMATE_FIELD_ID: ${{ steps.meta.outputs.estimate_field_id }}
+          OWNER_FIELD_ID: ${{ steps.meta.outputs.owner_field_id }}
+          STATUS_OPTION_ID: ${{ steps.meta.outputs.status_option_id }}
+          ORG: ${{ env.ORG }}
+          PROJECT_NUMBER: ${{ env.PROJECT_NUMBER }}
+        run: |
+          ISSUE_URL="${{ github.event.issue.html_url }}"
+          # Add to project (id returned)
+          ITEM_ID=$(gh project item-add --owner "$ORG" --project-number "$PROJECT_NUMBER" --url "$ISSUE_URL" --format json --jq .id)
+
+          # Status → Todo (single select)
+          gh project item-edit --id "$ITEM_ID" --field-id "$STATUS_FIELD_ID" --single-select-option-id "$STATUS_OPTION_ID"
+
+          # Owner (text): use first assignee if present
+          OWNER=$(jq -r '.issue.assignee.login // empty' <<< '${{ toJson(github.event) }}')
+          if [ -n "$OWNER" ]; then
+            gh project item-edit --id "$ITEM_ID" --field-id "$OWNER_FIELD_ID" --value "$OWNER"
+          fi
+
+          # Estimate (number): try to parse label like "pts:5" or "estimate:5"
+          EST_LABEL=$(jq -r '[.issue.labels[].name // ""] | map(select(test("^(pts|estimate):[0-9]+$"))) | .[0] // ""' <<< '${{ toJson(github.event) }}')
+          if [ -n "$EST_LABEL" ]; then
+            VAL=$(echo "$EST_LABEL" | sed -E 's/^[^:]+://')
+            gh project item-edit --id "$ITEM_ID" --field-id "$ESTIMATE_FIELD_ID" --value "$VAL"
+          fi
+
+
+What it does
+
+On issue opened/edited/labeled/assigned, it:
+
+Adds the issue to your org Project v2,
+
+Sets Status = Todo,
+
+Sets Owner to the first assignee (if any),
+
+Parses an estimate from labels like pts:5 or estimate:3 and writes to the Estimate number field.
+
+Make sure secrets.GITHUB_TOKEN (default) has permissions to write to Organization Projects. If not, create a repo secret GH_TOKEN with a PAT that has project scopes and replace the auth step to use that token.
+
+Quick Start
+# 1) Create the project from template (edit org/name first)
+ops/github/create_project_from_template.sh ops/github/project_template.json
+
+# 2) Put the workflow in .github/workflows/auto-project-add.yml
+#    Edit env ORG and PROJECT_NUMBER to match your project.
+
+# 3) Push to main. New issues will now auto-land in the board with defaults.
+
+
+If you want, I can also add an auto-triage rule: e.g., set Priority=P1 if the issue title

@@ -1,0 +1,143 @@
+[
+  {
+    "title": "GG-101 \u2014 Platform SDKs \u2192 Live Posting (X/IG/LinkedIn)",
+    "labels": [
+      "GG-101",
+      "feature",
+      "integrations",
+      "social"
+    ],
+    "assignees": [
+      "forge",
+      "bridge"
+    ],
+    "body": "DoD: Posts succeed on 3 platforms; env secrets; retryable errors; audit lines; README updated.\nBranch: `feature/social-platform-adapters`\nEstimate: 8 pts"
+  },
+  {
+    "title": "GG-102 \u2014 Worker Autoscale + Durability",
+    "labels": [
+      "GG-102",
+      "infra",
+      "worker",
+      "scaling"
+    ],
+    "assignees": [
+      "pulse",
+      "forge"
+    ],
+    "body": "DoD: Stateless worker; CONCURRENCY env; FOR UPDATE SKIP LOCKED; graceful shutdown; no dupes in soak test.\nBranch: `feat/social-worker-scale`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-103 \u2014 Alerting & SLOs (Social Queue)",
+    "labels": [
+      "GG-103",
+      "ops",
+      "SLO",
+      "alerts"
+    ],
+    "assignees": [
+      "sentinel",
+      "pulse"
+    ],
+    "body": "DoD: Error budget alert (>5%/hr), queue age (>30m), RL saturation; weekly ops digest email.\nBranch: `ops/alerts-social-queue`\nEstimate: 3 pts"
+  },
+  {
+    "title": "GG-104 \u2014 RFP Responder \u2192 Draft Generator (E2E)",
+    "labels": [
+      "GG-104",
+      "feature",
+      "rfp"
+    ],
+    "assignees": [
+      "switchboard",
+      "codeblock"
+    ],
+    "body": "DoD: `rfp.requested` \u2192 Proposal draft w/ sections + attachments; assignee notified; ingest page shows entry.\nBranch: `feature/rfp-drafts-e2e`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-105 \u2014 Loyalty Ledger \u2192 Points UI + Rules",
+    "labels": [
+      "GG-105",
+      "feature",
+      "loyalty"
+    ],
+    "assignees": [
+      "bridge",
+      "lume"
+    ],
+    "body": "DoD: `/loyalty` admin shows history; payment webhook awards points; adjust/redeem; CSV export.\nBranch: `feature/loyalty-ui-rules`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-106 \u2014 Brand & Voice Polish (Top 20 Screens)",
+    "labels": [
+      "GG-106",
+      "design",
+      "brand",
+      "copy"
+    ],
+    "assignees": [
+      "nova",
+      "prism",
+      "storybloom",
+      "chiesan"
+    ],
+    "body": "DoD: Zero token/contrast/copy variances; shared components updated; screenshots attached.\nBranch: `chore/brand-voice-pass`\nEstimate: 3 pts"
+  },
+  {
+    "title": "GG-107 \u2014 SSO Hardening + Org-Binding UX",
+    "labels": [
+      "GG-107",
+      "auth",
+      "sso"
+    ],
+    "assignees": [
+      "verifier",
+      "lume"
+    ],
+    "body": "DoD: Stronger ACS validator; `requiresOrgBinding` flow; edge-case tests green.\nBranch: `feat/sso-org-binding`\nEstimate: 3 pts"
+  },
+  {
+    "title": "GG-108 \u2014 Pricing Page + Paywall Fences",
+    "labels": [
+      "GG-108",
+      "pricing",
+      "fences"
+    ],
+    "assignees": [
+      "ledger",
+      "foundry",
+      "prism"
+    ],
+    "body": "DoD: Free/Pro/Studio enforced server+client; pricing page live; upgrade prompts wired.\nBranch: `feature/pricing-and-fences`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-109 \u2014 Competitive Matrix + GTM Starter Pack",
+    "labels": [
+      "GG-109",
+      "gtm",
+      "marketing"
+    ],
+    "assignees": [
+      "prism",
+      "foundry",
+      "storybloom",
+      "amani"
+    ],
+    "body": "DoD: Matrix w/ sources; 10 influencer briefs; affiliate one-pager; 30-day content plan; deck exported.\nBranch: `gtm/launch-pack`\nEstimate: 5 pts"
+  },
+  {
+    "title": "GG-110 \u2014 IP Snapshot (Provisional + Trade Secrets)",
+    "labels": [
+      "GG-110",
+      "ip",
+      "legal"
+    ],
+    "assignees": [
+      "aegis",
+      "atlas",
+      "archivist",
+      "coda"
+    ],
+    "body": "DoD: Claims outline; figure list; TS register; filing-order memo.\nBranch: `ip/provisional-snapshot`\nEstimate: 5 pts"
+  }
+]
