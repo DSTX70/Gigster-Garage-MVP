@@ -50,6 +50,7 @@ import passport from 'passport';
 import { seedDemoData, clearDemoData } from './demoDataService';
 import { demoSessionService } from './demoSessionService';
 import { aiAssistantService } from './ai-assistant-service';
+import { mountIntegrationRoutes } from './routes/integrations.route.js';
 
 // Initialize OpenAI client
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -324,6 +325,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.user = req.session.user;
     next();
   };
+  
+  // Mount integration webhook routes
+  mountIntegrationRoutes(app);
   
   // ========== PERMISSION ENFORCEMENT HELPERS ==========
   // NOTE: Two resource models exist in this app:

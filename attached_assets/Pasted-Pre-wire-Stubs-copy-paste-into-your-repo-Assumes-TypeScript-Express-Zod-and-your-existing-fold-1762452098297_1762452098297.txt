@@ -1,0 +1,329 @@
+Pre-wire Stubs (copy-paste into your repo)
+
+Assumes TypeScript, Express, Zod, and your existing folder layout. Adjust paths if your monorepo differs.
+
+1) Feature Flags
+
+/server/config/featureFlags.ts
+
+export const featureFlags = {
+  integrations: {
+    icadence: process.env.FEATURE_ICADENCE === "true",
+    rfpResponder: process.env.FEATURE_RFP_RESPONDER === "true",
+    loyaltyRewards: process.env.FEATURE_LOYALTY_REWARDS === "true",
+  },
+} as const;
+
+
+.env.example
+
+FEATURE_ICADENCE=true
+FEATURE_RFP_RESPONDER=true
+FEATURE_LOYALTY_REWARDS=true
+ICADENCE_WEBHOOK_SECRET=replace_me
+RFP_API_KEY=replace_me
+LOYALTY_SIGNING_SECRET=replace_me
+
+2) Shared Types
+
+/shared/integrations/types.ts
+
+import { z } from "zod";
+
+export const EventEnvelope = z.object({
+  id: z.string(),
+  source: z.enum(["icadence","rfp","loyalty"]),
+  type: z.string(),             // e.g., 'schedule.posted', 'rfp.requested', 'loyalty.points.added'
+  timestamp: z.string(),        // ISO
+  payload: z.unknown(),         // partner-specific; validated in adapters
+  signature: z.string().optional()
+});
+export type EventEnvelope = z.infer<typeof EventEnvelope>;
+
+// iCadence: schedule + post queue
+export const ICadencePayload = z.object({
+  profileId: z.string(),
+  platform: z.enum(["x","instagram","tiktok","linkedin","facebook","youtube"]),
+  scheduledAt: z.string(),
+  content: z.object({
+    text: z.string().max(2800),
+    mediaUrls: z.array(z.string().url()).optional()
+  })
+});
+
+// RFP Responder: brief intake
+export const RfpPayload = z.object({
+  rfpId: z.string(),
+  client: z.string(),
+  dueDate: z.string(),
+  scope: z.string(),
+  budgetRange: z.string().optional(),
+  attachments: z.array(z.string().url()).optional()
+});
+
+// Loyalty: points & tiers
+export const LoyaltyPayload = z.object({
+  userId: z.string(),
+  deltaPoints: z.number(),      // positive/negative
+  reason: z.enum(["payment","referral","milestone","adjustment"]),
+  metadata: z.record(z.any()).optional()
+});
+
+3) Adapters
+
+/server/integrations/icadence/adapter.ts
+
+import { z } from "zod";
+import { ICadencePayload } from "../../../shared/integrations/types";
+
+export function verifyICadenceSignature(raw: string, sig?: string, secret = process.env.ICADENCE_WEBHOOK_SECRET) {
+  if (!secret) return false;
+  // TODO: replace with HMAC SHA256 verification
+  return Boolean(sig && sig.length > 8);
+}
+
+export const ICadenceEvent = z.object({
+  type: z.enum(["schedule.posted","schedule.deleted"]),
+  data: ICadencePayload
+});
+export type ICadenceEvent = z.infer<typeof ICadenceEvent>;
+
+// Example action: enqueue social post into internal queue
+export async function handleICadenceEvent(evt: ICadenceEvent) {
+  switch (evt.type) {
+    case "schedule.posted":
+      // persist to queue table, emit internal event
+      return { ok: true, queued: true };
+    case "schedule.deleted":
+      // mark queue item cancelled
+      return { ok: true, cancelled: true };
+    default:
+      return { ok: true };
+  }
+}
+
+
+/server/integrations/rfp/adapter.ts
+
+import { z } from "zod";
+import { RfpPayload } from "../../../shared/integrations/types";
+
+export const RfpEvent = z.object({
+  type: z.enum(["rfp.requested","rfp.updated"]),
+  data: RfpPayload
+});
+export type RfpEvent = z.infer<typeof RfpEvent>;
+
+export async function handleRfpEvent(evt: RfpEvent) {
+  // Create or update an internal Proposal draft and link artifacts
+  return { ok: true, proposalDraftCreated: evt.type === "rfp.requested" };
+}
+
+
+/server/integrations/loyalty/adapter.ts
+
+import { z } from "zod";
+import { LoyaltyPayload } from "../../../shared/integrations/types";
+
+export const LoyaltyEvent = z.object({
+  type: z.enum(["loyalty.points.added","loyalty.points.redeemed","loyalty.adjustment"]),
+  data: LoyaltyPayload
+});
+export type LoyaltyEvent = z.infer<typeof LoyaltyEvent>;
+
+export async function handleLoyaltyEvent(evt: LoyaltyEvent) {
+  // Apply points delta & emit user tier updates
+  return { ok: true, applied: evt.data.deltaPoints };
+}
+
+4) Integration Router
+
+/server/routes/integrations.route.ts
+
+import type { Request, Response } from "express";
+import { featureFlags } from "../config/featureFlags";
+import { EventEnvelope } from "../../shared/integrations/types";
+import { ICadenceEvent, handleICadenceEvent, verifyICadenceSignature } from "../integrations/icadence/adapter";
+import { RfpEvent, handleRfpEvent } from "../integrations/rfp/adapter";
+import { LoyaltyEvent, handleLoyaltyEvent } from "../integrations/loyalty/adapter";
+
+export function mountIntegrationRoutes(app: any) {
+  // Generic inbound endpoint
+  app.post("/api/integrations/:partner/webhook", async (req: Request, res: Response) => {
+    const partner = req.params.partner as "icadence"|"rfp"|"loyalty";
+    const parse = EventEnvelope.safeParse(req.body);
+    if (!parse.success) return res.status(400).json({ error: "bad_envelope", details: parse.error.flatten() });
+
+    // Feature-flag gate
+    if (!featureFlags.integrations[partner]) return res.status(404).json({ error: "integration_disabled" });
+
+    const { type, payload, signature } = {
+      type: (parse.data.type || ""),
+      payload: parse.data.payload,
+      signature: parse.data.signature
+    } as any;
+
+    try {
+      if (partner === "icadence") {
+        if (!verifyICadenceSignature(JSON.stringify(req.body), signature)) return res.status(401).json({ error: "bad_signature" });
+        const event = ICadenceEvent.parse({ type, data: payload });
+        const result = await handleICadenceEvent(event);
+        return res.json(result);
+      }
+      if (partner === "rfp") {
+        const event = RfpEvent.parse({ type, data: payload });
+        const result = await handleRfpEvent(event);
+        return res.json(result);
+      }
+      if (partner === "loyalty") {
+        const event = LoyaltyEvent.parse({ type, data: payload });
+        const result = await handleLoyaltyEvent(event);
+        return res.json(result);
+      }
+      return res.status(404).json({ error: "unknown_partner" });
+    } catch (e: any) {
+      return res.status(400).json({ error: "bad_payload", message: e.message });
+    }
+  });
+
+  // Minimal status endpoint (for UI toggles)
+  app.get("/api/integrations/status", (_req: Request, res: Response) => {
+    res.json({ integrations: featureFlags.integrations });
+  });
+}
+
+
+/server/index.ts (wire the router)
+
+import express from "express";
+import bodyParser from "body-parser";
+import { mountIntegrationRoutes } from "./routes/integrations.route";
+
+const app = express();
+app.use(bodyParser.json({ limit: "2mb" }));
+mountIntegrationRoutes(app);
+
+export default app;
+
+5) Minimal Persistence (optional, but helpful)
+
+If you use Drizzle/Prisma, add a simple queue & points ledger:
+
+/server/db/migrations/2025_11_06_integrations.sql
+
+create table if not exists social_queue (
+  id uuid primary key,
+  profile_id text not null,
+  platform text not null,
+  content jsonb not null,
+  scheduled_at timestamptz not null,
+  status text not null default 'queued',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists loyalty_ledger (
+  id uuid primary key,
+  user_id text not null,
+  delta_points integer not null,
+  reason text not null,
+  metadata jsonb,
+  created_at timestamptz not null default now()
+);
+
+6) Client Toggles + Settings UI
+
+/client/src/features/integrations.ts
+
+export async function fetchIntegrationStatus() {
+  const res = await fetch("/api/integrations/status");
+  if (!res.ok) throw new Error("Failed to fetch integration status");
+  return res.json();
+}
+
+
+/client/src/pages/settings/integrations.tsx
+
+import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { fetchIntegrationStatus } from "@/features/integrations";
+
+export default function IntegrationsSettings() {
+  const [status, setStatus] = useState<{integrations:{[k:string]:boolean}}|null>(null);
+  useEffect(() => { fetchIntegrationStatus().then(setStatus).catch(console.error); }, []);
+
+  return (
+    <div className="p-6 grid gap-4">
+      <h1 className="text-2xl font-semibold">Integrations</h1>
+      <Card className="p-4">
+        <div className="grid gap-2">
+          {status && Object.entries(status.integrations).map(([k,v]) => (
+            <div key={k} className="flex items-center justify-between">
+              <span className="font-medium">{k}</span>
+              <span className={`px-2 py-1 rounded ${v ? "bg-green-100" : "bg-gray-100"}`}>{v ? "Enabled" : "Disabled"}</span>
+            </div>
+          ))}
+          {!status && <div>Loading…</div>}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+7) Test Fixtures (super-light smoke)
+
+/server/tests/integrations.webhook.test.ts
+
+import request from "supertest";
+import app from "../index";
+
+describe("Integrations Webhook", () => {
+  it("rejects when disabled", async () => {
+    process.env.FEATURE_ICADENCE = "false";
+    const res = await request(app).post("/api/integrations/icadence/webhook").send({
+      id: "1", source: "icadence", type: "schedule.posted",
+      timestamp: new Date().toISOString(),
+      payload: { profileId:"p1", platform:"x", scheduledAt:new Date().toISOString(), content:{ text:"Hello" } }
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("accepts when enabled", async () => {
+    process.env.FEATURE_ICADENCE = "true";
+    const res = await request(app).post("/api/integrations/icadence/webhook").send({
+      id: "2", source: "icadence", type: "schedule.posted",
+      timestamp: new Date().toISOString(),
+      payload: { profileId:"p1", platform:"x", scheduledAt:new Date().toISOString(), content:{ text:"Hello" } },
+      signature: "fake_sig_123456789"
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+});
+
+8) cURL Smoke (copy into terminal)
+# Status
+curl -s http://localhost:3000/api/integrations/status | jq
+
+# iCadence (enable first)
+export FEATURE_ICADENCE=true
+curl -s -X POST http://localhost:3000/api/integrations/icadence/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"id":"evt_1","source":"icadence","type":"schedule.posted","timestamp":"2025-11-06T12:00:00Z","payload":{"profileId":"p1","platform":"x","scheduledAt":"2025-11-07T09:00:00Z","content":{"text":"Hi!"}},"signature":"fake"}' | jq
+
+# RFP
+export FEATURE_RFP_RESPONDER=true
+curl -s -X POST http://localhost:3000/api/integrations/rfp/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"id":"evt_2","source":"rfp","type":"rfp.requested","timestamp":"2025-11-06T12:00:00Z","payload":{"rfpId":"R123","client":"Acme","dueDate":"2025-11-15","scope":"Build microsite"}}' | jq
+
+# Loyalty
+export FEATURE_LOYALTY_REWARDS=true
+curl -s -X POST http://localhost:3000/api/integrations/loyalty/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"id":"evt_3","source":"loyalty","type":"loyalty.points.added","timestamp":"2025-11-06T12:00:00Z","payload":{"userId":"u_1","deltaPoints":50,"reason":"payment"}}' | jq
+
+What this delivers right now
+
+A clear G/Y/R matrix you can hand to owners.
+
+Working pre-wire endpoints + adapters + UI toggle for iCadence, RFP Responder, and Loyalty Rewards (behind feature flags).
