@@ -1,0 +1,477 @@
+Locked and loaded. Here’s a **PR-ready drop** to wire the **iCadence → Posts queue** end-to-end: DB insert on `schedule.posted`, a resilient worker with exponential backoff, per-platform adapters, and an admin screen at `/ops/social-queue` with pause/retry controls.
+
+---
+
+# 1) DB: queue + attempt tracking
+
+**`/server/db/migrations/2025_11_06_social_queue.sql`**
+
+```sql
+-- core queue
+create type social_status as enum ('queued','posting','posted','failed','cancelled','paused');
+
+create table if not exists social_queue (
+  id uuid primary key default gen_random_uuid(),
+  profile_id text not null,
+  platform text not null,                         -- 'x','instagram','linkedin','facebook','tiktok','youtube'
+  content jsonb not null,                         -- { text, mediaUrls[] }
+  scheduled_at timestamptz not null,
+  status social_status not null default 'queued',
+  attempts int not null default 0,
+  next_attempt_at timestamptz,                    -- backoff scheduling
+  last_error text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_social_queue_ready
+  on social_queue (status, scheduled_at, next_attempt_at);
+
+-- trigger to keep updated_at fresh
+create or replace function touch_updated_at() returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end; $$ language plpgsql;
+
+drop trigger if exists trg_social_queue_updated on social_queue;
+create trigger trg_social_queue_updated
+before update on social_queue
+for each row execute procedure touch_updated_at();
+```
+
+---
+
+# 2) Insert into queue on iCadence `schedule.posted`
+
+**`/server/integrations/icadence/adapter.ts`** (augment existing handler)
+
+```ts
+import { db } from "../../db"; // your db client
+// ...existing imports...
+
+export async function handleICadenceEvent(evt: ICadenceEvent) {
+  switch (evt.type) {
+    case "schedule.posted": {
+      const { profileId, platform, scheduledAt, content } = evt.data;
+      await db.query(/* sql */`
+        insert into social_queue (profile_id, platform, content, scheduled_at, status)
+        values ($1,$2,$3,$4,'queued')
+      `, [profileId, platform, JSON.stringify(content), scheduledAt]);
+      return { ok: true, queued: true };
+    }
+    case "schedule.deleted": {
+      await db.query(`update social_queue set status='cancelled' where profile_id=$1 and scheduled_at=$2`,
+        [evt.data.profileId, evt.data.scheduledAt]);
+      return { ok: true, cancelled: true };
+    }
+    default:
+      return { ok: true };
+  }
+}
+```
+
+---
+
+# 3) Platform posting adapters
+
+**`/server/integrations/icadence/platforms.ts`**
+
+```ts
+export type PostInput = {
+  profileId: string;
+  text: string;
+  mediaUrls?: string[];
+};
+
+export type PostResult = { ok: true; remoteId: string } | { ok: false; error: string };
+
+export interface PlatformAdapter {
+  name: string;
+  post: (input: PostInput) => Promise<PostResult>;
+}
+
+/** Stubs — replace with real SDK calls per platform */
+async function fakeNetwork<T>(result: T, failChance = 0.1): Promise<T> {
+  await new Promise(r => setTimeout(r, 250));
+  if (Math.random() < failChance) throw new Error("Transient network error");
+  return result;
+}
+
+export const XAdapter: PlatformAdapter = {
+  name: "x",
+  async post({ profileId, text }) {
+    // TODO: real call using app keys
+    const res = await fakeNetwork({ id: `x_${Date.now()}` });
+    return { ok: true, remoteId: res.id };
+  }
+};
+
+export const InstagramAdapter: PlatformAdapter = {
+  name: "instagram",
+  async post({ profileId, text }) {
+    const res = await fakeNetwork({ id: `ig_${Date.now()}` });
+    return { ok: true, remoteId: res.id };
+  }
+};
+
+export const LinkedInAdapter: PlatformAdapter = {
+  name: "linkedin",
+  async post({ profileId, text }) {
+    const res = await fakeNetwork({ id: `li_${Date.now()}` });
+    return { ok: true, remoteId: res.id };
+  }
+};
+
+export function getAdapter(platform: string): PlatformAdapter {
+  switch (platform) {
+    case "x": return XAdapter;
+    case "instagram": return InstagramAdapter;
+    case "linkedin": return LinkedInAdapter;
+    // add 'facebook','tiktok','youtube' similarly
+    default: throw new Error(`Unsupported platform: ${platform}`);
+  }
+}
+```
+
+---
+
+# 4) Worker with exponential backoff + visibility controls
+
+**`/worker/socialPoster.ts`**
+
+```ts
+import { db } from "../server/db";
+import { getAdapter } from "../server/integrations/icadence/platforms";
+
+const POLL_MS = Number(process.env.SOCIAL_WORKER_POLL_MS ?? 5000);
+const BASE_BACKOFF_MS = 15_000;   // 15s
+const MAX_BACKOFF_MS  = 30 * 60_000; // 30m
+const MAX_ATTEMPTS    = 8;
+
+function nextBackoff(attempts: number) {
+  const delay = Math.min(BASE_BACKOFF_MS * Math.pow(2, attempts), MAX_BACKOFF_MS);
+  return new Date(Date.now() + delay);
+}
+
+async function fetchReadyJobs(limit = 10) {
+  const { rows } = await db.query(/* sql */`
+    select * from social_queue
+    where status in ('queued','failed')
+      and (scheduled_at <= now())
+      and (next_attempt_at is null or next_attempt_at <= now())
+    order by scheduled_at asc
+    limit $1
+  `, [limit]);
+  return rows;
+}
+
+async function mark(id: string, data: Partial<any>) {
+  const keys = Object.keys(data);
+  const sets = keys.map((k, i) => `${k}=$${i+2}`).join(", ");
+  await db.query(`update social_queue set ${sets} where id=$1`, [id, ...keys.map(k => (data as any)[k])]);
+}
+
+async function workOne(job: any) {
+  const adapter = getAdapter(job.platform);
+  const content = job.content || {};
+  try {
+    await mark(job.id, { status: 'posting', last_error: null });
+    const res = await adapter.post({
+      profileId: job.profile_id,
+      text: content.text || "",
+      mediaUrls: content.mediaUrls || []
+    });
+
+    if (res.ok) {
+      await mark(job.id, { status: 'posted', attempts: job.attempts + 1, last_error: null, next_attempt_at: null });
+      console.log(`[social] posted ${job.platform} ${job.id}`);
+    } else {
+      const attempts = job.attempts + 1;
+      const next = attempts >= MAX_ATTEMPTS ? null : nextBackoff(attempts);
+      await mark(job.id, {
+        status: attempts >= MAX_ATTEMPTS ? 'failed' : 'failed',
+        attempts,
+        last_error: res.error,
+        next_attempt_at: next
+      });
+      console.warn(`[social] failed ${job.id}: ${res.error}`);
+    }
+  } catch (e: any) {
+    const attempts = job.attempts + 1;
+    const next = attempts >= MAX_ATTEMPTS ? null : nextBackoff(attempts);
+    await mark(job.id, {
+      status: attempts >= MAX_ATTEMPTS ? 'failed' : 'failed',
+      attempts,
+      last_error: e.message?.slice(0, 500) || "error",
+      next_attempt_at: next
+    });
+    console.warn(`[social] error ${job.id}: ${e.message}`);
+  }
+}
+
+async function tick() {
+  try {
+    const jobs = await fetchReadyJobs();
+    for (const j of jobs) {
+      // skip if paused/cancelled (safety)
+      if (j.status === "paused" || j.status === "cancelled") continue;
+      await workOne(j);
+    }
+  } catch (e) {
+    console.error("[social] tick error", e);
+  } finally {
+    setTimeout(tick, POLL_MS);
+  }
+}
+
+// start
+console.log("[social] worker started");
+tick();
+```
+
+**`/package.json`** (scripts)
+
+```json
+{
+  "scripts": {
+    "worker:social": "ts-node --transpile-only worker/socialPoster.ts"
+  }
+}
+```
+
+---
+
+# 5) Ops API for queue controls (list, pause, resume, retry, cancel)
+
+**`/server/routes/ops.social.route.ts`**
+
+```ts
+import type { Request, Response } from "express";
+import { Router } from "express";
+import { db } from "../db";
+
+const router = Router();
+
+router.get("/social-queue", async (req: Request, res: Response) => {
+  const { status, platform, limit = 100 } = req.query as any;
+  const clauses = [];
+  const args: any[] = [];
+  if (status) { args.push(status); clauses.push(`status=$${args.length}`); }
+  if (platform) { args.push(platform); clauses.push(`platform=$${args.length}`); }
+  const where = clauses.length ? `where ${clauses.join(" and ")}` : "";
+  const { rows } = await db.query(`select * from social_queue ${where} order by scheduled_at desc limit $${args.length+1}`, [...args, Number(limit)]);
+  res.json({ items: rows });
+});
+
+router.post("/social-queue/:id/pause", async (req, res) => {
+  await db.query(`update social_queue set status='paused' where id=$1 and status in ('queued','failed')`, [req.params.id]);
+  res.json({ ok: true });
+});
+
+router.post("/social-queue/:id/resume", async (req, res) => {
+  await db.query(`update social_queue set status='queued', next_attempt_at=null where id=$1 and status='paused'`, [req.params.id]);
+  res.json({ ok: true });
+});
+
+router.post("/social-queue/:id/retry", async (req, res) => {
+  await db.query(`update social_queue set status='queued', next_attempt_at=now(), attempts=least(attempts, 5) where id=$1`, [req.params.id]);
+  res.json({ ok: true });
+});
+
+router.post("/social-queue/:id/cancel", async (req, res) => {
+  await db.query(`update social_queue set status='cancelled' where id=$1 and status in ('queued','failed','paused')`, [req.params.id]);
+  res.json({ ok: true });
+});
+
+export default router;
+```
+
+**`/server/index.ts`** (mount Ops route)
+
+```ts
+import opsSocial from "./routes/ops.social.route";
+// ...
+app.use("/api/ops", opsSocial);
+```
+
+---
+
+# 6) Admin page: `/ops/social-queue` (pause / retry / resume / cancel)
+
+**`/client/src/pages/ops/social-queue.tsx`**
+
+```tsx
+import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+type Item = {
+  id: string; profile_id: string; platform: string; content: any;
+  scheduled_at: string; status: string; attempts: number;
+  next_attempt_at: string | null; last_error: string | null;
+};
+
+async function fetchQueue(params: Record<string,string|number> = {}) {
+  const q = new URLSearchParams(params as any).toString();
+  const res = await fetch(`/api/ops/social-queue?${q}`);
+  if (!res.ok) throw new Error("Failed");
+  return (await res.json()) as { items: Item[] };
+}
+
+async function postAction(id: string, action: "pause"|"resume"|"retry"|"cancel") {
+  const res = await fetch(`/api/ops/social-queue/${id}/${action}`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed");
+  return res.json();
+}
+
+export default function SocialQueuePage() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [filter, setFilter] = useState<{status?: string, platform?: string}>({});
+
+  const load = () => fetchQueue(filter).then(r => setItems(r.items)).catch(console.error);
+
+  useEffect(() => { load(); }, [JSON.stringify(filter)]);
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Social Queue</h1>
+        <div className="flex gap-2">
+          <select className="border rounded px-2 py-1" value={filter.status ?? ""} onChange={e=>setFilter(f=>({...f, status: e.target.value || undefined}))}>
+            <option value="">All Statuses</option>
+            {["queued","posting","posted","failed","paused","cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select className="border rounded px-2 py-1" value={filter.platform ?? ""} onChange={e=>setFilter(f=>({...f, platform: e.target.value || undefined}))}>
+            <option value="">All Platforms</option>
+            {["x","instagram","linkedin","facebook","tiktok","youtube"].map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <Button onClick={load}>Refresh</Button>
+        </div>
+      </div>
+
+      <Card className="p-0 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-3">When</th>
+              <th className="text-left p-3">Platform</th>
+              <th className="text-left p-3">Profile</th>
+              <th className="text-left p-3">Text</th>
+              <th className="text-left p-3">Status</th>
+              <th className="text-left p-3">Attempts</th>
+              <th className="text-left p-3">Next Try</th>
+              <th className="text-left p-3">Error</th>
+              <th className="text-left p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map(it => (
+              <tr key={it.id} className="border-t">
+                <td className="p-3">{new Date(it.scheduled_at).toLocaleString()}</td>
+                <td className="p-3">{it.platform}</td>
+                <td className="p-3">{it.profile_id}</td>
+                <td className="p-3 max-w-[360px] truncate" title={it.content?.text}>{it.content?.text}</td>
+                <td className="p-3">
+                  <span className={`px-2 py-1 rounded ${it.status === "failed" ? "bg-red-100" :
+                                                        it.status === "posted" ? "bg-green-100" :
+                                                        it.status === "paused" ? "bg-yellow-100" : "bg-gray-100"}`}>{it.status}</span>
+                </td>
+                <td className="p-3">{it.attempts}</td>
+                <td className="p-3">{it.next_attempt_at ? new Date(it.next_attempt_at).toLocaleTimeString() : "-"}</td>
+                <td className="p-3 max-w-[260px] truncate" title={it.last_error ?? ""}>{it.last_error ?? ""}</td>
+                <td className="p-3">
+                  <div className="flex gap-2">
+                    {it.status !== "paused" && it.status !== "posted" && <Button variant="outline" onClick={()=>postAction(it.id,"pause").then(load)}>Pause</Button>}
+                    {it.status === "paused" && <Button variant="outline" onClick={()=>postAction(it.id,"resume").then(load)}>Resume</Button>}
+                    {it.status !== "posted" && <Button variant="outline" onClick={()=>postAction(it.id,"retry").then(load)}>Retry</Button>}
+                    {it.status !== "posted" && <Button variant="destructive" onClick={()=>postAction(it.id,"cancel").then(load)}>Cancel</Button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {items.length === 0 && (
+              <tr><td className="p-6 text-center text-gray-500" colSpan={9}>No items</td></tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+```
+
+---
+
+# 7) Environment & secrets (placeholders)
+
+**`.env.example`**
+
+```
+# Worker cadence
+SOCIAL_WORKER_POLL_MS=5000
+
+# Platform auth (replace with real tokens/secrets)
+X_BEARER_TOKEN=replace_me
+INSTAGRAM_APP_ID=replace_me
+INSTAGRAM_APP_SECRET=replace_me
+LINKEDIN_CLIENT_ID=replace_me
+LINKEDIN_CLIENT_SECRET=replace_me
+```
+
+---
+
+# 8) Minimal test (smoke the queue APIs)
+
+**`/server/tests/ops.social.queue.test.ts`**
+
+```ts
+import request from "supertest";
+import app from "../index";
+import { db } from "../db";
+
+describe("Ops Social Queue", () => {
+  it("lists queue items", async () => {
+    await db.query(`insert into social_queue (profile_id, platform, content, scheduled_at) values
+      ('p1','x','{"text":"hello"}', now())`);
+    const res = await request(app).get("/api/ops/social-queue");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.items)).toBe(true);
+  });
+});
+```
+
+---
+
+# 9) How to run it (dev)
+
+```bash
+# 1) DB migrate
+psql $DATABASE_URL -f server/db/migrations/2025_11_06_social_queue.sql
+
+# 2) Start API (in one terminal)
+npm run dev
+
+# 3) Start worker (in another terminal)
+npm run worker:social
+
+# 4) Hit status and queue endpoints
+curl -s http://localhost:3000/api/integrations/status | jq
+curl -s http://localhost:3000/api/ops/social-queue | jq
+```
+
+---
+
+# 10) What you get immediately
+
+* **Automatic queueing** of iCadence scheduled posts.
+* **Resilient worker** with exponential backoff, attempt caps, error recording.
+* **Admin control panel** at `/ops/social-queue` to pause/resume/retry/cancel.
+* Clean extension points for real **platform SDKs** (drop into `platforms.ts`).
+
+If you want a follow-on patch, I can add:
+
+* **Rate-limit buckets** per platform,
+* **Media pre-flight** (URL validation, size caps),
+* **Per-post previews** in the admin table (thumbnail grid),
+* **Audit emits** to your existing `/api/_audit/*` fabric for every state change.

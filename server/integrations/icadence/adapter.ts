@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ICadencePayload } from "../../../shared/integrations/types.js";
+import { pool } from "../../db.js";
 
 export function verifyICadenceSignature(raw: string, sig?: string, secret = process.env.ICADENCE_WEBHOOK_SECRET) {
   if (!secret) return false;
@@ -14,10 +15,24 @@ export type ICadenceEvent = z.infer<typeof ICadenceEvent>;
 
 export async function handleICadenceEvent(evt: ICadenceEvent) {
   switch (evt.type) {
-    case "schedule.posted":
+    case "schedule.posted": {
+      const { profileId, platform, scheduledAt, content } = evt.data;
+      await pool.query(
+        `INSERT INTO social_queue (profile_id, platform, content, scheduled_at, status)
+         VALUES ($1, $2, $3, $4, 'queued')`,
+        [profileId, platform, JSON.stringify(content), scheduledAt]
+      );
       return { ok: true, queued: true };
-    case "schedule.deleted":
+    }
+    case "schedule.deleted": {
+      const { profileId, scheduledAt } = evt.data;
+      await pool.query(
+        `UPDATE social_queue SET status = 'cancelled'
+         WHERE profile_id = $1 AND scheduled_at = $2 AND status IN ('queued', 'failed', 'paused')`,
+        [profileId, scheduledAt]
+      );
       return { ok: true, cancelled: true };
+    }
     default:
       return { ok: true };
   }

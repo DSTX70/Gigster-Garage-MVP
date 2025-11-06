@@ -1468,8 +1468,14 @@ export const socialQueue = pgTable("social_queue", {
     mediaUrls?: string[];
   }>().notNull(),
   scheduledAt: timestamp("scheduled_at").notNull(),
-  status: varchar("status", { enum: ["queued", "posted", "cancelled", "failed"] }).default("queued"),
+  status: varchar("status", { 
+    enum: ["queued", "posting", "posted", "failed", "cancelled", "paused"] 
+  }).default("queued"),
+  attempts: integer("attempts").default(0).notNull(),
+  nextAttemptAt: timestamp("next_attempt_at"),
+  lastError: text("last_error"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export type SocialQueue = typeof socialQueue.$inferSelect;
