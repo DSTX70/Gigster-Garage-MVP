@@ -27,12 +27,12 @@ r.get("/social-queue/stats", async (_req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        COUNT(*) FILTER (WHERE status = 'queued') as queued,
-        COUNT(*) FILTER (WHERE status = 'posting') as posting,
-        COUNT(*) FILTER (WHERE status = 'posted') as posted,
-        COUNT(*) FILTER (WHERE status = 'failed') as failed,
-        COUNT(*) FILTER (WHERE status = 'paused') as paused,
-        COUNT(*) as total
+        COALESCE(COUNT(*) FILTER (WHERE status = 'queued'), 0)::int as queued,
+        COALESCE(COUNT(*) FILTER (WHERE status = 'posting'), 0)::int as posting,
+        COALESCE(COUNT(*) FILTER (WHERE status = 'posted'), 0)::int as posted,
+        COALESCE(COUNT(*) FILTER (WHERE status = 'failed'), 0)::int as failed,
+        COALESCE(COUNT(*) FILTER (WHERE status = 'paused'), 0)::int as paused,
+        COALESCE(COUNT(*), 0)::int as total
       FROM social_queue
     `);
 

@@ -96,24 +96,43 @@ export default function MonitoringDashboard() {
     return `${days}d ${hours}h ${minutes}m`;
   };
 
-  const rateLimitData = sloMetrics?.rateLimitSaturation.map(({ platform, pct }) => ({
+  const rateLimitData = (sloMetrics?.rateLimitSaturation || []).map(({ platform, pct }) => ({
     name: platform.toUpperCase(),
-    usage: pct,
-    available: 100 - pct,
-  })) || [];
+    usage: pct || 0,
+    available: 100 - (pct || 0),
+  }));
 
-  const queueDistribution = queueStats ? [
-    { name: "Queued", value: queueStats.queued, fill: "#3b82f6" },
-    { name: "Posting", value: queueStats.posting, fill: "#f59e0b" },
-    { name: "Posted", value: queueStats.posted, fill: "#10b981" },
-    { name: "Failed", value: queueStats.failed, fill: "#ef4444" },
-    { name: "Paused", value: queueStats.paused, fill: "#6b7280" },
-  ] : [];
+  const queueDistribution = [
+    { name: "Queued", value: queueStats?.queued || 0, fill: "#3b82f6" },
+    { name: "Posting", value: queueStats?.posting || 0, fill: "#f59e0b" },
+    { name: "Posted", value: queueStats?.posted || 0, fill: "#10b981" },
+    { name: "Failed", value: queueStats?.failed || 0, fill: "#ef4444" },
+    { name: "Paused", value: queueStats?.paused || 0, fill: "#6b7280" },
+  ];
 
   if (sloLoading || queueLoading) {
     return (
       <div className="container mx-auto p-6 flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!sloMetrics || !queueStats) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Monitoring Dashboard</CardTitle>
+            <CardDescription>Unable to load metrics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <p>Metrics are currently unavailable. The system may be starting up or experiencing issues.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -152,14 +171,14 @@ export default function MonitoringDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {sloMetrics?.errorRate.toFixed(2)}%
+              {(sloMetrics?.errorRate ?? 0).toFixed(2)}%
             </div>
             <Progress
-              value={Math.min((sloMetrics?.errorRate || 0) * 20, 100)}
+              value={Math.min((sloMetrics?.errorRate ?? 0) * 20, 100)}
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-2">
-              Threshold: 5% • Status: {getSLOStatus("errorRate", sloMetrics?.errorRate || 0)}
+              Threshold: 5% • Status: {getSLOStatus("errorRate", sloMetrics?.errorRate ?? 0)}
             </p>
           </CardContent>
         </Card>
@@ -175,15 +194,15 @@ export default function MonitoringDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold flex items-baseline gap-2">
-              {sloMetrics?.queueAge.toFixed(1)}
+              {(sloMetrics?.queueAge ?? 0).toFixed(1)}
               <span className="text-lg text-muted-foreground">min</span>
             </div>
             <Progress
-              value={Math.min((sloMetrics?.queueAge || 0) / 30 * 100, 100)}
+              value={Math.min((sloMetrics?.queueAge ?? 0) / 30 * 100, 100)}
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-2">
-              Threshold: 30 min • Status: {getSLOStatus("queueAge", sloMetrics?.queueAge || 0)}
+              Threshold: 30 min • Status: {getSLOStatus("queueAge", sloMetrics?.queueAge ?? 0)}
             </p>
           </CardContent>
         </Card>
@@ -240,11 +259,11 @@ export default function MonitoringDashboard() {
                 </BarChart>
               </ResponsiveContainer>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                {sloMetrics?.rateLimitSaturation.map(({ platform, pct }) => (
+                {(sloMetrics?.rateLimitSaturation || []).map(({ platform, pct }) => (
                   <div key={platform} className="p-3 border rounded-lg">
                     <p className="text-sm font-medium mb-1">{platform.toUpperCase()}</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold">{pct}%</span>
+                      <span className="text-2xl font-bold">{pct ?? 0}%</span>
                       {pct > 90 && <Badge variant="destructive">High</Badge>}
                       {pct > 70 && pct <= 90 && <Badge variant="secondary">Medium</Badge>}
                     </div>
