@@ -54,6 +54,7 @@ import { mountIntegrationRoutes } from './routes/integrations.route.js';
 import opsSocialRoutes from './routes/ops.social.route.js';
 import opsRateLimitsRoutes from './routes/ops.rateLimits.route.js';
 import platformCredentialsRoutes from './routes/platformCredentials';
+import loyaltyRoutes from './routes/loyalty.route.js';
 
 // Initialize OpenAI client
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -336,6 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/ops", opsSocialRoutes);
   app.use("/api/ops", opsRateLimitsRoutes);
   app.use(platformCredentialsRoutes);
+  app.use("/api/loyalty", loyaltyRoutes);
   
   // ========== PERMISSION ENFORCEMENT HELPERS ==========
   // NOTE: Two resource models exist in this app:
