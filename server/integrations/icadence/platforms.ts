@@ -4,7 +4,9 @@ export type PostInput = {
   mediaUrls?: string[];
 };
 
-export type PostResult = { ok: true; remoteId: string } | { ok: false; error: string };
+export type PostResult = 
+  | { ok: true; remoteId: string } 
+  | { ok: false; error: string; transient?: boolean };
 
 export interface PlatformAdapter {
   name: string;
