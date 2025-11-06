@@ -1,3 +1,8 @@
+import { pool } from '../../db';
+import { postToX, type XCredentials } from '../platforms/x.adapter';
+import { postToInstagram, type InstagramCredentials } from '../platforms/instagram.adapter';
+import { postToLinkedIn, type LinkedInCredentials } from '../platforms/linkedin.adapter';
+
 export type PostInput = {
   profileId: string;
   text: string;
@@ -13,57 +18,122 @@ export interface PlatformAdapter {
   post: (input: PostInput) => Promise<PostResult>;
 }
 
-async function fakeNetwork<T>(result: T, failChance = 0.1): Promise<T> {
-  await new Promise(r => setTimeout(r, 250));
-  if (Math.random() < failChance) throw new Error("Transient network error");
-  return result;
+/**
+ * Fetch platform credentials from database
+ */
+async function getCredentialsForProfile(profileId: string, platform: string): Promise<any | null> {
+  const { rows } = await pool.query(
+    `SELECT credentials FROM platform_credentials
+     WHERE profile_id = $1 AND platform = $2 AND status = 'active'
+     LIMIT 1`,
+    [profileId, platform]
+  );
+  
+  return rows[0]?.credentials || null;
 }
 
+/**
+ * Real adapters that fetch credentials from database
+ */
 export const XAdapter: PlatformAdapter = {
   name: "x",
-  async post({ profileId, text }) {
-    const res = await fakeNetwork({ id: `x_${Date.now()}` });
-    return { ok: true, remoteId: res.id };
+  async post({ profileId, text, mediaUrls }) {
+    const credentials = await getCredentialsForProfile(profileId, "x");
+    
+    if (!credentials) {
+      return {
+        ok: false,
+        error: "No active X credentials found for profile",
+        transient: false,
+      };
+    }
+
+    return await postToX({
+      profileId,
+      text,
+      mediaUrls,
+      credentials: credentials as XCredentials,
+    });
   }
 };
 
 export const InstagramAdapter: PlatformAdapter = {
   name: "instagram",
-  async post({ profileId, text }) {
-    const res = await fakeNetwork({ id: `ig_${Date.now()}` });
-    return { ok: true, remoteId: res.id };
+  async post({ profileId, text, mediaUrls }) {
+    const credentials = await getCredentialsForProfile(profileId, "instagram");
+    
+    if (!credentials) {
+      return {
+        ok: false,
+        error: "No active Instagram credentials found for profile",
+        transient: false,
+      };
+    }
+
+    return await postToInstagram({
+      profileId,
+      text,
+      mediaUrls,
+      credentials: credentials as InstagramCredentials,
+    });
   }
 };
 
 export const LinkedInAdapter: PlatformAdapter = {
   name: "linkedin",
-  async post({ profileId, text }) {
-    const res = await fakeNetwork({ id: `li_${Date.now()}` });
-    return { ok: true, remoteId: res.id };
+  async post({ profileId, text, mediaUrls }) {
+    const credentials = await getCredentialsForProfile(profileId, "linkedin");
+    
+    if (!credentials) {
+      return {
+        ok: false,
+        error: "No active LinkedIn credentials found for profile",
+        transient: false,
+      };
+    }
+
+    return await postToLinkedIn({
+      profileId,
+      text,
+      mediaUrls,
+      credentials: credentials as LinkedInCredentials,
+    });
   }
 };
 
+/**
+ * Stub adapters for platforms not yet implemented
+ */
 export const FacebookAdapter: PlatformAdapter = {
   name: "facebook",
   async post({ profileId, text }) {
-    const res = await fakeNetwork({ id: `fb_${Date.now()}` });
-    return { ok: true, remoteId: res.id };
+    return {
+      ok: false,
+      error: "Facebook adapter not yet implemented",
+      transient: false,
+    };
   }
 };
 
 export const TikTokAdapter: PlatformAdapter = {
   name: "tiktok",
   async post({ profileId, text }) {
-    const res = await fakeNetwork({ id: `tt_${Date.now()}` });
-    return { ok: true, remoteId: res.id };
+    return {
+      ok: false,
+      error: "TikTok adapter not yet implemented",
+      transient: false,
+    };
   }
 };
 
 export const YouTubeAdapter: PlatformAdapter = {
   name: "youtube",
   async post({ profileId, text }) {
-    const res = await fakeNetwork({ id: `yt_${Date.now()}` });
-    return { ok: true, remoteId: res.id };
+    return {
+      ok: false,
+      error: "YouTube adapter not yet implemented",
+        transient: false,
+    };
   }
 };
 

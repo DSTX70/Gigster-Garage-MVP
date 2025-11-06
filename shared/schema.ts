@@ -1505,3 +1505,41 @@ export const insertLoyaltyLedgerSchema = createInsertSchema(loyaltyLedger).omit(
   id: true,
   createdAt: true,
 });
+
+// Platform Credentials - Secure storage for social media OAuth tokens
+export const platformCredentials = pgTable("platform_credentials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  platform: varchar("platform", {
+    enum: ["x", "instagram", "linkedin", "facebook", "tiktok", "youtube"]
+  }).notNull(),
+  profileId: varchar("profile_id").notNull(), // External platform profile/page ID
+  profileName: varchar("profile_name"), // Display name for UI
+  credentials: jsonb("credentials").$type<{
+    // X/Twitter OAuth 1.0a
+    appKey?: string;
+    appSecret?: string;
+    accessToken?: string;
+    accessSecret?: string;
+    // Instagram/Facebook/LinkedIn OAuth 2.0
+    refreshToken?: string;
+    expiresAt?: number;
+    // Platform-specific IDs
+    userId?: string; // Instagram Business Account ID
+    personUrn?: string; // LinkedIn person URN
+  }>().notNull(),
+  status: varchar("status", { enum: ["active", "expired", "revoked", "error"] }).default("active"),
+  lastValidated: timestamp("last_validated"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type PlatformCredential = typeof platformCredentials.$inferSelect;
+export type InsertPlatformCredential = typeof platformCredentials.$inferInsert;
+
+export const insertPlatformCredentialSchema = createInsertSchema(platformCredentials).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastValidated: true,
+});
