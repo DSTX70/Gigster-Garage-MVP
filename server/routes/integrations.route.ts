@@ -13,7 +13,13 @@ export function mountIntegrationRoutes(app: Express) {
       return res.status(400).json({ error: "bad_envelope", details: parse.error.flatten() });
     }
 
-    if (!featureFlags.integrations[partner]) {
+    const flagMapping = {
+      icadence: featureFlags.integrations.icadence,
+      rfp: featureFlags.integrations.rfpResponder,
+      loyalty: featureFlags.integrations.loyaltyRewards
+    };
+
+    if (!flagMapping[partner]) {
       return res.status(404).json({ error: "integration_disabled" });
     }
 
