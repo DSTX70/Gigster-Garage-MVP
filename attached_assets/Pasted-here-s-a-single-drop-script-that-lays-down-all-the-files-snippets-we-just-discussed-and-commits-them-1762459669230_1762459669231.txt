@@ -1,0 +1,500 @@
+here’s a single drop script that lays down all the files/snippets we just discussed and commits them on the right branches. Save this as scripts/drop_sprint_day1.sh, make it executable, and run it from the repo root.
+
+It’s idempotent-ish: it will (re)create files on feature branches and commit with clear messages. Where I needed to tweak existing code (worker/socialPoster.ts) I used guarded sed inserts so it won’t double-patch.
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(pwd)"
+
+ensure_repo() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "Run inside your repo root."; exit 1; }
+}
+
+write_file() { # write_file <relpath> <<'EOF' ... EOF
+  local path="$1"
+  mkdir -p "$(dirname "$path")"
+  cat > "$path"
+}
+
+append_if_missing() { # append_if_missing <file> <needle> <<'EOF' ... EOF
+  local file="$1" needle="$2" tmp="$(mktemp)"
+  if ! grep -qF "$needle" "$file" 2>/dev/null; then
+    cat > "$tmp"
+    printf "\n" >> "$file"
+    cat "$tmp" >> "$file"
+  fi
+  rm -f "$tmp"
+}
+
+ensure_repo
+
+# -----------------------------
+# GG-101 — Platform adapters
+# -----------------------------
+git switch -c feature/social-platform-adapters || git checkout feature/social-platform-adapters
+
+# common env/error helpers
+write_file server/integrations/platforms/common.ts <<'TS'
+export class IntegrationConfigError extends Error {}
+export class RetryablePostError extends Error {}
+export class FatalPostError extends Error {}
+
+export function requireEnv(key: string): string {
+  const v = process.env[key];
+  if (!v) throw new IntegrationConfigError(`Missing env: ${key}`);
+  return v;
+}
+
+export function mapHttpError(status: number, msg: string) {
+  if (status >= 500 || status === 429) return new RetryablePostError(msg);
+  return new FatalPostError(msg);
+}
+TS
+
+# X adapter
+write_file server/integrations/platforms/x.adapter.ts <<'TS'
+import fetch from "node-fetch";
+import { requireEnv, mapHttpError } from "./common";
+
+type Input = { profileId: string; text: string; mediaUrls?: string[] };
+
+export async function postToX({ profileId, text }: Input) {
+  const token = requireEnv("X_BEARER_TOKEN");
+  const res = await fetch("https://api.twitter.com/2/tweets", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw mapHttpError(res.status, `X post failed: ${res.status} ${body}`);
+  }
+  const json = await res.json();
+  return { ok: true as const, remoteId: json.data?.id ?? `x_${Date.now()}` };
+}
+TS
+
+# Instagram adapter
+write_file server/integrations/platforms/instagram.adapter.ts <<'TS'
+import fetch from "node-fetch";
+import { requireEnv, mapHttpError } from "./common";
+
+type Input = { profileId: string; text: string; mediaUrls?: string[] };
+
+export async function postToInstagram({ profileId, text, mediaUrls = [] }: Input) {
+  const accessToken = requireEnv("INSTAGRAM_ACCESS_TOKEN"); // long-lived token
+  const imageUrl = mediaUrls[0];
+  if (!imageUrl) throw new Error("Instagram requires at least one imageUrl");
+  const createRes = await fetch(
+    `https://graph.facebook.com/v18.0/${profileId}/media?image_url=${encodeURIComponent(imageUrl)}&caption=${encodeURIComponent(text)}&access_token=${accessToken}`,
+    { method: "POST" }
+  );
+  if (!createRes.ok) throw mapHttpError(createRes.status, await createRes.text());
+  const { id: creationId } = await createRes.json();
+  const pubRes = await fetch(
+    `https://graph.facebook.com/v18.0/${profileId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`,
+    { method: "POST" }
+  );
+  if (!pubRes.ok) throw mapHttpError(pubRes.status, await pubRes.text());
+  const pubJson = await pubRes.json();
+  return { ok: true as const, remoteId: pubJson.id ?? `ig_${Date.now()}` };
+}
+TS
+
+# LinkedIn adapter
+write_file server/integrations/platforms/linkedin.adapter.ts <<'TS'
+import fetch from "node-fetch";
+import { requireEnv, mapHttpError } from "./common";
+
+type Input = { profileId: string; text: string; mediaUrls?: string[] };
+
+export async function postToLinkedIn({ profileId, text }: Input) {
+  const token = requireEnv("LINKEDIN_ACCESS_TOKEN"); // scope: w_member_social
+  const actor = `urn:li:person:${profileId}`;
+  const res = await fetch("https://api.linkedin.com/v2/ugcPosts", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-Restli-Protocol-Version": "2.0.0"
+    },
+    body: JSON.stringify({
+      author: actor,
+      lifecycleState: "PUBLISHED",
+      specificContent: { "com.linkedin.ugc.ShareContent": { shareCommentary: { text }, shareMediaCategory: "NONE" } },
+      visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "CONNECTIONS" }
+    })
+  });
+  if (!res.ok) throw mapHttpError(res.status, await res.text());
+  const json = await res.json();
+  return { ok: true as const, remoteId: json.id ?? `li_${Date.now()}` };
+}
+TS
+
+# Platform switch (replace existing simple one)
+write_file server/integrations/icadence/platforms.ts <<'TS'
+import { postToX } from "../platforms/x.adapter";
+import { postToInstagram } from "../platforms/instagram.adapter";
+import { postToLinkedIn } from "../platforms/linkedin.adapter";
+
+export type PostInput = { profileId: string; text: string; mediaUrls?: string[] };
+export type PostResult = { ok: true; remoteId: string } | { ok: false; error: string };
+
+export function getAdapter(platform: string) {
+  switch (platform) {
+    case "x":         return { name: "x", post: postToX };
+    case "instagram": return { name: "instagram", post: postToInstagram };
+    case "linkedin":  return { name: "linkedin", post: postToLinkedIn };
+    default: throw new Error(`Unsupported platform: ${platform}`);
+  }
+}
+TS
+
+# .env hints
+append_if_missing ".env.example" "X_BEARER_TOKEN=" <<'ENV'
+X_BEARER_TOKEN=
+INSTAGRAM_APP_ID=
+INSTAGRAM_APP_SECRET=
+INSTAGRAM_ACCESS_TOKEN=
+LINKEDIN_CLIENT_ID=
+LINKEDIN_CLIENT_SECRET=
+LINKEDIN_ACCESS_TOKEN=
+ENV
+
+git add server/integrations
+git add .env.example || true
+git commit -m "GG-101: platform adapters (X/IG/LinkedIn) + env helpers"
+
+# -----------------------------
+# GG-105 — Loyalty CSV export
+# -----------------------------
+git switch -c feature/loyalty-ui-rules || git checkout feature/loyalty-ui-rules
+
+write_file server/routes/loyalty.route.ts <<'TS'
+import { Router } from "express";
+import { db } from "../db";
+
+const r = Router();
+
+r.get("/", async (_req,res)=> {
+  const { rows } = await db.query(`select id, user_id, delta_points, reason, metadata, created_at from loyalty_ledger order by created_at desc limit 1000`);
+  res.json({ items: rows });
+});
+
+r.get("/export.csv", async (_req,res)=> {
+  const { rows } = await db.query(`select user_id, delta_points, reason, created_at from loyalty_ledger order by created_at desc`);
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="loyalty_ledger.csv"`);
+  res.write("user_id,delta_points,reason,created_at\n");
+  for (const r0 of rows) res.write(`${r0.user_id},${r0.delta_points},${r0.reason},${new Date(r0.created_at).toISOString()}\n`);
+  res.end();
+});
+
+export default r;
+TS
+
+write_file client/src/pages/loyalty/index.tsx <<'TSX'
+import { useEffect, useState } from "react";
+
+export default function LoyaltyAdmin(){
+  const [items, setItems] = useState<any[]>([]);
+  useEffect(()=>{ fetch("/api/loyalty").then(r=>r.json()).then(d=>setItems(d.items||[])); },[]);
+  return (
+    <div className="p-6 space-y-3">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Loyalty</h1>
+        <a className="underline text-sm" href="/api/loyalty/export.csv">Export CSV</a>
+      </div>
+      <table className="w-full text-sm">
+        <thead><tr><th>User</th><th>Δ Points</th><th>Reason</th><th>When</th></tr></thead>
+        <tbody>
+          {items.map((r:any)=> <tr key={r.id}><td>{r.user_id}</td><td>{r.delta_points}</td><td>{r.reason}</td><td>{new Date(r.created_at).toLocaleString()}</td></tr>)}
+          {items.length===0 && <tr><td colSpan={4} className="py-6 text-center text-gray-500">No records</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+TSX
+
+git add server/routes/loyalty.route.ts client/src/pages/loyalty/index.tsx
+git commit -m "GG-105: loyalty history + CSV export endpoint/page"
+
+# -----------------------------
+# GG-102 — Worker scale
+# -----------------------------
+git switch -c feat/social-worker-scale || git checkout feat/social-worker-scale
+
+write_file worker/launcher.ts <<'TS'
+import cluster from "cluster"; import os from "os";
+const W = Number(process.env.CONCURRENCY || os.cpus().length);
+if (cluster.isPrimary) { for (let i=0;i<W;i++) cluster.fork(); cluster.on("exit", ()=>cluster.fork()); }
+else { require("./socialPoster"); }
+TS
+
+# patch worker/socialPoster.ts with SKIP LOCKED & graceful stop (guarded)
+if [ -f worker/socialPoster.ts ]; then
+  # graceful shutdown flags
+  append_if_missing worker/socialPoster.ts "let shuttingDown = false;" <<'TS'
+let shuttingDown = false;
+process.on("SIGTERM", ()=> shuttingDown = true);
+process.on("SIGINT",  ()=> shuttingDown = true);
+TS
+  # schedule stop check (insert before setTimeout loop call occurrences)
+  if ! grep -qF "[social] worker stopping (graceful)" worker/socialPoster.ts; then
+    sed -i.bak 's/setTimeout(loop, POLL_MS);/if (shuttingDown) { console.log("[social] worker stopping (graceful)"); return; }\n    setTimeout(loop, POLL_MS);/g' worker/socialPoster.ts || true
+  fi
+  # suggest SKIP LOCKED replacing ready query (best-effort)
+  if grep -q "select \* from social_queue" worker/socialPoster.ts; then
+    sed -i.bak '0,/select \* from social_queue/{s/select \* from social_queue.*/    select * from social_queue\n    where id in (\n      select id from social_queue\n      where status in ('"'"'queued'"'"','"'"'failed'"'"')\n        and scheduled_at <= now()\n        and (next_attempt_at is null or next_attempt_at <= now())\n      order by scheduled_at asc\n      for update skip locked\n      limit $1\n    )/}' worker/socialPoster.ts || true
+  fi
+fi
+
+append_if_missing ".env.example" "CONCURRENCY=" <<'ENV'
+CONCURRENCY=4
+ENV
+
+git add worker/launcher.ts worker/socialPoster.ts .env.example || true
+git commit -m "GG-102: worker launcher (CONCURRENCY), graceful shutdown, SKIP LOCKED patch"
+
+# -----------------------------
+# GG-103 — Alerts & SLOs
+# -----------------------------
+git switch -c ops/alerts-social-queue || git checkout ops/alerts-social-queue
+
+write_file server/ops/alerts/socialQueue.metrics.ts <<'TS'
+import { db } from "../../db";
+export async function hourlyErrorRate() {
+  const { rows } = await db.query(`
+    select coalesce(100.0 * sum(case when status='failed' then 1 else 0 end) / nullif(count(*),0),0) as pct
+    from social_queue where updated_at >= now() - interval '1 hour'`);
+  return Number(rows[0]?.pct || 0);
+}
+export async function maxQueueAgeMinutes() {
+  const { rows } = await db.query(`
+    select coalesce(extract(epoch from (now() - min(scheduled_at))) / 60.0, 0) as age
+    from social_queue where status in ('queued','failed')`);
+  return Number(rows[0]?.age || 0);
+}
+export async function rateLimitSaturation() {
+  const { rows } = await db.query(`select platform, used_actions, max_actions from social_rate_limits`);
+  return rows.map(r => ({ platform: r.platform, pct: Math.round(100 * r.used_actions / Math.max(1, r.max_actions)) }));
+}
+TS
+
+write_file server/ops/alerts/socialQueue.alerts.ts <<'TS'
+import { hourlyErrorRate, maxQueueAgeMinutes, rateLimitSaturation } from "./socialQueue.metrics";
+export async function runAlerts() {
+  const hr = await hourlyErrorRate(); if (hr > 5) console.warn(`[ALERT] error-rate ${hr}% > 5%`);
+  const age = await maxQueueAgeMinutes(); if (age > 30) console.warn(`[ALERT] queue-age ${age}m > 30m`);
+  const rl = await rateLimitSaturation(); rl.forEach(x => { if (x.pct > 90) console.warn(`[ALERT] RL saturation ${x.platform}: ${x.pct}%`); });
+}
+TS
+
+git add server/ops/alerts
+git commit -m "GG-103: alert metrics + simple alert runner"
+
+# -----------------------------
+# GG-104 — RFP E2E
+# -----------------------------
+git switch -c feature/rfp-drafts-e2e || git checkout feature/rfp-drafts-e2e
+
+write_file server/db/migrations/2025_11_06_proposals.sql <<'SQL'
+create table if not exists proposals (
+  id uuid primary key default gen_random_uuid(),
+  rfp_id text not null,
+  client text not null,
+  due_date date not null,
+  scope text not null,
+  status text not null default 'draft',
+  created_at timestamptz not null default now()
+);
+create table if not exists proposal_attachments (
+  proposal_id uuid not null references proposals(id) on delete cascade,
+  url text not null
+);
+SQL
+
+write_file server/integrations/rfp/draft.service.ts <<'TS'
+import { db } from "../../db";
+export async function createProposalDraft(i:{ rfpId:string; client:string; dueDate:string; scope:string; attachments?:string[] }) {
+  const { rows } = await db.query(
+    `insert into proposals (rfp_id, client, due_date, scope, status, created_at)
+     values($1,$2,$3,$4,'draft', now()) returning id`, [i.rfpId, i.client, i.dueDate, i.scope]);
+  const pid = rows[0].id;
+  for (const url of (i.attachments||[])) await db.query(
+    `insert into proposal_attachments (proposal_id, url) values ($1,$2)`, [pid, url]);
+  return { ok:true, proposalId: pid };
+}
+TS
+
+# adapter hook (creates/overwrites a simple handler)
+write_file server/integrations/rfp/adapter.ts <<'TS'
+import { z } from "zod";
+import { createProposalDraft } from "./draft.service";
+
+export const RfpEvent = z.object({
+  type: z.enum(["rfp.requested","rfp.updated"]),
+  data: z.object({
+    rfpId: z.string(),
+    client: z.string(),
+    dueDate: z.string(),
+    scope: z.string(),
+    attachments: z.array(z.string().url()).optional()
+  })
+});
+export type RfpEvent = z.infer<typeof RfpEvent>;
+
+export async function handleRfpEvent(evt: RfpEvent) {
+  if (evt.type === "rfp.requested") {
+    const res = await createProposalDraft(evt.data);
+    return { ok: true, proposalDraftCreated: res.ok, proposalId: res.proposalId };
+  }
+  return { ok: true };
+}
+TS
+
+write_file client/src/pages/rfp/ingest.tsx <<'TSX'
+import { useEffect, useState } from "react";
+export default function RfpIngest(){
+  const [items, setItems] = useState<any[]>([]);
+  useEffect(()=>{ fetch("/api/proposals?status=draft").then(r=>r.json()).then(setItems); },[]);
+  return <div className="p-6">
+    <h1 className="text-2xl font-semibold">RFP Ingest</h1>
+    <ul className="mt-4 space-y-2">
+      {items.map((i:any)=> <li key={i.id} className="border rounded p-3">{i.client} — due {new Date(i.due_date).toLocaleDateString()}</li>)}
+      {items.length===0 && <li className="text-gray-500">No drafts yet</li>}
+    </ul>
+  </div>;
+}
+TSX
+
+git add server/db/migrations/2025_11_06_proposals.sql server/integrations/rfp server/integrations/rfp/draft.service.ts client/src/pages/rfp/ingest.tsx
+git commit -m "GG-104: RFP draft pipeline (migration, service, adapter, ingest page)"
+
+# -----------------------------
+# GG-106 — Brand/Voice audit stub
+# -----------------------------
+git switch -c chore/brand-voice-pass || git checkout chore/brand-voice-pass
+
+write_file scripts/brand_token_audit.ts <<'TS'
+/**
+ * TODO: Implement token scans against Tailwind/design tokens:
+ * - Non-brand colors/fonts
+ * - Contrast AA+ checks
+ * - Component drift from design system
+ */
+console.log("brand token audit placeholder"); process.exit(0);
+TS
+
+git add scripts/brand_token_audit.ts
+git commit -m "GG-106: brand/voice audit placeholder script"
+
+# -----------------------------
+# GG-107 — SSO org-bind page shell
+# -----------------------------
+git switch -c feat/sso-org-binding || git checkout feat/sso-org-binding
+
+write_file client/src/pages/auth/org-bind.tsx <<'TSX'
+export default function OrgBind(){
+  return <div className="p-6">
+    <h1 className="text-2xl font-semibold">Select or Create an Organization</h1>
+    <p className="text-sm text-gray-600 mt-2">Your SSO account is not bound to an org. Choose one to continue.</p>
+  </div>;
+}
+TSX
+
+git add client/src/pages/auth/org-bind.tsx
+git commit -m "GG-107: org-binding page shell"
+
+# -----------------------------
+# GG-108 — Pricing & fences
+# -----------------------------
+git switch -c feature/pricing-and-fences || git checkout feature/pricing-and-fences
+
+write_file server/middleware/entitlements.ts <<'TS'
+export function requirePlan(min:"free"|"pro"|"studio"){
+  const order = { free:0, pro:1, studio:2 } as const;
+  return (req:any,res:any,next:any)=>{
+    const plan = req.user?.plan ?? "free";
+    if (order[plan] < order[min]) return res.status(403).json({ error:"requires_upgrade", min });
+    next();
+  };
+}
+TS
+
+write_file client/src/pages/pricing.tsx <<'TSX'
+export default function Pricing(){
+  return <div className="p-6">
+    <h1 className="text-2xl font-semibold">Pricing</h1>
+    <ul className="mt-4 list-disc pl-6 text-sm">
+      <li>Free — Starter features</li>
+      <li>Pro — Advanced reporting & automations</li>
+      <li>Studio — White-label, SSO, API</li>
+    </ul>
+  </div>;
+}
+TSX
+
+git add server/middleware/entitlements.ts client/src/pages/pricing.tsx
+git commit -m "GG-108: pricing page + entitlements middleware (stub)"
+
+# -----------------------------
+# GG-109 — GTM shells
+# -----------------------------
+git switch -c gtm/launch-pack || git checkout gtm/launch-pack
+
+write_file docs/gtm/launch_pack.md <<'MD'
+# GTM Starter Pack
+- Competitive matrix (sources)
+- 10 influencer briefs
+- Affiliate one-pager
+- 30-day content plan
+MD
+
+git add docs/gtm/launch_pack.md
+git commit -m "GG-109: GTM pack doc shell"
+
+# -----------------------------
+# GG-110 — IP snapshot shell
+# -----------------------------
+git switch -c ip/provisional-snapshot || git checkout ip/provisional-snapshot
+
+write_file docs/ip/provisional_snapshot.md <<'MD'
+# IP Snapshot (Provisional + Trade Secrets)
+- Claims outline (agent graduation, audit fabric, queue orchestration)
+- Figure list
+- Trade Secret register
+- Filing order memo
+MD
+
+git add docs/ip/provisional_snapshot.md
+git commit -m "GG-110: provisional snapshot doc shell"
+
+echo "✅ Sprint Day-1 drop complete."
+echo "Next:"
+echo "  • Mount routes in server/index.ts (loyalty, ops.* , integrations)"
+echo "  • Run migrations: find server/db/migrations -name '*.sql' | sort | xargs -I{} psql \"$DATABASE_URL\" -f {}"
+echo "  • Start: npm run dev && CONCURRENCY=4 npm run worker:social"
+echo "  • Tests: npx jest 'server/tests/schema.*.spec.ts' 'server/tests/ops.rateLimits.*.spec.ts' 'server/tests/social.*.spec.ts' 'server/tests/sprint_A.sanity.spec.ts' --runInBand"
+
+How to run
+# Save the script
+mkdir -p scripts
+# paste the content above into scripts/drop_sprint_day1.sh
+
+chmod +x scripts/drop_sprint_day1.sh
+./scripts/drop_sprint_day1.sh
+
+After running
+
+Open server/index.ts and ensure these are mounted:
+
+app.use("/api/loyalty",  require("./routes/loyalty.route").default);
+app.use("/api/ops",      require("./routes/ops.social.route").default);
+app.use("/api/ops",      require("./routes/ops.rateLimits.route").default);
+require("./routes/integrations.route").mountIntegrationRoutes(app);
+
+
+Apply SQL migrations, set env, boot API + worker, then run the test globs listed at the bottom of the script.

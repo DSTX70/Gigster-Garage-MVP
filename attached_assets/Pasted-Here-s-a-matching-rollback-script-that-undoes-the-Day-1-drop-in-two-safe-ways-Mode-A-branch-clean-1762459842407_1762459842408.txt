@@ -1,0 +1,206 @@
+Here’s a matching rollback script that undoes the Day-1 drop in two safe ways:
+
+Mode A (branch cleanup): delete the generated feature branches if they haven’t been merged.
+
+Mode B (revert on a branch): create revert commits on a target branch (e.g., main) for any Day-1 commits that were merged (it finds them by commit message prefixes like GG-101:, etc.).
+
+Save as scripts/rollback_sprint_day1.sh, chmod +x, and run from repo root.
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Rollback for scripts/drop_sprint_day1.sh
+# Supports:
+#   A) --delete-branches                      : delete generated feature branches (if unmerged)
+#   B) --revert-on <branch> [--push]          : revert Day-1 commits on the target branch by message grep
+#   C) --dry-run                              : print what would happen, don't change anything
+
+DRY_RUN=0
+DO_DELETE=0
+DO_REVERT=0
+PUSH=0
+TARGET_BRANCH=""
+
+BRANCHES=(
+  "feature/social-platform-adapters"   # GG-101
+  "feature/loyalty-ui-rules"           # GG-105
+  "feat/social-worker-scale"           # GG-102
+  "ops/alerts-social-queue"            # GG-103
+  "feature/rfp-drafts-e2e"             # GG-104
+  "chore/brand-voice-pass"             # GG-106
+  "feat/sso-org-binding"               # GG-107
+  "feature/pricing-and-fences"         # GG-108
+  "gtm/launch-pack"                    # GG-109
+  "ip/provisional-snapshot"            # GG-110
+)
+
+# Commit message prefixes created by the drop script
+COMMIT_GREP_PREFIXES=(
+  "^GG-101:"
+  "^GG-102:"
+  "^GG-103:"
+  "^GG-104:"
+  "^GG-105:"
+  "^GG-106:"
+  "^GG-107:"
+  "^GG-108:"
+  "^GG-109:"
+  "^GG-110:"
+)
+
+usage() {
+  cat <<EOF
+Usage:
+  $(basename "$0") --delete-branches [--dry-run]
+  $(basename "$0") --revert-on <branch> [--push] [--dry-run]
+
+Examples:
+  # Delete the feature branches created by the drop script (local only)
+  $(basename "$0") --delete-branches
+
+  # Revert Day-1 commits on main (creates new revert commits), then push
+  $(basename "$0") --revert-on main --push
+EOF
+}
+
+need_git_repo() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "Run inside a git repo."; exit 1; }
+}
+
+arg_err() { echo "Error: $1"; echo; usage; exit 1; }
+
+# Parse args
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --delete-branches) DO_DELETE=1; shift ;;
+    --revert-on) DO_REVERT=1; TARGET_BRANCH="${2:-}"; shift 2 ;;
+    --push) PUSH=1; shift ;;
+    --dry-run) DRY_RUN=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) arg_err "Unknown arg: $1" ;;
+  esac
+done
+
+need_git_repo
+
+if [[ $DO_DELETE -eq 0 && $DO_REVERT -eq 0 ]]; then
+  arg_err "Pick a mode: --delete-branches OR --revert-on <branch>"
+fi
+if [[ $DO_REVERT -eq 1 && -z "$TARGET_BRANCH" ]]; then
+  arg_err "--revert-on requires a branch name (e.g., main)"
+fi
+
+run() {
+  if [[ $DRY_RUN -eq 1 ]]; then echo "DRY-RUN: $*"; else eval "$@"; fi
+}
+
+# Mode A: delete generated feature branches
+if [[ $DO_DELETE -eq 1 ]]; then
+  echo "==> Deleting Day-1 feature branches (local) ..."
+  for b in "${BRANCHES[@]}"; do
+    if git show-ref --verify --quiet "refs/heads/$b"; then
+      CURRENT=$(git rev-parse --abbrev-ref HEAD)
+      if [[ "$CURRENT" == "$b" ]]; then
+        echo "  - Skipping '$b' (currently checked out). Switch away first if you want to delete it."
+        continue
+      fi
+      run "git branch -D '$b'"
+    else
+      echo "  - Branch '$b' not found locally; skipping."
+    fi
+  done
+
+  cat <<NOTE
+
+Local branches removed (if they existed). If you also pushed them to origin, remove them with:
+  git push origin --delete <branch>
+
+Branches created by drop:
+$(printf '  - %s\n' "${BRANCHES[@]}")
+
+NOTE
+fi
+
+# Mode B: revert Day-1 commits by message grep on target branch
+if [[ $DO_REVERT -eq 1 ]]; then
+  echo "==> Reverting Day-1 commits on '$TARGET_BRANCH' (by commit message grep) ..."
+  # Ensure target branch exists
+  if ! git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
+    # try to checkout remote branch
+    if git show-ref --verify --quiet "refs/remotes/origin/$TARGET_BRANCH"; then
+      run "git checkout -b '$TARGET_BRANCH' origin/$TARGET_BRANCH"
+    else
+      arg_err "Branch '$TARGET_BRANCH' not found (local or origin)."
+    fi
+  fi
+
+  # Ensure we are on target
+  CURRENT=$(git rev-parse --abbrev-ref HEAD)
+  if [[ "$CURRENT" != "$TARGET_BRANCH" ]]; then
+    run "git checkout '$TARGET_BRANCH'"
+  fi
+
+  # Gather matching SHAs (reverse chrono so revert order is safe)
+  mapfile -t SHAS < <(git log --pretty=format:%H --grep="$(IFS=\|; echo "${COMMIT_GREP_PREFIXES[*]}")" --regexp-ignore-case)
+
+  if [[ ${#SHAS[@]} -eq 0 ]]; then
+    echo "  - No Day-1 commits detected on '$TARGET_BRANCH'. Nothing to revert."
+  else
+    echo "  - Found ${#SHAS[@]} Day-1 commit(s) to revert."
+    # Revert in chronological order to minimize conflicts
+    mapfile -t SHAS_CHRONO < <(for s in "${SHAS[@]}"; do echo "$s"; done | tac)
+    for sha in "${SHAS_CHRONO[@]}"; do
+      MSG=$(git log -1 --pretty=%s "$sha")
+      echo "    * Reverting: $sha  ($MSG)"
+      run "git revert --no-edit '$sha'"
+    done
+    if [[ $PUSH -eq 1 ]]; then
+      run "git push origin '$TARGET_BRANCH'"
+    else
+      echo "  - Reverts staged on '$TARGET_BRANCH'. Review and push when ready:"
+      echo "      git push origin '$TARGET_BRANCH'"
+    fi
+  fi
+
+  cat <<'NOTE'
+
+Notes:
+- This script reverts commits by matching message prefixes:
+    GG-101, GG-102, GG-103, GG-104, GG-105, GG-106, GG-107, GG-108, GG-109, GG-110
+  If you changed messages, adjust COMMIT_GREP_PREFIXES in the script.
+
+- If Day-1 changes were merged via a merge commit (not fast-forward), you may need to
+  revert the merge with:
+    git revert -m 1 <merge_sha>
+
+- For a fully hard reset to a known remote state (destructive):
+    git fetch origin
+    git reset --hard origin/<branch>
+
+Use --dry-run first if you want to see the plan without making changes.
+NOTE
+fi
+
+echo "✅ Rollback script completed."
+
+How to use
+# Save the file
+mkdir -p scripts
+# paste the content into scripts/rollback_sprint_day1.sh
+chmod +x scripts/rollback_sprint_day1.sh
+
+
+Delete generated feature branches (if unmerged):
+
+scripts/rollback_sprint_day1.sh --delete-branches
+# or dry-run first:
+scripts/rollback_sprint_day1.sh --delete-branches --dry-run
+
+
+Revert Day-1 commits on main (creates revert commits):
+
+scripts/rollback_sprint_day1.sh --revert-on main
+# push the reverts
+scripts/rollback_sprint_day1.sh --revert-on main --push
+# or inspect first:
+scripts/rollback_sprint_day1.sh --revert-on main --dry-run
