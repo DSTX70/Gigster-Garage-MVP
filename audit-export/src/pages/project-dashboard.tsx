@@ -1,0 +1,314 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams, Link } from "wouter";
+import { copy } from "@/lib/copy";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Clock, Users, CheckCircle, AlertCircle, ArrowLeft, Plus, BarChart3 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import type { Task, Project } from "@shared/schema";
+import { format } from "date-fns";
+import { AppHeader } from "@/components/app-header";
+import { ProjectBoard } from "@/components/project-board";
+import { TaskDrawer } from "@/components/task-drawer";
+import { CalendarView } from "@/components/calendar-view";
+
+export default function ProjectDashboard() {
+  const { projectId } = useParams();
+  const { user, isAdmin } = useAuth();
+  const [activeView, setActiveView] = useState<"list" | "kanban" | "calendar">("list");
+  const [taskFilter, setTaskFilter] = useState<"all" | "completed" | "high-priority" | "overdue">("all");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showTaskDrawer, setShowTaskDrawer] = useState(false);
+  const [taskDrawerStatus, setTaskDrawerStatus] = useState<string>("");
+
+  const { data: project } = useQuery<Project>({
+    queryKey: ["/api/projects", projectId],
+  });
+
+  const { data: tasks = [] } = useQuery<Task[]>({
+    queryKey: ["/api/tasks", "project", projectId],
+  });
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setShowTaskDrawer(true);
+  };
+
+  const handleCreateTask = (status?: string) => {
+    setSelectedTask(null);
+    setTaskDrawerStatus(status || "pending");
+    setShowTaskDrawer(true);
+  };
+
+  const handleSlotSelect = (slotInfo: { start: Date; end: Date }) => {
+    setSelectedTask(null);
+    setTaskDrawerStatus("pending");
+    setShowTaskDrawer(true);
+  };
+
+  const closeTaskDrawer = () => {
+    setShowTaskDrawer(false);
+    setSelectedTask(null);
+    setTaskDrawerStatus("");
+  };
+
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">Project not found</h2>
+          <Link href="/">
+            <Button className="mt-4">Back to Home</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const completedTasks = tasks.filter(task => task.completed);
+  const progressPercentage = tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0;
+  const overdueTasks = tasks.filter(task => 
+    task.dueDate && new Date(task.dueDate) < new Date() && !task.completed
+  );
+  const highPriorityTasks = tasks.filter(task => task.priority === "high" && !task.completed);
+
+  const tasksByStatus = {
+    todo: tasks.filter(task => !task.completed),
+    inProgress: tasks.filter(task => !task.completed && task.progressNotes && Array.isArray(task.progressNotes) && task.progressNotes.length > 0),
+    completed: completedTasks,
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": return "bg-green-100 text-green-800";
+      case "completed": return "bg-blue-100 text-blue-800";
+      case "on-hold": return "bg-yellow-100 text-yellow-800";
+      case "cancelled": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getFilteredTasks = () => {
+    switch (taskFilter) {
+      case "completed":
+        return completedTasks;
+      case "high-priority":
+        return highPriorityTasks;
+      case "overdue":
+        return overdueTasks;
+      default:
+        return tasks;
+    }
+  };
+
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <AppHeader />
+      
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="mb-4">
+          <Link href="/">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to My Dashboard
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+            {project.description && (
+              <p className="text-gray-600 mt-1">{project.description}</p>
+            )}
+          </div>
+          <Button 
+            onClick={() => handleCreateTask()}
+            className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
+            data-testid="new-task-button"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            {copy.tasks.createButton}
+          </Button>
+        </div>
+        
+        {/* Project Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${taskFilter === 'all' ? 'ring-2 ring-blue-500' : ''}`}
+            onClick={() => setTaskFilter('all')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600">Total Tasks</p>
+                  <p className="text-2xl font-bold text-gray-900">{tasks.length}</p>
+                </div>
+                <BarChart3 className="h-6 w-6 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${taskFilter === 'completed' ? 'ring-2 ring-green-500' : ''}`}
+            onClick={() => setTaskFilter('completed')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-green-600">Completed</p>
+                  <p className="text-2xl font-bold text-green-600">{completedTasks.length}</p>
+                </div>
+                <CheckCircle className="h-6 w-6 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${taskFilter === 'high-priority' ? 'ring-2 ring-red-500' : ''}`}
+            onClick={() => setTaskFilter('high-priority')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-red-600">High Priority</p>
+                  <p className="text-2xl font-bold text-red-600">{highPriorityTasks.length}</p>
+                </div>
+                <AlertCircle className="h-6 w-6 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${taskFilter === 'overdue' ? 'ring-2 ring-orange-500' : ''}`}
+            onClick={() => setTaskFilter('overdue')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-orange-600">Overdue</p>
+                  <p className="text-2xl font-bold text-orange-600">{overdueTasks.length}</p>
+                </div>
+                <Clock className="h-6 w-6 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Progress Bar */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium flex items-center">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Project Progress
+              </span>
+              <span className="text-sm font-bold">{Math.round(progressPercentage)}%</span>
+            </div>
+            <Progress value={progressPercentage} className="h-2" />
+            <p className="text-xs text-gray-600 mt-1">
+              {completedTasks.length} of {tasks.length} tasks completed
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* View Tabs */}
+        <Tabs value={activeView} onValueChange={(value) => setActiveView(value as any)}>
+          <div className="flex justify-between items-center mb-6">
+            <TabsList>
+              <TabsTrigger value="list">List View</TabsTrigger>
+              <TabsTrigger value="kanban">Kanban Board</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            </TabsList>
+            
+            <Button onClick={() => handleCreateTask()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
+
+          <TabsContent value="list">
+            <div className="space-y-4">
+              {getFilteredTasks().map((task) => (
+                <Card 
+                  key={task.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleTaskClick(task)}
+                  data-testid={`task-list-item-${task.id}`}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="font-semibold">{task.description}</h3>
+                          <Badge className={`text-xs ${
+                            task.priority === "high" ? "bg-red-100 text-red-800" :
+                            task.priority === "medium" ? "bg-yellow-100 text-yellow-800" :
+                            "bg-green-100 text-green-800"
+                          }`}>
+                            {task.priority}
+                          </Badge>
+                          {task.completed && (
+                            <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                          {task.assignedToId && (
+                            <span className="flex items-center">
+                              <Users className="h-4 w-4 mr-1" />
+                              {task.assignedToId}
+                            </span>
+                          )}
+                          {task.dueDate && (
+                            <span className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              {format(new Date(task.dueDate), "MMM d, yyyy")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="kanban">
+            <ProjectBoard
+              tasks={getFilteredTasks()}
+              projectId={projectId!}
+              onTaskClick={handleTaskClick}
+              onCreateTask={handleCreateTask}
+            />
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <CalendarView
+              tasks={getFilteredTasks()}
+              onTaskClick={handleTaskClick}
+              onSlotSelect={handleSlotSelect}
+            />
+          </TabsContent>
+        </Tabs>
+
+        {/* Task Drawer */}
+        <TaskDrawer
+          isOpen={showTaskDrawer}
+          onClose={closeTaskDrawer}
+          task={selectedTask}
+          projectId={projectId}
+          initialStatus={taskDrawerStatus}
+          onTaskUpdated={() => {
+            // Refresh the tasks data
+          }}
+        />
+      </div>
+    </div>
+  );
+}

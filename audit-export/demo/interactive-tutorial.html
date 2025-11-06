@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gigster Garage - Interactive Tutorial</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0B1D3A 0%, #004C6D 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: #94A3B8;
+    }
+
+    .tutorial-container {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 30px;
+      margin-top: 40px;
+    }
+
+    .sidebar {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .sidebar h3 {
+      margin-bottom: 15px;
+      color: #60A5FA;
+      font-size: 1.1rem;
+    }
+
+    .chapter-list {
+      list-style: none;
+    }
+
+    .chapter-item {
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chapter-item:hover {
+      background: rgba(96, 165, 250, 0.2);
+    }
+
+    .chapter-item.active {
+      background: rgba(96, 165, 250, 0.3);
+      border-left: 3px solid #60A5FA;
+    }
+
+    .chapter-number {
+      background: #004C6D;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .content-area {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .chapter {
+      display: none;
+    }
+
+    .chapter.active {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chapter h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: #60A5FA;
+    }
+
+    .chapter p {
+      line-height: 1.8;
+      margin-bottom: 20px;
+      color: #CBD5E1;
+      font-size: 1.1rem;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .feature-card {
+      background: rgba(96, 165, 250, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .feature-card h4 {
+      color: #60A5FA;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .feature-card p {
+      color: #94A3B8;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .icon {
+      font-size: 1.5rem;
+    }
+
+    .step-list {
+      background: rgba(11, 29, 58, 0.5);
+      padding: 25px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+
+    .step {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .step:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .step-number {
+      background: #004C6D;
+      color: #60A5FA;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .step-content h5 {
+      color: #60A5FA;
+      margin-bottom: 5px;
+    }
+
+    .step-content p {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(96, 165, 250, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .highlight {
+      background: rgba(96, 165, 250, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #60A5FA;
+      font-weight: 600;
+    }
+
+    .code-block {
+      background: #0B1D3A;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      overflow-x: auto;
+    }
+
+    .code-block code {
+      color: #60A5FA;
+      font-family: 'Courier New', monospace;
+    }
+
+    .tip {
+      background: rgba(251, 191, 36, 0.1);
+      border-left: 4px solid #FBBF24;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+
+    .tip-title {
+      color: #FBBF24;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 768px) {
+      .tutorial-container {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 Gigster Garage Tutorial</h1>
+      <p class="subtitle">Master your workflow in 10 minutes</p>
+    </header>
+
+    <div class="tutorial-container">
+      <nav class="sidebar">
+        <h3>📚 Chapters</h3>
+        <ul class="chapter-list" id="chapterList"></ul>
+      </nav>
+
+      <main class="content-area">
+        <div id="chaptersContainer"></div>
+
+        <div class="navigation">
+          <button class="btn btn-secondary" id="prevBtn">← Previous</button>
+          <button class="btn btn-primary" id="nextBtn">Next →</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const chapters = [
+      {
+        title: 'Welcome to Gigster Garage',
+        icon: '👋',
+        content: `
+          <h2>👋 Welcome to Gigster Garage</h2>
+          <p>Gigster Garage is your comprehensive time tracker and workflow management system. Whether you're a freelancer, agency, or enterprise team, we help you:</p>
+          
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4><span class="icon">✅</span> Manage Tasks</h4>
+              <p>Create, assign, and track tasks with priorities, due dates, and subtasks.</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">⏱️</span> Track Time</h4>
+              <p>Log time automatically with one-click timers and detailed time entries.</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">💰</span> Generate Invoices</h4>
+              <p>Create professional invoices with auto-calculations and PDF export.</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🤖</span> Automate Workflows</h4>
+              <p>Set up rules to automate repetitive tasks and save hours every week.</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🤖</span> AI Agents</h4>
+              <p>17 specialized AI agents automate workflows across your development lifecycle.</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">📊</span> Analytics</h4>
+              <p>Get insights into productivity, revenue, and team performance.</p>
+            </div>
+          </div>
+
+          <div class="tip">
+            <div class="tip-title">💡 Pro Tip</div>
+            <p>Press <span class="highlight">?</span> anywhere in the app to see all keyboard shortcuts!</p>
+          </div>
+        `
+      },
+      {
+        title: 'First Login & Dashboard',
+        icon: '🏠',
+        content: `
+          <h2>🏠 First Login & Dashboard</h2>
+          <p>Let's get you logged in and explore your command center.</p>
+
+          <div class="step-list">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h5>Navigate to Gigster Garage</h5>
+                <p>Open your browser and go to your Gigster Garage instance.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h5>Login with Demo Account</h5>
+                <p>Use <span class="highlight">demo@gigster.com</span> / <span class="highlight">demo123</span> to explore the demo account.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h5>Explore the Dashboard</h5>
+                <p>You'll see key metrics: Active Tasks, Projects, Time Tracked, and Revenue at a glance.</p>
+              </div>
+            </div>
+          </div>
+
+          <p>The dashboard is your control center. It shows:</p>
+          <ul style="margin-left: 20px; line-height: 2;">
+            <li>📊 <strong>Key Metrics</strong> - Quick overview of your work</li>
+            <li>📈 <strong>Recent Activity</strong> - Latest tasks and time entries</li>
+            <li>🎯 <strong>Quick Actions</strong> - Jump to common tasks</li>
+            <li>📅 <strong>Upcoming Deadlines</strong> - Never miss a due date</li>
+          </ul>
+
+          <div class="tip">
+            <div class="tip-title">🔒 Security Note</div>
+            <p>Change your password immediately after first login via Settings → Account.</p>
+          </div>
+        `
+      },
+      {
+        title: 'Creating Your First Task',
+        icon: '✅',
+        content: `
+          <h2>✅ Creating Your First Task</h2>
+          <p>Tasks are the building blocks of your workflow. Here are three ways to create them:</p>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4><span class="icon">🎯</span> Quick Action Button</h4>
+              <p>Click the floating button (bottom-right) → Select "New Task"</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">⌨️</span> Command Palette</h4>
+              <p>Press <span class="highlight">Cmd+K</span> → Type "new task" → Enter</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">📋</span> Tasks Page</h4>
+              <p>Navigate to Tasks in sidebar → Click "+ New Task"</p>
+            </div>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">Task Details</h3>
+          <div class="step-list">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h5>Title</h5>
+                <p>Brief description of what needs to be done.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h5>Project</h5>
+                <p>Select or create a project to organize your work.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h5>Priority</h5>
+                <p>Low, Medium, or High - helps you focus on what matters.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h5>Due Date</h5>
+                <p>Set a deadline to stay on track.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">5</div>
+              <div class="step-content">
+                <h5>Assigned To</h5>
+                <p>Assign to yourself or a team member (optional).</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="tip">
+            <div class="tip-title">⚡ Power Move</div>
+            <p>Add subtasks to break down complex work. Click "Add Subtask" when editing a task.</p>
+          </div>
+        `
+      },
+      {
+        title: 'Time Tracking Made Easy',
+        icon: '⏱️',
+        content: `
+          <h2>⏱️ Time Tracking Made Easy</h2>
+          <p>Track every minute of your work with one-click timers. Perfect for billing clients or understanding where your time goes.</p>
+
+          <div class="step-list">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h5>Start a Timer</h5>
+                <p>Find your task and click the <span class="highlight">▶️ Start Timer</span> button.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h5>Work on Your Task</h5>
+                <p>The timer runs in the background while you focus on your work.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h5>Stop the Timer</h5>
+                <p>Click <span class="highlight">⏹️ Stop Timer</span> when done. Time is automatically logged.</p>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">Quick Timer (Any Page)</h3>
+          <p>Need to start tracking fast? Use the Quick Action Button:</p>
+          <ol style="margin-left: 20px; line-height: 2;">
+            <li>Click the <strong>Quick Action Button</strong> (bottom-right)</li>
+            <li>Select <strong>"Start Timer"</strong></li>
+            <li>Choose the task from the dropdown</li>
+            <li>Timer starts immediately!</li>
+          </ol>
+
+          <div class="tip">
+            <div class="tip-title">📊 Analytics Insight</div>
+            <p>View your time entries in the Time Tracking page. Filter by date, project, or task to see where your hours go.</p>
+          </div>
+        `
+      },
+      {
+        title: 'Professional Invoices',
+        icon: '💰',
+        content: `
+          <h2>💰 Professional Invoices</h2>
+          <p>Generate beautiful, professional invoices in minutes. Auto-calculate totals, apply taxes, and send directly to clients.</p>
+
+          <div class="step-list">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h5>Navigate to Invoices</h5>
+                <p>Click <strong>Invoices</strong> in the sidebar.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h5>Create New Invoice</h5>
+                <p>Click the <span class="highlight">+ Create Invoice</span> button.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h5>Select Client</h5>
+                <p>Choose from dropdown or create a new client. Their info auto-fills!</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h5>Add Line Items</h5>
+                <p>Add services/products with description, quantity, and rate. Totals calculate automatically.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">5</div>
+              <div class="step-content">
+                <h5>Apply Tax & Discount</h5>
+                <p>Optional: Add tax percentage or discount amount.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">6</div>
+              <div class="step-content">
+                <h5>Send or Download</h5>
+                <p>Preview → Download PDF → Email to client → Record payment when received.</p>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">Auto-Fill Features</h3>
+          <ul style="margin-left: 20px; line-height: 2;">
+            <li>✅ Client information populates automatically</li>
+            <li>✅ Company details pre-filled from settings</li>
+            <li>✅ Invoice numbers auto-generated (editable)</li>
+            <li>✅ Line items can be saved as templates</li>
+          </ul>
+        `
+      },
+      {
+        title: 'Command Palette Power',
+        icon: '⌨️',
+        content: `
+          <h2>⌨️ Command Palette Power</h2>
+          <p>The Command Palette is your secret weapon for lightning-fast navigation. Think of it as Spotlight for your workflow.</p>
+
+          <div class="code-block">
+            <code>Keyboard Shortcut: Cmd+K (Mac) or Ctrl+K (Windows/Linux)</code>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">What You Can Do</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4><span class="icon">🔍</span> Search Everything</h4>
+              <p>Find tasks, projects, clients, and invoices instantly.</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">⚡</span> Quick Actions</h4>
+              <p>Create, edit, delete items without clicking through menus.</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🧭</span> Navigate Pages</h4>
+              <p>Jump to any page in the app with a few keystrokes.</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">📜</span> Recent History</h4>
+              <p>Quickly return to recently visited pages.</p>
+            </div>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">More Keyboard Shortcuts</h3>
+          <p>Press <span class="highlight">?</span> anywhere in the app to see all shortcuts:</p>
+          <ul style="margin-left: 20px; line-height: 2;">
+            <li><span class="highlight">Cmd/Ctrl + K</span> - Open command palette</li>
+            <li><span class="highlight">Cmd/Ctrl + N</span> - New task</li>
+            <li><span class="highlight">Cmd/Ctrl + /</span> - Focus search</li>
+            <li><span class="highlight">Esc</span> - Close dialogs</li>
+            <li><span class="highlight">?</span> - View all shortcuts</li>
+          </ul>
+
+          <div class="tip">
+            <div class="tip-title">🚀 Pro Tip</div>
+            <p>Master the Command Palette and you'll be 10x faster than clicking through menus!</p>
+          </div>
+        `
+      },
+      {
+        title: 'Workflow Automation',
+        icon: '🤖',
+        content: `
+          <h2>🤖 Workflow Automation</h2>
+          <p><strong>Plan Required:</strong> Pro or Enterprise</p>
+          <p>Automate repetitive tasks and save hours every week with custom workflow rules.</p>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">How It Works</h3>
+          <div class="step-list">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h5>Navigate to Workflow Automation</h5>
+                <p>Find it in the sidebar (requires Pro/Enterprise plan).</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h5>Create a Rule</h5>
+                <p>Click <span class="highlight">+ New Rule</span> and give it a name.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h5>Set Conditions</h5>
+                <p>Define when the rule should trigger (e.g., "When task priority is High").</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h5>Define Actions</h5>
+                <p>What should happen? (e.g., "Send notification" or "Assign to team member").</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">5</div>
+              <div class="step-content">
+                <h5>Activate & Save Time</h5>
+                <p>Enable the rule and watch it work automatically!</p>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">Example Rules</h3>
+          <ul style="margin-left: 20px; line-height: 2;">
+            <li>🔔 Auto-notify team when high-priority task is created</li>
+            <li>📧 Send email reminder 24 hours before due date</li>
+            <li>🏷️ Auto-tag tasks based on project or keywords</li>
+            <li>📊 Move tasks to "In Progress" when timer starts</li>
+            <li>✅ Mark task complete when all subtasks are done</li>
+          </ul>
+        `
+      },
+      {
+        title: 'AI Agents (Enterprise)',
+        icon: '🤖',
+        content: `
+          <h2>🤖 AI Agents (Enterprise)</h2>
+          <p><strong>Plan Required:</strong> Enterprise</p>
+          <p>Enterprise users get access to <strong>17 specialized AI agents</strong> that automate workflows across the development lifecycle.</p>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">What Are Agents?</h3>
+          <p>Agents are AI-powered systems that handle routine operations automatically. They operate at different autonomy levels (L0 supervised, L1 semi-autonomous) and are governed by policy-based rules.</p>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4><span class="icon">📥</span> ITSA</h4>
+              <p>Intake & Triage - Segment requests with risk heatmaps</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🏗️</span> SSK</h4>
+              <p>Starter & Scaffold Kit - Brand tokens & sanity checks</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">📋</span> Planner</h4>
+              <p>Evidence & DoD tracking with auto-reminders</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🚀</span> Packsmith</h4>
+              <p>Pack creation with blueprint generation</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🔒</span> Sentinel</h4>
+              <p>Security & compliance audits</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">💰</span> Ledger</h4>
+              <p>Budget tracking & invoice drafts</p>
+            </div>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">Agent Management</h3>
+          <p>Navigate to <strong>Agent Management</strong> (admin only) to:</p>
+          <ul style="margin-left: 20px; line-height: 2;">
+            <li>👁️ View agent status and metrics</li>
+            <li>🎯 Set visibility and exposure controls</li>
+            <li>📊 Monitor KPIs (On-Time Rate, Gate Escape, Incidents)</li>
+            <li>🗺️ Track graduation roadmaps</li>
+            <li>⚙️ Review exposure policies</li>
+          </ul>
+
+          <div class="tip">
+            <div class="tip-title">🎓 Agent Promotion</div>
+            <p>Agents are promoted from L0 to L1 autonomy when they meet all policy gate requirements and performance KPIs.</p>
+          </div>
+        `
+      },
+      {
+        title: 'Settings & Customization',
+        icon: '⚙️',
+        content: `
+          <h2>⚙️ Settings & Customization</h2>
+          <p>Personalize Gigster Garage to match your workflow. Access settings from the sidebar or press <span class="highlight">Cmd+,</span></p>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">Settings Sections</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4><span class="icon">👤</span> Account</h4>
+              <p>Update profile, change password, view plan tier</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🔔</span> Notifications</h4>
+              <p>Email alerts, quiet hours, notification preferences</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🎨</span> Appearance</h4>
+              <p>Light/dark mode, timezone, date format</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🔌</span> Integrations</h4>
+              <p>Connect Slack, email, SMS (Twilio), and more</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">📊</span> Data</h4>
+              <p>Export data (CSV/JSON), manage backups</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">👥</span> User Management</h4>
+              <p>Add team members, set roles (admin only)</p>
+            </div>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">Essential Setup</h3>
+          <ol style="margin-left: 20px; line-height: 2;">
+            <li><strong>Add Your Team:</strong> Settings → User Management</li>
+            <li><strong>Create Projects:</strong> Projects → New Project</li>
+            <li><strong>Add Clients:</strong> Clients → New Client</li>
+            <li><strong>Configure Notifications:</strong> Settings → Notifications</li>
+            <li><strong>Set Up Integrations:</strong> Settings → Integrations</li>
+          </ol>
+        `
+      },
+      {
+        title: 'API Integration',
+        icon: '🔌',
+        content: `
+          <h2>🔌 API Integration</h2>
+          <p>Developers can integrate Gigster Garage into their own applications using our TypeScript client library.</p>
+
+          <div class="code-block">
+            <code>npm install @gigster-garage/api-client</code>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">Quick Example</h3>
+          <div class="code-block">
+            <code>import { createClient } from '@gigster-garage/api-client';
+
+const client = createClient({
+  baseUrl: 'https://your-instance.com'
+});
+
+// Create a task
+const task = await client.postApiTasks({
+  body: {
+    title: 'API Integration',
+    priority: 'high'
+  }
+});</code>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 30px; margin-bottom: 15px;">API Services</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4><span class="icon">📦</span> Packsmith API</h4>
+              <p>8 endpoints - Create packs, generate blueprints, seed tasks</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">📥</span> Importer API</h4>
+              <p>8 endpoints - CSV/XLSX import, mapping, validation</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">📊</span> iCadence API</h4>
+              <p>6 endpoints - Marketing channels, UTM presets, spend logs</p>
+            </div>
+          </div>
+
+          <p style="margin-top: 30px;">See the <strong>User Manual → API Documentation</strong> section for complete reference with all 22 endpoints.</p>
+
+          <div class="tip">
+            <div class="tip-title">🔑 API Access</div>
+            <p>API access requires a Pro or Enterprise plan with rate limits: 1,000 req/hour (Pro) or 10,000 req/hour (Enterprise).</p>
+          </div>
+        `
+      },
+      {
+        title: 'You\'re Ready!',
+        icon: '🎉',
+        content: `
+          <h2>🎉 You're Ready to Go!</h2>
+          <p>Congratulations! You now know how to use Gigster Garage like a pro. Here's a quick recap:</p>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4><span class="icon">✅</span> Tasks</h4>
+              <p>Create, manage, and track with ease</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">⏱️</span> Time Tracking</h4>
+              <p>One-click timers for accurate billing</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">💰</span> Invoices</h4>
+              <p>Professional invoices in minutes</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">⌨️</span> Command Palette</h4>
+              <p>Cmd+K for lightning-fast navigation</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🤖</span> Automation</h4>
+              <p>Workflow rules and AI agents (Pro/Enterprise)</p>
+            </div>
+            <div class="feature-card">
+              <h4><span class="icon">🔌</span> API</h4>
+              <p>Integrate with TypeScript client</p>
+            </div>
+          </div>
+
+          <h3 style="color: #60A5FA; margin-top: 40px; margin-bottom: 15px;">Next Steps</h3>
+          <ol style="margin-left: 20px; line-height: 2; font-size: 1.1rem;">
+            <li><strong>Create your first task</strong> and start tracking time</li>
+            <li><strong>Add your team members</strong> and invite collaborators</li>
+            <li><strong>Set up a client</strong> and generate your first invoice</li>
+            <li><strong>Explore workflow automation</strong> to save time (Pro/Enterprise)</li>
+            <li><strong>Review the User Manual</strong> for advanced features</li>
+          </ol>
+
+          <h3 style="color: #60A5FA; margin-top: 40px; margin-bottom: 15px;">Plan Tiers</h3>
+          <ul style="margin-left: 20px; line-height: 2;">
+            <li>🆓 <strong>Free:</strong> Unlimited tasks, basic features, 2 team members</li>
+            <li>⚡ <strong>Pro ($20/mo):</strong> Automation, AI, advanced reporting, API access</li>
+            <li>🚀 <strong>Enterprise ($99/mo):</strong> 17 AI agents, custom integrations, SLA</li>
+          </ul>
+
+          <div style="text-align: center; margin-top: 50px;">
+            <a href="/" class="btn btn-primary" style="font-size: 1.2rem; padding: 15px 40px;">
+              Start Using Gigster Garage →
+            </a>
+          </div>
+
+          <p style="text-align: center; margin-top: 30px; color: #94A3B8;">
+            Need help? Press <span class="highlight">?</span> for keyboard shortcuts or check the User Manual.
+          </p>
+        `
+      }
+    ];
+
+    let currentChapter = 0;
+
+    function renderChapters() {
+      const listContainer = document.getElementById('chapterList');
+      const contentContainer = document.getElementById('chaptersContainer');
+
+      chapters.forEach((chapter, index) => {
+        // Sidebar item
+        const li = document.createElement('li');
+        li.className = `chapter-item ${index === 0 ? 'active' : ''}`;
+        li.innerHTML = `
+          <span class="chapter-number">${chapter.icon}</span>
+          <span>${chapter.title}</span>
+        `;
+        li.addEventListener('click', () => goToChapter(index));
+        listContainer.appendChild(li);
+
+        // Content
+        const div = document.createElement('div');
+        div.className = `chapter ${index === 0 ? 'active' : ''}`;
+        div.innerHTML = chapter.content;
+        contentContainer.appendChild(div);
+      });
+    }
+
+    function goToChapter(index) {
+      if (index < 0 || index >= chapters.length) return;
+
+      // Update active states
+      document.querySelectorAll('.chapter-item').forEach((item, i) => {
+        item.classList.toggle('active', i === index);
+      });
+
+      document.querySelectorAll('.chapter').forEach((chapter, i) => {
+        chapter.classList.toggle('active', i === index);
+      });
+
+      currentChapter = index;
+      updateNavigation();
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateNavigation() {
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+
+      prevBtn.disabled = currentChapter === 0;
+      nextBtn.disabled = currentChapter === chapters.length - 1;
+
+      if (currentChapter === chapters.length - 1) {
+        nextBtn.textContent = '✓ Finish';
+      } else {
+        nextBtn.textContent = 'Next →';
+      }
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      goToChapter(currentChapter - 1);
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if (currentChapter < chapters.length - 1) {
+        goToChapter(currentChapter + 1);
+      }
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' && currentChapter > 0) {
+        goToChapter(currentChapter - 1);
+      } else if (e.key === 'ArrowRight' && currentChapter < chapters.length - 1) {
+        goToChapter(currentChapter + 1);
+      }
+    });
+
+    // Initialize
+    renderChapters();
+    updateNavigation();
+  </script>
+</body>
+</html>

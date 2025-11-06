@@ -1,0 +1,119 @@
+// server/objectStorage.ts
+// Filesystem-backed storage for Replit App Storage. No GCS. Compiles cleanly in TS.
+
+import { createWriteStream, createReadStream, promises as fsp } from "node:fs";
+import { mkdir, stat, rm } from "node:fs/promises";
+import { dirname, join, normalize } from "node:path";
+import { pipeline } from "node:stream/promises";
+import type { Readable } from "node:stream";
+
+type PutOptions = { contentType?: string; overwrite?: boolean };
+
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v || !v.trim()) {
+    throw new Error(`Missing required env: ${name}`);
+  }
+  return v;
+}
+
+function safeKey(key: string): string {
+  // Prevent path traversal outside storage root.
+  const clean = normalize(key).replace(/^(\.\.(\/|\\|$))+/, "");
+  if (clean.startsWith("..")) throw new Error("Invalid object key");
+  return clean.replace(/^\/+/, "");
+}
+
+export class ReplitAppStorage {
+  private root: string;
+
+  constructor(rootDir?: string) {
+    const envDir = rootDir ?? requireEnv("PRIVATE_OBJECT_DIR");
+    // If path doesn't start with /home, prepend workspace path
+    this.root = envDir.startsWith('/home/runner') 
+      ? envDir 
+      : join('/home/runner/workspace', envDir.replace(/^\//, ''));
+  }
+
+  private fullPath(objectKey: string): string {
+    return join(this.root, safeKey(objectKey));
+  }
+
+  async put(objectKey: string, data: Buffer | Readable, opts: PutOptions = {}): Promise<string> {
+    const target = this.fullPath(objectKey);
+    await mkdir(dirname(target), { recursive: true });
+    try {
+      if (Buffer.isBuffer(data)) {
+        await fsp.writeFile(target, data, { flag: opts.overwrite ? "w" : "wx" });
+      } else {
+        const ws = createWriteStream(target, { flags: opts.overwrite ? "w" : "wx" });
+        await pipeline(data, ws);
+      }
+    } catch (err: unknown) {
+      const anyErr = err as NodeJS.ErrnoException;
+      if (anyErr?.code === "EEXIST" && !opts.overwrite) {
+        throw new Error(`Object already exists: ${objectKey}`);
+      }
+      throw err;
+    }
+    return target;
+  }
+
+  async get(objectKey: string): Promise<{ stream: Readable; size: number }> {
+    const target = this.fullPath(objectKey);
+    const s = await stat(target);
+    return { stream: createReadStream(target) as unknown as Readable, size: s.size };
+  }
+
+  async exists(objectKey: string): Promise<boolean> {
+    try {
+      await stat(this.fullPath(objectKey));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async delete(objectKey: string): Promise<void> {
+    await rm(this.fullPath(objectKey), { force: true });
+  }
+}
+
+// ---------- High-level helpers used by routes ----------
+
+export type SaveArgs = {
+  kind: "invoice" | "proposal" | "contract" | "presentation";
+  id: string;           // document id
+  orgId?: string;       // optional org scoping
+  data: Buffer;         // PDF bytes
+};
+
+const storage = new ReplitAppStorage();
+
+function keyFor({ kind, id, orgId }: { kind: SaveArgs["kind"]; id: string; orgId?: string }): string {
+  // Path: filing-cabinet/<kind>/<org?>/<id>.pdf
+  const base = ["filing-cabinet", kind];
+  if (orgId) base.push(orgId);
+  base.push(`${id}.pdf`);
+  return base.join("/");
+}
+
+export async function saveToFilingCabinet(args: SaveArgs): Promise<{ location: string }> {
+  // 🚀 NEW FILING CABINET CODE — marker for logs
+  console.log("🚀 NEW FILING CABINET CODE -> saving", { kind: args.kind, id: args.id, orgId: args.orgId });
+
+  const location = await storage.put(
+    keyFor({ kind: args.kind, id: args.id, orgId: args.orgId }),
+    args.data,
+    { contentType: "application/pdf", overwrite: true }
+  );
+  return { location };
+}
+
+export async function fetchFromFilingCabinet(
+  kind: SaveArgs["kind"],
+  id: string,
+  orgId?: string
+): Promise<{ stream: Readable; size: number }> {
+  return storage.get(keyFor({ kind, id, orgId }));
+}
