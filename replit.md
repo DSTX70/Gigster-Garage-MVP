@@ -131,6 +131,38 @@ Comprehensive demo materials for user onboarding, sales, and training:
 
 **Coverage**: Login, dashboard, task creation, time tracking, invoicing, command palette, workflow automation, AI agents, settings
 
+## Social Queue System
+
+Complete end-to-end social media posting pipeline with webhook-based integration:
+
+**Architecture**:
+- **Database**: `social_queue` table with status tracking, exponential backoff retry logic, and attempt counters
+- **Rate Limiting**: `social_rate_limits` table with per-platform token buckets (configurable window and max actions)
+- **Webhook Integration**: iCadence `/api/integrations/icadence/webhook` endpoint for schedule.posted and schedule.deleted events
+- **Worker Process**: Background worker (`npm run worker:social`) with exponential backoff (15s base, 30min max, 8 attempts)
+- **Platform Adapters**: Modular adapters for X, Instagram, LinkedIn, Facebook, TikTok, YouTube (stub implementations)
+
+**Features**:
+- **Media Pre-flight Validation**: URL protocol checks (http/https only) and size limits (10MB default via `SOCIAL_MEDIA_MAX_BYTES`)
+- **Audit Logging**: All queue operations emit audit events (enqueued, posting, posted, failed, rate_limited, paused, resumed, retry, cancelled)
+- **Admin Operations**: `/ops/social-queue` page with filters (status, platform), controls (pause/resume/retry/cancel), and thumbnail previews
+- **Thumbnail Previews**: Up to 8 lazy-loaded media thumbnails per post in admin UI
+
+**Configuration**:
+- `SOCIAL_MEDIA_MAX_BYTES`: Max media file size in bytes (default: 10485760 = 10MB)
+- `SOCIAL_WORKER_POLL_MS`: Worker polling interval (default: 5000ms)
+- `ICADENCE_WEBHOOK_SECRET`: Webhook signature verification secret
+
+**Database Tables**:
+- `social_queue`: id, profile_id, platform, content (jsonb), scheduled_at, status, attempts, next_attempt_at, last_error
+- `social_rate_limits`: platform, window_seconds, max_actions, used_actions, window_started_at
+
+**Rate Limits** (default):
+- X: 300 posts per 15 minutes
+- Instagram/LinkedIn/Facebook: 200 posts per hour
+- TikTok: 150 posts per hour
+- YouTube: 100 posts per hour
+
 ## External Dependencies
 
 - **@neondatabase/serverless**: PostgreSQL database connection.
