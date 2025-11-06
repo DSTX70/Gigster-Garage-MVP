@@ -57,7 +57,7 @@ All stub implementations ready for development:
 
 **GitHub Actions Workflows**:
 - ✅ `.github/workflows/ci.yml` - CI with PostgreSQL testing
-- ✅ `.github/workflows/auto-project-add.yml` - Auto-add new issues
+- ✅ `.github/workflows/auto-project-add.yml` - Auto-add new issues with auto-triage and self-test
 
 **Documentation**:
 - ✅ `ops/github/README.md` - Complete automation guide
@@ -113,7 +113,19 @@ chmod +x ops/github/create_project_from_template.sh
 2. Set `ORG` and `PROJECT_NUMBER`
 3. Push to main
 
-New issues will auto-land in your project board with Status=Todo! 🎯
+New issues will auto-land in your project board with:
+- ✅ Status=Todo
+- ✅ Owner (from assignees)
+- ✅ Estimate (from labels)
+- ✅ Priority=P1 (if title has "P1:" or label `priority:P1`)
+- ✅ Sprint=CURRENT (if title starts with "GG-10")
+
+**Test the workflow**:
+```bash
+# Go to Actions → Auto Project Add + Triage → Run workflow
+# Enter synthetic issue details → Run
+# Issue will be created, triaged, and auto-closed
+```
 
 ---
 

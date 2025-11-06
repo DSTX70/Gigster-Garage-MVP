@@ -144,7 +144,7 @@ Creates issues, adds to project, sets Status/Estimate/Owner automatically.
 
 ### Auto Project Add Workflow (`.github/workflows/auto-project-add.yml`)
 
-**Triggers**: Issues opened, edited, labeled, assigned
+**Triggers**: Issues opened, edited, labeled, assigned, workflow_dispatch (manual testing)
 
 **Actions**:
 1. Authenticate with GitHub API
@@ -153,9 +153,22 @@ Creates issues, adds to project, sets Status/Estimate/Owner automatically.
 4. Set default Status = "Todo"
 5. Set Owner from first assignee
 6. Parse Estimate from labels (`pts:5`, `estimate:8`)
+7. **Auto-Triage**:
+   - Set Priority = P1 if title contains "P1:" OR label `priority:P1`
+   - Route GG-10x issues to CURRENT Sprint iteration
+8. **Self-Test Mode** (workflow_dispatch):
+   - Creates synthetic issue with custom title/labels/assignees
+   - Runs full triage workflow
+   - Auto-closes synthetic issue after testing
 
 **Permissions Required**:
 - Organization Projects: Read & Write (in repo settings → Actions)
+
+**Self-Test Usage**:
+1. Go to Actions → Auto Project Add + Triage → Run workflow
+2. Customize synthetic issue title/labels/assignees
+3. Click "Run workflow"
+4. Synthetic issue will be created, triaged, added to project, and auto-closed
 
 ---
 
