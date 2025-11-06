@@ -1,0 +1,114 @@
+he follow-on patch exactly as requested. This bundle adds:
+
+Rate-limit buckets per platform
+
+Media pre-flight (URL validation + size caps)
+
+Per-post previews (thumbnail grid) on /ops/social-queue
+
+Audit emits on every queue state change to /api/_audit/*
+
+What’s included (file map)
+
+DB
+
+server/db/migrations/2025_11_06_social_rate_limits.sql
+
+Server libs
+
+server/lib/rateLimiter.ts
+
+server/integrations/icadence/validateMedia.ts
+
+server/integrations/icadence/adapter.ts (patched: validate + enqueue + audit)
+
+worker/socialPoster.ts (v2: backoff + rate-limit + audit)
+
+server/routes/ops.social.route.ts (patched: pause/resume/retry/cancel emit audit)
+
+Client UI
+
+client/src/pages/ops/social-queue.tsx (patched: thumbnails grid + content block)
+
+Tests
+
+server/tests/social.rate.media.spec.ts
+
+Apply steps (quick)
+
+Add files & patches above into your repo (same paths).
+
+Migrate DB
+
+psql $DATABASE_URL -f server/db/migrations/2025_11_06_social_rate_limits.sql
+
+
+Seed sensible rate limits
+
+psql $DATABASE_URL -c "insert into social_rate_limits(platform,window_seconds,max_actions)
+values ('x',900,300),('instagram',3600,200),('linkedin',3600,200)
+on conflict (platform) do nothing;"
+
+
+Env (optional)
+
+SOCIAL_MEDIA_MAX_BYTES=10485760     # 10MB default if unset
+SOCIAL_WORKER_POLL_MS=5000
+
+
+Run
+
+npm run dev
+npm run worker:social
+
+
+Smoke tests
+
+npm run test -- server/tests/social.rate.media.spec.ts
+
+Admin UX (what you’ll see)
+
+/ops/social-queue shows:
+
+Text + up to 8 thumbnails (lazy-loaded, 80×80) for each queued item
+
+Pause / Resume / Retry / Cancel buttons per row
+
+Status chips (queued/posting/posted/failed/paused/cancelled)
+
+Audit events (now emitted on)
+
+Enqueue: social.queue.enqueued
+
+Worker lifecycle: social.queue.posting, social.queue.posted, social.queue.failed, social.queue.error
+
+Rate-limit deferral: social.queue.rate_limited
+
+Admin actions: social.queue.paused, social.queue.resumed, social.queue.retry, social.queue.cancelled
+
+Quick cURL proof (optional)
+# Pause → Resume → Retry (emits audit each step)
+ID=<a_queue_id>
+curl -X POST http://localhost:3000/api/ops/social-queue/$ID/pause
+curl -X POST http://localhost:3000/api/ops/social-queue/$ID/resume
+curl -X POST http://localhost:3000/api/ops/social-queue/$ID/retry
+
+Commit message (copy/paste)
+feat(social-queue): add platform rate-limit buckets, media pre-flight, admin thumbnails, and full audit emits
+
+- DB: social_rate_limits table
+- Worker: exponential backoff + RL gate + audit
+- iCadence adapter: validate media (URL/size) then enqueue + audit
+- Ops routes: admin actions emit audit
+- UI: /ops/social-queue shows media thumbnails
+- Tests: rate-limit & media preflight smoke
+
+Definition of Done (this patch)
+
+RL exceed → job deferred with next_attempt_at set, audit recorded
+
+Bad/oversized media → webhook 4xx + log; valid media enqueues
+
+Admin page shows thumbnails and all actions audit
+
+Tests pass locally

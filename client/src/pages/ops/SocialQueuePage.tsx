@@ -84,7 +84,7 @@ export default function SocialQueuePage() {
               <th className="text-left p-3">When</th>
               <th className="text-left p-3">Platform</th>
               <th className="text-left p-3">Profile</th>
-              <th className="text-left p-3">Text</th>
+              <th className="text-left p-3">Content</th>
               <th className="text-left p-3">Status</th>
               <th className="text-left p-3">Attempts</th>
               <th className="text-left p-3">Next Try</th>
@@ -98,8 +98,27 @@ export default function SocialQueuePage() {
                 <td className="p-3">{new Date(it.scheduled_at).toLocaleString()}</td>
                 <td className="p-3 capitalize">{it.platform}</td>
                 <td className="p-3 font-mono text-xs">{it.profile_id}</td>
-                <td className="p-3 max-w-[360px] truncate" title={it.content?.text}>
-                  {it.content?.text}
+                <td className="p-3">
+                  <div className="max-w-[420px]">
+                    <div className="text-sm mb-2 line-clamp-2" title={it.content?.text || ""}>
+                      {it.content?.text || "—"}
+                    </div>
+                    {Array.isArray(it.content?.mediaUrls) && it.content.mediaUrls.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2">
+                        {it.content.mediaUrls.slice(0, 8).map((u: string, idx: number) => (
+                          <img
+                            key={idx}
+                            src={u}
+                            alt=""
+                            loading="lazy"
+                            className="w-20 h-20 object-cover rounded border border-gray-300 dark:border-gray-600"
+                            title={u}
+                            data-testid={`media-thumbnail-${it.id}-${idx}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td className="p-3">
                   <span

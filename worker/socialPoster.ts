@@ -1,5 +1,7 @@
 import { pool } from "../server/db.js";
 import { getAdapter } from "../server/integrations/icadence/platforms.js";
+import { tryConsume } from "../server/lib/rateLimiter.js";
+import { audit } from "../server/lib/audit.js";
 
 const POLL_MS = Number(process.env.SOCIAL_WORKER_POLL_MS ?? 5000);
 const BASE_BACKOFF_MS = 15_000;
@@ -7,8 +9,9 @@ const MAX_BACKOFF_MS = 30 * 60_000;
 const MAX_ATTEMPTS = 8;
 
 function nextBackoff(attempts: number) {
+  const jitter = Math.floor(Math.random() * 1000);
   const delay = Math.min(BASE_BACKOFF_MS * Math.pow(2, attempts), MAX_BACKOFF_MS);
-  return new Date(Date.now() + delay);
+  return delay + jitter;
 }
 
 async function fetchReadyJobs(limit = 10) {
@@ -34,11 +37,21 @@ async function mark(id: string, data: Record<string, any>) {
 }
 
 async function workOne(job: any) {
+  // Rate limit check first
+  const gate = await tryConsume(job.platform);
+  if (!gate.allowed) {
+    const waitMs = gate.retryAfterMs ?? nextBackoff(job.attempts || 0);
+    await mark(job.id, { next_attempt_at: new Date(Date.now() + waitMs) });
+    await audit.emit("social.queue.rate_limited", { id: job.id, platform: job.platform, waitMs });
+    return;
+  }
+
   const adapter = getAdapter(job.platform);
   const content = job.content || {};
   
   try {
     await mark(job.id, { status: 'posting', last_error: null });
+    await audit.emit("social.queue.posting", { id: job.id, platform: job.platform });
     
     const res = await adapter.post({
       profileId: job.profile_id,
@@ -53,44 +66,47 @@ async function workOne(job: any) {
         last_error: null,
         next_attempt_at: null
       });
+      await audit.emit("social.queue.posted", { id: job.id, platform: job.platform, remoteId: res.remoteId });
       console.log(`[social] posted ${job.platform} ${job.id}`);
     } else {
       const attempts = job.attempts + 1;
-      const next = attempts >= MAX_ATTEMPTS ? null : nextBackoff(attempts);
+      const backoffMs = attempts >= MAX_ATTEMPTS ? null : nextBackoff(attempts);
       await mark(job.id, {
-        status: attempts >= MAX_ATTEMPTS ? 'failed' : 'failed',
+        status: 'failed',
         attempts,
         last_error: res.error,
-        next_attempt_at: next
+        next_attempt_at: backoffMs ? new Date(Date.now() + backoffMs) : null
       });
+      await audit.emit("social.queue.failed", { id: job.id, platform: job.platform, error: res.error, attempts });
       console.warn(`[social] failed ${job.id}: ${res.error}`);
     }
   } catch (e: any) {
     const attempts = job.attempts + 1;
-    const next = attempts >= MAX_ATTEMPTS ? null : nextBackoff(attempts);
+    const backoffMs = attempts >= MAX_ATTEMPTS ? null : nextBackoff(attempts);
     await mark(job.id, {
-      status: attempts >= MAX_ATTEMPTS ? 'failed' : 'failed',
+      status: 'failed',
       attempts,
       last_error: e.message?.slice(0, 500) || "error",
-      next_attempt_at: next
+      next_attempt_at: backoffMs ? new Date(Date.now() + backoffMs) : null
     });
+    await audit.emit("social.queue.error", { id: job.id, platform: job.platform, error: e.message, attempts });
     console.warn(`[social] error ${job.id}: ${e.message}`);
   }
 }
 
-async function tick() {
+async function loop() {
   try {
     const jobs = await fetchReadyJobs();
     for (const j of jobs) {
-      if (j.status === "paused" || j.status === "cancelled") continue;
+      if (["paused", "cancelled", "posted", "posting"].includes(j.status)) continue;
       await workOne(j);
     }
   } catch (e) {
     console.error("[social] tick error", e);
   } finally {
-    setTimeout(tick, POLL_MS);
+    setTimeout(loop, POLL_MS);
   }
 }
 
-console.log("[social] worker started");
-tick();
+console.log("[social] worker v2 started");
+loop();
