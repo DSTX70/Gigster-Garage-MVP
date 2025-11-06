@@ -55,6 +55,7 @@ import opsSocialRoutes from './routes/ops.social.route.js';
 import opsRateLimitsRoutes from './routes/ops.rateLimits.route.js';
 import platformCredentialsRoutes from './routes/platformCredentials';
 import loyaltyRoutes from './routes/loyalty.route.js';
+import monitoringRoutes from './routes/monitoring.route.js';
 
 // Initialize OpenAI client
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -336,6 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount ops routes
   app.use("/api/ops", opsSocialRoutes);
   app.use("/api/ops", opsRateLimitsRoutes);
+  app.use("/api/ops", monitoringRoutes);
   app.use(platformCredentialsRoutes);
   app.use("/api/loyalty", loyaltyRoutes);
   

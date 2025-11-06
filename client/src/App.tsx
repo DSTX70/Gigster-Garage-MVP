@@ -60,6 +60,8 @@ import AgentManagement from "@/pages/AgentManagement";
 import Settings from "@/pages/settings";
 import SocialQueuePage from "@/pages/ops/SocialQueuePage";
 import RateLimitsPage from "@/pages/ops/RateLimitsPage";
+import ConnectionsPage from "@/pages/settings/connections";
+import MonitoringDashboard from "@/pages/monitoring/dashboard";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsGuide } from "@/components/KeyboardShortcutsGuide";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -178,6 +180,8 @@ function Router() {
       {isAdmin && <Route path="/agent-management" component={AgentManagement} />}
       {isAdmin && <Route path="/ops/social-queue" component={SocialQueuePage} />}
       {isAdmin && <Route path="/ops/rate-limits" component={RateLimitsPage} />}
+      <Route path="/settings/connections" component={ConnectionsPage} />
+      <Route path="/monitoring" component={MonitoringDashboard} />
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />
     </Switch>
