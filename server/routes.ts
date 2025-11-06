@@ -52,6 +52,7 @@ import { demoSessionService } from './demoSessionService';
 import { aiAssistantService } from './ai-assistant-service';
 import { mountIntegrationRoutes } from './routes/integrations.route.js';
 import opsSocialRoutes from './routes/ops.social.route.js';
+import opsRateLimitsRoutes from './routes/ops.rateLimits.route.js';
 
 // Initialize OpenAI client
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -332,6 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount ops routes
   app.use("/api/ops", opsSocialRoutes);
+  app.use("/api/ops", opsRateLimitsRoutes);
   
   // ========== PERMISSION ENFORCEMENT HELPERS ==========
   // NOTE: Two resource models exist in this app:

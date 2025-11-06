@@ -144,18 +144,22 @@ Complete end-to-end social media posting pipeline with webhook-based integration
 
 **Features**:
 - **Media Pre-flight Validation**: URL protocol checks (http/https only) and size limits (10MB default via `SOCIAL_MEDIA_MAX_BYTES`)
+- **Media HEAD Caching**: Database-backed cache (`media_head_cache` table) to avoid repeated HEAD requests (6 hour TTL)
 - **Audit Logging**: All queue operations emit audit events (enqueued, posting, posted, failed, rate_limited, paused, resumed, retry, cancelled)
 - **Admin Operations**: `/ops/social-queue` page with filters (status, platform), controls (pause/resume/retry/cancel), and thumbnail previews
+- **Rate Limit Dashboard**: `/ops/rate-limits` page for viewing and editing per-platform rate limits, resetting windows
 - **Thumbnail Previews**: Up to 8 lazy-loaded media thumbnails per post in admin UI
 
 **Configuration**:
 - `SOCIAL_MEDIA_MAX_BYTES`: Max media file size in bytes (default: 10485760 = 10MB)
 - `SOCIAL_WORKER_POLL_MS`: Worker polling interval (default: 5000ms)
+- `MEDIA_HEAD_TTL_MS`: Media HEAD cache TTL in milliseconds (default: 21600000 = 6 hours)
 - `ICADENCE_WEBHOOK_SECRET`: Webhook signature verification secret
 
 **Database Tables**:
 - `social_queue`: id, profile_id, platform, content (jsonb), scheduled_at, status, attempts, next_attempt_at, last_error
 - `social_rate_limits`: platform, window_seconds, max_actions, used_actions, window_started_at
+- `media_head_cache`: url (pk), content_length, content_type, ok, checked_at
 
 **Rate Limits** (default):
 - X: 300 posts per 15 minutes

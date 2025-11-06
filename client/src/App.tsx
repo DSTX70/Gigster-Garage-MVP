@@ -59,6 +59,7 @@ import PricingTable from "@/components/PricingTable";
 import AgentManagement from "@/pages/AgentManagement";
 import Settings from "@/pages/settings";
 import SocialQueuePage from "@/pages/ops/SocialQueuePage";
+import RateLimitsPage from "@/pages/ops/RateLimitsPage";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsGuide } from "@/components/KeyboardShortcutsGuide";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -176,6 +177,7 @@ function Router() {
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/agent-management" component={AgentManagement} />}
       {isAdmin && <Route path="/ops/social-queue" component={SocialQueuePage} />}
+      {isAdmin && <Route path="/ops/rate-limits" component={RateLimitsPage} />}
       {isAdmin && <Route path="/dashboard" component={Dashboard} />}
       <Route component={NotFound} />
     </Switch>
