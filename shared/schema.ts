@@ -1455,3 +1455,47 @@ export const insertAgentKpiSchema = createInsertSchema(agentKpis).omit({
   createdAt: true,
   lastUpdated: true,
 });
+// Integration Tables
+// Social Media Queue (iCadence integration)
+export const socialQueue = pgTable("social_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  platform: varchar("platform", {
+    enum: ["x", "instagram", "tiktok", "linkedin", "facebook", "youtube"]
+  }).notNull(),
+  content: jsonb("content").$type<{
+    text: string;
+    mediaUrls?: string[];
+  }>().notNull(),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  status: varchar("status", { enum: ["queued", "posted", "cancelled", "failed"] }).default("queued"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type SocialQueue = typeof socialQueue.$inferSelect;
+export type InsertSocialQueue = typeof socialQueue.$inferInsert;
+
+export const insertSocialQueueSchema = createInsertSchema(socialQueue).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Loyalty Rewards Ledger
+export const loyaltyLedger = pgTable("loyalty_ledger", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  deltaPoints: integer("delta_points").notNull(),
+  reason: varchar("reason", {
+    enum: ["payment", "referral", "milestone", "adjustment"]
+  }).notNull(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type LoyaltyLedger = typeof loyaltyLedger.$inferSelect;
+export type InsertLoyaltyLedger = typeof loyaltyLedger.$inferInsert;
+
+export const insertLoyaltyLedgerSchema = createInsertSchema(loyaltyLedger).omit({
+  id: true,
+  createdAt: true,
+});

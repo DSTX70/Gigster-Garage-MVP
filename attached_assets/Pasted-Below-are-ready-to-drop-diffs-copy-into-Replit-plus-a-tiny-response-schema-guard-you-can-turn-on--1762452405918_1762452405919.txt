@@ -1,0 +1,366 @@
+Below are ready-to-drop diffs (copy into Replit), plus a tiny response-schema guard you can turn on per route. I’ve covered each Yellow from the matrix:
+
+PATCH /api/users/:id
+
+PATCH /api/tasks/:id
+
+GET /api/notifications
+
+GET /api/reports/:slug
+
+POST /api/sso/:provider/callback
+
+GET /api/branding/theme
+
+0) New: universal response validator (opt-in, per route)
+
+/server/middleware/responseSchema.ts
+
+import type { Request, Response, NextFunction } from "express";
+import type { ZodTypeAny } from "zod";
+
+export function validateResponse(schema: ZodTypeAny) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    // wrap res.json to validate the final payload
+    const orig = res.json.bind(res);
+    res.json = (body: any) => {
+      const parsed = schema.safeParse(body);
+      if (!parsed.success) {
+        // attach header for observability; do NOT leak details to client
+        res.setHeader("x-schema-violations", "1");
+        // log server-side for triage
+        console.error("[SchemaMismatch]", {
+          path: req.path,
+          method: req.method,
+          issues: parsed.error.flatten(),
+          sample: body,
+        });
+      }
+      return orig(body);
+    };
+    next();
+  };
+}
+
+1) Shared schemas (Zod) used by routes
+
+/shared/schemas/users.ts
+
+import { z } from "zod";
+
+export const UserRole = z.enum(["owner", "admin", "member", "viewer"]);
+export const User = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  name: z.string(),
+  role: UserRole,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const PatchUserBody = z.object({
+  name: z.string().min(1).optional(),
+  role: UserRole.optional(),
+});
+export const PatchUserResponse = z.object({
+  ok: z.literal(true),
+  user: User
+});
+
+
+/shared/schemas/tasks.ts
+
+import { z } from "zod";
+
+export const TaskState = z.enum(["todo","in_progress","blocked","done"]);
+export const Task = z.object({
+  id: z.string(),
+  title: z.string(),
+  state: TaskState,
+  dueDate: z.string().nullable(),
+  assigneeId: z.string().nullable(),
+  blockedBy: z.array(z.string()).default([]),
+  updatedAt: z.string(),
+});
+export const PatchTaskBody = z.object({
+  title: z.string().min(1).optional(),
+  state: TaskState.optional(),
+  dueDate: z.string().nullable().optional(),
+});
+export const PatchTaskResponse = z.object({
+  ok: z.literal(true),
+  task: Task
+});
+
+
+/shared/schemas/notifications.ts
+
+import { z } from "zod";
+export const Notification = z.object({
+  id: z.string(),
+  kind: z.string(), // e.g. 'mention','overdue','payment'
+  read: z.boolean(),
+  createdAt: z.string(),
+  payload: z.record(z.any()).optional(),
+});
+export const GetNotificationsResponse = z.object({
+  items: z.array(Notification),
+  nextCursor: z.string().nullable().default(null)
+});
+
+
+/shared/schemas/reports.ts
+
+import { z } from "zod";
+export const ReportMeta = z.object({
+  slug: z.string(),
+  title: z.string(),
+  generatedAt: z.string(),
+});
+export const ReportRow = z.record(z.any()); // keep loose; validated per report
+export const ReportResponse = z.object({
+  meta: ReportMeta,
+  rows: z.array(ReportRow),
+});
+
+
+/shared/schemas/sso.ts
+
+import { z } from "zod";
+export const SsoCallbackResponse = z.object({
+  ok: z.literal(true),
+  userId: z.string(),
+  orgId: z.string(),
+  // explicit: front-end can check if an org-switch is needed
+  requiresOrgBinding: z.boolean().default(false)
+});
+
+
+/shared/schemas/branding.ts
+
+import { z } from "zod";
+export const ThemeToken = z.object({
+  key: z.string(), // e.g. 'color.primary'
+  value: z.union([z.string(), z.number(), z.boolean()]),
+});
+export const BrandingThemeResponse = z.object({
+  brandName: z.string(),
+  tokens: z.array(ThemeToken),
+  // helps enforce AA contrast downstream
+  contrastChecked: z.boolean().default(false)
+});
+
+2) Patches per endpoint (diff-style snippets)
+A) PATCH /api/users/:id — enforce schema + audit log
+
+/server/routes/users.route.ts (patch)
+
+ import { Router } from "express";
++import { z } from "zod";
++import { validateResponse } from "../middleware/responseSchema";
++import { PatchUserBody, PatchUserResponse } from "../../shared/schemas/users";
+ const router = Router();
+
+ router.patch("/:id",
+- async (req, res) => {
+-   const updated = await users.update(req.params.id, req.body);
+-   res.json({ ok: true, user: updated });
+- }
++ validateResponse(PatchUserResponse),
++ async (req, res) => {
++   const body = PatchUserBody.parse(req.body);
++   const before = await users.findById(req.params.id);
++   const updated = await users.update(req.params.id, body);
++   await audit.emit("user.updated", {
++     actorId: req.user.id,
++     userId: req.params.id,
++     changes: diff(before, updated) // your existing diff util
++   });
++   res.json({ ok: true, user: updated });
++ }
+ );
+ export default router;
+
+B) PATCH /api/tasks/:id — guard state transitions
+
+/server/routes/tasks.route.ts (patch)
+
+ import { Router } from "express";
++import { PatchTaskBody, PatchTaskResponse, TaskState } from "../../shared/schemas/tasks";
++import { validateResponse } from "../middleware/responseSchema";
+ const router = Router();
+
+ router.patch("/:id",
+- async (req, res) => {
+-   const t = await tasks.update(req.params.id, req.body);
+-   res.json({ ok: true, task: t });
+- }
++ validateResponse(PatchTaskResponse),
++ async (req, res) => {
++   const body = PatchTaskBody.parse(req.body);
++   const current = await tasks.findById(req.params.id);
++   // Disallow invalid transitions
++   const illegal = current.state === "blocked" && body.state === "done" && current.blockedBy.length > 0;
++   if (illegal) return res.status(409).json({ error: "illegal_transition", message: "Resolve blockers before marking done." });
++   const updated = await tasks.update(req.params.id, body);
++   res.json({ ok: true, task: updated });
++ }
+ );
+ export default router;
+
+C) GET /api/notifications — stable shape + pagination cursor
+
+/server/routes/notifications.route.ts (patch)
+
+ import { Router } from "express";
++import { GetNotificationsResponse } from "../../shared/schemas/notifications";
++import { validateResponse } from "../middleware/responseSchema";
+ const router = Router();
+
+-router.get("/", async (req, res) => {
+-  const { items, next } = await notifications.list(req.user.id, req.query);
+-  res.json({ items, nextCursor: next || null });
+-});
++router.get("/", validateResponse(GetNotificationsResponse), async (req, res) => {
++  const { items, next } = await notifications.list(req.user.id, req.query);
++  res.json({ items, nextCursor: next ?? null });
++});
+ export default router;
+
+D) GET /api/reports/:slug — strict meta + rows
+
+/server/routes/reports.route.ts (patch)
+
+ import { Router } from "express";
++import { validateResponse } from "../middleware/responseSchema";
++import { ReportResponse } from "../../shared/schemas/reports";
+ const router = Router();
+
+-router.get("/:slug", async (req, res) => {
+-  const data = await reports.generate(req.params.slug, req.query);
+-  res.json(data);
+-});
++router.get("/:slug", validateResponse(ReportResponse), async (req, res) => {
++  const { slug } = req.params;
++  const { meta, rows } = await reports.generate(slug, req.query);
++  res.json({ meta, rows });
++});
+ export default router;
+
+E) POST /api/sso/:provider/callback — explicit org binding flag
+
+/server/routes/sso.route.ts (patch)
+
+ import { Router } from "express";
++import { validateResponse } from "../middleware/responseSchema";
++import { SsoCallbackResponse } from "../../shared/schemas/sso";
+ const router = Router();
+
+ router.post("/:provider/callback",
+- async (req, res) => {
+-   const { userId, orgId } = await sso.handleCallback(req.params.provider, req.body);
+-   res.json({ ok: true, userId, orgId });
+- }
++ validateResponse(SsoCallbackResponse),
++ async (req, res) => {
++   const result = await sso.handleCallback(req.params.provider, req.body);
++   const requiresOrgBinding = !result.orgId; // if provider user exists but isn’t bound to org
++   res.json({ ok: true, userId: result.userId, orgId: result.orgId ?? "", requiresOrgBinding });
++ }
+ );
+ export default router;
+
+F) GET /api/branding/theme — tokenized + contrast flag
+
+/server/routes/branding.route.ts (patch)
+
+ import { Router } from "express";
++import { validateResponse } from "../middleware/responseSchema";
++import { BrandingThemeResponse } from "../../shared/schemas/branding";
+ const router = Router();
+
+-router.get("/theme", async (_req, res) => {
+-  const theme = await branding.getTheme();
+-  res.json(theme);
+-});
++router.get("/theme", validateResponse(BrandingThemeResponse), async (_req, res) => {
++  const { name, tokens } = await branding.getTheme();
++  const contrastChecked = await branding.checkContrast(tokens); // returns true/false
++  res.json({ brandName: name, tokens, contrastChecked });
++});
+ export default router;
+
+3) Tests (super-focused schema proofs)
+
+/server/tests/schema.yellow.spec.ts
+
+import request from "supertest";
+import app from "../index";
+
+describe("Yellow routes → strict schema proofs", () => {
+  it("PATCH /api/users/:id returns PatchUserResponse", async () => {
+    const res = await request(app).patch("/api/users/u_1").send({ role: "admin" });
+    expect(res.status).toBeLessThan(400);
+    expect(res.headers["x-schema-violations"]).toBeUndefined();
+    expect(res.body.ok).toBe(true);
+    expect(res.body.user).toBeDefined();
+  });
+
+  it("PATCH /api/tasks/:id prevents illegal transitions", async () => {
+    const res = await request(app).patch("/api/tasks/t_blocked").send({ state: "done" });
+    expect([200,409]).toContain(res.status);
+  });
+
+  it("GET /api/notifications returns stable shape", async () => {
+    const res = await request(app).get("/api/notifications");
+    expect(res.status).toBe(200);
+    expect(res.body.items).toBeInstanceOf(Array);
+    expect(res.body).toHaveProperty("nextCursor");
+  });
+
+  it("GET /api/reports/:slug has meta+rows", async () => {
+    const res = await request(app).get("/api/reports/utilization");
+    expect(res.status).toBe(200);
+    expect(res.body.meta).toMatchObject({ slug: "utilization" });
+    expect(res.body.rows).toBeInstanceOf(Array);
+  });
+
+  it("POST /api/sso/google/callback exposes requiresOrgBinding", async () => {
+    const res = await request(app).post("/api/sso/google/callback").send({ code: "x" });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("requiresOrgBinding");
+  });
+
+  it("GET /api/branding/theme includes contrastChecked", async () => {
+    const res = await request(app).get("/api/branding/theme");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("contrastChecked");
+  });
+});
+
+4) Before/After (what these patches fix)
+
+Users PATCH: previously allowed free-form role/name and lacked audit; now: validated body, consistent response, and an audit trail.
+
+Tasks PATCH: previously allowed silent illegal blocked → done; now: 409 with clear message unless blockers cleared.
+
+Notifications GET: previously returned { items, next } variably; now: always { items, nextCursor } and validated.
+
+Reports GET: previously returned raw shape per report; now: consistent { meta, rows } so the client can render generically.
+
+SSO callback: previously hid org-binding edge; now: explicit requiresOrgBinding for clean UX after login.
+
+Branding theme: previously raw tokens; now: typed tokens + contrastChecked flag for AA guardrails in UI.
+
+5) How to merge (fast path)
+
+Add the new files under /shared/schemas/* and /server/middleware/responseSchema.ts.
+
+Apply the route patches above.
+
+Run tests:
+
+npm run test -- server/tests/schema.yellow.spec.ts
+
+
+If any route sets x-schema-violations: 1, open the server logs; fix data shims or relax schema (with rationale).
