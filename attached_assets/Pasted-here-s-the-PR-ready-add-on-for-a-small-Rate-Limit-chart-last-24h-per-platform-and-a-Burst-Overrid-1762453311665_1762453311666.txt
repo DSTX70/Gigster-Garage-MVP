@@ -1,0 +1,404 @@
+here’s the PR-ready add-on for a small Rate-Limit chart (last 24h per platform) and a “Burst Override” control that temporarily raises caps and automatically tapers back to normal.
+
+1) DB Migrations
+
+server/db/migrations/2025_11_06_social_rl_usage.sql
+Tracks consumption events for charting.
+
+create table if not exists social_rl_usage (
+  id bigserial primary key,
+  platform text not null,
+  used_at timestamptz not null default now(),
+  amount int not null default 1
+);
+create index if not exists idx_social_rl_usage_platform_time on social_rl_usage(platform, used_at desc);
+
+
+server/db/migrations/2025_11_06_social_rl_overrides.sql
+Holds temporary “burst” overrides.
+
+create table if not exists social_rl_overrides (
+  platform text primary key,
+  factor numeric not null default 1.0,      -- 1.0 = none; 1.5 = +50% capacity
+  started_at timestamptz not null default now(),
+  expires_at timestamptz not null           -- when override ends (tapers to 1.0 before this)
+);
+create index if not exists idx_social_rl_overrides_expires on social_rl_overrides(expires_at);
+
+2) Server libs — update rate limiter to log usage + apply “tapering” override
+
+server/lib/rateLimiter.ts (replace with this version)
+
+import { db } from "../db";
+
+/**
+ * Effective max actions considering a burst override with taper.
+ * Tapering: factor decays linearly from override.factor → 1.0 over the override window.
+ */
+async function getEffectiveMax(platform: string, baseMax: number) {
+  const { rows } = await db.query(
+    `select factor, started_at, expires_at from social_rl_overrides where platform=$1`, [platform]
+  );
+  if (rows.length === 0) return baseMax;
+
+  const { factor, started_at, expires_at } = rows[0];
+  const now = Date.now();
+  const start = new Date(started_at).getTime();
+  const end   = new Date(expires_at).getTime();
+  if (now >= end || factor <= 1) {
+    // Cleanup expired or inert overrides
+    await db.query(`delete from social_rl_overrides where platform=$1 and expires_at <= now()`, [platform]);
+    return baseMax;
+  }
+  const total = Math.max(1, end - start);
+  const remaining = Math.max(0, end - now);
+  const ratio = remaining / total;              // 1.0 → 0.0 over window
+  const effectiveFactor = 1 + (Number(factor) - 1) * ratio;
+  return Math.floor(baseMax * effectiveFactor);
+}
+
+export async function tryConsume(platform: string) {
+  // FOR UPDATE to serialize updates per platform row
+  let rlRows = (await db.query(
+    `select platform, window_seconds, max_actions, used_actions, window_started_at
+     from social_rate_limits where platform=$1 for update`, [platform]
+  )).rows;
+
+  if (rlRows.length === 0) {
+    // sensible default seed
+    await db.query(
+      `insert into social_rate_limits(platform, window_seconds, max_actions, used_actions, window_started_at)
+       values($1,60,60,0, now()) on conflict do nothing`, [platform]
+    );
+    rlRows = (await db.query(
+      `select platform, window_seconds, max_actions, used_actions, window_started_at
+       from social_rate_limits where platform=$1 for update`, [platform]
+    )).rows;
+  }
+
+  const rl = rlRows[0];
+  const now = new Date();
+  const start = new Date(rl.window_started_at);
+  const windowMs = rl.window_seconds * 1000;
+
+  // Reset window if elapsed
+  if (now.getTime() - start.getTime() >= windowMs) {
+    await db.query(
+      `update social_rate_limits set used_actions=1, window_started_at=now() where platform=$1`, [platform]
+    );
+    // log usage for charts
+    await db.query(`insert into social_rl_usage(platform, used_at, amount) values($1, now(), 1)`, [platform]);
+    return { allowed: true };
+  }
+
+  // Apply tapering override to compute effective cap
+  const effectiveMax = await getEffectiveMax(platform, rl.max_actions);
+
+  if (rl.used_actions < effectiveMax) {
+    await db.query(
+      `update social_rate_limits set used_actions=used_actions+1 where platform=$1`, [platform]
+    );
+    await db.query(`insert into social_rl_usage(platform, used_at, amount) values($1, now(), 1)`, [platform]);
+    return { allowed: true };
+  }
+
+  const resetAt = new Date(start.getTime() + windowMs);
+  return { allowed: false, retryAfterMs: Math.max(0, resetAt.getTime() - now.getTime()) };
+}
+
+3) Ops API — usage (24h), override create/cancel
+
+server/routes/ops.rateLimits.route.ts (append routes)
+
+import { Router, Request, Response } from "express";
+import { listRateLimits, upsertRateLimit, resetWindow } from "../lib/rateLimits.service";
+import { audit } from "../lib/audit";
+import { db } from "../db";
+
+const router = Router();
+
+// existing: GET /rate-limits, POST /rate-limits, POST /rate-limits/:platform/reset
+
+// 24h usage series for a platform (bucketed hourly)
+router.get("/rate-limits/:platform/usage", async (req: Request, res: Response) => {
+  const platform = req.params.platform;
+  const { rows } = await db.query(
+    `select date_trunc('hour', used_at) as bucket, sum(amount)::int as total
+     from social_rl_usage
+     where platform=$1 and used_at >= now() - interval '24 hours'
+     group by 1
+     order by 1 asc`, [platform]
+  );
+  // fill missing hours with zeroes (client-friendly)
+  const filled: { bucket: string; total: number }[] = [];
+  const start = new Date(Date.now() - 24 * 3600 * 1000);
+  for (let i = 0; i <= 24; i++) {
+    const b = new Date(start.getTime() + i * 3600 * 1000);
+    const isoHour = new Date(b.getFullYear(), b.getMonth(), b.getDate(), b.getHours()).toISOString();
+    const found = rows.find(r => new Date(r.bucket).toISOString() === isoHour);
+    filled.push({ bucket: isoHour, total: found ? Number(found.total) : 0 });
+  }
+  res.json({ items: filled });
+});
+
+// Create/replace a burst override
+router.post("/rate-limits/:platform/override", async (req: Request, res: Response) => {
+  const platform = req.params.platform;
+  const { factor, minutes } = req.body || {};
+  const f = Math.max(1, Number(factor || 1.5));            // default 1.5x
+  const mins = Math.max(1, Math.min(240, Number(minutes || 30))); // 1..240 min
+  await db.query(
+    `insert into social_rl_overrides(platform, factor, started_at, expires_at)
+     values($1,$2, now(), now() + ($3 || ' minutes')::interval)
+     on conflict (platform) do update set factor=$2, started_at=now(), expires_at=now() + ($3 || ' minutes')::interval`,
+    [platform, f, mins]
+  );
+  await audit.emit("social.rl.override_set", { platform, factor: f, minutes: mins, actorId: (req as any).user?.id });
+  res.json({ ok: true, platform, factor: f, minutes: mins });
+});
+
+// Cancel override
+router.delete("/rate-limits/:platform/override", async (req: Request, res: Response) => {
+  const platform = req.params.platform;
+  await db.query(`delete from social_rl_overrides where platform=$1`, [platform]);
+  await audit.emit("social.rl.override_cleared", { platform, actorId: (req as any).user?.id });
+  res.json({ ok: true });
+});
+
+export default router;
+
+
+(Server is already mounted earlier via app.use("/api/ops", opsRateLimits).)
+
+4) Admin UI — chart + burst override controls on /ops/rate-limits
+
+This extends the page we added earlier. It uses Recharts (already available per your stack guidance). If not present, npm i recharts.
+
+client/src/pages/ops/rate-limits.tsx (drop-in replacement)
+
+import { useEffect, useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+
+type Item = {
+  platform: string;
+  window_seconds: number;
+  max_actions: number;
+  used_actions: number;
+  window_started_at: string;
+  updated_at: string;
+};
+
+type UsagePoint = { bucket: string; total: number };
+
+async function fetchRL() {
+  const r = await fetch("/api/ops/rate-limits");
+  if (!r.ok) throw new Error("Failed to fetch");
+  return (await r.json()) as { items: Item[] };
+}
+async function fetchUsage(platform: string) {
+  const r = await fetch(`/api/ops/rate-limits/${platform}/usage`);
+  if (!r.ok) throw new Error("Failed to fetch usage");
+  return (await r.json()) as { items: UsagePoint[] };
+}
+async function saveRL(platform: string, window_seconds: number, max_actions: number) {
+  const r = await fetch("/api/ops/rate-limits", {
+    method: "POST", headers: { "Content-Type": "application/json"},
+    body: JSON.stringify({ platform, window_seconds, max_actions })
+  });
+  if (!r.ok) throw new Error("Failed to save");
+  return r.json();
+}
+async function resetWindow(platform: string) {
+  const r = await fetch(`/api/ops/rate-limits/${platform}/reset`, { method: "POST" });
+  if (!r.ok) throw new Error("Failed to reset");
+  return r.json();
+}
+async function setOverride(platform: string, factor: number, minutes: number) {
+  const r = await fetch(`/api/ops/rate-limits/${platform}/override`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ factor, minutes })
+  });
+  if (!r.ok) throw new Error("Failed to set override");
+  return r.json();
+}
+async function clearOverride(platform: string) {
+  const r = await fetch(`/api/ops/rate-limits/${platform}/override`, { method: "DELETE" });
+  if (!r.ok) throw new Error("Failed to clear override");
+  return r.json();
+}
+
+export default function RateLimitsPage() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, {ws: number; ma: number}>>({});
+  const [usage, setUsage] = useState<Record<string, UsagePoint[]>>({});
+  const [ovr, setOvr] = useState<Record<string, { factor: number; minutes: number }>>({});
+
+  const load = () => fetchRL()
+    .then(async d => {
+      setItems(d.items);
+      // load usage for each platform
+      const entries = await Promise.all(d.items.map(it => fetchUsage(it.platform).then(u => [it.platform, u.items] as const)));
+      const map: Record<string, UsagePoint[]> = {};
+      entries.forEach(([p, arr]) => { map[p] = arr; });
+      setUsage(map);
+    })
+    .catch(console.error);
+
+  useEffect(() => { load(); }, []);
+
+  const onEdit = (platform: string, key: "ws"|"ma", value: number) => {
+    setDrafts(d => ({ ...d, [platform]: { ws: key==="ws" ? value : (d[platform]?.ws ?? 900), ma: key==="ma" ? value : (d[platform]?.ma ?? 300) }}));
+  };
+
+  const fmtHour = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getHours()}:00`;
+  };
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Rate Limits</h1>
+        <Button onClick={load}>Refresh</Button>
+      </div>
+
+      <Card className="p-0 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-3">Platform</th>
+              <th className="text-left p-3">Window (sec)</th>
+              <th className="text-left p-3">Max Actions</th>
+              <th className="text-left p-3">Used</th>
+              <th className="text-left p-3">Window Started</th>
+              <th className="text-left p-3">Actions</th>
+              <th className="text-left p-3 w-[380px]">Last 24h Usage</th>
+              <th className="text-left p-3 w-[320px]">Burst Override</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map(it => {
+              const draft = drafts[it.platform];
+              const data = usage[it.platform] ?? [];
+              const override = ovr[it.platform] ?? { factor: 1.5, minutes: 30 };
+              return (
+                <tr key={it.platform} className="border-t align-top">
+                  <td className="p-3 font-medium">{it.platform}</td>
+                  <td className="p-3">
+                    <input className="border rounded px-2 py-1 w-28"
+                      type="number"
+                      value={draft?.ws ?? it.window_seconds}
+                      onChange={e => onEdit(it.platform, "ws", Number(e.target.value))}/>
+                  </td>
+                  <td className="p-3">
+                    <input className="border rounded px-2 py-1 w-28"
+                      type="number"
+                      value={draft?.ma ?? it.max_actions}
+                      onChange={e => onEdit(it.platform, "ma", Number(e.target.value))}/>
+                  </td>
+                  <td className="p-3">{it.used_actions}</td>
+                  <td className="p-3">{new Date(it.window_started_at).toLocaleString()}</td>
+                  <td className="p-3 flex gap-2">
+                    <Button variant="outline" onClick={() => saveRL(it.platform, draft?.ws ?? it.window_seconds, draft?.ma ?? it.max_actions).then(load)}>Save</Button>
+                    <Button variant="destructive" onClick={() => resetWindow(it.platform).then(load)}>Reset Window</Button>
+                  </td>
+                  <td className="p-3">
+                    <div className="w-[360px] h-[160px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={data}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="bucket" tickFormatter={fmtHour} minTickGap={24} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip labelFormatter={(v)=>new Date(v).toLocaleString()} />
+                          <Line type="monotone" dataKey="total" dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Factor</span>
+                      <input className="border rounded px-2 py-1 w-20"
+                        type="number" step="0.1" min={1}
+                        value={override.factor}
+                        onChange={(e)=>setOvr(o=>({...o, [it.platform]: { ...override, factor: Number(e.target.value) }}))}/>
+                      <span className="text-xs text-gray-500">Minutes</span>
+                      <input className="border rounded px-2 py-1 w-20"
+                        type="number" min={1} max={240}
+                        value={override.minutes}
+                        onChange={(e)=>setOvr(o=>({...o, [it.platform]: { ...override, minutes: Number(e.target.value) }}))}/>
+                      <Button onClick={()=>setOverride(it.platform, override.factor, override.minutes).then(load)}>Apply</Button>
+                      <Button variant="outline" onClick={()=>clearOverride(it.platform).then(load)}>Clear</Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Tapers from <b>{override.factor.toFixed(2)}×</b> back to <b>1.0×</b> over the window.
+                    </p>
+                  </td>
+                </tr>
+              );
+            })}
+            {items.length === 0 && (
+              <tr><td colSpan={8} className="p-6 text-center text-gray-500">No platforms configured</td></tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+5) Tests (light)
+
+server/tests/ops.rateLimits.usage.override.spec.ts
+
+import request from "supertest";
+import app from "../index";
+import { db } from "../db";
+
+describe("Rate Limits — usage & overrides", () => {
+  it("returns 24h usage buckets", async () => {
+    await db.query(`insert into social_rl_usage(platform, used_at, amount)
+                    values('x', now() - interval '1 hour', 2), ('x', now(), 3)`);
+    const res = await request(app).get("/api/ops/rate-limits/x/usage");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.items)).toBe(true);
+  });
+
+  it("sets and clears a burst override", async () => {
+    const set = await request(app).post("/api/ops/rate-limits/x/override").send({ factor: 1.8, minutes: 15 });
+    expect(set.status).toBe(200);
+    const clr = await request(app).delete("/api/ops/rate-limits/x/override");
+    expect(clr.status).toBe(200);
+  });
+});
+
+6) How to run
+# Apply new migrations
+psql $DATABASE_URL -f server/db/migrations/2025_11_06_social_rl_usage.sql
+psql $DATABASE_URL -f server/db/migrations/2025_11_06_social_rl_overrides.sql
+
+# (If not installed) npm i recharts
+
+# Start app + worker
+npm run dev
+npm run worker:social
+
+# Open dashboard
+open http://localhost:3000/ops/rate-limits
+
+# Run tests
+npm run test -- server/tests/ops.rateLimits.usage.override.spec.ts
+
+Definition of Done (for this add-on)
+
+/ops/rate-limits now shows a 24h line chart per platform.
+
+“Burst Override” can be set (factor + minutes) and cleared; limiter respects a tapering factor back to 1.0× across the window.
+
+Usage is logged for each allowed action and surfaced via /usage.
+
+All actions (override set/cleared) emit audit events: social.rl.override_set, social.rl.override_cleared.
+
+Tests pass.
