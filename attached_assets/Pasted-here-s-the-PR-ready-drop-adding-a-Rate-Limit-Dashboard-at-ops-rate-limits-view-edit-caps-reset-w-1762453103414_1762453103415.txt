@@ -1,0 +1,329 @@
+here’s the PR-ready drop adding a Rate-Limit Dashboard at /ops/rate-limits (view, edit caps, reset windows) and a Media HEAD cache to avoid repeat HEAD requests.
+
+1) DB Migrations
+
+server/db/migrations/2025_11_06_media_head_cache.sql
+
+create table if not exists media_head_cache (
+  url text primary key,
+  content_length bigint,
+  content_type text,
+  ok boolean not null default true,
+  checked_at timestamptz not null default now()
+);
+create index if not exists idx_media_head_cache_checked on media_head_cache(checked_at desc);
+
+
+(already added earlier) 2025_11_06_social_rate_limits.sql for social_rate_limits table.
+
+2) Server Libs
+2a) Media HEAD cache helper
+
+server/lib/mediaHeadCache.ts
+
+import fetch from "node-fetch";
+import { db } from "../db";
+
+const DEFAULT_TTL_MS = Number(process.env.MEDIA_HEAD_TTL_MS ?? 6 * 60 * 60 * 1000); // 6h
+
+export async function headWithCache(url: string) {
+  const ttl = DEFAULT_TTL_MS;
+  const { rows } = await db.query(
+    `select url, content_length, content_type, ok, checked_at
+     from media_head_cache where url=$1`, [url]
+  );
+  const now = Date.now();
+
+  if (rows.length) {
+    const row = rows[0];
+    const age = now - new Date(row.checked_at).getTime();
+    if (age < ttl) return row; // fresh cache
+  }
+
+  let ok = true, content_length: number | null = null, content_type: string | null = null;
+  try {
+    const res = await fetch(url, { method: "HEAD", redirect: "follow", timeout: 5000 as any });
+    content_length = Number(res.headers.get("content-length") || "0") || null;
+    content_type = res.headers.get("content-type");
+    ok = res.ok;
+  } catch {
+    ok = false;
+  }
+  await db.query(
+    `insert into media_head_cache(url, content_length, content_type, ok, checked_at)
+     values($1,$2,$3,$4, now())
+     on conflict (url) do update set content_length=excluded.content_length,
+                                    content_type=excluded.content_type,
+                                    ok=excluded.ok,
+                                    checked_at=now()`,
+    [url, content_length, content_type, ok]
+  );
+  return { url, content_length, content_type, ok, checked_at: new Date().toISOString() };
+}
+
+2b) Update media pre-flight to use cache
+
+server/integrations/icadence/validateMedia.ts (replace file)
+
+import { headWithCache } from "../../lib/mediaHeadCache";
+
+const MAX_MEDIA_BYTES = Number(process.env.SOCIAL_MEDIA_MAX_BYTES ?? 10 * 1024 * 1024);
+const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
+
+export async function validateMediaUrls(urls: string[] = []) {
+  for (const u of urls) {
+    let parsed: URL;
+    try { parsed = new URL(u); } catch { throw new Error(`Invalid media URL: ${u}`); }
+    if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) throw new Error(`Disallowed protocol: ${u}`);
+
+    const head = await headWithCache(u);
+    if (head.content_length && Number(head.content_length) > MAX_MEDIA_BYTES) {
+      throw new Error(`Media too large: ${u}`);
+    }
+    if (head.ok === false) {
+      throw new Error(`Media HEAD failed or URL not reachable: ${u}`);
+    }
+  }
+  return true;
+}
+
+2c) Rate-limit service helpers
+
+server/lib/rateLimits.service.ts
+
+import { db } from "../db";
+
+export async function listRateLimits() {
+  const { rows } = await db.query(
+    `select platform, window_seconds, max_actions, used_actions, window_started_at, updated_at
+     from social_rate_limits order by platform asc`
+  );
+  return rows;
+}
+
+export async function upsertRateLimit(platform: string, window_seconds: number, max_actions: number) {
+  await db.query(
+    `insert into social_rate_limits(platform, window_seconds, max_actions, used_actions, window_started_at)
+     values($1,$2,$3,0, now())
+     on conflict (platform) do update set window_seconds=$2, max_actions=$3`, 
+    [platform, window_seconds, max_actions]
+  );
+}
+
+export async function resetWindow(platform: string) {
+  await db.query(
+    `update social_rate_limits set used_actions=0, window_started_at=now() where platform=$1`, 
+    [platform]
+  );
+}
+
+3) Ops Routes: Rate-Limits API
+
+server/routes/ops.rateLimits.route.ts
+
+import { Router, Request, Response } from "express";
+import { listRateLimits, upsertRateLimit, resetWindow } from "../lib/rateLimits.service";
+import { audit } from "../lib/audit"; // wrapper that posts to /api/_audit/*
+
+const router = Router();
+
+router.get("/rate-limits", async (_req: Request, res: Response) => {
+  const items = await listRateLimits();
+  res.json({ items });
+});
+
+router.post("/rate-limits", async (req: Request, res: Response) => {
+  const { platform, window_seconds, max_actions } = req.body || {};
+  if (!platform || !window_seconds || !max_actions) return res.status(400).json({ error: "missing_fields" });
+  await upsertRateLimit(String(platform), Number(window_seconds), Number(max_actions));
+  await audit.emit("social.rl.updated", { platform, window_seconds, max_actions, actorId: (req as any).user?.id });
+  res.json({ ok: true });
+});
+
+router.post("/rate-limits/:platform/reset", async (req: Request, res: Response) => {
+  const platform = req.params.platform;
+  await resetWindow(platform);
+  await audit.emit("social.rl.reset", { platform, actorId: (req as any).user?.id });
+  res.json({ ok: true });
+});
+
+export default router;
+
+
+Mount it in your server bootstrap:
+
+server/index.ts
+
+import opsRateLimits from "./routes/ops.rateLimits.route";
+// ...
+app.use("/api/ops", opsRateLimits);
+
+4) Admin UI: /ops/rate-limits
+
+client/src/pages/ops/rate-limits.tsx
+
+import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+type Item = {
+  platform: string;
+  window_seconds: number;
+  max_actions: number;
+  used_actions: number;
+  window_started_at: string;
+  updated_at: string;
+};
+
+async function fetchRL() {
+  const r = await fetch("/api/ops/rate-limits");
+  if (!r.ok) throw new Error("Failed to fetch");
+  return (await r.json()) as { items: Item[] };
+}
+
+async function saveRL(platform: string, window_seconds: number, max_actions: number) {
+  const r = await fetch("/api/ops/rate-limits", {
+    method: "POST",
+    headers: { "Content-Type": "application/json"},
+    body: JSON.stringify({ platform, window_seconds, max_actions })
+  });
+  if (!r.ok) throw new Error("Failed to save");
+  return r.json();
+}
+
+async function resetWindow(platform: string) {
+  const r = await fetch(`/api/ops/rate-limits/${platform}/reset`, { method: "POST" });
+  if (!r.ok) throw new Error("Failed to reset");
+  return r.json();
+}
+
+export default function RateLimitsPage() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, {ws: number; ma: number}>>({});
+
+  const load = () => fetchRL().then(d => setItems(d.items)).catch(console.error);
+  useEffect(() => { load(); }, []);
+
+  const onEdit = (platform: string, key: "ws"|"ma", value: number) => {
+    setDrafts(d => ({ ...d, [platform]: { ws: key==="ws" ? value : (d[platform]?.ws ?? 900), ma: key==="ma" ? value : (d[platform]?.ma ?? 300) }}));
+  };
+
+  const onSave = (platform: string) => {
+    const d = drafts[platform];
+    const ws = d?.ws ?? items.find(x => x.platform===platform)?.window_seconds ?? 900;
+    const ma = d?.ma ?? items.find(x => x.platform===platform)?.max_actions ?? 300;
+    saveRL(platform, ws, ma).then(load).catch(console.error);
+  };
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Rate Limits</h1>
+        <Button onClick={load}>Refresh</Button>
+      </div>
+
+      <Card className="p-0 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-3">Platform</th>
+              <th className="text-left p-3">Window (sec)</th>
+              <th className="text-left p-3">Max Actions</th>
+              <th className="text-left p-3">Used</th>
+              <th className="text-left p-3">Window Started</th>
+              <th className="text-left p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map(it => {
+              const draft = drafts[it.platform];
+              return (
+                <tr key={it.platform} className="border-t">
+                  <td className="p-3 font-medium">{it.platform}</td>
+                  <td className="p-3">
+                    <input className="border rounded px-2 py-1 w-28"
+                      type="number"
+                      value={draft?.ws ?? it.window_seconds}
+                      onChange={e => onEdit(it.platform, "ws", Number(e.target.value))}/>
+                  </td>
+                  <td className="p-3">
+                    <input className="border rounded px-2 py-1 w-28"
+                      type="number"
+                      value={draft?.ma ?? it.max_actions}
+                      onChange={e => onEdit(it.platform, "ma", Number(e.target.value))}/>
+                  </td>
+                  <td className="p-3">{it.used_actions}</td>
+                  <td className="p-3">{new Date(it.window_started_at).toLocaleString()}</td>
+                  <td className="p-3 flex gap-2">
+                    <Button variant="outline" onClick={() => onSave(it.platform)}>Save</Button>
+                    <Button variant="destructive" onClick={() => resetWindow(it.platform).then(load)}>Reset Window</Button>
+                  </td>
+                </tr>
+              );
+            })}
+            {items.length === 0 && (
+              <tr><td colSpan={6} className="p-6 text-center text-gray-500">No platforms configured</td></tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+5) Navigation (optional)
+
+Add a link to the new page in your ops menu (wherever you render ops links):
+
+// e.g., client/src/pages/ops/index.tsx
+<Link href="/ops/rate-limits" className="...">Rate Limits</Link>
+
+6) Tests (light)
+
+server/tests/ops.rateLimits.spec.ts
+
+import request from "supertest";
+import app from "../index";
+import { db } from "../db";
+
+describe("Ops Rate Limits", () => {
+  it("lists and updates rate limits", async () => {
+    await db.query(`insert into social_rate_limits(platform,window_seconds,max_actions)
+                    values('x',900,300)
+                    on conflict (platform) do nothing`);
+    const list = await request(app).get("/api/ops/rate-limits");
+    expect(list.status).toBe(200);
+    expect(Array.isArray(list.body.items)).toBe(true);
+
+    const save = await request(app).post("/api/ops/rate-limits")
+      .send({ platform: "x", window_seconds: 1200, max_actions: 250 });
+    expect(save.status).toBe(200);
+
+    const reset = await request(app).post("/api/ops/rate-limits/x/reset");
+    expect(reset.status).toBe(200);
+  });
+});
+
+7) How to run
+# Apply migrations
+psql $DATABASE_URL -f server/db/migrations/2025_11_06_social_rate_limits.sql
+psql $DATABASE_URL -f server/db/migrations/2025_11_06_media_head_cache.sql
+
+# Optional env
+export MEDIA_HEAD_TTL_MS=21600000     # 6h
+export SOCIAL_MEDIA_MAX_BYTES=10485760
+
+# Start services
+npm run dev
+npm run worker:social
+
+# Visit dashboard
+open http://localhost:3000/ops/rate-limits
+
+8) Definition of Done (for this patch)
+
+/ops/rate-limits shows current caps per platform; Save updates DB; Reset Window zeros usage and restarts window; all actions emit audit.
+
+Media pre-flight uses cached HEAD responses (within TTL); bad/oversized URLs still rejected; cache table populated.
+
+Tests pass; no schema violation headers on routes.
