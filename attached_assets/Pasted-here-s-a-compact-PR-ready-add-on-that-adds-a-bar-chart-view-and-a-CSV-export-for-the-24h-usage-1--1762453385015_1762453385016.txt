@@ -1,0 +1,145 @@
+here’s a compact PR-ready add-on that adds a bar chart view and a CSV export for the 24h usage.
+
+1) API: CSV export
+
+server/routes/ops.rateLimits.route.ts (append)
+
+// CSV export of last 24h usage
+router.get("/rate-limits/:platform/usage.csv", async (req: Request, res: Response) => {
+  const platform = req.params.platform;
+  const { rows } = await db.query(
+    `select date_trunc('hour', used_at) as bucket, sum(amount)::int as total
+     from social_rl_usage
+     where platform=$1 and used_at >= now() - interval '24 hours'
+     group by 1
+     order by 1 asc`, [platform]
+  );
+
+  // Fill missing hours with zeros for a full 25 points (now-24h .. now)
+  const filled: { bucket: string; total: number }[] = [];
+  const start = new Date(Date.now() - 24 * 3600 * 1000);
+  for (let i = 0; i <= 24; i++) {
+    const b = new Date(start.getTime() + i * 3600 * 1000);
+    const isoHour = new Date(b.getFullYear(), b.getMonth(), b.getDate(), b.getHours()).toISOString();
+    const found = rows.find(r => new Date(r.bucket).toISOString() === isoHour);
+    filled.push({ bucket: isoHour, total: found ? Number(found.total) : 0 });
+  }
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${platform}_usage_24h.csv"`);
+  res.write("bucket,total\n");
+  for (const p of filled) res.write(`${p.bucket},${p.total}\n`);
+  res.end();
+});
+
+2) UI: add Line/Bar toggle + Export CSV button
+
+Extends the page we added earlier.
+
+client/src/pages/ops/rate-limits.tsx (patch)
+
+-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
++import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+...
+ export default function RateLimitsPage() {
+   ...
+-  return (
++  const [view, setView] = useState<Record<string,"line"|"bar">>({});
++  const toggleView = (p: string) => setView(v => ({ ...v, [p]: (v[p] === "bar" ? "line" : "bar") }));
++  return (
+     <div className="p-6 space-y-4">
+       <div className="flex items-center justify-between">
+         <h1 className="text-2xl font-semibold">Rate Limits</h1>
+-        <Button onClick={load}>Refresh</Button>
++        <div className="flex gap-2">
++          <Button onClick={load}>Refresh</Button>
++        </div>
+       </div>
+...
+               return (
+                 <tr key={it.platform} className="border-t align-top">
+                   ...
+                   <td className="p-3">
+-                    <div className="w-[360px] h-[160px]">
+-                      <ResponsiveContainer width="100%" height="100%">
+-                        <LineChart data={data}>
+-                          <CartesianGrid strokeDasharray="3 3" />
+-                          <XAxis dataKey="bucket" tickFormatter={fmtHour} minTickGap={24} />
+-                          <YAxis allowDecimals={false} />
+-                          <Tooltip labelFormatter={(v)=>new Date(v).toLocaleString()} />
+-                          <Line type="monotone" dataKey="total" dot={false} />
+-                        </LineChart>
+-                      </ResponsiveContainer>
+-                    </div>
++                    <div className="w-[360px] h-[160px]">
++                      <div className="flex items-center gap-2 mb-1">
++                        <Button variant="outline" size="sm" onClick={()=>toggleView(it.platform)}>
++                          {view[it.platform]==="bar" ? "Line" : "Bar"}
++                        </Button>
++                        <a
++                          href={`/api/ops/rate-limits/${it.platform}/usage.csv`}
++                          className="text-sm underline"
++                          download
++                        >
++                          Export CSV
++                        </a>
++                      </div>
++                      <ResponsiveContainer width="100%" height="100%">
++                        {view[it.platform]==="bar"
++                          ? (
++                            <BarChart data={data}>
++                              <CartesianGrid strokeDasharray="3 3" />
++                              <XAxis dataKey="bucket" tickFormatter={fmtHour} minTickGap={24} />
++                              <YAxis allowDecimals={false} />
++                              <Tooltip labelFormatter={(v)=>new Date(v).toLocaleString()} />
++                              <Bar dataKey="total" />
++                            </BarChart>
++                          ) : (
++                            <LineChart data={data}>
++                              <CartesianGrid strokeDasharray="3 3" />
++                              <XAxis dataKey="bucket" tickFormatter={fmtHour} minTickGap={24} />
++                              <YAxis allowDecimals={false} />
++                              <Tooltip labelFormatter={(v)=>new Date(v).toLocaleString()} />
++                              <Line type="monotone" dataKey="total" dot={false} />
++                            </LineChart>
++                          )
++                        }
++                      </ResponsiveContainer>
++                    </div>
+                   </td>
+                   ...
+
+3) Tests (sanity)
+
+server/tests/ops.rateLimits.csv.spec.ts
+
+import request from "supertest";
+import app from "../index";
+import { db } from "../db";
+
+describe("Rate Limits CSV export", () => {
+  it("returns CSV for platform usage", async () => {
+    await db.query(`insert into social_rl_usage(platform, used_at, amount)
+                    values ('x', now(), 1)`);
+    const res = await request(app).get("/api/ops/rate-limits/x/usage.csv");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/csv");
+    expect(res.text.split("\n")[0]).toBe("bucket,total");
+  });
+});
+
+4) How to run
+# (No new migrations beyond what you already applied for rl_usage)
+npm run dev
+npm run worker:social
+
+# Tests
+npm run test -- server/tests/ops.rateLimits.csv.spec.ts
+
+Definition of Done (this add-on)
+
+On /ops/rate-limits, each platform row now has a Line/Bar toggle and an Export CSV link.
+
+/api/ops/rate-limits/:platform/usage.csv returns a complete 25-row (hourly) CSV with header.
+
+Existing 24h usage API and burst override continue to work unchanged.

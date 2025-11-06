@@ -1,0 +1,313 @@
+here’s a PR-ready add-on to give your Rate-Limits dashboard a rolling window selector (6h / 24h / 7d) and moving-average overlays on the charts (plus CSV export for any window).
+
+1) Server: windowed usage API (+ CSV)
+A) Extend usage JSON API to support ?window=6h|24h|7d
+server/routes/ops.rateLimits.route.ts (patch the usage route)
+-router.get("/rate-limits/:platform/usage", async (req: Request, res: Response) => {
+-  const platform = req.params.platform;
+-  const { rows } = await db.query(
+-    `select date_trunc('hour', used_at) as bucket, sum(amount)::int as total
+-     from social_rl_usage
+-     where platform=$1 and used_at >= now() - interval '24 hours'
+-     group by 1
+-     order by 1 asc`, [platform]
+-  );
+-  // fill missing hours with zeroes (client-friendly)
+-  const filled: { bucket: string; total: number }[] = [];
+-  const start = new Date(Date.now() - 24 * 3600 * 1000);
+-  for (let i = 0; i <= 24; i++) {
+-    const b = new Date(start.getTime() + i * 3600 * 1000);
+-    const isoHour = new Date(b.getFullYear(), b.getMonth(), b.getDate(), b.getHours()).toISOString();
+-    const found = rows.find(r => new Date(r.bucket).toISOString() === isoHour);
+-    filled.push({ bucket: isoHour, total: found ? Number(found.total) : 0 });
+-  }
+-  res.json({ items: filled });
+-});
++router.get("/rate-limits/:platform/usage", async (req: Request, res: Response) => {
++  const platform = req.params.platform;
++  const window = String(req.query.window || "24h"); // '6h' | '24h' | '7d'
++  const conf = window === "7d"
++    ? { interval: "7 days", bucket: "day", points: 7, stepMs: 24*3600*1000 }
++    : window === "6h"
++      ? { interval: "6 hours", bucket: "hour", points: 6, stepMs: 3600*1000 }
++      : { interval: "24 hours", bucket: "hour", points: 24, stepMs: 3600*1000 };
++
++  const { rows } = await db.query(
++    `select date_trunc($2, used_at) as bucket, sum(amount)::int as total
++     from social_rl_usage
++     where platform=$1 and used_at >= now() - ($3)::interval
++     group by 1
++     order by 1 asc`, [platform, conf.bucket, conf.interval]
++  );
++
++  // Fill missing buckets with zeros
++  const filled: { bucket: string; total: number }[] = [];
++  const start = new Date(Date.now() - conf.points * conf.stepMs);
++  for (let i = 0; i <= conf.points; i++) {
++    const b = new Date(start.getTime() + i * conf.stepMs);
++    const key = conf.bucket === "hour"
++      ? new Date(b.getFullYear(), b.getMonth(), b.getDate(), b.getHours()).toISOString()
++      : new Date(b.getFullYear(), b.getMonth(), b.getDate()).toISOString();
++    const found = rows.find(r => new Date(r.bucket).toISOString() === key);
++    filled.push({ bucket: key, total: found ? Number(found.total) : 0 });
++  }
++  res.json({ items: filled, window });
++});
+
+B) CSV export supports ?window=6h|24h|7d
+server/routes/ops.rateLimits.route.ts (patch the CSV route)
+-router.get("/rate-limits/:platform/usage.csv", async (req: Request, res: Response) => {
+-  const platform = req.params.platform;
+-  const { rows } = await db.query(
+-    `select date_trunc('hour', used_at) as bucket, sum(amount)::int as total
+-     from social_rl_usage
+-     where platform=$1 and used_at >= now() - interval '24 hours'
+-     group by 1
+-     order by 1 asc`, [platform]
+-  );
+-  // Fill missing hours with zeros for a full 25 points (now-24h .. now)
+-  const filled: { bucket: string; total: number }[] = [];
+-  const start = new Date(Date.now() - 24 * 3600 * 1000);
+-  for (let i = 0; i <= 24; i++) {
+-    const b = new Date(start.getTime() + i * 3600 * 1000);
+-    const isoHour = new Date(b.getFullYear(), b.getMonth(), b.getDate(), b.getHours()).toISOString();
+-    const found = rows.find(r => new Date(r.bucket).toISOString() === isoHour);
+-    filled.push({ bucket: isoHour, total: found ? Number(found.total) : 0 });
+-  }
++router.get("/rate-limits/:platform/usage.csv", async (req: Request, res: Response) => {
++  const platform = req.params.platform;
++  const window = String(req.query.window || "24h");
++  const conf = window === "7d"
++    ? { interval: "7 days", bucket: "day", points: 7, stepMs: 24*3600*1000 }
++    : window === "6h"
++      ? { interval: "6 hours", bucket: "hour", points: 6, stepMs: 3600*1000 }
++      : { interval: "24 hours", bucket: "hour", points: 24, stepMs: 3600*1000 };
++
++  const { rows } = await db.query(
++    `select date_trunc($2, used_at) as bucket, sum(amount)::int as total
++     from social_rl_usage
++     where platform=$1 and used_at >= now() - ($3)::interval
++     group by 1
++     order by 1 asc`, [platform, conf.bucket, conf.interval]
++  );
++
++  const filled: { bucket: string; total: number }[] = [];
++  const start = new Date(Date.now() - conf.points * conf.stepMs);
++  for (let i = 0; i <= conf.points; i++) {
++    const b = new Date(start.getTime() + i * conf.stepMs);
++    const key = conf.bucket === "hour"
++      ? new Date(b.getFullYear(), b.getMonth(), b.getDate(), b.getHours()).toISOString()
++      : new Date(b.getFullYear(), b.getMonth(), b.getDate()).toISOString();
++    const found = rows.find(r => new Date(r.bucket).toISOString() === key);
++    filled.push({ bucket: key, total: found ? Number(found.total) : 0 });
++  }
+   res.setHeader("Content-Type", "text/csv; charset=utf-8");
+-  res.setHeader("Content-Disposition", `attachment; filename="${platform}_usage_24h.csv"`);
++  res.setHeader("Content-Disposition", `attachment; filename="${platform}_usage_${window}.csv"`);
+   res.write("bucket,total\n");
+-  for (const p of filled) res.write(`${p.bucket},${p.total}\n`);
++  for (const p of filled) res.write(`${p.bucket},${p.total}\n`);
+   res.end();
+ });
+
+
+2) Client: window selector + moving average overlays
+We’ll add:
+
+
+A window selector (6h / 24h / 7d) per platform row.
+
+
+Moving averages: simple rolling averages over the visible series; defaults:
+
+
+6h/24h views: 3-point MA
+
+
+7d view: 2-point MA (daily smoothing)
+
+
+
+
+CSV link carries the current window.
+
+
+client/src/pages/ops/rate-limits.tsx (patch)
+-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
++import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+ ...
+ export default function RateLimitsPage() {
+   const [items, setItems] = useState<Item[]>([]);
+   const [drafts, setDrafts] = useState<Record<string, {ws: number; ma: number}>>({});
+   const [usage, setUsage] = useState<Record<string, UsagePoint[]>>({});
+   const [ovr, setOvr] = useState<Record<string, { factor: number; minutes: number }>>({});
++  const [win, setWin] = useState<Record<string, "6h"|"24h"|"7d">>({});
+   const load = () => fetchRL()
+     .then(async d => {
+       setItems(d.items);
+-      // load usage for each platform
+-      const entries = await Promise.all(d.items.map(it => fetchUsage(it.platform).then(u => [it.platform, u.items] as const)));
++      // load usage per platform (respect current chosen window)
++      const entries = await Promise.all(d.items.map(it => fetchUsage(it.platform + `?window=${win[it.platform] ?? "24h"}`).then(u => [it.platform, u.items] as const)));
+       const map: Record<string, UsagePoint[]> = {};
+       entries.forEach(([p, arr]) => { map[p] = arr; });
+       setUsage(map);
+     })
+     .catch(console.error);
+ ...
+-  const fmtHour = (iso: string) => {
++  const fmtHourOrDay = (iso: string, window: "6h"|"24h"|"7d") => {
+     const d = new Date(iso);
+-    return `${d.getHours()}:00`;
++    return window === "7d" ? `${d.getMonth()+1}/${d.getDate()}` : `${d.getHours()}:00`;
+   };
++
++  const rolling = (arr: UsagePoint[], k: number) => {
++    if (k <= 1) return arr.map(p => ({ ...p, ma: p.total }));
++    const out = [] as { bucket: string; total: number; ma: number }[];
++    for (let i = 0; i < arr.length; i++) {
++      const s = Math.max(0, i - (k - 1));
++      const slice = arr.slice(s, i + 1);
++      const avg = slice.reduce((a, b) => a + b.total, 0) / slice.length;
++      out.push({ bucket: arr[i].bucket, total: arr[i].total, ma: Number(avg.toFixed(2)) });
++    }
++    return out;
++  };
+ ...
+               const data = usage[it.platform] ?? [];
++              const windowSel = win[it.platform] ?? "24h";
++              const maK = windowSel === "7d" ? 2 : 3;
++              const withMA = rolling(data, maK);
+               const override = ovr[it.platform] ?? { factor: 1.5, minutes: 30 };
+               return (
+                 <tr key={it.platform} className="border-t align-top">
+                   ...
+                   <td className="p-3">
+                     <div className="w-[360px] h-[160px]">
+-                      <div className="flex items-center gap-2 mb-1">
++                      <div className="flex items-center gap-2 mb-1">
++                        <select
++                          className="border rounded px-2 py-1 text-sm"
++                          value={windowSel}
++                          onChange={(e)=>{
++                            const w = e.target.value as "6h"|"24h"|"7d";
++                            setWin(s => ({ ...s, [it.platform]: w }));
++                            // reload only this platform's usage for snappy UX
++                            fetchUsage(it.platform + `?window=${w}`).then(u=>{
++                              setUsage(prev => ({ ...prev, [it.platform]: u.items }));
++                            }).catch(console.error);
++                          }}
++                        >
++                          <option value="6h">6h</option>
++                          <option value="24h">24h</option>
++                          <option value="7d">7d</option>
++                        </select>
+                         <Button variant="outline" size="sm" onClick={()=>toggleView(it.platform)}>
+                           {view[it.platform]==="bar" ? "Line" : "Bar"}
+                         </Button>
+                         <a
+-                          href={`/api/ops/rate-limits/${it.platform}/usage.csv`}
++                          href={`/api/ops/rate-limits/${it.platform}/usage.csv?window=${windowSel}`}
+                           className="text-sm underline"
+                           download
+                         >
+                           Export CSV
+                         </a>
+                       </div>
+                       <ResponsiveContainer width="100%" height="100%">
+                         {view[it.platform]==="bar"
+                           ? (
+-                            <BarChart data={data}>
++                            <BarChart data={withMA}>
+                               <CartesianGrid strokeDasharray="3 3" />
+-                              <XAxis dataKey="bucket" tickFormatter={fmtHour} minTickGap={24} />
++                              <XAxis dataKey="bucket" tickFormatter={(x)=>fmtHourOrDay(x, windowSel)} minTickGap={24} />
+                               <YAxis allowDecimals={false} />
+                               <Tooltip labelFormatter={(v)=>new Date(v).toLocaleString()} />
+-                              <Bar dataKey="total" />
++                              <Bar dataKey="total" />
++                              {/* MA overlay as line on bar chart */}
++                              <Line type="monotone" dataKey="ma" dot={false} />
++                              <Legend />
+                             </BarChart>
+                           ) : (
+-                            <LineChart data={data}>
++                            <LineChart data={withMA}>
+                               <CartesianGrid strokeDasharray="3 3" />
+-                              <XAxis dataKey="bucket" tickFormatter={fmtHour} minTickGap={24} />
++                              <XAxis dataKey="bucket" tickFormatter={(x)=>fmtHourOrDay(x, windowSel)} minTickGap={24} />
+                               <YAxis allowDecimals={false} />
+                               <Tooltip labelFormatter={(v)=>new Date(v).toLocaleString()} />
+                               <Line type="monotone" dataKey="total" dot={false} />
++                              <Line type="monotone" dataKey="ma" dot={false} />
++                              <Legend />
+                             </LineChart>
+                           )
+                         }
+                       </ResponsiveContainer>
+                     </div>
+                   </td>
+
+
+3) Tests (API windows)
+server/tests/ops.rateLimits.window.spec.ts
+import request from "supertest";
+import app from "../index";
+import { db } from "../db";
+
+describe("Rate Limits usage windows", () => {
+  beforeAll(async () => {
+    // ensure some data
+    await db.query(`insert into social_rl_usage(platform, used_at, amount)
+      values ('x', now() - interval '2 hours', 2), ('x', now() - interval '1 day', 3), ('x', now() - interval '5 days', 4)`);
+  });
+
+  it("6h window buckets by hour", async () => {
+    const res = await request(app).get("/api/ops/rate-limits/x/usage?window=6h");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.items)).toBe(true);
+  });
+
+  it("24h window buckets by hour", async () => {
+    const res = await request(app).get("/api/ops/rate-limits/x/usage?window=24h");
+    expect(res.status).toBe(200);
+  });
+
+  it("7d window buckets by day", async () => {
+    const res = await request(app).get("/api/ops/rate-limits/x/usage?window=7d");
+    expect(res.status).toBe(200);
+  });
+
+  it("CSV honors window", async () => {
+    const res = await request(app).get("/api/ops/rate-limits/x/usage.csv?window=7d");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-disposition"]).toContain("7d");
+  });
+});
+
+
+4) How to run
+npm run dev
+npm run worker:social
+
+# Tests
+npm run test -- server/tests/ops.rateLimits.window.spec.ts
+
+
+Definition of Done
+
+
+/ops/rate-limits shows a window selector (6h/24h/7d) per platform.
+
+
+Charts switch bucket granularity automatically (hourly for 6h/24h, daily for 7d).
+
+
+Moving average overlay (3-point for hourly windows, 2-point for daily) appears on Line and Bar views.
+
+
+CSV export includes the selected window (filename & rows match).
+
+
+New tests pass.
+

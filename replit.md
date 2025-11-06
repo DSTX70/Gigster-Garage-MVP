@@ -147,7 +147,12 @@ Complete end-to-end social media posting pipeline with webhook-based integration
 - **Media HEAD Caching**: Database-backed cache (`media_head_cache` table) to avoid repeated HEAD requests (6 hour TTL)
 - **Audit Logging**: All queue operations emit audit events (enqueued, posting, posted, failed, rate_limited, paused, resumed, retry, cancelled)
 - **Admin Operations**: `/ops/social-queue` page with filters (status, platform), controls (pause/resume/retry/cancel), and thumbnail previews
-- **Rate Limit Dashboard**: `/ops/rate-limits` page for viewing and editing per-platform rate limits, resetting windows
+- **Rate Limit Dashboard**: `/ops/rate-limits` page with comprehensive controls:
+  - **Usage Charts**: Visualize consumption with Line/Bar charts, 3 time windows (6h/24h/7d)
+  - **Moving Averages**: Automatic MA overlays (3-point for hourly, 2-point for daily)
+  - **Burst Override**: Temporary capacity boost with linear tapering (1.0→factor→1.0)
+  - **CSV Export**: Download usage data for any time window
+  - **Window Management**: Edit caps, reset windows, real-time usage tracking
 - **Thumbnail Previews**: Up to 8 lazy-loaded media thumbnails per post in admin UI
 
 **Configuration**:
@@ -159,6 +164,8 @@ Complete end-to-end social media posting pipeline with webhook-based integration
 **Database Tables**:
 - `social_queue`: id, profile_id, platform, content (jsonb), scheduled_at, status, attempts, next_attempt_at, last_error
 - `social_rate_limits`: platform, window_seconds, max_actions, used_actions, window_started_at
+- `social_rl_usage`: id, platform, used_at, amount (for charting)
+- `social_rl_overrides`: platform (pk), factor, started_at, expires_at (burst overrides)
 - `media_head_cache`: url (pk), content_length, content_type, ok, checked_at
 
 **Rate Limits** (default):
