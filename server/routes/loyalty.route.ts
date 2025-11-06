@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { db } from "../db";
+import { pool } from "../db";
 
 const r = Router();
 
 r.get("/", async (_req, res) => {
   try {
-    const result = await db.query(
+    const result = await pool.query(
       `SELECT id, user_id, delta_points, reason, metadata, created_at 
        FROM loyalty_ledger 
        ORDER BY created_at DESC 
@@ -20,7 +20,7 @@ r.get("/", async (_req, res) => {
 
 r.get("/export.csv", async (_req, res) => {
   try {
-    const result = await db.query(
+    const result = await pool.query(
       `SELECT user_id, delta_points, reason, created_at 
        FROM loyalty_ledger 
        ORDER BY created_at DESC`

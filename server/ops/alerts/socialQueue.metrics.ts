@@ -1,7 +1,7 @@
-import { db } from "../../db";
+import { pool } from "../../db";
 
 export async function hourlyErrorRate(): Promise<number> {
-  const result = await db.query(`
+  const result = await pool.query(`
     SELECT COALESCE(
       100.0 * SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0),
       0
@@ -13,7 +13,7 @@ export async function hourlyErrorRate(): Promise<number> {
 }
 
 export async function maxQueueAgeMinutes(): Promise<number> {
-  const result = await db.query(`
+  const result = await pool.query(`
     SELECT COALESCE(
       EXTRACT(EPOCH FROM (NOW() - MIN(scheduled_at))) / 60.0,
       0
@@ -25,7 +25,7 @@ export async function maxQueueAgeMinutes(): Promise<number> {
 }
 
 export async function rateLimitSaturation(): Promise<Array<{ platform: string; pct: number }>> {
-  const result = await db.query(`
+  const result = await pool.query(`
     SELECT platform, used_actions, max_actions 
     FROM social_rate_limits
   `);

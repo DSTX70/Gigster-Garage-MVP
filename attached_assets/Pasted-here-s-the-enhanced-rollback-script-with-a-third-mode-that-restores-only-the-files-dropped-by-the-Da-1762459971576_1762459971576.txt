@@ -1,0 +1,276 @@
+here’s the enhanced rollback script with a third mode that restores only the files dropped by the Day-1 patch, without reverting whole commits. You can target any git ref (defaults to HEAD^) and optionally restore a subset of files by glob.
+
+Save as scripts/rollback_sprint_day1.sh, make it executable, and run from the repo root.
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Rollback for scripts/drop_sprint_day1.sh
+# Modes:
+#   A) --delete-branches                          : delete generated feature branches (if unmerged)
+#   B) --revert-on <branch> [--push]              : revert Day-1 commits (message-grep) on target branch
+#   C) --restore-files [--from <ref>] [--subset <glob>] [--push] :
+#         restore only the files dropped by Day-1 from <ref> (default HEAD^), optionally a subset
+# Common:
+#   --dry-run                                     : print plan, do not change anything
+
+DRY_RUN=0
+DO_DELETE=0
+DO_REVERT=0
+DO_RESTORE=0
+PUSH=0
+TARGET_BRANCH=""
+RESTORE_REF="HEAD^"
+RESTORE_SUBSET=""   # e.g. "server/integrations/platforms/*"
+
+BRANCHES=(
+  "feature/social-platform-adapters"   # GG-101
+  "feature/loyalty-ui-rules"           # GG-105
+  "feat/social-worker-scale"           # GG-102
+  "ops/alerts-social-queue"            # GG-103
+  "feature/rfp-drafts-e2e"             # GG-104
+  "chore/brand-voice-pass"             # GG-106
+  "feat/sso-org-binding"               # GG-107
+  "feature/pricing-and-fences"         # GG-108
+  "gtm/launch-pack"                    # GG-109
+  "ip/provisional-snapshot"            # GG-110
+)
+
+# Files/paths created by Day-1 drop
+FILES=(
+  # GG-101
+  "server/integrations/platforms/common.ts"
+  "server/integrations/platforms/x.adapter.ts"
+  "server/integrations/platforms/instagram.adapter.ts"
+  "server/integrations/platforms/linkedin.adapter.ts"
+  "server/integrations/icadence/platforms.ts"
+  ".env.example"
+  # GG-105
+  "server/routes/loyalty.route.ts"
+  "client/src/pages/loyalty/index.tsx"
+  # GG-102
+  "worker/launcher.ts"
+  "worker/socialPoster.ts"    # patched; restore-from-ref will bring prior version
+  # GG-103
+  "server/ops/alerts/socialQueue.metrics.ts"
+  "server/ops/alerts/socialQueue.alerts.ts"
+  # GG-104
+  "server/db/migrations/2025_11_06_proposals.sql"
+  "server/integrations/rfp/draft.service.ts"
+  "server/integrations/rfp/adapter.ts"
+  "client/src/pages/rfp/ingest.tsx"
+  # GG-106
+  "scripts/brand_token_audit.ts"
+  # GG-107
+  "client/src/pages/auth/org-bind.tsx"
+  # GG-108
+  "server/middleware/entitlements.ts"
+  "client/src/pages/pricing.tsx"
+  # GG-109
+  "docs/gtm/launch_pack.md"
+  # GG-110
+  "docs/ip/provisional_snapshot.md"
+)
+
+# Commit message prefixes from the drop script
+COMMIT_GREP_PREFIXES=(
+  "^GG-101:"
+  "^GG-102:"
+  "^GG-103:"
+  "^GG-104:"
+  "^GG-105:"
+  "^GG-106:"
+  "^GG-107:"
+  "^GG-108:"
+  "^GG-109:"
+  "^GG-110:"
+)
+
+usage() {
+  cat <<EOF
+Usage:
+  $(basename "$0") --delete-branches [--dry-run]
+  $(basename "$0") --revert-on <branch> [--push] [--dry-run]
+  $(basename "$0") --restore-files [--from <ref>] [--subset <glob>] [--push] [--dry-run]
+
+Examples:
+  # A) Delete unmerged feature branches locally
+  $(basename "$0") --delete-branches
+
+  # B) Revert Day-1 commits on main, then push
+  $(basename "$0") --revert-on main --push
+
+  # C) Restore only Day-1 files from HEAD^ (default), do not push
+  $(basename "$0") --restore-files
+
+  # C) Restore only platform adapters from a specific commit/tag, then push
+  $(basename "$0") --restore-files --from abc1234 --subset "server/integrations/platforms/*" --push
+EOF
+}
+
+need_git_repo() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "Run inside a git repo."; exit 1; }
+}
+
+arg_err() { echo "Error: $1"; echo; usage; exit 1; }
+
+# Parse args
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --delete-branches) DO_DELETE=1; shift ;;
+    --revert-on)       DO_REVERT=1; TARGET_BRANCH="${2:-}"; shift 2 ;;
+    --restore-files)   DO_RESTORE=1; shift ;;
+    --from)            RESTORE_REF="${2:-}"; shift 2 ;;
+    --subset)          RESTORE_SUBSET="${2:-}"; shift 2 ;;
+    --push)            PUSH=1; shift ;;
+    --dry-run)         DRY_RUN=1; shift ;;
+    -h|--help)         usage; exit 0 ;;
+    *) arg_err "Unknown arg: $1" ;;
+  esac
+done
+
+need_git_repo
+
+if [[ $DO_DELETE -eq 0 && $DO_REVERT -eq 0 && $DO_RESTORE -eq 0 ]]; then
+  arg_err "Pick a mode: --delete-branches OR --revert-on <branch> OR --restore-files"
+fi
+if [[ $DO_REVERT -eq 1 && -z "$TARGET_BRANCH" ]]; then
+  arg_err "--revert-on requires a branch name (e.g., main)"
+fi
+
+run() {
+  if [[ $DRY_RUN -eq 1 ]]; then echo "DRY-RUN: $*"; else eval "$@"; fi
+}
+
+# -------------------------
+# Mode A: delete branches
+# -------------------------
+if [[ $DO_DELETE -eq 1 ]]; then
+  echo "==> Deleting Day-1 feature branches (local) ..."
+  for b in "${BRANCHES[@]}"; do
+    if git show-ref --verify --quiet "refs/heads/$b"; then
+      CURRENT=$(git rev-parse --abbrev-ref HEAD)
+      if [[ "$CURRENT" == "$b" ]]; then
+        echo "  - Skipping '$b' (currently checked out)."
+        continue
+      fi
+      run "git branch -D '$b'"
+    else
+      echo "  - Branch '$b' not found; skipping."
+    fi
+  done
+  cat <<NOTE
+
+Local branches removed (if present). If pushed, also run:
+  git push origin --delete <branch>
+
+NOTE
+fi
+
+# -------------------------
+# Mode B: revert commits
+# -------------------------
+if [[ $DO_REVERT -eq 1 ]]; then
+  echo "==> Reverting Day-1 commits on '$TARGET_BRANCH' ..."
+  # Ensure target branch exists/checked out
+  if ! git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
+    if git show-ref --verify --quiet "refs/remotes/origin/$TARGET_BRANCH"; then
+      run "git checkout -b '$TARGET_BRANCH' origin/$TARGET_BRANCH"
+    else
+      arg_err "Branch '$TARGET_BRANCH' not found (local or origin)."
+    fi
+  fi
+  CURRENT=$(git rev-parse --abbrev-ref HEAD)
+  if [[ "$CURRENT" != "$TARGET_BRANCH" ]]; then
+    run "git checkout '$TARGET_BRANCH'"
+  fi
+
+  mapfile -t SHAS < <(git log --pretty=format:%H --grep="$(IFS=\|; echo "${COMMIT_GREP_PREFIXES[*]}")" --regexp-ignore-case)
+  if [[ ${#SHAS[@]} -eq 0 ]]; then
+    echo "  - No Day-1 commits detected on '$TARGET_BRANCH'."
+  else
+    echo "  - Found ${#SHAS[@]} commit(s). Reverting in chronological order..."
+    mapfile -t SHAS_CHRONO < <(for s in "${SHAS[@]}"; do echo "$s"; done | tac)
+    for sha in "${SHAS_CHRONO[@]}"; do
+      MSG=$(git log -1 --pretty=%s "$sha")
+      echo "    * Reverting: $sha  ($MSG)"
+      run "git revert --no-edit '$sha'"
+    done
+    if [[ $PUSH -eq 1 ]]; then run "git push origin '$TARGET_BRANCH'"; else echo "  - Reverts staged. Push when ready: git push origin '$TARGET_BRANCH'"; fi
+  fi
+fi
+
+# -------------------------
+# Mode C: restore specific files from ref
+# -------------------------
+if [[ $DO_RESTORE -eq 1 ]]; then
+  echo "==> Restoring Day-1 files from ref: ${RESTORE_REF}"
+  # Build list (optionally subset by glob)
+  RESTORE_LIST=()
+  if [[ -n "$RESTORE_SUBSET" ]]; then
+    for f in "${FILES[@]}"; do
+      case "$f" in
+        $RESTORE_SUBSET) RESTORE_LIST+=("$f");;
+      esac
+    done
+    if [[ ${#RESTORE_LIST[@]} -eq 0 ]]; then
+      echo "  - Subset pattern matched no files: $RESTORE_SUBSET"
+      exit 1
+    fi
+  else
+    RESTORE_LIST=("${FILES[@]}")
+  fi
+
+  echo "  - Files to restore (${#RESTORE_LIST[@]}):"
+  for f in "${RESTORE_LIST[@]}"; do echo "    • $f"; done
+
+  # Make a safety branch to hold the restore commit(s)
+  SAFE_BRANCH="rollback-files-$(date +%Y%m%d-%H%M%S)"
+  run "git checkout -b '$SAFE_BRANCH'"
+
+  # Restore each file from RESTORE_REF into working tree
+  for f in "${RESTORE_LIST[@]}"; do
+    # Only attempt if file exists in the ref; ignore missing to avoid fatal
+    if git cat-file -e "${RESTORE_REF}:${f}" 2>/dev/null; then
+      run "git restore --source '${RESTORE_REF}' -- '${f}'"
+      run "git add '${f}'"
+    else
+      echo "    - Skipping (not in ${RESTORE_REF}): ${f}"
+    fi
+  done
+
+  # Commit if there are changes
+  if ! git diff --cached --quiet; then
+    run "git commit -m 'rollback: restore Day-1 files from ${RESTORE_REF}${RESTORE_SUBSET:+ (subset: }${RESTORE_SUBSET}${RESTORE_SUBSET:+)}'"
+    if [[ $PUSH -eq 1 ]]; then run "git push -u origin '$SAFE_BRANCH'"; fi
+    echo "  - Restore committed on branch: $SAFE_BRANCH"
+  else
+    echo "  - No staged changes to commit (nothing restored or files unchanged)."
+  fi
+fi
+
+echo "✅ Rollback complete."
+
+Quick usage
+
+A) Delete branches (local)
+
+scripts/rollback_sprint_day1.sh --delete-branches
+# (Dry-run first)
+scripts/rollback_sprint_day1.sh --delete-branches --dry-run
+
+
+B) Revert whole Day-1 commits on main
+
+scripts/rollback_sprint_day1.sh --revert-on main --push
+# (Dry-run)
+scripts/rollback_sprint_day1.sh --revert-on main --dry-run
+
+
+C) Restore only specific files from a ref
+
+# Restore everything from the parent commit of HEAD, commit the restore on a new branch
+scripts/rollback_sprint_day1.sh --restore-files
+
+# Restore only platform adapters from a specific commit, push the branch
+scripts/rollback_sprint_day1.sh --restore-files --from abc1234 --subset "server/integrations/platforms/*" --push
