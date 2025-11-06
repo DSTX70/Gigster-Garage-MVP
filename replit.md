@@ -174,6 +174,24 @@ Complete end-to-end social media posting pipeline with webhook-based integration
 - TikTok: 150 posts per hour
 - YouTube: 100 posts per hour
 
+## Scaffolded Features
+
+The following features have been scaffolded for future implementation (see `docs/SCAFFOLDED_FEATURES.md` for details):
+
+1. **Social Platform Adapters**: Real X, Instagram, LinkedIn API implementations (Priority: High)
+2. **Worker Scaling**: Multi-process worker launcher with concurrency support (Priority: Medium)
+3. **SLO Monitoring**: Social queue error budget and queue age alerts (Priority: Medium)
+4. **RFP Management**: Draft service and ingest page for RFP workflows (Priority: Low)
+5. **Loyalty Rewards**: Points system with admin dashboard (Priority: Low)
+6. **Brand Audit**: Tailwind token accessibility checker (Priority: Low)
+7. **SSO Org Binding**: Multi-organization support with SSO (Priority: Low)
+8. **Pricing & Entitlements**: Enhanced pricing page with middleware enforcement (Priority: Medium)
+9. **GTM Launch Pack**: Marketing materials and content calendar (Priority: Low)
+10. **IP Documentation**: Provisional patent snapshot and trade secret register (Priority: Low)
+
+**Files Created**: 13 scaffolded files ready for development  
+**Documentation**: Complete implementation roadmap in `docs/SCAFFOLDED_FEATURES.md`
+
 ## External Dependencies
 
 - **@neondatabase/serverless**: PostgreSQL database connection.
