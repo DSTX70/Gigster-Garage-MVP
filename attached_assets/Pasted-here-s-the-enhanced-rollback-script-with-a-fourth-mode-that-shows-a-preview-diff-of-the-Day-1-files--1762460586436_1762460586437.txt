@@ -1,3 +1,7 @@
+here’s the enhanced rollback script with a fourth mode that shows a preview diff of the Day-1 files against a chosen git ref before you restore anything.
+
+Save (or replace) as scripts/rollback_sprint_day1.sh, chmod +x, run from repo root.
+
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -216,3 +220,16 @@ if [[ $DO_RESTORE -eq 1 ]]; then
 fi
 
 echo "✅ Rollback complete."
+
+Quick examples
+
+Preview only (no changes)
+
+scripts/rollback_sprint_day1.sh --preview-diff
+# or specific subset and ref:
+scripts/rollback_sprint_day1.sh --preview-diff --from v1.2.3 --subset "server/integrations/platforms/*"
+
+
+If the preview looks good, restore just those files
+
+scripts/rollback_sprint_day1.sh --restore-files --from v1.2.3 --subset "server/integrations/platforms/*" --push
