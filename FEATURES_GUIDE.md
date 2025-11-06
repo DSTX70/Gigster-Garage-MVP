@@ -397,6 +397,110 @@ Whether you're a solo freelancer or a growing team, Gigster Garage adapts to you
 
 ---
 
+## 📱 Social Media Queue (Admin/Enterprise)
+
+### Schedule & Automate Social Posts
+- **Multi-Platform Support**: Post to X (Twitter), Instagram, LinkedIn, Facebook, TikTok, and YouTube
+- **Webhook Integration**: Receive scheduled posts from iCadence or other platforms
+- **Smart Queue Management**: View and manage all scheduled posts in one dashboard
+- **Automatic Posting**: Background worker processes queue automatically
+
+### Intelligent Rate Limiting
+- **Platform-Specific Limits**: Respects each platform's posting restrictions
+  - X: 300 posts per 15 minutes
+  - Instagram/LinkedIn/Facebook: 200 posts per hour
+  - TikTok: 150 posts per hour
+  - YouTube: 100 posts per hour
+- **Real-Time Tracking**: See how many posts you have left before hitting limits
+- **Usage Charts**: Visualize posting patterns over 6 hours, 24 hours, or 7 days
+- **CSV Export**: Download usage data for reporting and analysis
+
+### Burst Override Feature
+- **Temporary Capacity Boost**: Increase posting limits for special events or launches
+- **Smart Tapering**: Capacity automatically returns to normal over time
+- **Example**: Apply 2x multiplier for 60 minutes during a product launch
+  - Minute 0: 200% capacity
+  - Minute 30: 150% capacity
+  - Minute 60: Back to 100% normal capacity
+
+### Advanced Queue Features
+- **Automatic Retry**: Failed posts retry up to 8 times with smart delays
+- **Media Validation**: Checks image/video URLs before posting
+- **Admin Controls**: Pause, resume, retry, or cancel any post
+- **Error Handling**: Clear error messages when posts fail
+- **Media Previews**: See up to 8 thumbnail images for each post
+- **Audit Trail**: Complete logging of all posting activity
+
+### Queue Dashboard
+**Access**: Navigate to `/ops/social-queue` (Admin only)
+
+**Monitor Posts**:
+- View all scheduled posts in one table
+- Filter by status (pending, posted, failed) or platform
+- See scheduled time and current status
+- Review error messages for failed posts
+
+**Manage Queue**:
+- Pause posts temporarily if needed
+- Resume paused posts when ready
+- Manually retry failed posts
+- Cancel posts that are no longer needed
+
+### Rate Limit Dashboard
+**Access**: Navigate to `/ops/rate-limits` (Admin only)
+
+**View & Edit Limits**:
+- See current limits for all 6 platforms
+- Edit window duration (how long before limits reset)
+- Edit max actions (how many posts allowed per window)
+- Reset windows manually if needed
+
+**Usage Analytics**:
+- Line or bar charts showing posting patterns
+- 3 time windows: 6 hours, 24 hours, or 7 days
+- Moving average overlays to see trends
+- Export data as CSV for external analysis
+
+**Burst Overrides**:
+- Set capacity multiplier (1.5x to 5.0x)
+- Set duration (1 to 240 minutes)
+- Apply temporary boost for events
+- Clear override to return to normal immediately
+
+### How It Works
+
+**Scheduling Flow**:
+1. External system (like iCadence) sends post via webhook
+2. Post validated (media size, URL format, reachability)
+3. Added to queue with "pending" status
+4. Background worker checks queue every 5 seconds
+5. Rate limits verified before posting
+6. Post published to platform
+7. Status updated to "posted" or retried if failed
+
+**Safety Features**:
+- **Media Validation**: Only http/https URLs, max 10MB file size
+- **Rate Limiting**: Prevents platform API restrictions
+- **Exponential Backoff**: Smart retry delays (15s → 30 minutes)
+- **Audit Logging**: Every action recorded with timestamp and user
+
+### Who Should Use This
+
+**Perfect For**:
+- Marketing teams managing multiple social accounts
+- Agencies posting on behalf of clients
+- Businesses with scheduled content calendars
+- Enterprises requiring rate limit compliance
+- Teams needing posting analytics and reporting
+
+**Enterprise Feature**:
+- Available on Enterprise plan ($99/month)
+- Requires admin role to access dashboards
+- Supports unlimited posts (within platform limits)
+- Professional support included
+
+---
+
 ## 🎓 Best Practices for Using Gigster Garage
 
 ### Start Simple

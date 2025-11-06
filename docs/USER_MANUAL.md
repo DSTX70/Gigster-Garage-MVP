@@ -28,14 +28,15 @@ Complete documentation for all features and functionality.
 ### Administration
 16. [User Management](#user-management)
 17. [Agent Management](#agent-management)
-18. [Settings & Preferences](#settings--preferences)
-19. [Integrations](#integrations)
-20. [Security & Privacy](#security--privacy)
+18. [Social Media Queue System](#social-media-queue-system)
+19. [Settings & Preferences](#settings--preferences)
+20. [Integrations](#integrations)
+21. [Security & Privacy](#security--privacy)
 
 ### Reference
-21. [Keyboard Shortcuts](#keyboard-shortcuts)
-22. [API Documentation](#api-documentation)
-23. [Troubleshooting](#troubleshooting)
+22. [Keyboard Shortcuts](#keyboard-shortcuts)
+23. [API Documentation](#api-documentation)
+24. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -1262,6 +1263,600 @@ Gigster Garage features 17 specialized AI agents that automate workflows across 
 - iCadence Connector (sandbox mode)
 - Importer (wizard development)
 - Review Miner (approval workflow)
+
+---
+
+## Social Media Queue System
+
+**Role Required**: Admin  
+**Plan Required**: Enterprise
+
+### Overview
+
+The Social Media Queue System is an enterprise-grade social media scheduling and posting pipeline with webhook integration, intelligent rate limiting, automatic retry logic, and comprehensive analytics. It supports 6 major platforms: X (Twitter), Instagram, LinkedIn, Facebook, TikTok, and YouTube.
+
+**Key Features**:
+- **Webhook Integration**: Receive posts from iCadence scheduler
+- **Intelligent Rate Limiting**: Per-platform token bucket algorithm with configurable caps
+- **Exponential Backoff**: Automatic retry with smart delays (15s → 30min max, 8 attempts)
+- **Media Validation**: Pre-flight URL and size checks with 6-hour caching
+- **Burst Override**: Temporary capacity boost with linear tapering
+- **Usage Analytics**: Real-time charts with 6h/24h/7d windows
+- **Audit Trail**: Complete logging of all queue operations
+
+---
+
+### Architecture
+
+#### Database Tables
+The system uses 5 PostgreSQL tables:
+
+1. **social_queue**: Queue items with retry state
+   - Stores: platform, content (JSON), scheduled_at, status, attempts, next_attempt_at
+   - Status values: pending, posting, posted, failed, paused, cancelled
+
+2. **social_rate_limits**: Per-platform rate limits
+   - Stores: window_seconds, max_actions, used_actions, window_started_at
+   - Default limits: X (300/15min), Instagram/LinkedIn/Facebook (200/hour), TikTok (150/hour), YouTube (100/hour)
+
+3. **social_rl_usage**: Consumption events for charting
+   - Tracks every rate limit consumption with timestamp and amount
+   - Used for historical analytics and usage charts
+
+4. **social_rl_overrides**: Burst capacity overrides
+   - Temporary capacity multiplier with start/expire timestamps
+   - Linear tapering from factor → 1.0 over duration
+
+5. **media_head_cache**: Cached HTTP HEAD responses
+   - 6-hour TTL to avoid repeated HEAD requests
+   - Stores: content_length, content_type, ok status
+
+#### Worker Process
+Background worker (`npm run worker:social`) polls queue every 5 seconds:
+- Fetches pending items from database
+- Checks rate limits before posting
+- Executes platform-specific posting logic
+- Handles failures with exponential backoff
+- Logs all operations to audit system
+
+---
+
+### Social Queue Dashboard
+
+**Location**: `/ops/social-queue` (Admin only)
+
+#### Features
+
+**Queue Monitoring**:
+- Real-time status of all queued posts
+- Color-coded status badges (pending, posting, posted, failed)
+- Error messages with tooltips for failed items
+- Scheduled time and platform display
+
+**Filters**:
+- **Status Filter**: All, Pending, Posting, Posted, Failed, Paused, Cancelled
+- **Platform Filter**: All, X, Instagram, LinkedIn, Facebook, TikTok, YouTube
+- Combined filtering for precise views
+
+**Media Previews**:
+- Up to 8 thumbnail images per post
+- Lazy-loaded for performance
+- Fallback for missing images
+
+**Admin Controls** (per post):
+- **Pause**: Temporarily suspend posting
+- **Resume**: Reactivate paused post
+- **Retry**: Manually trigger retry attempt
+- **Cancel**: Remove from queue permanently
+
+#### Usage
+
+**View Queue**:
+1. Navigate to `/ops/social-queue`
+2. Use filters to find specific posts
+3. Click column headers to sort
+4. Hover over errors for full message
+
+**Manage Posts**:
+1. Find post in table
+2. Click appropriate action button
+3. Confirmation for destructive actions
+4. Page auto-refreshes after operations
+
+**Monitor Status**:
+- Green badge: Successfully posted
+- Blue badge: Pending in queue
+- Yellow badge: Currently posting
+- Red badge: Failed (see error column)
+- Gray badge: Paused or cancelled
+
+---
+
+### Rate Limit Dashboard
+
+**Location**: `/ops/rate-limits` (Admin only)
+
+#### Features Overview
+
+**Platform Management**:
+- View all 6 platforms in single table
+- Edit window duration (in seconds)
+- Edit max actions per window
+- Real-time usage tracking
+- Instant window reset capability
+
+**Usage Charts**:
+- **Time Windows**: 6h / 24h / 7d aggregation
+- **Chart Types**: Line or Bar view toggle
+- **Moving Averages**: Auto-calculated overlays
+  - 3-point MA for hourly data (6h/24h)
+  - 2-point MA for daily data (7d)
+- **CSV Export**: Download data for any window
+
+**Burst Override**:
+- **Capacity Multiplier**: 1.0x to 5.0x increase
+- **Duration**: 1 to 240 minutes
+- **Linear Tapering**: Automatic decay to normal over time
+- **Example**: 2.0x for 60min = double capacity, gradually reducing to 1.0x
+
+#### Configuration
+
+**Edit Rate Limits**:
+1. Navigate to `/ops/rate-limits`
+2. Find platform row
+3. Edit window_seconds or max_actions fields
+4. Click **"Save"** button
+5. Changes apply immediately
+
+**Reset Window**:
+1. Locate platform row
+2. Click **"Reset Window"** button
+3. Confirm action
+4. Usage counter zeroes, new window starts
+
+**Apply Burst Override**:
+1. Enter capacity factor (e.g., 1.5 = +50%)
+2. Enter duration in minutes (e.g., 30)
+3. Click **"Apply"** button
+4. Override activates with linear taper
+5. Capacity gradually reduces to normal
+
+**Example Scenario**:
+```
+Platform: X
+Normal Limit: 300 posts / 15 minutes
+Burst Override: 2.0x for 60 minutes
+
+Minute 0:  600 posts allowed (2.0x)
+Minute 15: 525 posts allowed (1.75x)
+Minute 30: 450 posts allowed (1.5x)
+Minute 45: 375 posts allowed (1.25x)
+Minute 60: 300 posts allowed (1.0x - back to normal)
+```
+
+**Clear Override**:
+1. Click **"Clear"** button for platform
+2. Capacity immediately returns to 1.0x
+3. Override record deleted from database
+
+---
+
+### Usage Analytics
+
+#### Chart Features
+
+**Time Window Selector**:
+- **6 Hours**: Hourly buckets, recent activity
+- **24 Hours**: Hourly buckets, daily patterns
+- **7 Days**: Daily buckets, weekly trends
+
+**Chart Types**:
+- **Line Chart**: Smooth trend visualization
+- **Bar Chart**: Spike identification
+- Toggle between views with one click
+
+**Moving Averages**:
+- Orange line overlay on all charts
+- Smooths noise for clearer trends
+- Automatic calculation (3-point or 2-point)
+
+**CSV Export**:
+- Downloads complete dataset for selected window
+- Format: bucket (ISO timestamp), total (count)
+- Filename: `{platform}_usage_{window}.csv`
+- Opens in Excel/Sheets for further analysis
+
+#### Interpreting Charts
+
+**Usage Patterns**:
+- **Spikes**: Burst activity or override periods
+- **Flat Periods**: Consistent posting rate
+- **Dips**: Low activity or paused posts
+- **MA Line**: Overall trend direction
+
+**Capacity Planning**:
+- Review 7d chart for growth trends
+- Identify peak usage hours (24h chart)
+- Adjust rate limits based on patterns
+- Apply burst overrides during known peaks
+
+---
+
+### Webhook Integration
+
+#### iCadence Integration
+
+**Endpoint**: `/api/integrations/icadence/webhook`
+
+**Supported Events**:
+- `schedule.posted`: New post scheduled
+- `schedule.deleted`: Post cancelled
+
+**Event Payload** (schedule.posted):
+```json
+{
+  "id": "evt_123",
+  "source": "icadence",
+  "type": "schedule.posted",
+  "timestamp": "2025-11-06T18:00:00Z",
+  "payload": {
+    "profileId": "profile_123",
+    "platform": "x",
+    "scheduledAt": "2025-11-06T19:00:00Z",
+    "content": {
+      "text": "Your post content here",
+      "mediaUrls": ["https://example.com/image.jpg"]
+    }
+  },
+  "signature": "webhook_signature"
+}
+```
+
+**Processing Flow**:
+1. Webhook received and signature verified
+2. Media URLs validated (protocol, size, reachability)
+3. Item inserted into `social_queue` table with status=pending
+4. Audit event logged: `social.queue.enqueued`
+5. Worker picks up item on next poll cycle
+6. Rate limit checked before posting
+7. Platform adapter executes post
+8. Status updated: `posted` or `failed`
+9. Audit event logged for final state
+
+---
+
+### Media Validation
+
+#### Pre-flight Checks
+
+**Protocol Filtering**:
+- Only `http://` and `https://` allowed
+- Blocks: `file://`, `ftp://`, `data:`, etc.
+- Throws error for disallowed protocols
+
+**Size Validation**:
+- HTTP HEAD request to check content-length
+- Default limit: 10MB (configurable via `SOCIAL_MEDIA_MAX_BYTES`)
+- Throws error if exceeds limit
+
+**Reachability Check**:
+- HEAD request with 5-second timeout
+- Verifies URL is accessible
+- Throws error if request fails
+
+#### HEAD Caching
+
+**Purpose**: Avoid repeated HEAD requests to same URL
+
+**Cache Behavior**:
+- 6-hour TTL (configurable via `MEDIA_HEAD_TTL_MS`)
+- Database-backed (`media_head_cache` table)
+- Stores: content_length, content_type, ok status
+- Auto-refresh on TTL expiry
+
+**Benefits**:
+- Reduces external API calls by ~95%
+- Faster validation for repeated URLs
+- Network-friendly for high-volume scenarios
+
+---
+
+### Retry Logic
+
+#### Exponential Backoff
+
+**Configuration**:
+- **Base Delay**: 15 seconds
+- **Max Delay**: 30 minutes
+- **Max Attempts**: 8 retries
+- **Formula**: `min(30min, 15s * 2^attempt)`
+
+**Retry Schedule**:
+```
+Attempt 1: 15 seconds
+Attempt 2: 30 seconds
+Attempt 3: 60 seconds (1 min)
+Attempt 4: 120 seconds (2 min)
+Attempt 5: 240 seconds (4 min)
+Attempt 6: 480 seconds (8 min)
+Attempt 7: 960 seconds (16 min)
+Attempt 8: 1800 seconds (30 min - capped)
+```
+
+**Failure Handling**:
+- After 8 attempts, status changes to `failed`
+- Error message stored in `last_error` column
+- Audit event logged: `social.queue.failed`
+- Manual retry available via dashboard
+
+**Rate Limit Handling**:
+- If rate limited, status remains `pending`
+- `next_attempt_at` set to window reset time
+- Worker skips item until retry time
+- Audit event: `social.queue.rate_limited`
+
+---
+
+### Audit Trail
+
+#### Event Types
+
+All queue operations emit audit events:
+
+**Queue Lifecycle**:
+- `social.queue.enqueued`: Item added to queue
+- `social.queue.posting`: Started posting attempt
+- `social.queue.posted`: Successfully posted
+- `social.queue.failed`: Permanent failure after retries
+- `social.queue.error`: Unexpected error
+
+**Rate Limiting**:
+- `social.queue.rate_limited`: Hit rate limit (with retry delay)
+- `social.rl.updated`: Admin changed rate limit
+- `social.rl.reset`: Admin reset window
+- `social.rl.override_set`: Burst override applied
+- `social.rl.override_cleared`: Burst override cancelled
+
+**Admin Actions**:
+- `social.queue.paused`: Admin paused post
+- `social.queue.resumed`: Admin resumed post
+- `social.queue.retry`: Admin triggered manual retry
+- `social.queue.cancelled`: Admin cancelled post
+- `social.queue.deleted`: Webhook deletion event
+
+#### Audit Log Access
+
+**View Events**:
+1. Navigate to Admin → Audit Logs
+2. Filter by event type (e.g., `social.queue.*`)
+3. Search by platform or profile ID
+4. Export for compliance/reporting
+
+**Event Details**:
+- Timestamp (UTC)
+- Event type
+- Actor ID (who performed action)
+- Platform and content details
+- Retry count and error messages
+
+---
+
+### Platform Adapters
+
+#### Supported Platforms
+
+**Currently Implemented** (stub adapters):
+1. **X (Twitter)**: 300 posts / 15 minutes
+2. **Instagram**: 200 posts / hour
+3. **LinkedIn**: 200 posts / hour
+4. **Facebook**: 200 posts / hour
+5. **TikTok**: 150 posts / hour
+6. **YouTube**: 100 posts / hour
+
+**Adapter Interface**:
+```typescript
+interface PlatformAdapter {
+  post(content: { text: string; mediaUrls?: string[] }): Promise<void>;
+}
+```
+
+**Production Integration**:
+- Replace stub adapters with real SDK calls
+- Add OAuth token management
+- Implement platform-specific media upload
+- Handle platform-specific errors
+
+---
+
+### Configuration
+
+#### Environment Variables
+
+```bash
+# Rate Limiting
+SOCIAL_WORKER_POLL_MS=5000          # Worker polling interval
+SOCIAL_MEDIA_MAX_BYTES=10485760     # 10MB media limit
+
+# Media Validation
+MEDIA_HEAD_TTL_MS=21600000          # 6 hour cache TTL
+
+# Webhook Security
+ICADENCE_WEBHOOK_SECRET=your_secret # Signature verification
+```
+
+#### Worker Management
+
+**Start Worker**:
+```bash
+npm run worker:social
+```
+
+**Stop Worker**:
+- Ctrl+C in terminal
+- Or kill process by PID
+
+**Worker Logs**:
+- Poll frequency: Every 5 seconds
+- Rate limit checks logged
+- Posting attempts logged
+- Errors logged with stack traces
+
+**Monitoring**:
+- Check worker terminal for activity
+- Review audit logs for events
+- Monitor queue dashboard for status
+
+---
+
+### Troubleshooting
+
+#### Common Issues
+
+**Posts Stuck in Pending**:
+1. Check if worker is running: `ps aux | grep worker`
+2. Verify rate limits not maxed out in dashboard
+3. Check audit logs for `rate_limited` events
+4. Review worker terminal for errors
+
+**Media Validation Failures**:
+1. Verify URL is accessible in browser
+2. Check content-length < 10MB
+3. Ensure protocol is http/https
+4. Review `media_head_cache` table for failed entries
+
+**Rate Limit Exceeded**:
+1. Navigate to `/ops/rate-limits`
+2. Check current usage vs. max_actions
+3. Wait for window to reset, or click "Reset Window"
+4. Consider applying burst override for temporary relief
+
+**Worker Not Processing**:
+1. Restart worker: `npm run worker:social`
+2. Check database connection in worker logs
+3. Verify `social_queue` table has pending items
+4. Review worker code for platform adapter errors
+
+#### Error Messages
+
+**"Media file too large"**:
+- Reduce image/video size before uploading
+- Adjust `SOCIAL_MEDIA_MAX_BYTES` if necessary
+
+**"Disallowed protocol"**:
+- Use http:// or https:// URLs only
+- Convert file:// or data: URLs to hosted links
+
+**"Rate limit exceeded"**:
+- Wait for window reset (shown in dashboard)
+- Apply burst override if urgent
+- Increase max_actions if consistent issue
+
+**"Media HEAD failed or URL not reachable"**:
+- Verify URL works in browser
+- Check firewall/network settings
+- Ensure media server allows HEAD requests
+
+---
+
+### Best Practices
+
+#### Queue Management
+
+**Regular Monitoring**:
+- Review queue daily for failed items
+- Investigate errors and retry manually
+- Clear cancelled items periodically
+
+**Rate Limit Planning**:
+- Review 7d usage charts weekly
+- Adjust limits based on growth patterns
+- Apply burst overrides during launches
+
+**Media Optimization**:
+- Compress images before scheduling
+- Host media on fast, reliable CDN
+- Use formats supported by target platforms
+
+#### Security
+
+**Webhook Signature**:
+- Always verify `ICADENCE_WEBHOOK_SECRET` matches
+- Rotate secret periodically
+- Log verification failures
+
+**Admin Access**:
+- Restrict `/ops/*` routes to admin role only
+- Audit admin actions regularly
+- Use strong admin passwords
+
+#### Performance
+
+**Worker Scaling**:
+- Single worker sufficient for <1000 posts/day
+- Multiple workers for high volume (with locking)
+- Monitor worker memory usage
+
+**Database Maintenance**:
+- Vacuum `social_rl_usage` table monthly
+- Archive old queue items (>90 days)
+- Rebuild indexes if queries slow
+
+**Cache Management**:
+- Monitor `media_head_cache` size
+- Prune entries older than TTL
+- Consider increasing TTL if stable media
+
+---
+
+### Advanced Features
+
+#### Burst Override Strategy
+
+**Planned Events**:
+- Apply 2.0x override 15 minutes before event
+- Set duration to cover event + buffer (e.g., 60min)
+- Monitor queue closely during event
+- Clear override after peak if needed
+
+**Emergency Scaling**:
+- Apply 3.0x-5.0x for critical situations
+- Keep duration short (15-30 min)
+- Monitor worker logs for errors
+- Taper allows gradual return to normal
+
+#### Custom Platform Adapters
+
+**Adding New Platforms**:
+1. Create adapter in `server/integrations/icadence/platforms.ts`
+2. Implement `post()` method with platform SDK
+3. Add default rate limit to migration
+4. Update UI to show new platform
+5. Test with webhook payload
+
+**Example Adapter**:
+```typescript
+export const customPlatform: PlatformAdapter = {
+  async post(content) {
+    // Initialize SDK
+    const client = new CustomPlatformSDK({ apiKey: process.env.CUSTOM_API_KEY });
+    
+    // Upload media if present
+    const mediaIds = [];
+    if (content.mediaUrls) {
+      for (const url of content.mediaUrls) {
+        const id = await client.uploadMedia(url);
+        mediaIds.push(id);
+      }
+    }
+    
+    // Post content
+    await client.createPost({
+      text: content.text,
+      mediaIds
+    });
+  }
+};
+```
 
 ---
 

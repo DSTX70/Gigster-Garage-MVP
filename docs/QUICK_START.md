@@ -171,6 +171,7 @@ Always accessible from bottom-right:
 - **Advanced Reporting**: Insights into productivity and revenue (Pro/Enterprise)
 - **Team Collaboration**: Real-time collaboration features
 - **Agent Management**: View 17 AI agents and their automation tasks (Admin)
+- **Social Media Queue**: Webhook-based social media scheduling with rate limiting (Admin)
 - **API Integration**: Use the TypeScript client for custom integrations
 
 ### Get Help
@@ -203,6 +204,9 @@ AI features require a Pro or Enterprise plan. Upgrade in Settings → Billing.
 
 ### What are agents?
 Agents are 17 specialized AI systems that automate workflows. Admins can view them in Agent Management.
+
+### What is the Social Media Queue?
+The Social Media Queue is an enterprise system for scheduling and posting content to social platforms (X, Instagram, LinkedIn, Facebook, TikTok, YouTube) with automatic rate limiting, retry logic, and analytics. Admins can monitor and manage the queue at `/ops/social-queue`.
 
 ### How do I use the API?
 Install the TypeScript client: `npm install @gigster-garage/api-client`. See User Manual → API Documentation for details.
@@ -311,6 +315,8 @@ Gigster Garage offers three plans with different feature access:
 ### Enterprise Plan ($99/month)
 - ✅ Everything in Pro
 - ✅ **Agent Management** (17 AI agents)
+- ✅ **Social Media Queue** with iCadence integration
+- ✅ Advanced rate limiting and burst overrides
 - ✅ Advanced agent automation
 - ✅ Custom integrations
 - ✅ Dedicated support
