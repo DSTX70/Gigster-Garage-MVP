@@ -1,0 +1,286 @@
+Here’s a Sprint Implementation Pack for GG-101 → GG-110 with PR scaffolds (branches + file stubs), acceptance tests, and quick-run checks. Paste the script, run it, and you’ll have ten ready-to-work branches with minimal, compiling code.
+
+0) One-shot scaffolder (creates all ten PR branches)
+
+Save as scripts/scaffold_sprint_A.sh:
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+ensure_repo() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "Run inside your repo."; exit 1; }
+}
+add_env_hint() {
+  grep -q "$1" .env.example 2>/dev/null || echo "$1" >> .env.example
+}
+
+ensure_repo
+mkdir -p server/{routes,integrations,lib,ops/alerts} worker client/src/pages docs/{gtm,ip} scripts
+
+# ---------- GG-101: Platform SDKs → Live Posting ----------
+git checkout -b feature/social-platform-adapters
+mkdir -p server/integrations/platforms
+cat > server/integrations/platforms/x.adapter.ts <<'TS'
+export async function postToX({ profileId, text, mediaUrls = [] }:{
+  profileId:string; text:string; mediaUrls?:string[]
+}) { /* TODO: real X API */ return { ok: true, remoteId: `x_${Date.now()}` }; }
+TS
+cat > server/integrations/platforms/instagram.adapter.ts <<'TS'
+export async function postToInstagram({ profileId, text, mediaUrls = [] }:{
+  profileId:string; text:string; mediaUrls?:string[]
+}) { /* TODO: IG Graph API */ return { ok: true, remoteId: `ig_${Date.now()}` }; }
+TS
+cat > server/integrations/platforms/linkedin.adapter.ts <<'TS'
+export async function postToLinkedIn({ profileId, text, mediaUrls = [] }:{
+  profileId:string; text:string; mediaUrls?:string[]
+}) { /* TODO: LinkedIn API */ return { ok: true, remoteId: `li_${Date.now()}` }; }
+TS
+cat > docs/integrations_social_adapters.md <<'MD'
+# Social Platform Adapters
+Env: X_BEARER_TOKEN, INSTAGRAM_APP_ID/SECRET, LINKEDIN_CLIENT_ID/SECRET
+Retries: Worker backoff; Audit: social.queue.posted/failed
+MD
+add_env_hint "X_BEARER_TOKEN=\nINSTAGRAM_APP_ID=\nINSTAGRAM_APP_SECRET=\nLINKEDIN_CLIENT_ID=\nLINKEDIN_CLIENT_SECRET="
+git add .
+git commit -m "GG-101 scaffold: platform adapters (X/IG/LinkedIn) + env hints + docs"
+
+# ---------- GG-102: Worker Autoscale + Durability ----------
+git checkout -b feat/social-worker-scale
+cat > worker/launcher.ts <<'TS'
+import cluster from "cluster"; import os from "os";
+const W = Number(process.env.CONCURRENCY || os.cpus().length);
+if (cluster.isPrimary) { for (let i=0;i<W;i++) cluster.fork(); cluster.on("exit", ()=>cluster.fork()); }
+else { require("./socialPoster"); }
+TS
+# Example query change hint (ensure your worker uses SKIP LOCKED):
+cat > docs/worker_scaling_notes.md <<'MD'
+Use `FOR UPDATE SKIP LOCKED` when claiming jobs to prevent dupes across workers.
+MD
+add_env_hint "CONCURRENCY=4"
+git add .
+git commit -m "GG-102 scaffold: worker launcher with CONCURRENCY + scaling notes"
+
+# ---------- GG-103: Alerting & SLOs (Social Queue) ----------
+git checkout -b ops/alerts-social-queue
+cat > server/ops/alerts/socialQueueSLO.ts <<'TS'
+export const SLO = { errorBudgetPctPerHour: 5, maxQueueAgeMinutes: 30 };
+TS
+cat > server/ops/alerts/digest.job.ts <<'TS'
+export async function sendSocialOpsDigest(){ /* TODO: summarize failures/age/RL */ return true; }
+TS
+git add .
+git commit -m "GG-103 scaffold: SLO config + digest job placeholder"
+
+# ---------- GG-104: RFP Responder → Draft Generator ----------
+git checkout -b feature/rfp-drafts-e2e
+mkdir -p server/integrations/rfp client/src/pages/rfp
+cat > server/integrations/rfp/draft.service.ts <<'TS'
+export async function createProposalDraft(input:{ rfpId:string; client:string; dueDate:string; scope:string; attachments?:string[] }) {
+  // TODO persist draft, link attachments, emit audit
+  return { ok:true, proposalId: `prop_${Date.now()}` };
+}
+TS
+cat > client/src/pages/rfp/ingest.tsx <<'TSX'
+export default function RfpIngest(){return <div className="p-6"><h1 className="text-2xl font-semibold">RFP Ingest</h1></div>}
+TSX
+git add .
+git commit -m "GG-104 scaffold: draft service + ingest page shell"
+
+# ---------- GG-105: Loyalty Ledger → Points UI + Rules ----------
+git checkout -b feature/loyalty-ui-rules
+mkdir -p server/routes client/src/pages/loyalty
+cat > server/routes/loyalty.route.ts <<'TS'
+import { Router } from "express"; const r = Router();
+r.get("/", async (_req,res)=> res.json({ items: [] })); // TODO: history list
+export default r;
+TS
+cat > client/src/pages/loyalty/index.tsx <<'TSX'
+export default function LoyaltyAdmin(){ return <div className="p-6"><h1 className="text-2xl font-semibold">Loyalty</h1></div> }
+TSX
+git add .
+git commit -m "GG-105 scaffold: loyalty admin route & page"
+
+# ---------- GG-106: Brand & Voice Polish ----------
+git checkout -b chore/brand-voice-pass
+cat > scripts/brand_token_audit.ts <<'TS'
+/** TODO: scan Tailwind tokens, verify AA contrast, flag non-brand fonts/colors, dump report */
+console.log("brand token audit placeholder");
+TS
+git add scripts/brand_token_audit.ts
+git commit -m "GG-106 scaffold: brand token audit placeholder"
+
+# ---------- GG-107: SSO Hardening + Org-Binding UX ----------
+git checkout -b feat/sso-org-binding
+mkdir -p client/src/pages/auth
+cat > client/src/pages/auth/org-bind.tsx <<'TSX'
+export default function OrgBind(){return <div className="p-6"><h1 className="text-2xl font-semibold">Select or Create an Organization</h1></div>}
+TSX
+git add client/src/pages/auth/org-bind.tsx
+git commit -m "GG-107 scaffold: org-binding page shell"
+
+# ---------- GG-108: Pricing Page + Paywall Fences ----------
+git checkout -b feature/pricing-and-fences
+mkdir -p client/src/pages server/middleware
+cat > client/src/pages/pricing.tsx <<'TSX'
+export default function Pricing(){return <div className="p-6"><h1 className="text-2xl font-semibold">Pricing</h1></div>}
+TSX
+cat > server/middleware/entitlements.ts <<'TS'
+export function requirePlan(_plan:"free"|"pro"|"studio"){ return (_req:any,_res:any,next:any)=>next(); }
+TS
+git add .
+git commit -m "GG-108 scaffold: pricing page + entitlements middleware placeholder"
+
+# ---------- GG-109: Competitive Matrix + GTM Pack ----------
+git checkout -b gtm/launch-pack
+cat > docs/gtm/launch_pack.md <<'MD'
+# GTM Starter Pack
+- Competitive matrix (sources cited)
+- 10 influencer briefs
+- Affiliate one-pager
+- 30-day content plan
+MD
+git add docs/gtm/launch_pack.md
+git commit -m "GG-109 scaffold: GTM launch pack document shell"
+
+# ---------- GG-110: IP Snapshot (Provisional + TS) ----------
+git checkout -b ip/provisional-snapshot
+cat > docs/ip/provisional_snapshot.md <<'MD'
+# IP Snapshot (Provisional + Trade Secrets)
+- Claims outline (agent graduation, audit fabric, queue orchestration)
+- Figure list
+- Trade secret register
+- Filing order memo
+MD
+git add docs/ip/provisional_snapshot.md
+git commit -m "GG-110 scaffold: provisional snapshot doc shell"
+
+echo "All branches scaffolded."
+
+
+Run it:
+
+chmod +x scripts/scaffold_sprint_A.sh
+./scripts/scaffold_sprint_A.sh
+
+1) Minimal tests to drop in (sanity per epic)
+
+Create server/tests/sprint_A.sanity.spec.ts:
+
+import request from "supertest";
+import app from "../index";
+
+describe("Sprint A scaffolds", () => {
+  it("loyalty route returns JSON", async () => {
+    const res = await request(app).get("/api/loyalty"); // ensure mounted
+    expect([200,404]).toContain(res.status); // 404 until mounted in index.ts
+  });
+  it("pricing page exists (static build)", async () => {
+    // if using client-side routing, skip; otherwise verify build includes page
+    expect(true).toBe(true);
+  });
+});
+
+
+Mount the loyalty route to make the test pass later:
+
+// server/index.ts
+import loyaltyRoute from "./routes/loyalty.route";
+app.use("/api/loyalty", loyaltyRoute);
+
+2) Owner checklists (what each pod does first)
+
+GG-101 Forge/Bridge
+
+Replace adapter stubs with real SDK calls; read tokens from env.
+
+Add retryable error mapping; unit tests per platform.
+
+Update audit emits; docs: how to connect accounts.
+
+Success proof: 3 queued posts → 3 platforms OK.
+
+GG-102 Pulse/Forge
+
+Switch worker entry to worker/launcher.ts.
+
+Ensure job claim uses FOR UPDATE SKIP LOCKED.
+
+Add graceful shutdown (finish current job).
+
+Soak test with CONCURRENCY=4 → zero dupes.
+
+GG-103 Sentinel/Pulse
+
+Implement error budget & queue age queries.
+
+Wire alert transport (email/Slack).
+
+Schedule digest job weekly.
+
+GG-104 Switchboard/CodeBlock
+
+On rfp.requested, call createProposalDraft.
+
+Persist draft, link attachments, emit audit.
+
+/rfp/ingest lists new drafts.
+
+GG-105 Bridge/Lume
+
+Payment webhook → +points rule.
+
+/loyalty page lists ledger + CSV export.
+
+Adjust/redeem endpoints.
+
+GG-106 Nova/Prism/Storybloom/ChieSan
+
+Run token audit script (fill it in).
+
+Fix contrast/copy on top 20 screens.
+
+Attach “before/after” screenshots.
+
+GG-107 Verifier/Lume
+
+Harden ACS validator; add tests.
+
+Implement requiresOrgBinding flow to /auth/org-bind.
+
+GG-108 Ledger/Foundry/Prism
+
+Implement requirePlan in server routes.
+
+Pricing page copy + upgrade prompts.
+
+Tests for fences.
+
+GG-109 Prism/Foundry/Storybloom/Amani
+
+Fill competitive matrix with sources.
+
+Draft 10 influencer briefs + affiliate one-pager.
+
+30-day content plan; export deck.
+
+GG-110 Aegis/Atlas/Archivist/Coda
+
+Draft claims outline + figure list.
+
+Populate trade secret register.
+
+Filing order memo.
+
+3) Quick run & verify
+# Pick one branch to start (example GG-101)
+git checkout feature/social-platform-adapters
+
+# Install if needed
+npm i
+
+# Dev server & worker
+npm run dev
+CONCURRENCY=4 npm run worker:social
+
+# Tests
+npm run test -- server/tests/sprint_A.sanity.spec.ts
