@@ -1,0 +1,138 @@
+Here’s the tight next-up stack so we keep shipping without pause:
+
+# Immediate (today, in this order)
+
+1. **Run the drop script**
+
+   ```bash
+   chmod +x scripts/drop_sprint_day1.sh
+   ./scripts/drop_sprint_day1.sh
+   ```
+
+   *Creates all feature branches + files.*
+
+2. **Mount routes & migrate DB**
+
+   * In `server/index.ts`, make sure these are mounted:
+
+     * `/api/loyalty`, `/api/ops/social-queue`, `/api/ops/rate-limits`, and `integrations.route`.
+   * Migrations:
+
+     ```bash
+     find server/db/migrations -name '*.sql' -print0 | sort -z | xargs -0 -I{} psql "$DATABASE_URL" -f {}
+     ```
+
+3. **Secrets & env**
+
+   * Add/update `.env` (and CI secrets):
+
+     ```
+     X_BEARER_TOKEN=…
+     INSTAGRAM_APP_ID=…   INSTAGRAM_APP_SECRET=…   INSTAGRAM_ACCESS_TOKEN=…
+     LINKEDIN_CLIENT_ID=… LINKEDIN_CLIENT_SECRET=… LINKEDIN_ACCESS_TOKEN=…
+     CONCURRENCY=4
+     SOCIAL_MEDIA_MAX_BYTES=10485760
+     SOCIAL_WORKER_POLL_MS=5000
+     ```
+
+4. **Bring services up**
+
+   ```bash
+   npm run dev
+   CONCURRENCY=4 npm run worker:social
+   ```
+
+5. **Wire board + workflow (if not already)**
+
+   * Set `ORG` / `PROJECT_NUMBER` in `.github/workflows/auto-project-add.yml`.
+   * Push, then run the **self-test** dispatch (confirm: synthetic issue added → triaged → auto-closed).
+
+6. **Import sprint issues**
+
+   ```bash
+   ./ops/github/import_issues.sh ops/github/issues.json
+   # or Issues → Import with github_issues.csv
+   # optional: add to Project w/ fields
+   ops/github/project_auto_add.sh github_issues.csv
+   ```
+
+7. **Smoke tests**
+
+   ```bash
+   npx jest "server/tests/sprint_A.sanity.spec.ts" --runInBand
+   ```
+
+---
+
+# Then (owners start Day-1 PRs)
+
+**Forge (GG-101)**
+
+* Swap adapter stubs → real X/IG/LinkedIn calls; emit `social.queue.posted/failed`.
+* Test:
+
+  ```bash
+  npx jest server/tests/social.*.spec.ts --runInBand
+  ```
+
+**Pulse (GG-102)**
+
+* Verify `worker/launcher.ts`, `FOR UPDATE SKIP LOCKED`, graceful shutdown.
+* Run with concurrency:
+
+  ```bash
+  CONCURRENCY=4 npm run worker:social
+  ```
+
+**Sentinel (GG-103)**
+
+* Implement error-rate, queue-age, RL-saturation alerts; schedule digest.
+* Test:
+
+  ```bash
+  npx jest server/tests/ops.rateLimits.window.spec.ts --runInBand
+  ```
+
+**Switchboard + CodeBlock (GG-104)**
+
+* `rfp.requested` → draft + attachments; `/rfp/ingest` lists drafts.
+* Trigger:
+
+  ```bash
+  curl -X POST /api/integrations/rfp/webhook -d '{ "type":"rfp.requested", ... }'
+  ```
+
+**Bridge + Lume (GG-105)**
+
+* Loyalty: award points on payment webhook; `/loyalty` + CSV export (UI+API).
+
+**Nova + Prism (GG-106/108/109)**
+
+* Brand/voice pass (top 20 screens), pricing page copy + fences, GTM pack docs.
+
+**Verifier (GG-102/107)**
+
+* Expand schema-diff coverage + SSO org-binding tests:
+
+  ```bash
+  npx jest "server/tests/schema.*.spec.ts" --runInBand
+  ```
+
+**Ledger + Foundry + Amani (GG-108/109)**
+
+* Plan fences (server `requirePlan` + UI flags), competitive matrix, influencer briefs, affiliate one-pager.
+
+**Aegis/Atlas/Archivist/Coda (GG-110)**
+
+* Draft claims outline, figures, TS register; update `docs/ip/provisional_snapshot.md`.
+
+---
+
+# Fast verification checklist
+
+* **CI green** on PRs: schema.*, ops.rateLimits.*, social.*, sanity spec.
+* **Rate-limits UI** `/ops/rate-limits`: 6h/24h/7d, MA overlays, Line/Bar toggle, CSV export.
+* **Social queue**: iCadence webhook → item with thumbnails; pause/resume/retry/cancel emit audit.
+* **Adapters**: 3 “hello world” posts (X/IG/LinkedIn) succeed in staging.
+
+Want me to generate small PR descriptions (checkbox style) for each owner so they can paste into their PRs?
