@@ -1,0 +1,173 @@
+Immediate setup (today) — 7 steps
+1) Run the Day-1 drop
+chmod +x scripts/drop_sprint_day1.sh
+./scripts/drop_sprint_day1.sh
+
+
+Success = branches created, files written, “✅ Sprint Day-1 drop complete.” printed.
+
+2) Mount routes & migrate DB
+
+server/index.ts (ensure these are present)
+
+app.use("/api/loyalty",  require("./routes/loyalty.route").default);
+app.use("/api/ops",      require("./routes/ops.social.route").default);
+app.use("/api/ops",      require("./routes/ops.rateLimits.route").default);
+require("./routes/integrations.route").mountIntegrationRoutes(app);
+
+
+Migrations
+
+find server/db/migrations -name '*.sql' -print0 | sort -z | xargs -0 -I{} psql "$DATABASE_URL" -f {}
+
+
+Success = no SQL errors.
+
+3) Set secrets / env
+
+Add to .env (and mirror in CI secrets as needed):
+
+X_BEARER_TOKEN=...
+INSTAGRAM_APP_ID=...
+INSTAGRAM_APP_SECRET=...
+INSTAGRAM_ACCESS_TOKEN=...
+LINKEDIN_CLIENT_ID=...
+LINKEDIN_CLIENT_SECRET=...
+LINKEDIN_ACCESS_TOKEN=...
+CONCURRENCY=4
+SOCIAL_MEDIA_MAX_BYTES=10485760
+SOCIAL_WORKER_POLL_MS=5000
+
+
+Success = no missing-env warnings at boot.
+
+4) Bring services up
+npm run dev
+CONCURRENCY=4 npm run worker:social
+
+
+Quick smoke
+
+curl -s http://localhost:3000/api/ops/social-queue | jq
+
+
+Success = API serves JSON; worker logs “started”.
+
+5) Wire board + workflow (auto-project add)
+
+Open .github/workflows/auto-project-add.yml and set:
+
+env:
+  ORG: your-org
+  PROJECT_NUMBER: 1
+
+
+Commit & push, then run the workflow_dispatch self-test in GitHub Actions.
+Success = synthetic issue added → triaged → auto-closed.
+
+6) Create / import issues
+
+CLI JSON import
+
+chmod +x ops/github/import_issues.sh
+./ops/github/import_issues.sh ops/github/issues.json
+
+
+(Optional) Auto-map to Project with default fields
+
+chmod +x ops/github/project_auto_add.sh
+ops/github/project_auto_add.sh github_issues.csv
+
+
+Success = issues visible; Project items show Status=Todo, Estimate, Owner.
+
+7) Smoke tests (sanity first)
+npx jest "server/tests/sprint_A.sanity.spec.ts" --runInBand
+
+
+Success = sanity passes (or 404 on unmounted route until step 2 is done).
+
+🚀 Then: Epics GG-101 → GG-110 (finish order + proof)
+
+GG-101 — Platform Adapters (Forge + Bridge)
+
+Swap real API calls for X/IG/LinkedIn; env present; audit emits.
+
+Proof:
+
+npx jest server/tests/social.*.spec.ts --runInBand
+# enqueue hello world for X
+curl -s -X POST http://localhost:3000/api/integrations/icadence/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"id":"evt1","source":"icadence","type":"schedule.posted","timestamp":"2025-11-06T12:00:00Z","payload":{"profileId":"<x_actor>","platform":"x","scheduledAt":"2025-11-06T12:05:00Z","content":{"text":"Hello from GG"}},"signature":"fake"}'
+
+
+GG-102 — Worker Autoscale (Pulse)
+
+worker/launcher.ts, FOR UPDATE SKIP LOCKED, graceful shutdown.
+
+Proof: CONCURRENCY=4 npm run worker:social → 0 duplicates under load.
+
+GG-103 — Alerts & SLOs (Sentinel)
+
+Hourly error-rate, queue-age, RL-saturation; weekly digest.
+
+Proof:
+
+npx jest server/tests/ops.rateLimits.window.spec.ts --runInBand
+
+
+GG-104 — RFP E2E (Switchboard + CodeBlock)
+
+rfp.requested → draft + attachments; /rfp/ingest lists drafts.
+
+Proof: webhook curl → draft visible.
+
+GG-105 — Loyalty (Bridge + Lume + CodeBlock)
+
+Payment webhook → +points; /loyalty history + CSV export.
+
+Proof: CSV downloads; new ledger rows appear after webhook.
+
+GG-106 — Brand & Voice Pass (Nova + Prism)
+
+Token audit script; contrast/copy fixes; 20 before/after screenshots.
+
+Proof: screenshots attached; AA checks pass.
+
+GG-107 — SSO Org-Bind (Verifier + Lume)
+
+Harden ACS; implement /auth/org-bind; tests for edge cases.
+
+Proof: npx jest "server/tests/schema.*.spec.ts" --runInBand (includes SSO cases).
+
+GG-108 — Pricing & Fences (Ledger + Foundry + Prism)
+
+requirePlan() on premium APIs; UI fences; pricing page copy.
+
+Proof: entitled 200s, non-entitled 403s; upgrade prompts render.
+
+GG-109 — GTM Pack (Prism + Storybloom + Amani + Foundry)
+
+Competitive matrix; 10 influencer briefs; affiliate 1-pager; 30-day plan.
+
+Proof: docs/gtm/launch_pack.md + deck link.
+
+GG-110 — IP Snapshot (Aegis + Atlas + Archivist + Coda)
+
+Claims outline; figure list; trade-secret register; filing order memo.
+
+Proof: docs/ip/provisional_snapshot.md updated.
+
+🧪 Final verification (when all epics are merged)
+npx jest "server/tests/schema.*.spec.ts" \
+         "server/tests/ops.rateLimits.*.spec.ts" \
+         "server/tests/social.*.spec.ts" \
+         "server/tests/sprint_A.sanity.spec.ts" --runInBand
+
+
+Rate-limits UI /ops/rate-limits: 6h/24h/7d, MA overlays, Line/Bar toggle, CSV export.
+
+Social queue: enqueue → item shows thumbnails → pause/resume/retry/cancel emit audit.
+
+Adapters: 3 “hello world” posts land in staging (X/IG/LinkedIn).

@@ -1,0 +1,94 @@
+Here you go — a paste-and-run one-liner that drops an all_checks.sh runner, makes it executable, and runs it. It prints a clean ✅/❌ summary at the end.
+
+mkdir -p scripts && cat > scripts/all_checks.sh <<'SH' && chmod +x scripts/all_checks.sh && scripts/all_checks.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+GREEN='\033[32m'; RED='\033[31m'; YEL='\033[33m'; NC='\033[0m'
+ok(){ echo -e "${GREEN}✅ $*${NC}"; }
+ko(){ echo -e "${RED}❌ $*${NC}"; }
+warn(){ echo -e "${YEL}⚠️  $*${NC}"; }
+
+PASS=0; FAIL=0; SKIP=0
+
+step(){ echo -e "\n${YEL}— $* —${NC}"; }
+
+# 0) Quick sanity on workflow config (optional)
+step "Check workflow config (ORG / PROJECT_NUMBER present)"
+if grep -q "ORG:" .github/workflows/auto-project-add.yml 2>/dev/null && grep -q "PROJECT_NUMBER:" .github/workflows/auto-project-add.yml 2>/dev/null; then
+  ok "Workflow has ORG & PROJECT_NUMBER"
+  ((PASS++))
+else
+  warn "Missing ORG/PROJECT_NUMBER in auto-project-add.yml (not fatal)"
+  ((SKIP++))
+fi
+
+# 1) Run DB migrations (safe if already applied)
+step "Run SQL migrations"
+if find server/db/migrations -name '*.sql' | sort | xargs -I{} bash -c 'psql "$DATABASE_URL" -q -f "{}"' 2>/dev/null; then
+  ok "Migrations applied"
+  ((PASS++))
+else
+  warn "Migrations step skipped or failed (check DATABASE_URL or psql); continuing"
+  ((SKIP++))
+fi
+
+# 2) Jest suites (schema, rate-limits, social, sanity)
+step "Run Jest test suites"
+RUNTESTS="
+npx jest \
+  'server/tests/schema.*.spec.ts' \
+  'server/tests/ops.rateLimits.*.spec.ts' \
+  'server/tests/social.*.spec.ts' \
+  'server/tests/sprint_A.sanity.spec.ts' \
+  --runInBand --detectOpenHandles --forceExit
+"
+if bash -c "$RUNTESTS"; then
+  ok "Jest suites passed"
+  ((PASS++))
+else
+  ko "Jest suites failed"
+  ((FAIL++))
+fi
+
+# 3) Live endpoint pings (only if server is up)
+step "Ping live endpoints (if server is running on localhost:3000)"
+if curl -sSf http://localhost:3000/api/healthz >/dev/null 2>&1; then
+  if curl -sSf http://localhost:3000/api/ops/rate-limits >/dev/null 2>&1; then ok "GET /api/ops/rate-limits"; ((PASS++)); else ko "GET /api/ops/rate-limits"; ((FAIL++)); fi
+  if curl -sSf http://localhost:3000/api/ops/social-queue >/dev/null 2>&1; then ok "GET /api/ops/social-queue"; ((PASS++)); else ko "GET /api/ops/social-queue"; ((FAIL++)); fi
+  if curl -sSf http://localhost:3000/api/loyalty >/dev/null 2>&1; then ok "GET /api/loyalty"; ((PASS++)); else warn "GET /api/loyalty (may be empty/unmounted)"; ((SKIP++)); fi
+else
+  warn "Server not responding at http://localhost:3000 — skipping live pings"
+  ((SKIP+=3))
+fi
+
+# 4) Worker concurrency dry check (env presence only)
+step "Check worker concurrency env"
+if [[ -n "${CONCURRENCY:-}" ]]; then ok "CONCURRENCY=$CONCURRENCY"; ((PASS++)); else warn "CONCURRENCY not set (defaults apply)"; ((SKIP++)); fi
+
+# 5) Env presence (critical keys; warn only)
+step "Check critical env keys"
+MISSING=0
+for K in X_BEARER_TOKEN INSTAGRAM_ACCESS_TOKEN LINKEDIN_ACCESS_TOKEN; do
+  if [[ -z "${!K:-}" ]]; then warn "Missing $K"; ((MISSING++)); else ok "$K present"; ((PASS++)); fi
+done
+if ((MISSING==0)); then :; else warn "Some platform tokens missing — platform posts will fail until set"; fi
+
+# Summary
+echo -e "\n${YEL}=== Summary ===${NC}"
+echo -e "${GREEN}Pass:${NC} $PASS  ${RED}Fail:${NC} $FAIL  ${YEL}Skip:${NC} $SKIP"
+((FAIL==0)) && ok "All checks complete" || ko "Some checks failed — see logs above"
+exit $FAIL
+SH
+
+What it does
+
+Tries to apply SQL migrations (skips if not configured).
+
+Runs Jest suites for schema, rate-limits, social queue, and sanity.
+
+Pings endpoints (only if localhost:3000 is live).
+
+Checks CONCURRENCY and critical env keys (warn-only).
+
+Prints a Pass/Fail/Skip summary and exits non-zero on failures.
