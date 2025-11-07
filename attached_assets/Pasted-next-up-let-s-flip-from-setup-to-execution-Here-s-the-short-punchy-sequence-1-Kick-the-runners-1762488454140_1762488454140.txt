@@ -1,0 +1,73 @@
+next up, let’s flip from setup to execution. Here’s the short, punchy sequence:
+
+1) Kick the runners (sanity sweep)
+# assume services running; quick unit focus on social
+scripts/all_checks.sh --no-spawn --fast --only social
+
+
+If green, proceed. If not, tell me which test failed and I’ll patch.
+
+2) Open the first wave of PRs (one per epic)
+# GG-101 (Forge)
+git checkout feature/social-platform-adapters
+gh pr create -B main -t "GG-101: Platform SDKs → Live Posting" -F .github/PULL_REQUEST_TEMPLATE/forge.md
+
+# GG-102 (Pulse)
+git checkout feat/social-worker-scale
+gh pr create -B main -t "GG-102: Worker autoscale + durability" -F .github/PULL_REQUEST_TEMPLATE/pulse.md
+
+# GG-103 (Sentinel)
+git checkout ops/alerts-social-queue
+gh pr create -B main -t "GG-103: Alerts & SLOs" -F .github/PULL_REQUEST_TEMPLATE/sentinel.md
+
+
+(Repeat for GG-104..GG-110 with their templates.)
+
+3) Assign owners & link issues
+
+On each PR page:
+
+Assign the owner (Forge, Pulse, etc.)
+
+Link the matching GG-10x issue
+
+Keep the checklist boxes in the PR body
+
+4) Run live smoke for adapters (GG-101)
+# X hello-world job
+curl -s -X POST http://localhost:3000/api/integrations/icadence/webhook \
+ -H "Content-Type: application/json" \
+ -d '{"id":"evt1","source":"icadence","type":"schedule.posted","timestamp":"2025-11-06T12:00:00Z","payload":{"profileId":"<x_actor>","platform":"x","scheduledAt":"2025-11-06T12:05:00Z","content":{"text":"Hello from GG"}},"signature":"fake"}' | jq
+
+
+Confirm it queues → worker posts → social.queue.posted in logs.
+
+5) Worker scale proof (GG-102)
+CONCURRENCY=4 scripts/all_checks.sh --no-ping --only social
+
+
+Scan logs for duplicates (should be none).
+
+6) Alerts thresholds (GG-103)
+
+Temporarily set aggressive thresholds in socialQueue.alerts.ts, trigger a fail (e.g., force a post error) → verify alert emit.
+
+7) RFP E2E (GG-104)
+curl -s -X POST http://localhost:3000/api/integrations/rfp/webhook \
+ -H "Content-Type: application/json" \
+ -d '{"id":"evt_rfp","source":"rfp","type":"rfp.requested","timestamp":"2025-11-06T12:00:00Z","payload":{"rfpId":"R123","client":"Acme","dueDate":"2025-11-15","scope":"One landing page","attachments":[]}}' | jq
+
+
+Check /rfp/ingest for the draft.
+
+8) Loyalty CSV (GG-105)
+
+Visit /api/loyalty/export.csv (expect headers + rows if ledger populated).
+
+9) Brand/voice pass (GG-106)
+
+Run the audit placeholder (it should print TODO); Nova/Prism start fixes and attach before/after screens on PR.
+
+10) SSO org-bind tests (GG-107)
+
+Run schema suite; verify /auth/org-bind displays when requiresOrgBinding=true.
