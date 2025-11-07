@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Ensure clean working tree
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Please commit or stash your changes before running this."
+  exit 1
+fi
+
+git fetch origin || true
+git checkout main
+git pull --ff-only || true
+
+make_branch() {
+  local branch="$1" file="$2" title="$3"
+  git checkout -b "$branch"
+  mkdir -p docs/prs
+  {
+    echo "# ${title}"
+    echo
+    echo "- Placeholder note to anchor initial PR for ${title}."
+  } > "docs/prs/${file}"
+  git add "docs/prs/${file}"
+  git commit -m "${title}: seed PR placeholder"
+  git push -u origin "$branch"
+  git checkout main
+}
+
+# GG-104 — RFP E2E (Switchboard + CodeBlock)
+make_branch "feature/rfp-drafts-e2e" \
+  "GG-104_switchboard_todo.md" \
+  "GG-104 — RFP Responder → Draft Generator (E2E)"
+
+# GG-105 — Loyalty (Bridge + Lume + CodeBlock)
+make_branch "feature/loyalty-ui-rules" \
+  "GG-105_bridge_lume_todo.md" \
+  "GG-105 — Loyalty Ledger → Points UI + Rules"
+
+# GG-106 — Brand & Voice Pass (Nova + Prism)
+make_branch "chore/brand-voice-pass" \
+  "GG-106_nova_prism_todo.md" \
+  "GG-106 — Brand & Voice Polish (Top 20 Screens)"
+
+# GG-107 — SSO Org-Bind (Verifier + Lume)
+make_branch "feat/sso-org-binding" \
+  "GG-107_verifier_lume_todo.md" \
+  "GG-107 — SSO Hardening + Org-Binding UX"
+
+# GG-108 — Pricing & Fences (Ledger + Foundry + Prism)
+make_branch "feature/pricing-and-fences" \
+  "GG-108_ledger_foundry_prism_todo.md" \
+  "GG-108 — Pricing Page + Paywall Fences"
+
+# GG-109 — GTM Pack (Prism + Storybloom + Amani + Foundry)
+make_branch "gtm/launch-pack" \
+  "GG-109_prism_storybloom_amani_todo.md" \
+  "GG-109 — Competitive Matrix + GTM Starter Pack"
+
+# GG-110 — IP Snapshot (Aegis + Atlas + Archivist + Coda)
+make_branch "ip/provisional-snapshot" \
+  "GG-110_ip_team_todo.md" \
+  "GG-110 — IP Snapshot (Provisional + Trade Secrets)"
+
+echo "Branches created & pushed:"
+echo "  - feature/rfp-drafts-e2e           (GG-104)"
+echo "  - feature/loyalty-ui-rules         (GG-105)"
+echo "  - chore/brand-voice-pass           (GG-106)"
+echo "  - feat/sso-org-binding             (GG-107)"
+echo "  - feature/pricing-and-fences       (GG-108)"
+echo "  - gtm/launch-pack                  (GG-109)"
+echo "  - ip/provisional-snapshot          (GG-110)"
+echo
+echo "Next: open PRs on GitHub.com and pick the matching PR template."
