@@ -1,0 +1,218 @@
+here’s the patched scripts/all_checks.sh with a --no-spawn flag so it won’t start tmux/nohup and will assume your server/worker are already running.
+
+What changes
+
+New flag --no-spawn: skips starting services and the health-wait step.
+
+Everything else (migrations/tests/pings/env checks) still runs.
+
+Drop-in replacement: scripts/all_checks.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Usage:
+#   scripts/all_checks.sh [run|stop] [--fast] [--only <suite>] [--no-spawn]
+#     suite options: schema | rl | ratelimits | social | sanity | <glob-prefix>
+#
+# Examples:
+#   scripts/all_checks.sh                         # full run (spawn + migrations + all tests)
+#   scripts/all_checks.sh --fast --only social    # skip migrations; only social tests
+#   scripts/all_checks.sh --no-spawn              # assume server/worker already running
+#   scripts/all_checks.sh stop                    # stop spawned dev server/worker
+
+# ---------- Args ----------
+MODE="run"      # run | stop
+FAST=0
+ONLY=""         # test filter
+NO_SPAWN=0
+
+ARGS=("$@")
+i=0
+while [[ $i -lt ${#ARGS[@]} ]]; do
+  a="${ARGS[$i]}"
+  case "$a" in
+    run|stop) MODE="$a" ;;
+    --fast) FAST=1 ;;
+    --only) i=$((i+1)); ONLY="${ARGS[$i]:-}";;
+    --no-spawn) NO_SPAWN=1 ;;
+    *) ;; # ignore unknowns
+  endcase
+  i=$((i+1))
+done
+
+# ---------- Utils ----------
+GREEN='\033[32m'; RED='\033[31m'; YEL='\033[33m'; NC='\033[0m'
+ok(){ echo -e "${GREEN}✅ $*${NC}"; }
+ko(){ echo -e "${RED}❌ $*${NC}"; }
+warn(){ echo -e "${YEL}⚠️  $*${NC}"; }
+
+PASS=0; FAIL=0; SKIP=0
+ROOT="$(pwd)"
+LOGS_DIR="$ROOT/.logs"; RUN_DIR="$ROOT/.run"
+mkdir -p "$LOGS_DIR" "$RUN_DIR"
+
+TMUX_SESSION="gg-ci"
+SERVER_NAME="dev-server"
+WORKER_NAME="social-worker"
+SERVER_LOG="$LOGS_DIR/${SERVER_NAME}.log"
+WORKER_LOG="$LOGS_DIR/${WORKER_NAME}.log"
+SERVER_PID="$RUN_DIR/${SERVER_NAME}.pid"
+WORKER_PID="$RUN_DIR/${WORKER_NAME}.pid"
+
+step(){ echo -e "\n${YEL}— $* —${NC}"; }
+have(){ command -v "$1" >/dev/null 2>&1; }
+
+kill_if_exists(){
+  local pidfile="$1"
+  if [[ -f "$pidfile" ]]; then
+    local pid; pid=$(cat "$pidfile" || true)
+    if [[ -n "${pid:-}" ]] && ps -p "$pid" >/dev/null 2>&1; then
+      kill "$pid" || true
+      sleep 0.5
+      ps -p "$pid" >/dev/null 2>&1 && kill -9 "$pid" || true
+    fi
+    rm -f "$pidfile"
+  fi
+}
+
+stop_all(){
+  step "Stopping dev server & worker"
+  if have tmux && tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+    tmux kill-session -t "$TMUX_SESSION" || true
+    ok "tmux session killed"
+  fi
+  kill_if_exists "$SERVER_PID"
+  kill_if_exists "$WORKER_PID"
+  ok "Stopped"
+}
+
+start_with_tmux(){
+  step "Starting dev server & worker in tmux session '$TMUX_SESSION'"
+  tmux has-session -t "$TMUX_SESSION" 2>/dev/null && tmux kill-session -t "$TMUX_SESSION" || true
+  tmux new-session -d -s "$TMUX_SESSION" -n "$SERVER_NAME"
+  tmux send-keys -t "$TMUX_SESSION":"$SERVER_NAME" "npm run dev 2>&1 | tee '$SERVER_LOG'" C-m
+  tmux new-window -t "$TMUX_SESSION" -n "$WORKER_NAME"
+  tmux send-keys -t "$TMUX_SESSION":"$WORKER_NAME" "CONCURRENCY=\${CONCURRENCY:-4} npm run worker:social 2>&1 | tee '$WORKER_LOG'" C-m
+  ok "tmux started (windows: $SERVER_NAME, $WORKER_NAME). View: tmux attach -t $TMUX_SESSION"
+}
+
+start_with_nohup(){
+  step "Starting dev server & worker with nohup (background)"
+  nohup bash -lc "npm run dev" >"$SERVER_LOG" 2>&1 & echo $! > "$SERVER_PID"
+  nohup bash -lc "CONCURRENCY=\${CONCURRENCY:-4} npm run worker:social" >"$WORKER_LOG" 2>&1 & echo $! > "$WORKER_PID"
+  ok "nohup started (PIDs: server $(cat "$SERVER_PID" 2>/dev/null), worker $(cat "$WORKER_PID" 2>/dev/null))"
+}
+
+wait_for_health(){
+  step "Waiting for /api/healthz (localhost:3000)…"
+  local tries=60
+  until curl -sSf http://localhost:3000/api/healthz >/dev/null 2>&1; do
+    ((tries--)) || { ko "Server health check failed"; ((FAIL++)); return 1; }
+    sleep 1
+  done
+  ok "Server is healthy"
+  ((PASS++))
+}
+
+run_migrations(){
+  step "Run SQL migrations"
+  if [[ "$FAST" -eq 1 ]]; then
+    warn "FAST=1 → skipping migrations"
+    ((SKIP++)); return
+  fi
+  if find server/db/migrations -name '*.sql' | sort | xargs -I{} bash -lc 'psql "$DATABASE_URL" -q -f "{}"' 2>/dev/null; then
+    ok "Migrations applied"
+    ((PASS++))
+  else
+    warn "Migrations skipped/failed (check DATABASE_URL/psql) — continuing"
+    ((SKIP++))
+  fi
+}
+
+build_test_selection(){
+  local sel
+  case "$ONLY" in
+    "" ) sel="
+      'server/tests/schema.*.spec.ts'
+      'server/tests/ops.rateLimits.*.spec.ts'
+      'server/tests/social.*.spec.ts'
+      'server/tests/sprint_A.sanity.spec.ts'
+      " ;;
+    schema ) sel="'server/tests/schema.*.spec.ts'" ;;
+    rl|ratelimits ) sel="'server/tests/ops.rateLimits.*.spec.ts'" ;;
+    social ) sel="'server/tests/social.*.spec.ts'" ;;
+    sanity ) sel="'server/tests/sprint_A.sanity.spec.ts'" ;;
+    * ) sel="'server/tests/${ONLY}*.spec.ts'" ;;
+  esac
+  echo "$sel"
+}
+
+run_tests(){
+  step "Run Jest test suites"
+  if [[ -n "$ONLY" ]]; then warn "Running filtered tests: $ONLY"; fi
+  local SEL; SEL=$(build_test_selection)
+  local RUN="npx jest $SEL --runInBand --detectOpenHandles --forceExit"
+  if bash -lc "$RUN"; then
+    ok "Jest suites passed"
+    ((PASS++))
+  else
+    ko "Jest suites failed"
+    ((FAIL++))
+  fi
+}
+
+ping_endpoints(){
+  step "Ping live endpoints"
+  if curl -sSf http://localhost:3000/api/ops/rate-limits >/dev/null 2>&1; then ok "GET /api/ops/rate-limits"; ((PASS++)); else ko "GET /api/ops/rate-limits"; ((FAIL++)); fi
+  if curl -sSf http://localhost:3000/api/ops/social-queue >/dev/null 2>&1; then ok "GET /api/ops/social-queue"; ((PASS++)); else ko "GET /api/ops/social-queue"; ((FAIL++)); fi
+  if curl -sSf http://localhost:3000/api/loyalty >/dev/null 2>&1; then ok "GET /api/loyalty"; ((PASS++)); else warn "GET /api/loyalty (may be empty/unmounted)"; ((SKIP++)); fi
+}
+
+check_env(){
+  step "Check critical env keys (warn-only)"
+  local missing=0
+  for K in X_BEARER_TOKEN INSTAGRAM_ACCESS_TOKEN LINKEDIN_ACCESS_TOKEN; do
+    if [[ -z "${!K:-}" ]]; then warn "Missing $K"; ((missing++)); else ok "$K present"; ((PASS++)); fi
+  done
+  [[ $missing -eq 0 ]] || warn "Some platform tokens missing — platform posts may fail until set."
+}
+
+summary(){
+  echo -e "\n${YEL}=== Summary ===${NC}"
+  echo -e "${GREEN}Pass:${NC} $PASS  ${RED}Fail:${NC} $FAIL  ${YEL}Skip:${NC} $SKIP"
+  ((FAIL==0)) && ok "All checks complete" || ko "Some checks failed — see logs in .logs/"
+  exit $FAIL
+}
+
+# ---------- Main ----------
+if [[ "$MODE" == "stop" ]]; then
+  stop_all
+  exit 0
+fi
+
+# 1) Start services (unless --no-spawn)
+if [[ "$NO_SPAWN" -eq 1 ]]; then
+  warn "--no-spawn → not starting server/worker (assuming already running)"
+else
+  if have tmux; then start_with_tmux; else start_with_nohup; fi
+  # 2) Wait for health (non-fatal)
+  wait_for_health || true
+fi
+
+# 3) Migrations, tests, pings, env checks
+run_migrations
+run_tests
+ping_endpoints
+check_env
+
+summary
+
+Quick use
+# Full (spawn + migrations + all tests)
+scripts/all_checks.sh
+
+# Daily dev loop (assumes server/worker already running)
+scripts/all_checks.sh --no-spawn --fast --only social
+
+# Stop services started by the script
+scripts/all_checks.sh stop
