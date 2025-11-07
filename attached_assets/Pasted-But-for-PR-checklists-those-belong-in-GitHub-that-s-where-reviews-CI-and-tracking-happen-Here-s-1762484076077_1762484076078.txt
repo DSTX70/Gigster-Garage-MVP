@@ -1,0 +1,227 @@
+But for PR checklists, those belong in GitHub—that’s where reviews, CI, and tracking happen.
+
+Here’s the clean setup so you don’t have to copy/paste from chat again:
+
+What to do now (super quick)
+
+Add a PR template to your repo (so every new PR auto-loads the checklist UI):
+
+Create this file in your repo: .github/pull_request_template.md
+
+Paste the template below (it includes owner sections you can keep/remove per PR)
+
+Push from Replit (Replit → Git → Commit → Push).
+
+Open the PR on GitHub and the template will be pre-filled. Keep the section that matches the owner (Forge, Pulse, etc.), delete the rest, and submit.
+
+Drop-in file: .github/pull_request_template.md
+# PR Title
+<!-- Example: GG-101: Platform SDKs → Live Posting -->
+
+## Summary
+- What this PR changes and why (1–3 bullets)
+
+## Owner Section (keep ONE, remove others)
+
+<details><summary><b>Forge — GG-101: Platform SDKs → Live Posting</b></summary>
+
+**Scope**
+- [ ] Implement real posts for **X**, **Instagram Graph**, **LinkedIn UGC/Share**
+- [ ] Read creds from `.env`; validate presence on boot
+- [ ] Map HTTP 429/5xx → retryable; others → fatal
+- [ ] Emit `social.queue.posted` (remoteId) / `social.queue.failed` (error)
+
+**Files**
+- [ ] `server/integrations/platforms/x.adapter.ts`
+- [ ] `server/integrations/platforms/instagram.adapter.ts`
+- [ ] `server/integrations/platforms/linkedin.adapter.ts`
+- [ ] `server/integrations/platforms/common.ts`
+
+**Env**
+- [ ] `X_BEARER_TOKEN`
+- [ ] `INSTAGRAM_ACCESS_TOKEN`
+- [ ] `LINKEDIN_ACCESS_TOKEN`
+
+**Tests / Proof**
+- [ ] `npx jest server/tests/social.*.spec.ts --runInBand`
+- [ ] Enqueue “hello world” → each platform posts, audit lines present
+</details>
+
+<details><summary><b>Bridge — GG-101 / GG-105: Integrations + Loyalty CSV</b></summary>
+
+**Scope**
+- [ ] Credential loader warnings on missing env
+- [ ] Per-platform media handling (IG requires media URL)
+- [ ] Loyalty CSV export endpoint + page link
+
+**Files**
+- [ ] `server/routes/loyalty.route.ts` (adds `/export.csv`)
+- [ ] `client/src/pages/loyalty/index.tsx` (adds CSV link)
+
+**Tests / Proof**
+- [ ] `npx jest server/tests/ops.rateLimits.*.spec.ts --runInBand`
+- [ ] Download CSV and verify headers/rows
+</details>
+
+<details><summary><b>Pulse — GG-102: Worker Autoscale + Durability</b></summary>
+
+**Scope**
+- [ ] Add `worker/launcher.ts` with `CONCURRENCY`
+- [ ] Job claim uses `FOR UPDATE SKIP LOCKED`
+- [ ] Graceful shutdown (finish current job)
+- [ ] Soak @ `CONCURRENCY=4` → **0 duplicates**
+
+**Files**
+- [ ] `worker/launcher.ts`
+- [ ] `worker/socialPoster.ts`
+
+**Tests / Proof**
+- [ ] `CONCURRENCY=4 npm run worker:social`
+</details>
+
+<details><summary><b>Sentinel — GG-103: Alerts & SLOs</b></summary>
+
+**Scope**
+- [ ] Hourly error-rate, max queue-age, RL saturation queries
+- [ ] Alert transport (email/Slack) + weekly digest job
+
+**Files**
+- [ ] `server/ops/alerts/socialQueue.metrics.ts`
+- [ ] `server/ops/alerts/socialQueue.alerts.ts`
+
+**Tests / Proof**
+- [ ] `npx jest server/tests/ops.rateLimits.window.spec.ts --runInBand`
+</details>
+
+<details><summary><b>Switchboard — GG-104: RFP E2E</b></summary>
+
+**Scope**
+- [ ] `rfp.requested` → `createProposalDraft(...)`
+- [ ] Persist draft + attachments; emit `rfp.draft.created`
+- [ ] `/rfp/ingest` lists drafts
+
+**Files**
+- [ ] `server/integrations/rfp/adapter.ts`
+- [ ] `server/integrations/rfp/draft.service.ts`
+- [ ] `server/db/migrations/2025_11_06_proposals.sql`
+- [ ] `client/src/pages/rfp/ingest.tsx`
+
+**Tests / Proof**
+- [ ] `curl -X POST /api/integrations/rfp/webhook -d '{ "type":"rfp.requested", ... }'`
+</details>
+
+<details><summary><b>CodeBlock — GG-104 / GG-105: Storage + CSV</b></summary>
+
+**Scope**
+- [ ] Proposals + attachments tables (migration)
+- [ ] Repos/methods
+- [ ] Loyalty ledger CSV (server + UI)
+
+**Files**
+- [ ] `server/db/migrations/2025_11_06_proposals.sql`
+- [ ] `server/routes/loyalty.route.ts`
+- [ ] `client/src/pages/loyalty/index.tsx`
+
+**Tests / Proof**
+- [ ] `npx jest server/tests/sprint_A.sanity.spec.ts --runInBand`
+</details>
+
+<details><summary><b>Lume — GG-105 / GG-107: UX</b></summary>
+
+**Scope**
+- [ ] `/loyalty`: history + CSV button, empty-states, error copy
+- [ ] `/auth/org-bind`: org selection flow; copy/contrast to brand
+
+**Files**
+- [ ] `client/src/pages/loyalty/index.tsx`
+- [ ] `client/src/pages/auth/org-bind.tsx`
+
+**Proof**
+- [ ] Visual pass; AA contrast ✅
+</details>
+
+<details><summary><b>Nova — GG-106: Brand & Voice Pass</b></summary>
+
+**Scope**
+- [ ] Implement `scripts/brand_token_audit.ts` (report)
+- [ ] Fix shared components (buttons/cards/accordions)
+- [ ] Tone/voice on top 20 screens
+
+**Artifacts**
+- [ ] 20 **before/after** screenshots
+</details>
+
+<details><summary><b>Prism — GG-106 / GG-108 / GG-109</b></summary>
+
+**Scope**
+- [ ] Copy pass on top 20 screens
+- [ ] Pricing page copy + upgrade prompts
+- [ ] Competitive matrix + 10 influencer briefs + affiliate one-pager + 30-day plan
+
+**Files**
+- [ ] `client/src/pages/pricing.tsx`
+- [ ] `docs/gtm/launch_pack.md` (+ deck link)
+</details>
+
+<details><summary><b>Storybloom — GG-109: Outreach</b></summary>
+
+**Scope**
+- [ ] Creator + affiliate outreach templates
+- [ ] PR notes for launch milestones
+
+**Files**
+- [ ] `docs/gtm/outreach_templates.md`
+</details>
+
+<details><summary><b>Verifier — GG-102 / GG-107: QA & Spec</b></summary>
+
+**Scope**
+- [ ] Expand `schema.*` coverage (Yellows → Green)
+- [ ] SSO ACS validator + org-binding edges
+
+**Run**
+- [ ] `npx jest "server/tests/schema.*.spec.ts" --runInBand`
+</details>
+
+<details><summary><b>Ledger — GG-108: Pricing & Fences</b></summary>
+
+**Scope**
+- [ ] Implement `requirePlan()` on premium APIs
+- [ ] UI fences/feature flags (Pro/Studio)
+
+**Files**
+- [ ] `server/middleware/entitlements.ts`
+- [ ] Gated components/pages
+
+**Tests / Proof**
+- [ ] 200 for entitled, 403 for non-entitled
+</details>
+
+<details><summary><b>Foundry / Amani — GG-108 / GG-109</b></summary>
+
+**Scope**
+- [ ] Pricing fence matrix (value fences, upsells)
+- [ ] Affiliate terms + shortlist with Prism
+
+**Files**
+- [ ] `docs/pricing_fences.md`
+- [ ] `docs/affiliates_program.md`
+- [ ] `docs/gtm/launch_pack.md`
+</details>
+
+<details><summary><b>Aegis / Atlas / Archivist / Coda — GG-110: IP Snapshot</b></summary>
+
+**Scope**
+- [ ] Claims outline (agent graduation, audit fabric, queue orchestration)
+- [ ] Figure list; Trade-Secret register; filing order memo
+
+**Files**
+- [ ] `docs/ip/provisional_snapshot.md`
+</details>
+
+---
+
+### Global Checks
+- [ ] CI green (`schema.*`, `ops.rateLimits.*`, `social.*`, sanity)
+- [ ] `/ops/rate-limits`: 6h/24h/7d + MA overlays + Line/Bar + CSV
+- [ ] Social queue e2e: enqueue → thumbnails → pause/resume/retry/cancel emit audit
