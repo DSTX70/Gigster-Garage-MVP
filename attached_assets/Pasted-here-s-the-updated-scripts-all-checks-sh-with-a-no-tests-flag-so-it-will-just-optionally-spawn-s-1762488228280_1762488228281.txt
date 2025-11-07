@@ -1,3 +1,7 @@
+here’s the updated scripts/all_checks.sh with a --no-tests flag so it will just (optionally) spawn services, run migrations (unless --fast), ping endpoints (unless --no-ping), and skip Jest.
+
+Drop this in as a full replacement:
+
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -210,3 +214,18 @@ ping_endpoints
 check_env
 
 summary
+
+Quick use
+chmod +x scripts/all_checks.sh
+
+# Full run
+scripts/all_checks.sh
+
+# Just bring services up + migrations + pings (no tests)
+scripts/all_checks.sh --no-tests
+
+# Assume services already running; skip tests and pings
+scripts/all_checks.sh --no-spawn --no-ping --no-tests
+
+# Stop services started by the script
+scripts/all_checks.sh stop
