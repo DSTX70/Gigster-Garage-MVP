@@ -59,6 +59,27 @@ export const users = pgTable("users", {
   entityType: varchar("entity_type"),
   industry: varchar("industry"),
   targetMarket: text("target_market"),
+  // Onboarding and branding fields
+  companyName: varchar("company_name"),
+  businessAddress: text("business_address"),
+  productsServices: text("products_services"),
+  logoUrl: varchar("logo_url"),
+  brandColors: jsonb("brand_colors").$type<{
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    pms?: string[];
+  }>(),
+  brandFonts: jsonb("brand_fonts").$type<{
+    heading?: string;
+    body?: string;
+    custom?: string[];
+  }>(),
+  brandGuidelinesUrl: varchar("brand_guidelines_url"),
+  onboardingStep: integer("onboarding_step").default(0),
+  brandPersonality: text("brand_personality"),
+  brandValues: jsonb("brand_values").$type<string[]>(),
+  targetAudience: text("target_audience"),
   // Demo session fields
   isDemo: boolean("is_demo").default(false),
   demoSessionId: varchar("demo_session_id"),
