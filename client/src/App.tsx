@@ -37,6 +37,8 @@ import BulkOperations from "@/pages/bulk-operations";
 import CustomFields from "@/pages/custom-fields";
 import WorkflowAutomation from "@/pages/workflow-automation";
 import Onboarding from "@/pages/onboarding";
+import QuickStartPage from "@/pages/quick-start";
+import BrandSettingsPage from "@/pages/settings/brand";
 import NotFound from "@/pages/not-found";
 import Test404 from "@/pages/test-404";
 import GarageAssistant from "@/pages/garage-assistant";
@@ -131,12 +133,18 @@ function Router() {
   }
 
   // Check if user needs to complete onboarding
-  if (user && !user.hasCompletedOnboarding) {
-    return <Onboarding onComplete={() => window.location.reload()} />;
+  // Allow access to quick-start page even if onboarding incomplete
+  if (user && !user.hasCompletedOnboarding && location !== '/quick-start') {
+    useEffect(() => {
+      setLocation('/quick-start');
+    }, [setLocation]);
   }
 
   return (
     <Switch>      
+      {/* Onboarding and Setup Routes */}
+      <Route path="/quick-start" component={QuickStartPage} />
+      
       {/* Desktop Routes */}
       <Route path="/" component={Home} />
       <Route path="/tasks" component={Tasks} />
@@ -176,6 +184,7 @@ function Router() {
       <Route path="/performance-dashboard" component={PerformanceDashboard} />
       <Route path="/pricing" component={PricingTable} />
       <Route path="/settings" component={Settings} />
+      <Route path="/settings/brand" component={BrandSettingsPage} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/agent-management" component={AgentManagement} />}
       {isAdmin && <Route path="/ops/social-queue" component={SocialQueuePage} />}

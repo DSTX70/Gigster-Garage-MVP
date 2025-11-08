@@ -876,6 +876,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user (alias to /api/auth/user)
+  app.get("/api/user", requireAuth, async (req, res) => {
+    try {
+      const freshUser = await storage.getUser(req.session.user!.id);
+      if (!freshUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(freshUser);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user data" });
+    }
+  });
+
+  // Update user profile (for onboarding and brand settings)
+  app.patch("/api/user/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const updateData = req.body;
+      
+      // Update user in database
+      const user = await storage.updateUser(userId, updateData);
+      
+      // Update session
+      req.session.user = user;
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+        }
+      });
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Complete onboarding
+  app.post("/api/user/complete-onboarding", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const user = await storage.updateUser(userId, { hasCompletedOnboarding: true });
+      
+      // Update session
+      req.session.user = user;
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+        }
+      });
+      
+      res.json({ success: true, user });
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      res.status(500).json({ message: "Failed to complete onboarding" });
+    }
+  });
+
   // User management routes (admin only)
   app.get("/api/users", requireAdmin, cacheMiddleware(600), async (req, res) => {
     try {
