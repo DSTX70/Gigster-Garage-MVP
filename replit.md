@@ -39,7 +39,8 @@ Security features include a two-tier resource permission model (OWNED/SHARED), a
 -   **Agent Exposure Policy**: Policy-based agent governance system with autonomy levels (L0/L1), exposure rules, and promotion criteria defined in `policy/agent_exposure_policy.json`.
 -   **Pricing & Feature Flags**: Environment-aware feature flags and a three-tier pricing comparison matrix.
 -   **Notifications**: Email (SendGrid) and SMS (Twilio) notifications.
--   **User Management**: Multi-user authentication, role-based access, onboarding, and an admin dashboard.
+-   **User Management**: Multi-user authentication, role-based access, guided onboarding system (under 10 minutes setup), and an admin dashboard.
+-   **Guided Onboarding System**: Streamlined 3-minute quick-start flow (`/quick-start`) collecting business essentials, dedicated brand development wizard (`/settings/brand`) with asset management, brand identity builder, and AI-powered brand wizard. Enforces completion before app access with intelligent redirect logic preventing race conditions.
 -   **Social Queue System**: End-to-end social media posting pipeline with webhook integration, database-backed queue, rate limiting, media pre-flight validation and caching, audit logging, and admin operations for managing posts and monitoring rate limits.
 -   **Platform Connections Management**: Secure credential storage and management for social media platforms (X/Twitter, Instagram, LinkedIn) with encrypted storage, connection testing, and user-friendly setup interface.
 -   **Production Monitoring**: Advanced monitoring dashboard with real-time SLO metrics, queue statistics, visual charts, system health indicators, and auto-refresh capabilities for production operations.
