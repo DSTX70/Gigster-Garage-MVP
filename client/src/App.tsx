@@ -9,7 +9,7 @@ import { DemoModeProvider } from "@/hooks/useDemoMode";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { DemoSessionWarning } from "@/components/DemoSessionWarning";
 import { DemoModeStatusBar } from "@/components/DemoModeBanner";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Home from "@/pages/home";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
@@ -99,7 +99,7 @@ function Router() {
   }
 
   // Only call useAuth for non-mobile routes
-  const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
+  const { user, isAuthenticated, isLoading, isFetching, isAdmin } = useAuth();
 
   // Redirect authenticated users away from login/signup pages
   useEffect(() => {
@@ -107,6 +107,17 @@ function Router() {
       setLocation('/');
     }
   }, [isAuthenticated, location, setLocation]);
+
+  // Dual-phase onboarding guard: enforce quick-start unless user just completed (during refetch)
+  useEffect(() => {
+    if (!user) return;
+    
+    // Enforce quick-start for incomplete users, but suspend during cache refetch
+    // to prevent redirect loop when user completes onboarding
+    if (!user.hasCompletedOnboarding && location !== '/quick-start' && !isFetching) {
+      setLocation('/quick-start');
+    }
+  }, [user, location, isFetching, setLocation]);
 
   if (isLoading) {
     return (
@@ -130,14 +141,6 @@ function Router() {
         <Route component={Landing} />
       </Switch>
     );
-  }
-
-  // Check if user needs to complete onboarding
-  // Allow access to quick-start page even if onboarding incomplete
-  if (user && !user.hasCompletedOnboarding && location !== '/quick-start') {
-    useEffect(() => {
-      setLocation('/quick-start');
-    }, [setLocation]);
   }
 
   return (

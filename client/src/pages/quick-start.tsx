@@ -53,7 +53,7 @@ export default function QuickStartPage() {
       return apiRequest("POST", "/api/user/complete-onboarding", {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome to Gigster Garage!",
         description: "You're all set. Let's start building!",

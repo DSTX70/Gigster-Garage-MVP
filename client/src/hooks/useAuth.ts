@@ -6,7 +6,7 @@ interface AuthResponse {
 }
 
 export function useAuth() {
-  const { data, isLoading, error } = useQuery<AuthResponse>({
+  const { data, isLoading, isFetching, error } = useQuery<AuthResponse>({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
@@ -16,6 +16,7 @@ export function useAuth() {
   return {
     user,
     isLoading,
+    isFetching,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     isDemoUser: !!user?.isDemo,
