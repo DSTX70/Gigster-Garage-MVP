@@ -84,3 +84,42 @@ export const CoachHistoryItem = z.object({
 });
 
 export type CoachHistoryItem = z.infer<typeof CoachHistoryItem>;
+
+// v1.1 - Suggestions Inbox
+export const SuggestionStatus = z.enum(["open", "applied", "dismissed"]);
+export type SuggestionStatus = z.infer<typeof SuggestionStatus>;
+
+export const CoachSuggestionRecord = z.object({
+  id: z.string(),
+  userId: z.string(),
+  status: SuggestionStatus,
+  sourceIntent: CoachIntent,
+  title: z.string(),
+  reason: z.string().nullable().optional(),
+  severity: z.enum(["info", "warn", "critical"]).default("info"),
+  actionType: z.enum(["insert_text", "add_checklist_item", "open_next_step", "none"]).default("none"),
+  payload: z.record(z.any()).nullable().optional(),
+  contextRef: CoachContextRef.nullable().optional(),
+  createdAt: z.string(),
+  appliedAt: z.string().nullable().optional(),
+  dismissedAt: z.string().nullable().optional(),
+});
+export type CoachSuggestionRecord = z.infer<typeof CoachSuggestionRecord>;
+
+export const GetSuggestionsQuery = z.object({
+  status: SuggestionStatus.optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+});
+export type GetSuggestionsQuery = z.infer<typeof GetSuggestionsQuery>;
+
+export const ApplySuggestionRequest = z.object({
+  appliedPayload: z.record(z.any()).optional(),
+});
+export type ApplySuggestionRequest = z.infer<typeof ApplySuggestionRequest>;
+
+export const ApplySuggestionResponse = z.object({
+  ok: z.boolean(),
+  id: z.string(),
+  status: SuggestionStatus,
+});
+export type ApplySuggestionResponse = z.infer<typeof ApplySuggestionResponse>;

@@ -65,6 +65,7 @@ import RateLimitsPage from "@/pages/ops/RateLimitsPage";
 import ConnectionsPage from "@/pages/settings/connections";
 import MonitoringDashboard from "@/pages/monitoring/dashboard";
 import GigsterCoachPage from "@/pages/gigster-coach";
+import GigsterCoachSuggestionsPage from "@/pages/gigster-coach-suggestions";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsGuide } from "@/components/KeyboardShortcutsGuide";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -173,6 +174,7 @@ function Router() {
       <Route path="/workflow-automation" component={WorkflowAutomation} />
       <Route path="/garage-assistant" component={GarageAssistant} />
       <Route path="/gigster-coach" component={GigsterCoachPage} />
+      <Route path="/gigster-coach/suggestions" component={GigsterCoachSuggestionsPage} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/ai-insights" component={AIInsights} />
       <Route path="/team-collaboration" component={TeamCollaboration} />

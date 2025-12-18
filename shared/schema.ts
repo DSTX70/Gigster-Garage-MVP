@@ -1528,6 +1528,26 @@ export const insertGigsterCoachInteractionSchema = createInsertSchema(gigsterCoa
   createdAt: true,
 });
 
+// GigsterCoach Suggestions (v1.1)
+export const gigsterCoachSuggestions = pgTable("gigster_coach_suggestions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  status: varchar("status", { enum: ["open", "applied", "dismissed"] }).default("open").notNull(),
+  sourceIntent: varchar("source_intent", { enum: ["ask", "draft", "review", "suggest"] }).notNull(),
+  title: varchar("title").notNull(),
+  reason: text("reason"),
+  severity: varchar("severity", { enum: ["info", "warn", "critical"] }).default("info").notNull(),
+  actionType: varchar("action_type", { enum: ["insert_text", "add_checklist_item", "open_next_step", "none"] }).default("none").notNull(),
+  payload: jsonb("payload").$type<Record<string, any>>(),
+  contextRef: jsonb("context_ref").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  appliedAt: timestamp("applied_at"),
+  dismissedAt: timestamp("dismissed_at"),
+});
+
+export type GigsterCoachSuggestion = typeof gigsterCoachSuggestions.$inferSelect;
+export type InsertGigsterCoachSuggestion = typeof gigsterCoachSuggestions.$inferInsert;
+
 // Loyalty Rewards Ledger
 export const loyaltyLedger = pgTable("loyalty_ledger", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

@@ -124,8 +124,53 @@ export class GigsterCoachService {
         reason: "Reduces overdue risk and sets expectations.",
         severity: "info",
         actionType: "insert_text",
-        payload: { location: "terms" },
+        payload: {
+          type: "append_text",
+          payload: {
+            target: "invoice.terms",
+            text: "\nLate fee: Payments past due may incur a late fee of X% per month (or $X) unless prohibited by law.\n",
+          },
+        },
       });
+    }
+
+    // v1.1: Add baseline business coach suggestions for suggest intent
+    if (req.intent === "suggest") {
+      suggestions.push(
+        {
+          id: "followup-cadence",
+          title: "Create a 2-touch follow-up cadence for overdue invoices",
+          reason: "Consistent follow-ups reduce late payments without sounding aggressive.",
+          severity: "info",
+          actionType: "open_next_step",
+          payload: {
+            type: "append_text",
+            payload: { target: "invoice.notes", text: "\nFollowup sequence initiated." },
+          },
+        },
+        {
+          id: "package-offer",
+          title: "Turn your most common request into a 3-tier package",
+          reason: "Packages improve conversion and reduce custom-scoping time.",
+          severity: "info",
+          actionType: "open_next_step",
+          payload: { next: "service_packaging_wizard" },
+        },
+        {
+          id: "terms-revisions",
+          title: "Add a revision limit to your proposal templates",
+          reason: "Revision limits prevent scope creep and protect profitability.",
+          severity: "warn",
+          actionType: "insert_text",
+          payload: {
+            type: "append_text",
+            payload: {
+              target: "proposal.terms",
+              text: "\nRevisions: Includes up to two revision rounds. Additional revisions billed at $X/hour.\n",
+            },
+          },
+        }
+      );
     }
 
     const resp = CoachResponse.parse({

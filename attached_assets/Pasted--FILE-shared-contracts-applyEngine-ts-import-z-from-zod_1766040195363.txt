@@ -1,0 +1,93 @@
+// FILE: shared/contracts/applyEngine.ts
+import { z } from "zod";
+
+/**
+ * Apply Engine is intentionally narrow:
+ * - Only whitelisted actions
+ * - Only whitelisted targets (field IDs)
+ * - Client executes; server validates + records
+ */
+
+export const ApplyTarget = z.enum([
+  // Invoice
+  "invoice.terms",
+  "invoice.notes",
+  "invoice.lineItems",
+
+  // Proposal
+  "proposal.scope",
+  "proposal.terms",
+  "proposal.outline",
+
+  // Message
+  "message.subject",
+  "message.body",
+
+  // Service listing (future)
+  "service.description",
+]);
+
+export type ApplyTarget = z.infer<typeof ApplyTarget>;
+
+export const ApplyActionType = z.enum([
+  "insert_text",   // insert at cursor if supported; otherwise append
+  "append_text",   // append at end (safe default)
+  "replace_text",  // replace whole field (requires user confirmation in UI)
+  "add_line_item", // add structured line item (invoice)
+]);
+
+export type ApplyActionType = z.infer<typeof ApplyActionType>;
+
+export const InsertTextPayload = z.object({
+  target: ApplyTarget,
+  text: z.string().min(1).max(10_000),
+  mode: z.enum(["append", "insert"]).default("append"),
+});
+
+export const AppendTextPayload = z.object({
+  target: ApplyTarget,
+  text: z.string().min(1).max(10_000),
+});
+
+export const ReplaceTextPayload = z.object({
+  target: ApplyTarget,
+  text: z.string().min(1).max(20_000),
+  // client UI should require explicit confirmation before executing replace
+  requireConfirm: z.literal(true).default(true),
+});
+
+export const AddLineItemPayload = z.object({
+  target: z.literal("invoice.lineItems"),
+  item: z.object({
+    description: z.string().min(1).max(300),
+    quantity: z.number().min(1).max(999).default(1),
+    unitPriceCents: z.number().int().min(0).max(100_000_000),
+  }),
+});
+
+export const ApplyPayload = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("insert_text"), payload: InsertTextPayload }),
+  z.object({ type: z.literal("append_text"), payload: AppendTextPayload }),
+  z.object({ type: z.literal("replace_text"), payload: ReplaceTextPayload }),
+  z.object({ type: z.literal("add_line_item"), payload: AddLineItemPayload }),
+]);
+
+export type ApplyPayload = z.infer<typeof ApplyPayload>;
+
+/** Server-side validation wrapper */
+export const ApplySuggestionExecuteRequest = z.object({
+  // echo of the suggestion payload for validation (server does not trust client)
+  apply: ApplyPayload,
+  // optional: for audit only
+  context: z.record(z.any()).optional(),
+});
+
+export type ApplySuggestionExecuteRequest = z.infer<typeof ApplySuggestionExecuteRequest>;
+
+export const ApplySuggestionExecuteResponse = z.object({
+  ok: z.boolean(),
+  suggestionId: z.string(),
+  status: z.enum(["applied"]),
+});
+
+export type ApplySuggestionExecuteResponse = z.infer<typeof ApplySuggestionExecuteResponse>;

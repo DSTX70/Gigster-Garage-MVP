@@ -45,6 +45,9 @@ Security features include a two-tier resource permission model (OWNED/SHARED), a
 -   **Platform Connections Management**: Secure credential storage and management for social media platforms (X/Twitter, Instagram, LinkedIn) with encrypted storage, connection testing, and user-friendly setup interface.
 -   **Production Monitoring**: Advanced monitoring dashboard with real-time SLO metrics, queue statistics, visual charts, system health indicators, and auto-refresh capabilities for production operations.
 -   **GigsterCoach**: AI business coach module (`/gigster-coach`) with three modes: Ask (general Q&A), Draft (content generation for invoices/proposals/contracts), and Review (completeness checklists). Features plan-gated access (Pro+ for proactive suggestions), policy-governed autonomy (L0/L1), conversation history persistence, and embedded coach capabilities for builders. Contracts defined in `shared/contracts/gigsterCoach.ts`.
+    -   **v1.1 Suggestions Inbox** (`/gigster-coach/suggestions`): Persistent inbox for coach suggestions with apply/dismiss actions. Database-backed (`gigster_coach_suggestions` table) with user ownership enforcement.
+    -   **v1.2 Apply Engine**: Typed, whitelisted action system for safe field modifications. Client executes, server validates. Contracts in `shared/contracts/applyEngine.ts`. Supports `append_text`, `insert_text`, `replace_text`, and `add_line_item` actions on whitelisted targets (invoice.terms, proposal.scope, etc.).
+    -   **CoachSidebar Component**: Embeddable sidebar (`client/src/components/gigsterCoach/CoachSidebar.tsx`) for invoice/proposal/message editors with ask/draft/review modes and inline suggestion handling.
 
 ### System Design Choices
 
