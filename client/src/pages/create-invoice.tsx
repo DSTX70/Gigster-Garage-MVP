@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, TimeLog } from "@shared/schema";
 import { TimeImportDialog } from "@/components/time-import-dialog";
+import { CoachSidebar } from "@/components/gigsterCoach/CoachSidebar";
 
 interface LineItem {
   id: number;
@@ -899,6 +900,19 @@ export default function CreateInvoice() {
               </div>
             </CardContent>
           </Card>
+
+          {/* GigsterCoach Assistant */}
+          <CoachSidebar
+            surface="invoice"
+            contextRef={{ clientName: formData.clientName }}
+            structuredFields={{ notes: formData.notes, lineItems }}
+            artifactText={formData.notes}
+            onInsertText={(text) => {
+              const updated = formData.notes + text;
+              updateFormData("notes", updated);
+              setNotesCount(updated.length);
+            }}
+          />
 
           {/* Action Buttons */}
           <Card>

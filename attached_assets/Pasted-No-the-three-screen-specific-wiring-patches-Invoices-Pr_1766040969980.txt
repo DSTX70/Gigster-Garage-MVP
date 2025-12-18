@@ -1,0 +1,114 @@
+No — the **three screen-specific wiring patches (Invoices / Proposals / Messages)** are **not** in the v1.2 zip.
+
+What *is* in `gigster-garage_gigstercoach_apply-engine-patch_v1-2_2025-12-17.zip`:
+
+* `shared/contracts/applyEngine.ts` (typed contract + whitelist targets/actions)
+* `client/src/lib/applyEngine.ts` (pure apply helpers)
+* `client/src/components/gigstercoach/SuggestionApplyButton.tsx` (server-validated apply + local mutate)
+* server-side whitelist + stable JSON + validate + audit + route module + optional SQL migration
+
+So: **engine shipped**, but **page wiring is intentionally left to your actual form state names**.
+
+---
+
+## Paste these snippets (so we don’t guess wrong)
+
+For each page (Invoices / Proposals / Messages), paste:
+
+1. **FILE PATH** (exact)
+2. The **state definitions** for the editable field:
+
+* either the `useState(...)` line(s) (e.g., `const [invoiceDraft, setInvoiceDraft] = …`)
+* or your form lib bits (e.g., `useForm`, `watch/getValues`, `setValue`, `form.values`, etc.)
+
+3. The **UI control** that edits the field (the `<textarea>` / editor component for terms/body), plus the section where the **GigsterCoach sidebar/suggestions UI** is rendered (even 30–60 lines is enough).
+
+Once you paste those, I’ll generate the exact `FILE: …` patch blocks for each page.
+
+---
+
+## Meanwhile: ready-to-fill patch templates (no guessing, just placeholders)
+
+### FILE: <INVOICES_PAGE_PATH>
+
+```ts
+// +++ ADD imports +++
+import type { ApplyPayload } from "../../../shared/contracts/applyEngine";
+import { SuggestionApplyButton } from "../components/gigstercoach/SuggestionApplyButton"; // adjust relative path
+
+// +++ ADD adapter around YOUR field state (replace placeholders) +++
+// Replace INVOICE_TERMS_VALUE + SET_INVOICE_TERMS with your real variables.
+const coachDraft = React.useMemo(
+  () => ({ invoice: { terms: INVOICE_TERMS_VALUE } }),
+  [INVOICE_TERMS_VALUE]
+);
+
+const setCoachDraft = React.useCallback((next: any) => {
+  SET_INVOICE_TERMS(next?.invoice?.terms ?? "");
+}, [SET_INVOICE_TERMS]);
+
+// +++ WHERE you render each suggestion item/action button +++
+const payload: ApplyPayload = suggestion.applyPayload; // <- use your real suggestion payload field
+
+<SuggestionApplyButton
+  suggestionId={suggestion.id}
+  payload={payload}
+  draft={coachDraft}
+  setDraft={setCoachDraft}
+  onApplied={() => {/* optional: refresh suggestions */}}
+/>;
+```
+
+### FILE: <PROPOSALS_PAGE_PATH>
+
+```ts
+import type { ApplyPayload } from "../../../shared/contracts/applyEngine";
+import { SuggestionApplyButton } from "../components/gigstercoach/SuggestionApplyButton"; // adjust
+
+const coachDraft = React.useMemo(
+  () => ({ proposal: { terms: PROPOSAL_TERMS_VALUE } }),
+  [PROPOSAL_TERMS_VALUE]
+);
+
+const setCoachDraft = React.useCallback((next: any) => {
+  SET_PROPOSAL_TERMS(next?.proposal?.terms ?? "");
+}, [SET_PROPOSAL_TERMS]);
+
+const payload: ApplyPayload = suggestion.applyPayload;
+
+<SuggestionApplyButton
+  suggestionId={suggestion.id}
+  payload={payload}
+  draft={coachDraft}
+  setDraft={setCoachDraft}
+/>;
+```
+
+### FILE: <MESSAGES_PAGE_PATH>
+
+```ts
+import type { ApplyPayload } from "../../../shared/contracts/applyEngine";
+import { SuggestionApplyButton } from "../components/gigstercoach/SuggestionApplyButton"; // adjust
+
+const coachDraft = React.useMemo(
+  () => ({ message: { body: MESSAGE_BODY_VALUE } }),
+  [MESSAGE_BODY_VALUE]
+);
+
+const setCoachDraft = React.useCallback((next: any) => {
+  SET_MESSAGE_BODY(next?.message?.body ?? "");
+}, [SET_MESSAGE_BODY]);
+
+const payload: ApplyPayload = suggestion.applyPayload;
+
+<SuggestionApplyButton
+  suggestionId={suggestion.id}
+  payload={payload}
+  draft={coachDraft}
+  setDraft={setCoachDraft}
+/>;
+```
+
+If you’re using React Hook Form (or similar) instead of `useState`, paste that snippet and I’ll generate the exact version using `watch/getValues/setValue` so it’s drop-in.
+
+Send the three snippets and I’ll reply with the **exact** `FILE:` patch blocks (correct paths + correct variables + correct insertion points).

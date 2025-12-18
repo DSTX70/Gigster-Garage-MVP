@@ -1,4 +1,4 @@
-type ApplyPayload =
+export type ApplyPayload =
   | { type: "insert_text"; payload: { target: string; text: string; mode?: "append" | "insert" } }
   | { type: "append_text"; payload: { target: string; text: string } }
   | { type: "replace_text"; payload: { target: string; text: string; requireConfirm?: true } }
@@ -10,6 +10,7 @@ const ALLOWED_TARGETS = new Set([
   "invoice.lineItems",
   "proposal.scope",
   "proposal.terms",
+  "proposal.deliverables",
   "proposal.outline",
   "message.subject",
   "message.body",
@@ -27,15 +28,16 @@ export function applyPayloadToDraft<TDraft extends Record<string, any>>(
   }
 
   const map: Record<string, (d: Record<string, any>) => { get(): any; set(v: any): void }> = {
-    "invoice.terms": (d) => ({ get: () => d["terms"] ?? "", set: (v) => (d["terms"] = v) }),
-    "invoice.notes": (d) => ({ get: () => d["notes"] ?? "", set: (v) => (d["notes"] = v) }),
-    "invoice.lineItems": (d) => ({ get: () => d["lineItems"] ?? [], set: (v) => (d["lineItems"] = v) }),
-    "proposal.scope": (d) => ({ get: () => d["scope"] ?? "", set: (v) => (d["scope"] = v) }),
-    "proposal.terms": (d) => ({ get: () => d["terms"] ?? "", set: (v) => (d["terms"] = v) }),
-    "proposal.outline": (d) => ({ get: () => d["outline"] ?? "", set: (v) => (d["outline"] = v) }),
-    "message.subject": (d) => ({ get: () => d["subject"] ?? "", set: (v) => (d["subject"] = v) }),
-    "message.body": (d) => ({ get: () => d["body"] ?? "", set: (v) => (d["body"] = v) }),
-    "service.description": (d) => ({ get: () => d["description"] ?? "", set: (v) => (d["description"] = v) }),
+    "invoice.terms": (d) => ({ get: () => d.invoice?.terms ?? "", set: (v) => { d.invoice = { ...d.invoice, terms: v }; } }),
+    "invoice.notes": (d) => ({ get: () => d.invoice?.notes ?? "", set: (v) => { d.invoice = { ...d.invoice, notes: v }; } }),
+    "invoice.lineItems": (d) => ({ get: () => d.invoice?.lineItems ?? [], set: (v) => { d.invoice = { ...d.invoice, lineItems: v }; } }),
+    "proposal.scope": (d) => ({ get: () => d.proposal?.scope ?? "", set: (v) => { d.proposal = { ...d.proposal, scope: v }; } }),
+    "proposal.terms": (d) => ({ get: () => d.proposal?.terms ?? "", set: (v) => { d.proposal = { ...d.proposal, terms: v }; } }),
+    "proposal.deliverables": (d) => ({ get: () => d.proposal?.deliverables ?? "", set: (v) => { d.proposal = { ...d.proposal, deliverables: v }; } }),
+    "proposal.outline": (d) => ({ get: () => d.proposal?.outline ?? "", set: (v) => { d.proposal = { ...d.proposal, outline: v }; } }),
+    "message.subject": (d) => ({ get: () => d.message?.subject ?? "", set: (v) => { d.message = { ...d.message, subject: v }; } }),
+    "message.body": (d) => ({ get: () => d.message?.body ?? "", set: (v) => { d.message = { ...d.message, body: v }; } }),
+    "service.description": (d) => ({ get: () => d.service?.description ?? "", set: (v) => { d.service = { ...d.service, description: v }; } }),
   };
 
   const accessor = map[target];

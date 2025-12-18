@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { AppHeader } from "@/components/app-header";
@@ -15,6 +15,7 @@ import { Mail, MailOpen, Reply, Trash2, ArrowLeft, Paperclip, Send, X, FileText,
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { CoachSidebar } from "@/components/gigsterCoach/CoachSidebar";
 
 interface Message {
   id: string;
@@ -471,6 +472,17 @@ export function MessagesPage() {
                     data-testid="textarea-message-content"
                   />
                 </div>
+                
+                {/* GigsterCoach Assistant */}
+                <CoachSidebar
+                  surface="message"
+                  contextRef={{ to: composeData.to }}
+                  structuredFields={{ subject: composeData.subject, body: composeData.content }}
+                  artifactText={composeData.content}
+                  onInsertText={(text) => {
+                    setComposeData(prev => ({ ...prev, content: prev.content + text }));
+                  }}
+                />
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsComposeOpen(false)} data-testid="button-cancel-compose">

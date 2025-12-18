@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { ArrowLeft, FileText, Plus, X, Send, Download, Eye, PenTool, Loader2, Ch
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@shared/schema";
+import { CoachSidebar } from "@/components/gigsterCoach/CoachSidebar";
 
 interface LineItem {
   id: number;
@@ -895,6 +896,19 @@ export default function CreateProposal() {
               </div>
             </CardContent>
           </Card>
+
+          {/* GigsterCoach Assistant */}
+          <CoachSidebar
+            surface="proposal"
+            contextRef={{ title: formData.title, clientName: formData.clientName }}
+            structuredFields={{ deliverables: formData.deliverables, terms: formData.terms }}
+            artifactText={formData.terms}
+            onInsertText={(text) => {
+              const updated = formData.terms + text;
+              updateFormData("terms", updated);
+              setTermsCount(updated.length);
+            }}
+          />
 
           {/* Action Buttons */}
           <Card>
