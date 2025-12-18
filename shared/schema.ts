@@ -1507,6 +1507,27 @@ export const insertSocialQueueSchema = createInsertSchema(socialQueue).omit({
   createdAt: true,
 });
 
+// GigsterCoach Interactions
+export const gigsterCoachInteractions = pgTable("gigster_coach_interactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  intent: varchar("intent", { enum: ["ask", "draft", "review", "suggest"] }).notNull(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  contextRef: jsonb("context_ref").$type<Record<string, any>>(),
+  model: varchar("model"),
+  tokensUsed: integer("tokens_used"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type GigsterCoachInteraction = typeof gigsterCoachInteractions.$inferSelect;
+export type InsertGigsterCoachInteraction = typeof gigsterCoachInteractions.$inferInsert;
+
+export const insertGigsterCoachInteractionSchema = createInsertSchema(gigsterCoachInteractions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Loyalty Rewards Ledger
 export const loyaltyLedger = pgTable("loyalty_ledger", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

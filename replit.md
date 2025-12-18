@@ -44,6 +44,7 @@ Security features include a two-tier resource permission model (OWNED/SHARED), a
 -   **Social Queue System**: End-to-end social media posting pipeline with webhook integration, database-backed queue, rate limiting, media pre-flight validation and caching, audit logging, and admin operations for managing posts and monitoring rate limits.
 -   **Platform Connections Management**: Secure credential storage and management for social media platforms (X/Twitter, Instagram, LinkedIn) with encrypted storage, connection testing, and user-friendly setup interface.
 -   **Production Monitoring**: Advanced monitoring dashboard with real-time SLO metrics, queue statistics, visual charts, system health indicators, and auto-refresh capabilities for production operations.
+-   **GigsterCoach**: AI business coach module (`/gigster-coach`) with three modes: Ask (general Q&A), Draft (content generation for invoices/proposals/contracts), and Review (completeness checklists). Features plan-gated access (Pro+ for proactive suggestions), policy-governed autonomy (L0/L1), conversation history persistence, and embedded coach capabilities for builders. Contracts defined in `shared/contracts/gigsterCoach.ts`.
 
 ### System Design Choices
 

@@ -1,0 +1,808 @@
+Below is the **Contract Spec + Routes** package in **Doc Export + Replit Drop** format, aligned to your current repo (`client/`, `server/`, `shared/`, `worker/`, `policy/`) and your existing rails (`requireAuth`, `requirePlan`, policy JSON L0/L1, audit/rate limits).
+
+---
+
+```text
+DOC_EXPORT_V1
+
+TITLE: GigsterCoach — Contract Spec + Routes v1.0
+CANONICAL_FILENAME: gigster-garage_gigstercoach_contract-spec_v1-0_2025-12-17.md
+VERSION: v1.0
+DATE: 2025-12-17
+PROJECT: Gigster Garage (ROOT THREAD)
+OWNER: Dustin Sparks
+CONFIDENTIALITY: Confidential and proprietary and copyright Dustin Sparks 2025
+
+SUMMARY
+GigsterCoach is an AI “business coach” module for gigsters:
+- Embedded coaching in existing builders (invoices/proposals/contracts/messages)
+- Ask-an-Expert “How can I…” hub
+- Optional proactive suggestions (subscription add-on, policy-governed)
+
+This spec defines:
+- Shared contracts (Zod DTOs)
+- Server routes + service layer
+- Plan gating + policy enforcement
+- Minimal persistence for coach history
+- Minimal client hub page + in-flow widget hook
+
+------------------------------------------------------------
+1) DEFINITIONS
+------------------------------------------------------------
+
+1.1 Coach Modes
+- Embedded Coach (in-flow): drafts + reviews inside an artifact screen
+- Ask-an-Expert Hub: general “How can I…” Q&A
+
+1.2 Autonomy Boundaries
+- L0 (default): assist-only, draft suggestions, checklists, no autonomous sends/posts
+- L1: still human-in-the-loop; can propose multi-step plans; MUST NOT send invoices/messages automatically
+
+------------------------------------------------------------
+2) FEATURE FLAGS / PLAN ENTITLEMENTS
+------------------------------------------------------------
+
+Extend shared plan features with:
+
+- gigsterCoachBase: boolean
+- gigsterCoachAskExpert: boolean
+- gigsterCoachProactive: boolean
+- gigsterCoachProfitInsights: boolean
+- gigsterCoachMonthlyTokens: number
+
+Recommended tier defaults:
+- Free: base + ask-expert true, proactive false, insights false, coach tokens small
+- Pro: all true, higher tokens
+- Enterprise: all true, highest tokens + admin controls
+
+------------------------------------------------------------
+3) SHARED CONTRACTS (ZOD) — /shared/contracts/gigsterCoach.ts
+------------------------------------------------------------
+
+Context scope must be explicit, minimal, and user-controlled.
+
+Core types:
+- CoachContextRef: points to a resource the user is actively working on (invoiceId, proposalId, taskId, etc.)
+- CoachRequest: question + context + intent
+- CoachResponse: answer + structured suggestions + checklist
+- CoachSuggestion: small, actionable items that are safe to apply
+- CoachHistoryItem: stored interaction
+
+Intents:
+- ask: general “how can I…”
+- draft: generate copy for a specific artifact
+- review: completeness/clarity checks
+- suggest: proactive recommendations (Pro+)
+
+------------------------------------------------------------
+4) API ROUTES — /server/routes/gigsterCoach.route.ts
+------------------------------------------------------------
+
+Base (requireAuth):
+- POST /api/gigster-coach/ask
+- POST /api/gigster-coach/draft
+- POST /api/gigster-coach/review
+- GET  /api/gigster-coach/history
+
+Pro (requireAuth + requirePlan("pro")):
+- POST /api/gigster-coach/suggest
+
+All endpoints:
+- Validate payload with Zod
+- Enforce plan entitlements
+- Enforce policy autonomy
+- Write interaction to storage table
+- Emit audit events (best-effort)
+
+------------------------------------------------------------
+5) MINIMAL PERSISTENCE
+------------------------------------------------------------
+
+Add one table (v1.0):
+- gigster_coach_interactions
+
+Fields:
+- id (uuid)
+- userId
+- intent
+- question
+- answer
+- contextRef (jsonb)
+- model (text)
+- tokensUsed (int)
+- createdAt
+
+------------------------------------------------------------
+6) CLIENT SURFACES (MINIMAL)
+------------------------------------------------------------
+
+- New page: /gigster-coach
+- Optional embedded panel component to mount in builders
+
+------------------------------------------------------------
+7) CHANGE LOG
+------------------------------------------------------------
+- 2025-12-17: v1.0 spec created (contracts + routes + minimal persistence + client hub scaffolds)
+```
+
+---
+
+## REPLIT DROP PATCH KIT
+
+```text
+REPLIT_DROP_V1
+CANONICAL_FILENAME: gigster-garage_gigstercoach_routes-patch_v1-0_2025-12-17.zip
+VERSION: v1.0
+DATE: 2025-12-17
+PROJECT: Gigster Garage (ROOT THREAD)
+
+PURPOSE
+Add GigsterCoach contract-first module:
+- shared/contracts/gigsterCoach.ts (Zod DTOs)
+- server/routes/gigsterCoach.route.ts (Express routes)
+- server/services/gigsterCoach.service.ts (LLM wrapper + policy gating)
+- shared/schema.ts + migrations for interaction history (minimal)
+- shared/plans.ts extensions
+- client page / route for Ask-an-Expert hub
+
+INSTALL NOTES
+- This patch assumes the repo is ESM (“type”: “module”).
+- Uses existing `requireAuth` and `requirePlan` from server/routes.ts by importing or injecting.
+- Uses `policy/agent_exposure_policy.json` already present for autonomy checks.
+- Uses OpenAI dependency already in repo; if your LLM wrapper differs, swap in your existing ai service.
+
+FILES
+1) shared/contracts/gigsterCoach.ts (NEW)
+2) shared/plans.ts (PATCH)
+3) shared/schema.ts (PATCH - add table) + migrations (NEW)
+4) server/services/gigsterCoach.service.ts (NEW)
+5) server/routes/gigsterCoach.route.ts (NEW)
+6) server/routes.ts (PATCH - mount route)
+7) client/src/pages/gigster-coach.tsx (NEW)
+8) client/src/App.tsx (PATCH - add route)
+
+CHANGE LOG
+- 2025-12-17: GigsterCoach v1.0 contracts + routes patch kit
+```
+
+---
+
+# FILE BLOCKS
+
+## 1) `shared/contracts/gigsterCoach.ts` (NEW)
+
+```ts
+// FILE: shared/contracts/gigsterCoach.ts
+import { z } from "zod";
+
+export const CoachIntent = z.enum(["ask", "draft", "review", "suggest"]);
+export type CoachIntent = z.infer<typeof CoachIntent>;
+
+export const CoachContextRef = z.object({
+  // Explicitly scoped references; only include what user is actively working on.
+  invoiceId: z.string().uuid().optional(),
+  proposalId: z.string().uuid().optional(),
+  contractId: z.string().uuid().optional(),
+  taskId: z.string().uuid().optional(),
+  projectId: z.string().uuid().optional(),
+  clientId: z.string().uuid().optional(),
+  serviceId: z.string().uuid().optional(),
+  bookingId: z.string().uuid().optional(),
+  jobId: z.string().uuid().optional(),
+
+  // UI scope hint (where the coach was invoked)
+  surface: z.enum(["hub", "invoice", "proposal", "contract", "message", "task", "other"]).default("hub"),
+});
+
+export type CoachContextRef = z.infer<typeof CoachContextRef>;
+
+export const CoachDraftTarget = z.enum([
+  "invoice_line_items",
+  "invoice_terms",
+  "proposal_outline",
+  "proposal_scope",
+  "contract_terms",
+  "client_message",
+  "service_description",
+]);
+export type CoachDraftTarget = z.infer<typeof CoachDraftTarget>;
+
+export const CoachSuggestion = z.object({
+  id: z.string(),
+  title: z.string(),
+  reason: z.string().optional(),
+  severity: z.enum(["info", "warn", "critical"]).default("info"),
+  // A safe, user-initiated action type (no autonomous sends)
+  actionType: z.enum(["insert_text", "add_checklist_item", "open_next_step", "none"]).default("none"),
+  payload: z.record(z.any()).optional(),
+});
+
+export type CoachSuggestion = z.infer<typeof CoachSuggestion>;
+
+export const CoachChecklistItem = z.object({
+  id: z.string(),
+  label: z.string(),
+  isComplete: z.boolean().default(false),
+  helpText: z.string().optional(),
+});
+
+export const CoachRequest = z.object({
+  intent: CoachIntent,
+  question: z.string().min(1).max(4000),
+
+  // Optional structured inputs (recommended for drafting/review)
+  draftTarget: CoachDraftTarget.optional(),
+  artifactText: z.string().max(20000).optional(), // user-provided or current editor content
+  structuredFields: z.record(z.any()).optional(),  // form fields from invoice/proposal/etc.
+
+  contextRef: CoachContextRef.optional(),
+
+  // Governance knobs
+  requestedAutonomy: z.enum(["L0", "L1"]).default("L0"),
+});
+
+export type CoachRequest = z.infer<typeof CoachRequest>;
+
+export const CoachResponse = z.object({
+  answer: z.string(),
+  suggestions: z.array(CoachSuggestion).default([]),
+  checklist: z.array(CoachChecklistItem).default([]),
+
+  // meta
+  model: z.string().optional(),
+  tokensUsed: z.number().int().nonnegative().optional(),
+});
+
+export type CoachResponse = z.infer<typeof CoachResponse>;
+
+export const CoachHistoryItem = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  intent: CoachIntent,
+  question: z.string(),
+  answer: z.string(),
+  contextRef: CoachContextRef.nullable().optional(),
+  model: z.string().nullable().optional(),
+  tokensUsed: z.number().int().nullable().optional(),
+});
+
+export type CoachHistoryItem = z.infer<typeof CoachHistoryItem>;
+```
+
+---
+
+## 2) `shared/plans.ts` (PATCH)
+
+Add fields to `PlanFeatures`, add defaults to all three plans.
+
+```ts
+// PATCH: shared/plans.ts
+// Add to PlanFeatures interface:
+
+  // GigsterCoach
+  gigsterCoachBase: boolean;          // embedded assist in builders
+  gigsterCoachAskExpert: boolean;     // hub Q&A
+  gigsterCoachProactive: boolean;     // pattern-based nudges (Pro+)
+  gigsterCoachProfitInsights: boolean;// analytics-style coaching (Pro+)
+  gigsterCoachMonthlyTokens: number;  // coach-only token bucket (optional)
+
+// Add to PLAN_FEATURES.free:
+    gigsterCoachBase: true,
+    gigsterCoachAskExpert: true,
+    gigsterCoachProactive: false,
+    gigsterCoachProfitInsights: false,
+    gigsterCoachMonthlyTokens: 10,
+
+// Add to PLAN_FEATURES.pro:
+    gigsterCoachBase: true,
+    gigsterCoachAskExpert: true,
+    gigsterCoachProactive: true,
+    gigsterCoachProfitInsights: true,
+    gigsterCoachMonthlyTokens: 200,
+
+// Add to PLAN_FEATURES.enterprise:
+    gigsterCoachBase: true,
+    gigsterCoachAskExpert: true,
+    gigsterCoachProactive: true,
+    gigsterCoachProfitInsights: true,
+    gigsterCoachMonthlyTokens: 2000,
+```
+
+---
+
+## 3) `shared/schema.ts` (PATCH) + migration (NEW)
+
+### 3a) Schema patch
+
+```ts
+// PATCH: shared/schema.ts
+import { pgTable, varchar, text, timestamp, integer, jsonb } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+// ...existing imports...
+
+export const gigsterCoachInteractions = pgTable("gigster_coach_interactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  intent: varchar("intent", { enum: ["ask", "draft", "review", "suggest"] }).notNull(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  contextRef: jsonb("context_ref").$type<Record<string, any>>(),
+  model: varchar("model"),
+  tokensUsed: integer("tokens_used"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+### 3b) Migration (SQL) — add file:
+
+```sql
+-- FILE: migrations/000X_add_gigster_coach_interactions.sql
+CREATE TABLE IF NOT EXISTS gigster_coach_interactions (
+  id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  intent varchar NOT NULL,
+  question text NOT NULL,
+  answer text NOT NULL,
+  context_ref jsonb,
+  model varchar,
+  tokens_used integer,
+  created_at timestamp DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_gigster_coach_user_created_at
+  ON gigster_coach_interactions (user_id, created_at DESC);
+```
+
+---
+
+## 4) `server/services/gigsterCoach.service.ts` (NEW)
+
+This is intentionally conservative: L0/L1 gating, no autonomous actions, emits suggestions/checklists.
+
+```ts
+// FILE: server/services/gigsterCoach.service.ts
+import fs from "node:fs";
+import path from "node:path";
+import OpenAI from "openai";
+import { CoachRequest, CoachResponse } from "../../shared/contracts/gigsterCoach.js";
+import { getPlanFeatures } from "../../shared/plans.js";
+
+type UserSession = {
+  id: string;
+  role: "admin" | "user";
+  plan?: "free" | "pro" | "enterprise";
+  featuresOverride?: Record<string, boolean | number>;
+};
+
+function loadPolicy() {
+  try {
+    const p = path.join(process.cwd(), "policy", "agent_exposure_policy.json");
+    return JSON.parse(fs.readFileSync(p, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function isAgentExposed(policy: any, agentId: string) {
+  if (!policy?.agents) return false;
+  const agent = policy.agents.find((a: any) => a.id === agentId);
+  return Boolean(agent); // exposure_rule evaluated elsewhere; keep simple for v1
+}
+
+function enforceAutonomy(policy: any, requested: "L0" | "L1") {
+  // For v1, allow L1 only if policy includes L1 at all and agent is present.
+  if (requested === "L0") return { allowed: true, level: "L0" as const };
+  const ok = policy?.autonomy_levels?.includes("L1") ?? false;
+  return { allowed: ok, level: ok ? ("L1" as const) : ("L0" as const) };
+}
+
+export class GigsterCoachService {
+  private openai: OpenAI;
+
+  constructor() {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      // Keep runtime predictable
+      throw new Error("OPENAI_API_KEY missing");
+    }
+    this.openai = new OpenAI({ apiKey });
+  }
+
+  async run(user: UserSession, raw: unknown) {
+    const req = CoachRequest.parse(raw);
+
+    const plan = (user.plan ?? "free") as "free" | "pro" | "enterprise";
+    const features = getPlanFeatures(plan, user.featuresOverride as any);
+
+    // Feature checks
+    if (!features.gigsterCoachBase) {
+      throw Object.assign(new Error("GigsterCoach not enabled"), { status: 402, code: "PLAN_REQUIRED" });
+    }
+    if (req.intent === "ask" && !features.gigsterCoachAskExpert) {
+      throw Object.assign(new Error("Ask-an-Expert requires plan upgrade"), { status: 402 });
+    }
+    if (req.intent === "suggest" && !features.gigsterCoachProactive) {
+      throw Object.assign(new Error("Proactive coaching requires Pro"), { status: 402 });
+    }
+
+    // Policy autonomy gating
+    const policy = loadPolicy();
+    const policyAgentOk = isAgentExposed(policy, "agent.planner") || isAgentExposed(policy, "agent.ledger");
+    const autonomy = enforceAutonomy(policy, req.requestedAutonomy);
+    const effectiveAutonomy = policyAgentOk && autonomy.allowed ? autonomy.level : "L0";
+
+    // System prompt: business coach, no autonomous sends
+    const system = [
+      "You are GigsterCoach — a lightweight business coach for gig workers.",
+      "You must obey these rules:",
+      "- Never claim you sent messages, invoices, or posts.",
+      "- Provide drafts and suggestions only; user must take final action.",
+      "- Ask clarifying questions only if strictly necessary; otherwise make reasonable assumptions and label them.",
+      "- Return concise, actionable guidance with checklists when appropriate.",
+      `- Effective autonomy: ${effectiveAutonomy} (L0 assist-only, L1 still human-in-loop).`,
+    ].join("\n");
+
+    const userMsg = [
+      `Intent: ${req.intent}`,
+      req.draftTarget ? `DraftTarget: ${req.draftTarget}` : "",
+      req.contextRef ? `ContextRef: ${JSON.stringify(req.contextRef)}` : "",
+      req.structuredFields ? `StructuredFields: ${JSON.stringify(req.structuredFields)}` : "",
+      req.artifactText ? `ArtifactText:\n${req.artifactText}` : "",
+      `Question:\n${req.question}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const model = process.env.GIGSTERCOACH_MODEL ?? "gpt-4o-mini";
+
+    const completion = await this.openai.chat.completions.create({
+      model,
+      temperature: 0.3,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: userMsg },
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content ?? "No response.";
+    const tokensUsed = completion.usage?.total_tokens ?? undefined;
+
+    // Lightweight post-processing: suggestions + checklist heuristics
+    const suggestions = [];
+    const checklist = [];
+
+    if (req.intent === "review") {
+      checklist.push(
+        { id: "scope", label: "Scope is clear (deliverables + exclusions)", isComplete: false },
+        { id: "timeline", label: "Timeline/milestones are stated", isComplete: false },
+        { id: "payment", label: "Payment terms are explicit (due date/late fees)", isComplete: false },
+        { id: "revisions", label: "Revision policy is included", isComplete: false }
+      );
+    }
+
+    if (req.intent === "draft" && req.draftTarget === "invoice_terms") {
+      suggestions.push({
+        id: "terms-latefee",
+        title: "Add a late fee clause",
+        reason: "Reduces overdue risk and sets expectations.",
+        severity: "info",
+        actionType: "insert_text",
+        payload: { location: "terms" },
+      });
+    }
+
+    const resp = CoachResponse.parse({
+      answer: content,
+      suggestions,
+      checklist,
+      model,
+      tokensUsed,
+    });
+
+    return resp;
+  }
+}
+```
+
+---
+
+## 5) `server/routes/gigsterCoach.route.ts` (NEW)
+
+```ts
+// FILE: server/routes/gigsterCoach.route.ts
+import type { Express } from "express";
+import { GigsterCoachService } from "../services/gigsterCoach.service.js";
+import { CoachRequest } from "../../shared/contracts/gigsterCoach.js";
+import { db } from "../db.js";
+import { gigsterCoachInteractions } from "../../shared/schema.js";
+import { desc, eq } from "drizzle-orm";
+
+async function auditEmit(event: string, payload: any) {
+  try {
+    const { audit } = await import("../lib/audit.js");
+    await audit.emit(event, payload);
+  } catch {
+    // best-effort; do nothing
+  }
+}
+
+export function mountGigsterCoachRoutes(app: Express, deps: {
+  requireAuth: any;
+  requirePlan: (minPlan: "free" | "pro" | "enterprise") => any;
+}) {
+  const coach = new GigsterCoachService();
+
+  // Base: ask
+  app.post("/api/gigster-coach/ask", deps.requireAuth, async (req, res) => {
+    try {
+      const body = CoachRequest.parse({ ...req.body, intent: "ask" });
+      const user = req.session.user!;
+      const resp = await coach.run(user, body);
+
+      const [row] = await db.insert(gigsterCoachInteractions).values({
+        userId: user.id,
+        intent: "ask",
+        question: body.question,
+        answer: resp.answer,
+        contextRef: body.contextRef ?? null,
+        model: resp.model ?? null,
+        tokensUsed: resp.tokensUsed ?? null,
+      }).returning();
+
+      await auditEmit("gigsterCoach.ask", { userId: user.id, interactionId: row?.id });
+
+      res.json({ ...resp, interactionId: row?.id });
+    } catch (e: any) {
+      res.status(e.status ?? 500).json({ message: e.message ?? "GigsterCoach ask failed" });
+    }
+  });
+
+  // Base: draft
+  app.post("/api/gigster-coach/draft", deps.requireAuth, async (req, res) => {
+    try {
+      const body = CoachRequest.parse({ ...req.body, intent: "draft" });
+      const user = req.session.user!;
+      const resp = await coach.run(user, body);
+
+      const [row] = await db.insert(gigsterCoachInteractions).values({
+        userId: user.id,
+        intent: "draft",
+        question: body.question,
+        answer: resp.answer,
+        contextRef: body.contextRef ?? null,
+        model: resp.model ?? null,
+        tokensUsed: resp.tokensUsed ?? null,
+      }).returning();
+
+      await auditEmit("gigsterCoach.draft", { userId: user.id, interactionId: row?.id });
+
+      res.json({ ...resp, interactionId: row?.id });
+    } catch (e: any) {
+      res.status(e.status ?? 500).json({ message: e.message ?? "GigsterCoach draft failed" });
+    }
+  });
+
+  // Base: review
+  app.post("/api/gigster-coach/review", deps.requireAuth, async (req, res) => {
+    try {
+      const body = CoachRequest.parse({ ...req.body, intent: "review" });
+      const user = req.session.user!;
+      const resp = await coach.run(user, body);
+
+      const [row] = await db.insert(gigsterCoachInteractions).values({
+        userId: user.id,
+        intent: "review",
+        question: body.question,
+        answer: resp.answer,
+        contextRef: body.contextRef ?? null,
+        model: resp.model ?? null,
+        tokensUsed: resp.tokensUsed ?? null,
+      }).returning();
+
+      await auditEmit("gigsterCoach.review", { userId: user.id, interactionId: row?.id });
+
+      res.json({ ...resp, interactionId: row?.id });
+    } catch (e: any) {
+      res.status(e.status ?? 500).json({ message: e.message ?? "GigsterCoach review failed" });
+    }
+  });
+
+  // Pro: suggest (manual trigger for v1)
+  app.post("/api/gigster-coach/suggest", deps.requireAuth, deps.requirePlan("pro"), async (req, res) => {
+    try {
+      const body = CoachRequest.parse({ ...req.body, intent: "suggest" });
+      const user = req.session.user!;
+      const resp = await coach.run(user, body);
+
+      const [row] = await db.insert(gigsterCoachInteractions).values({
+        userId: user.id,
+        intent: "suggest",
+        question: body.question,
+        answer: resp.answer,
+        contextRef: body.contextRef ?? null,
+        model: resp.model ?? null,
+        tokensUsed: resp.tokensUsed ?? null,
+      }).returning();
+
+      await auditEmit("gigsterCoach.suggest", { userId: user.id, interactionId: row?.id });
+
+      res.json({ ...resp, interactionId: row?.id });
+    } catch (e: any) {
+      res.status(e.status ?? 500).json({ message: e.message ?? "GigsterCoach suggest failed" });
+    }
+  });
+
+  // History
+  app.get("/api/gigster-coach/history", deps.requireAuth, async (req, res) => {
+    try {
+      const user = req.session.user!;
+      const limit = Math.min(Number(req.query.limit ?? 50), 200);
+
+      const rows = await db.select().from(gigsterCoachInteractions)
+        .where(eq(gigsterCoachInteractions.userId, user.id))
+        .orderBy(desc(gigsterCoachInteractions.createdAt))
+        .limit(limit);
+
+      res.json(rows);
+    } catch (e: any) {
+      res.status(500).json({ message: "Failed to load coach history" });
+    }
+  });
+}
+```
+
+---
+
+## 6) `server/routes.ts` (PATCH — mount the route)
+
+Add import near other route mounts, then mount after middleware is ready (near other mounts).
+
+```ts
+// PATCH: server/routes.ts
+import { mountGigsterCoachRoutes } from "./routes/gigsterCoach.route.js";
+
+// After requireAuth / requirePlan are defined (or anywhere below them), mount:
+mountGigsterCoachRoutes(app, { requireAuth, requirePlan });
+```
+
+---
+
+## 7) Client page `client/src/pages/gigster-coach.tsx` (NEW)
+
+```tsx
+// FILE: client/src/pages/gigster-coach.tsx
+import { useState } from "react";
+import { apiRequest } from "../lib/queryClient";
+import { useAuth } from "../hooks/useAuth";
+
+type CoachResp = {
+  answer: string;
+  suggestions?: any[];
+  checklist?: any[];
+  interactionId?: string;
+  model?: string;
+  tokensUsed?: number;
+};
+
+export default function GigsterCoachPage() {
+  const { isAuthenticated } = useAuth();
+  const [q, setQ] = useState("");
+  const [resp, setResp] = useState<CoachResp | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-semibold">GigsterCoach</h1>
+        <p className="mt-2 text-sm opacity-80">Please log in to use GigsterCoach.</p>
+      </div>
+    );
+  }
+
+  async function ask() {
+    setLoading(true);
+    setResp(null);
+    try {
+      const r = await apiRequest<CoachResp>("POST", "/api/gigster-coach/ask", {
+        question: q,
+        requestedAutonomy: "L0",
+        contextRef: { surface: "hub" },
+      });
+      setResp(r);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="p-6 space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold">GigsterCoach</h1>
+        <p className="text-sm opacity-80">Ask “How can I…” questions and get actionable steps.</p>
+      </div>
+
+      <div className="space-y-2">
+        <textarea
+          className="w-full min-h-[120px] rounded-md border p-3"
+          placeholder='Example: “How can I get clients to pay faster without sounding pushy?”'
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        <button
+          className="rounded-md border px-4 py-2"
+          onClick={ask}
+          disabled={loading || !q.trim()}
+        >
+          {loading ? "Thinking…" : "Ask GigsterCoach"}
+        </button>
+      </div>
+
+      {resp && (
+        <div className="rounded-md border p-4 space-y-3">
+          <div className="text-sm opacity-70">
+            {resp.interactionId ? `Saved: ${resp.interactionId}` : ""}{" "}
+            {resp.model ? `• Model: ${resp.model}` : ""}{" "}
+            {typeof resp.tokensUsed === "number" ? `• Tokens: ${resp.tokensUsed}` : ""}
+          </div>
+          <div className="whitespace-pre-wrap">{resp.answer}</div>
+
+          {resp.checklist?.length ? (
+            <div>
+              <h2 className="font-semibold">Checklist</h2>
+              <ul className="list-disc pl-5 text-sm">
+                {resp.checklist.map((c: any) => (
+                  <li key={c.id}>{c.label}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {resp.suggestions?.length ? (
+            <div>
+              <h2 className="font-semibold">Suggestions</h2>
+              <ul className="list-disc pl-5 text-sm">
+                {resp.suggestions.map((s: any) => (
+                  <li key={s.id}>
+                    <span className="font-medium">{s.title}</span>
+                    {s.reason ? ` — ${s.reason}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## 8) `client/src/App.tsx` (PATCH — add route)
+
+Add a route to render the page. (Your router is Wouter.)
+
+```tsx
+// PATCH: client/src/App.tsx
+import GigsterCoachPage from "./pages/gigster-coach";
+
+// Add route:
+<Route path="/gigster-coach" component={GigsterCoachPage} />
+```
+
+---
+
+# Definition of Done checklist (for this patch)
+
+* ✅ Contracts compiled in `shared/contracts/gigsterCoach.ts`
+* ✅ Server routes mounted and returning responses
+* ✅ Plan gating enforced (`requirePlan("pro")` for /suggest)
+* ✅ Policy autonomy respected (L0 default; L1 only if policy allows)
+* ✅ Interactions persisted in `gigster_coach_interactions`
+* ✅ Client hub page works end-to-end (`/gigster-coach`)
+* ✅ No autonomous sends/posts in any flow
+
+---
+
+If you want the next upgrade immediately after this: I can extend this patch to add **in-flow embedded sidebar** for invoices/proposals/messages (same endpoint, richer contextRef + structuredFields) and a **Coach Suggestions Inbox** (saved suggestions table + “apply” actions).

@@ -1,0 +1,412 @@
+### ✅ GigsterCoach v1.2 — “Apply Engine” (safe, whitelisted, user-click required)
+
+This adds a **typed Apply Engine** so suggestions can be **applied safely** (e.g., inject invoice terms into a specific field) while **still requiring an explicit user click**.
+
+Key design choice: **server validates + records**, **client executes** (so nothing “auto-edits” user data server-side).
+
+---
+
+```text
+REPLIT_DROP_V1
+CANONICAL_FILENAME: gigster-garage_gigstercoach_apply-engine-patch_v1-2_2025-12-17.zip
+VERSION: v1.2
+DATE: 2025-12-17
+PROJECT: Gigster Garage (ROOT THREAD)
+
+WHAT THIS PATCH ADDS
+- Typed Apply Engine contracts (whitelisted actions + payload schemas)
+- Suggestion payloads upgraded to typed actions
+- Client ApplyEngine executor (safe field insert/append/replace)
+- Server apply endpoint validates (payload matches whitelist) then records applied
+- Optional “preview diff” generator (client-side)
+
+HARD GUARANTEE
+- Apply requires explicit user click.
+- No autonomous sends/updates.
+- Only whitelisted actions and whitelisted targets.
+```
+
+---
+
+## 1) Shared contracts — Apply Engine (NEW)
+
+### 1A) `shared/contracts/applyEngine.ts` (NEW)
+
+```ts
+// FILE: shared/contracts/applyEngine.ts
+import { z } from "zod";
+
+/**
+ * Apply Engine is intentionally narrow:
+ * - Only whitelisted actions
+ * - Only whitelisted targets (field IDs)
+ * - Client executes; server validates + records
+ */
+
+export const ApplyTarget = z.enum([
+  // Invoice
+  "invoice.terms",
+  "invoice.notes",
+  "invoice.lineItems",
+
+  // Proposal
+  "proposal.scope",
+  "proposal.terms",
+  "proposal.outline",
+
+  // Message
+  "message.subject",
+  "message.body",
+
+  // Service listing (future)
+  "service.description",
+]);
+
+export type ApplyTarget = z.infer<typeof ApplyTarget>;
+
+export const ApplyActionType = z.enum([
+  "insert_text",   // insert at cursor if supported; otherwise append
+  "append_text",   // append at end (safe default)
+  "replace_text",  // replace whole field (requires user confirmation in UI)
+  "add_line_item", // add structured line item (invoice)
+]);
+
+export type ApplyActionType = z.infer<typeof ApplyActionType>;
+
+export const InsertTextPayload = z.object({
+  target: ApplyTarget,
+  text: z.string().min(1).max(10_000),
+  mode: z.enum(["append", "insert"]).default("append"),
+});
+
+export const AppendTextPayload = z.object({
+  target: ApplyTarget,
+  text: z.string().min(1).max(10_000),
+});
+
+export const ReplaceTextPayload = z.object({
+  target: ApplyTarget,
+  text: z.string().min(1).max(20_000),
+  // client UI should require explicit confirmation before executing replace
+  requireConfirm: z.literal(true).default(true),
+});
+
+export const AddLineItemPayload = z.object({
+  target: z.literal("invoice.lineItems"),
+  item: z.object({
+    description: z.string().min(1).max(300),
+    quantity: z.number().min(1).max(999).default(1),
+    unitPriceCents: z.number().int().min(0).max(100_000_000),
+  }),
+});
+
+export const ApplyPayload = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("insert_text"), payload: InsertTextPayload }),
+  z.object({ type: z.literal("append_text"), payload: AppendTextPayload }),
+  z.object({ type: z.literal("replace_text"), payload: ReplaceTextPayload }),
+  z.object({ type: z.literal("add_line_item"), payload: AddLineItemPayload }),
+]);
+
+export type ApplyPayload = z.infer<typeof ApplyPayload>;
+
+/** Server-side validation wrapper */
+export const ApplySuggestionExecuteRequest = z.object({
+  // echo of the suggestion payload for validation (server does not trust client)
+  apply: ApplyPayload,
+  // optional: for audit only
+  context: z.record(z.any()).optional(),
+});
+
+export type ApplySuggestionExecuteRequest = z.infer<typeof ApplySuggestionExecuteRequest>;
+
+export const ApplySuggestionExecuteResponse = z.object({
+  ok: z.boolean(),
+  suggestionId: z.string(),
+  status: z.enum(["applied"]),
+});
+
+export type ApplySuggestionExecuteResponse = z.infer<typeof ApplySuggestionExecuteResponse>;
+```
+
+---
+
+## 2) Upgrade coach suggestion payloads to typed ApplyPayload
+
+### 2A) `server/services/gigsterCoach.service.ts` (PATCH)
+
+When generating suggestions, emit **typed** payloads:
+
+```ts
+// PATCH: server/services/gigsterCoach.service.ts
+// Replace any payload usage for insert_text with typed ApplyPayload shape:
+
+// Example suggestion (invoice terms)
+suggestions.push({
+  id: "terms-latefee",
+  title: "Add a late fee clause",
+  reason: "Reduces overdue risk and sets expectations.",
+  severity: "info",
+  actionType: "insert_text",
+  payload: {
+    type: "append_text",
+    payload: {
+      target: "invoice.terms",
+      text: "\nLate fee: Payments past due may incur a late fee of X% per month (or $X) unless prohibited by law.\n",
+    }
+  }
+});
+```
+
+For proposal revisions suggestion:
+
+```ts
+payload: {
+  type: "append_text",
+  payload: {
+    target: "proposal.terms",
+    text: "\nRevisions: Includes up to two revision rounds. Additional revisions billed at $X/hour.\n"
+  }
+}
+```
+
+---
+
+## 3) Persist typed payloads safely
+
+Your `gigster_coach_suggestions.payload` is already `jsonb`. No schema change needed—just ensure we store the typed `ApplyPayload`.
+
+---
+
+## 4) Server apply endpoint — validate typed payload and record applied
+
+### 4A) `server/routes/gigsterCoach.route.ts` (PATCH)
+
+Add a stricter apply endpoint (replace the v1.1 apply handler).
+
+```ts
+// PATCH: server/routes/gigsterCoach.route.ts
+import { ApplySuggestionExecuteRequest } from "../../shared/contracts/applyEngine.js";
+
+// Replace /apply handler with:
+app.post("/api/gigster-coach/suggestions/:id/apply", deps.requireAuth, async (req, res) => {
+  try {
+    const user = req.session.user!;
+    const id = req.params.id;
+
+    const execReq = ApplySuggestionExecuteRequest.parse(req.body ?? {});
+    // Validate ownership
+    const [row] = await db.select().from(gigsterCoachSuggestions)
+      .where(and(eq(gigsterCoachSuggestions.id, id), eq(gigsterCoachSuggestions.userId, user.id)))
+      .limit(1);
+
+    if (!row) return res.status(404).json({ message: "Suggestion not found" });
+
+    // Server-side safety: verify suggestion’s stored payload matches what client is attempting to apply.
+    // (Prevents client from swapping payloads to do non-whitelisted edits.)
+    const stored = row.payload;
+    if (!stored) return res.status(400).json({ message: "Suggestion has no apply payload" });
+
+    // Validate both are valid ApplyPayload via schema
+    // AND require deep equality match.
+    const storedParsed = ApplySuggestionExecuteRequest.parse({ apply: stored }).apply;
+    const attempted = execReq.apply;
+
+    const same = JSON.stringify(storedParsed) === JSON.stringify(attempted);
+    if (!same) {
+      return res.status(400).json({ message: "Apply payload mismatch (blocked)" });
+    }
+
+    // Record applied (client will perform the actual mutation locally)
+    await db.update(gigsterCoachSuggestions).set({
+      status: "applied",
+      appliedAt: new Date(),
+    }).where(eq(gigsterCoachSuggestions.id, id));
+
+    await auditEmit("gigsterCoach.suggestion.applied", {
+      userId: user.id,
+      suggestionId: id,
+      applyType: attempted.type,
+    });
+
+    res.json({ ok: true, suggestionId: id, status: "applied" });
+  } catch (e: any) {
+    res.status(400).json({ message: e.message ?? "Apply failed" });
+  }
+});
+```
+
+---
+
+## 5) Client Apply Engine — execute whitelisted actions only (NEW)
+
+### 5A) `client/src/lib/applyEngine.ts` (NEW)
+
+```ts
+// FILE: client/src/lib/applyEngine.ts
+type ApplyPayload =
+  | { type: "insert_text"; payload: { target: string; text: string; mode?: "append" | "insert" } }
+  | { type: "append_text"; payload: { target: string; text: string } }
+  | { type: "replace_text"; payload: { target: string; text: string; requireConfirm?: true } }
+  | { type: "add_line_item"; payload: { target: "invoice.lineItems"; item: { description: string; quantity: number; unitPriceCents: number } } };
+
+const ALLOWED_TARGETS = new Set([
+  "invoice.terms",
+  "invoice.notes",
+  "invoice.lineItems",
+  "proposal.scope",
+  "proposal.terms",
+  "proposal.outline",
+  "message.subject",
+  "message.body",
+  "service.description",
+]);
+
+export function applyPayloadToDraft<TDraft extends Record<string, any>>(
+  draft: TDraft,
+  apply: ApplyPayload,
+  opts?: { confirmReplace?: boolean }
+): TDraft {
+  // Whitelist targets
+  const target = (apply as any).payload?.target;
+  if (target && !ALLOWED_TARGETS.has(target)) {
+    throw new Error(`Blocked apply target: ${target}`);
+  }
+
+  // Map targets to draft fields (local-only)
+  const map: Record<string, (d: TDraft) => { get(): any; set(v: any): void }> = {
+    "invoice.terms": (d) => ({ get: () => d.terms ?? "", set: (v) => (d.terms = v) }),
+    "invoice.notes": (d) => ({ get: () => d.notes ?? "", set: (v) => (d.notes = v) }),
+    "invoice.lineItems": (d) => ({ get: () => d.lineItems ?? [], set: (v) => (d.lineItems = v) }),
+
+    "proposal.scope": (d) => ({ get: () => d.scope ?? "", set: (v) => (d.scope = v) }),
+    "proposal.terms": (d) => ({ get: () => d.terms ?? "", set: (v) => (d.terms = v) }),
+    "proposal.outline": (d) => ({ get: () => d.outline ?? "", set: (v) => (d.outline = v) }),
+
+    "message.subject": (d) => ({ get: () => d.subject ?? "", set: (v) => (d.subject = v) }),
+    "message.body": (d) => ({ get: () => d.body ?? "", set: (v) => (d.body = v) }),
+
+    "service.description": (d) => ({ get: () => d.description ?? "", set: (v) => (d.description = v) }),
+  };
+
+  const accessor = map[target];
+  if (!accessor) throw new Error(`No draft field mapping for target: ${target}`);
+
+  if (apply.type === "append_text") {
+    const cur = String(accessor(draft).get() ?? "");
+    const next = cur + String(apply.payload.text ?? "");
+    accessor(draft).set(next);
+    return draft;
+  }
+
+  if (apply.type === "insert_text") {
+    // Safe default: append (cursor insert requires editor integration)
+    const cur = String(accessor(draft).get() ?? "");
+    const next = cur + String(apply.payload.text ?? "");
+    accessor(draft).set(next);
+    return draft;
+  }
+
+  if (apply.type === "replace_text") {
+    if (!opts?.confirmReplace) {
+      throw new Error("Replace requires confirmReplace=true");
+    }
+    accessor(draft).set(String(apply.payload.text ?? ""));
+    return draft;
+  }
+
+  if (apply.type === "add_line_item") {
+    const cur = accessor(draft).get();
+    if (!Array.isArray(cur)) throw new Error("invoice.lineItems draft field is not an array");
+    accessor(draft).set([
+      ...cur,
+      {
+        description: apply.payload.item.description,
+        quantity: apply.payload.item.quantity,
+        unitPriceCents: apply.payload.item.unitPriceCents,
+      },
+    ]);
+    return draft;
+  }
+
+  return draft;
+}
+```
+
+---
+
+## 6) Update Inbox UI to “Apply” with typed payload + server validation
+
+### 6A) `client/src/pages/gigster-coach-suggestions.tsx` (PATCH)
+
+* When user clicks Apply:
+
+  1. client applies locally (safe whitelist)
+  2. client calls server `/apply` with the exact stored payload (server verifies equality + whitelist)
+  3. server marks applied
+
+You’ll wire the “local apply” depending on which screen you’re applying to (invoice editor vs message composer). For Inbox MVP, we’ll do:
+
+* “Mark Applied” always works (server records).
+* If the suggestion target matches a currently-open draft in the page, we can apply immediately; otherwise show “Open the relevant draft to apply.”
+
+(That avoids hallucinating your editor state.)
+
+---
+
+# ✅ New thread starter copy (paste at top)
+
+Copy/paste this into a **new thread** so we keep moving fast:
+
+```text
+Gigster Garage — ROOT THREAD (Continuation) — GigsterCoach Apply Engine (v1.2)
+Confidential and proprietary and copyright Dustin Sparks 2025
+
+================================================================================
+DRIVE STEWARD × ChatGPT Working Agreement (v1.0)
+- Single authoritative workspace for Gigster Garage deliverables and Replit Drops.
+- Canonical filenames + versioning + change logs required for major revisions.
+- Contract-first: shared contracts/types before implementation.
+- No background work; all deliverables produced in-message.
+- Brand lock + pod role enforcement applies by default.
+================================================================================
+
+📡 i³ Broadcast Hub Subscription
+This thread subscribes to: i³ Broadcast Hub — Master Updates (v1.0)
+- Receives global governance/schema/versioning updates to prevent drift.
+
+MASTER BLOCK / BOOTSTRAP — Gigster Garage
+- Project: Gigster Garage
+- Thread Type: ROOT THREAD (Continuation)
+- Owner: Dustin Sparks
+- Pods in play: Lume, Forge, LexiCode, Prism, Ledger, Storybloom, Sentinel, Praetor, Aegis/Atlas, Bridge, Pulse, Verifier
+- Repo spine (Replit): client/ server/ shared/ worker/ policy/
+- Core goal: ship GigsterCoach as a first-class module (in-flow + hub + suggestions + apply engine)
+
+CURRENT STATUS (CANONICAL)
+✅ GigsterCoach v1.0 shipped (contracts + routes + history persistence + hub page)
+✅ GigsterCoach v1.1 shipped (in-flow sidebar component + saved suggestions inbox + apply/dismiss endpoints + suggestions table)
+✅ Repo slices ingested: requireAuth/requirePlan/permissions/auth routes/tasks/messages/invoice send/storage interface/plans/schema/worker/policy
+
+NOW SHIPPING (THIS THREAD)
+🚀 GigsterCoach v1.2 — Apply Engine
+- Typed, whitelisted apply payloads (safe targets like invoice.terms, proposal.terms, message.body)
+- Server validates payload equality + whitelist, then records applied
+- Client executes local mutation only on explicit user click
+- No autonomous sends/posts/edits
+
+CANONICAL FILENAMES (LATEST)
+- gigster-garage_gigstercoach_contract-spec_v1-1_2025-12-17.md
+- gigster-garage_gigstercoach_routes-ui-patch_v1-1_2025-12-17.zip
+- gigster-garage_gigstercoach_apply-engine-patch_v1-2_2025-12-17.zip
+
+DEFINITION OF DONE (v1.2)
+- shared/contracts/applyEngine.ts added + used
+- Suggestions payloads upgraded to typed ApplyPayload
+- Server /suggestions/:id/apply validates payload matches stored + is whitelisted
+- Client applyEngine executes only whitelisted targets + action types
+- Replace operations require explicit confirm
+- Audit emit best-effort for apply events
+================================================================================
+```
+
+If you want, next message in the new thread I can also generate the **exact “FILE: …” patch blocks** for the three client screens you named (invoices / proposals / messages) once you paste the specific form state variable names used in those pages (so we don’t guess wrong).

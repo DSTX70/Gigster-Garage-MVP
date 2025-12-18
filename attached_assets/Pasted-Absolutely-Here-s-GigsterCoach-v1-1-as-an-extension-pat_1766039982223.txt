@@ -1,0 +1,592 @@
+Absolutely. Here’s **GigsterCoach v1.1** as an **extension patch** that adds:
+
+* ✅ **In-flow embedded Coach Sidebar** (invoices / proposals / messages) using the same endpoints
+* ✅ **Coach Suggestions Inbox** with a **saved suggestions table** + **Apply / Dismiss** actions (human-approved, client-executed)
+
+Everything stays aligned with your repo rails:
+
+* `requireAuth`, `requirePlan`
+* policy autonomy L0/L1 (no autonomous sends)
+* audit + rate limit patterns (best-effort audit events)
+* Drizzle + migrations
+
+---
+
+```text
+REPLIT_DROP_V1
+CANONICAL_FILENAME: gigster-garage_gigstercoach_routes-ui-patch_v1-1_2025-12-17.zip
+VERSION: v1.1
+DATE: 2025-12-17
+PROJECT: Gigster Garage (ROOT THREAD)
+
+WHAT THIS PATCH ADDS
+1) In-flow Coach Sidebar component (mountable) for invoice/proposal/message screens
+2) Saved Coach Suggestions Inbox:
+   - DB table gigster_coach_suggestions
+   - GET suggestions + APPLY + DISMISS endpoints
+   - Inbox page for review and “apply” actions
+
+GOVERNANCE GUARANTEE
+- Coach NEVER sends invoices/messages/posts.
+- “Apply” only marks suggestion applied server-side; client performs local insert/update.
+- Proactive suggestions remain Pro-gated and policy-governed.
+```
+
+---
+
+# 1) CONTRACT UPDATES
+
+## 1A) `shared/contracts/gigsterCoach.ts` (PATCH)
+
+Add Suggestion record + apply/dismiss DTOs.
+
+```ts
+// PATCH: shared/contracts/gigsterCoach.ts
+import { z } from "zod";
+
+// ...existing exports...
+
+export const SuggestionStatus = z.enum(["open", "applied", "dismissed"]);
+export type SuggestionStatus = z.infer<typeof SuggestionStatus>;
+
+export const CoachSuggestionRecord = z.object({
+  id: z.string(),
+  userId: z.string(),
+  status: SuggestionStatus,
+  sourceIntent: CoachIntent,
+  title: z.string(),
+  reason: z.string().nullable().optional(),
+  severity: z.enum(["info", "warn", "critical"]).default("info"),
+  actionType: z.enum(["insert_text", "add_checklist_item", "open_next_step", "none"]).default("none"),
+  payload: z.record(z.any()).nullable().optional(),
+  contextRef: CoachContextRef.nullable().optional(),
+  createdAt: z.string(),
+  appliedAt: z.string().nullable().optional(),
+  dismissedAt: z.string().nullable().optional(),
+});
+export type CoachSuggestionRecord = z.infer<typeof CoachSuggestionRecord>;
+
+export const GetSuggestionsQuery = z.object({
+  status: SuggestionStatus.optional(), // default open on server
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+});
+export type GetSuggestionsQuery = z.infer<typeof GetSuggestionsQuery>;
+
+export const ApplySuggestionRequest = z.object({
+  // client-executed apply; server only records state
+  appliedPayload: z.record(z.any()).optional(), // optional audit info
+});
+export type ApplySuggestionRequest = z.infer<typeof ApplySuggestionRequest>;
+
+export const ApplySuggestionResponse = z.object({
+  ok: z.boolean(),
+  id: z.string(),
+  status: SuggestionStatus,
+});
+export type ApplySuggestionResponse = z.infer<typeof ApplySuggestionResponse>;
+```
+
+---
+
+# 2) SCHEMA + MIGRATIONS (NEW TABLE)
+
+## 2A) `shared/schema.ts` (PATCH)
+
+```ts
+// PATCH: shared/schema.ts
+import { pgTable, varchar, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+// ...existing imports...
+
+export const gigsterCoachSuggestions = pgTable("gigster_coach_suggestions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+
+  status: varchar("status", { enum: ["open", "applied", "dismissed"] }).default("open").notNull(),
+  sourceIntent: varchar("source_intent", { enum: ["ask", "draft", "review", "suggest"] }).notNull(),
+
+  title: varchar("title").notNull(),
+  reason: text("reason"),
+  severity: varchar("severity", { enum: ["info", "warn", "critical"] }).default("info").notNull(),
+
+  actionType: varchar("action_type", { enum: ["insert_text", "add_checklist_item", "open_next_step", "none"] }).default("none").notNull(),
+  payload: jsonb("payload").$type<Record<string, any>>(),
+
+  contextRef: jsonb("context_ref").$type<Record<string, any>>(),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  appliedAt: timestamp("applied_at"),
+  dismissedAt: timestamp("dismissed_at"),
+});
+```
+
+## 2B) Migration SQL (NEW)
+
+```sql
+-- FILE: migrations/000Y_add_gigster_coach_suggestions.sql
+CREATE TABLE IF NOT EXISTS gigster_coach_suggestions (
+  id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+  status varchar NOT NULL DEFAULT 'open',
+  source_intent varchar NOT NULL,
+
+  title varchar NOT NULL,
+  reason text,
+  severity varchar NOT NULL DEFAULT 'info',
+
+  action_type varchar NOT NULL DEFAULT 'none',
+  payload jsonb,
+  context_ref jsonb,
+
+  created_at timestamp DEFAULT now(),
+  applied_at timestamp,
+  dismissed_at timestamp
+);
+
+CREATE INDEX IF NOT EXISTS idx_gigster_coach_suggestions_user_status_created
+  ON gigster_coach_suggestions (user_id, status, created_at DESC);
+```
+
+---
+
+# 3) SERVER: SAVE SUGGESTIONS + INBOX ROUTES
+
+## 3A) `server/routes/gigsterCoach.route.ts` (PATCH)
+
+Add suggestion persistence + new endpoints.
+
+```ts
+// PATCH: server/routes/gigsterCoach.route.ts
+import { db } from "../db.js";
+import { gigsterCoachSuggestions } from "../../shared/schema.js";
+import { and, desc, eq } from "drizzle-orm";
+import { GetSuggestionsQuery, ApplySuggestionRequest } from "../../shared/contracts/gigsterCoach.js";
+
+// helper: save suggestions
+async function saveSuggestions(userId: string, sourceIntent: "ask"|"draft"|"review"|"suggest", suggestions: any[], contextRef: any) {
+  if (!Array.isArray(suggestions) || suggestions.length === 0) return;
+  const rows = suggestions.map((s: any) => ({
+    userId,
+    status: "open",
+    sourceIntent,
+    title: String(s.title ?? "Suggestion"),
+    reason: s.reason ? String(s.reason) : null,
+    severity: (s.severity ?? "info"),
+    actionType: (s.actionType ?? "none"),
+    payload: s.payload ?? null,
+    contextRef: contextRef ?? null,
+  }));
+  // insert best-effort
+  try { await db.insert(gigsterCoachSuggestions).values(rows as any); } catch {}
+}
+
+// Inside each handler after resp is computed:
+await saveSuggestions(user.id, "ask", resp.suggestions ?? [], body.contextRef);
+
+// Do same for draft/review.
+// For /suggest (Pro), it’s the primary producer of inbox items:
+await saveSuggestions(user.id, "suggest", resp.suggestions ?? [], body.contextRef);
+
+// NEW: suggestions list
+app.get("/api/gigster-coach/suggestions", deps.requireAuth, async (req, res) => {
+  try {
+    const user = req.session.user!;
+    const q = GetSuggestionsQuery.parse({ status: req.query.status, limit: req.query.limit });
+    const status = q.status ?? "open";
+    const limit = q.limit ?? 100;
+
+    const rows = await db.select().from(gigsterCoachSuggestions)
+      .where(and(eq(gigsterCoachSuggestions.userId, user.id), eq(gigsterCoachSuggestions.status, status)))
+      .orderBy(desc(gigsterCoachSuggestions.createdAt))
+      .limit(limit);
+
+    res.json(rows);
+  } catch (e: any) {
+    res.status(400).json({ message: e.message ?? "Bad request" });
+  }
+});
+
+// NEW: apply suggestion (server marks applied; client does the actual apply)
+app.post("/api/gigster-coach/suggestions/:id/apply", deps.requireAuth, async (req, res) => {
+  try {
+    const user = req.session.user!;
+    ApplySuggestionRequest.parse(req.body ?? {});
+    const id = req.params.id;
+
+    // Ensure user owns it
+    const [row] = await db.select().from(gigsterCoachSuggestions)
+      .where(and(eq(gigsterCoachSuggestions.id, id), eq(gigsterCoachSuggestions.userId, user.id)))
+      .limit(1);
+
+    if (!row) return res.status(404).json({ message: "Suggestion not found" });
+
+    await db.update(gigsterCoachSuggestions).set({
+      status: "applied",
+      appliedAt: new Date(),
+    }).where(eq(gigsterCoachSuggestions.id, id));
+
+    res.json({ ok: true, id, status: "applied" });
+  } catch (e: any) {
+    res.status(400).json({ message: e.message ?? "Apply failed" });
+  }
+});
+
+// NEW: dismiss suggestion
+app.post("/api/gigster-coach/suggestions/:id/dismiss", deps.requireAuth, async (req, res) => {
+  try {
+    const user = req.session.user!;
+    const id = req.params.id;
+
+    const [row] = await db.select().from(gigsterCoachSuggestions)
+      .where(and(eq(gigsterCoachSuggestions.id, id), eq(gigsterCoachSuggestions.userId, user.id)))
+      .limit(1);
+
+    if (!row) return res.status(404).json({ message: "Suggestion not found" });
+
+    await db.update(gigsterCoachSuggestions).set({
+      status: "dismissed",
+      dismissedAt: new Date(),
+    }).where(eq(gigsterCoachSuggestions.id, id));
+
+    res.json({ ok: true, id, status: "dismissed" });
+  } catch (e: any) {
+    res.status(400).json({ message: e.message ?? "Dismiss failed" });
+  }
+});
+```
+
+---
+
+# 4) SERVER: MAKE `/suggest` PRODUCE “INBOX-GRADE” SUGGESTIONS
+
+## 4A) `server/services/gigsterCoach.service.ts` (PATCH)
+
+Add a few structured suggestions when intent is `suggest` (so the inbox has items even before deep analytics exist).
+
+```ts
+// PATCH inside GigsterCoachService.run() after resp generation:
+if (req.intent === "suggest") {
+  // Provide a baseline set of “business coach” nudges.
+  const base = [
+    {
+      id: "followup-cadence",
+      title: "Create a 2-touch follow-up cadence for overdue invoices",
+      reason: "Consistent follow-ups reduce late payments without sounding aggressive.",
+      severity: "info",
+      actionType: "open_next_step",
+      payload: { next: "moneyhub_followup_template" },
+    },
+    {
+      id: "package-offer",
+      title: "Turn your most common request into a 3-tier package",
+      reason: "Packages improve conversion and reduce custom-scoping time.",
+      severity: "info",
+      actionType: "open_next_step",
+      payload: { next: "service_packaging_wizard" },
+    },
+    {
+      id: "terms-revisions",
+      title: "Add a revision limit to your proposal templates",
+      reason: "Revision limits prevent scope creep and protect profitability.",
+      severity: "warn",
+      actionType: "insert_text",
+      payload: { location: "proposal_terms", text: "Includes up to two revision rounds. Additional revisions billed at $X/hour." },
+    },
+  ];
+  // Merge into resp (don’t overwrite)
+  (resp as any).suggestions = [ ...(resp as any).suggestions ?? [], ...base ];
+}
+```
+
+---
+
+# 5) CLIENT: IN-FLOW COACH SIDEBAR (NEW COMPONENT)
+
+## 5A) `client/src/components/gigsterCoach/CoachSidebar.tsx` (NEW)
+
+This component can mount in any page and supports:
+
+* Ask
+* Draft
+* Review
+* Rich `contextRef`
+* `structuredFields` (you pass in the form state)
+
+```tsx
+// FILE: client/src/components/gigsterCoach/CoachSidebar.tsx
+import { useState } from "react";
+import { apiRequest } from "../../lib/queryClient";
+
+type Props = {
+  surface: "invoice" | "proposal" | "message" | "contract" | "other";
+  contextRef?: Record<string, any>;
+  structuredFields?: Record<string, any>;
+  artifactText?: string;
+  onInsertText?: (text: string) => void; // optional: parent applies insert locally
+};
+
+export function CoachSidebar(props: Props) {
+  const [question, setQuestion] = useState("");
+  const [mode, setMode] = useState<"ask"|"draft"|"review">("ask");
+  const [draftTarget, setDraftTarget] = useState<string>("client_message");
+  const [resp, setResp] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function run() {
+    setLoading(true);
+    setResp(null);
+    try {
+      const base = {
+        question,
+        requestedAutonomy: "L0",
+        contextRef: { surface: props.surface, ...(props.contextRef ?? {}) },
+        structuredFields: props.structuredFields,
+        artifactText: props.artifactText,
+      };
+
+      let path = "/api/gigster-coach/ask";
+      let body: any = base;
+
+      if (mode === "draft") {
+        path = "/api/gigster-coach/draft";
+        body = { ...base, draftTarget };
+      } else if (mode === "review") {
+        path = "/api/gigster-coach/review";
+      }
+
+      const r = await apiRequest("POST", path, body);
+      setResp(r);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="w-full rounded-md border p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="font-semibold">GigsterCoach</div>
+        <div className="text-xs opacity-70">{props.surface}</div>
+      </div>
+
+      <div className="flex gap-2 text-sm">
+        <button className={`px-2 py-1 border rounded ${mode==="ask" ? "opacity-100" : "opacity-60"}`} onClick={() => setMode("ask")}>Ask</button>
+        <button className={`px-2 py-1 border rounded ${mode==="draft" ? "opacity-100" : "opacity-60"}`} onClick={() => setMode("draft")}>Draft</button>
+        <button className={`px-2 py-1 border rounded ${mode==="review" ? "opacity-100" : "opacity-60"}`} onClick={() => setMode("review")}>Review</button>
+      </div>
+
+      {mode === "draft" && (
+        <select className="w-full border rounded p-2 text-sm" value={draftTarget} onChange={(e) => setDraftTarget(e.target.value)}>
+          <option value="client_message">Client message</option>
+          <option value="invoice_terms">Invoice terms</option>
+          <option value="invoice_line_items">Invoice line items</option>
+          <option value="proposal_outline">Proposal outline</option>
+          <option value="proposal_scope">Proposal scope</option>
+          <option value="contract_terms">Contract terms</option>
+          <option value="service_description">Service description</option>
+        </select>
+      )}
+
+      <textarea
+        className="w-full min-h-[90px] border rounded p-2 text-sm"
+        placeholder={mode === "ask" ? "How can I…" : mode === "draft" ? "What should I draft?" : "What should I review?"}
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+      />
+
+      <button className="w-full border rounded px-3 py-2 text-sm" disabled={loading || !question.trim()} onClick={run}>
+        {loading ? "Working…" : "Run"}
+      </button>
+
+      {resp?.answer && (
+        <div className="space-y-2">
+          <div className="text-sm whitespace-pre-wrap">{resp.answer}</div>
+
+          {Array.isArray(resp?.suggestions) && resp.suggestions.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-xs font-semibold opacity-80">Suggestions</div>
+              {resp.suggestions.map((s: any) => (
+                <div key={s.id} className="text-xs border rounded p-2">
+                  <div className="font-medium">{s.title}</div>
+                  {s.reason ? <div className="opacity-70">{s.reason}</div> : null}
+                  {s.actionType === "insert_text" && s.payload?.text && props.onInsertText ? (
+                    <button
+                      className="mt-2 border rounded px-2 py-1"
+                      onClick={() => props.onInsertText?.(String(s.payload.text))}
+                    >
+                      Insert text
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {Array.isArray(resp?.checklist) && resp.checklist.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-xs font-semibold opacity-80">Checklist</div>
+              <ul className="list-disc pl-5 text-xs">
+                {resp.checklist.map((c: any) => <li key={c.id}>{c.label}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+# 6) CLIENT: COACH SUGGESTIONS INBOX PAGE (NEW)
+
+## 6A) `client/src/pages/gigster-coach-suggestions.tsx` (NEW)
+
+```tsx
+// FILE: client/src/pages/gigster-coach-suggestions.tsx
+import { useEffect, useState } from "react";
+import { apiRequest } from "../lib/queryClient";
+
+export default function GigsterCoachSuggestionsPage() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await apiRequest<any[]>("GET", "/api/gigster-coach/suggestions?status=open&limit=100");
+      setRows(r);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function apply(id: string) {
+    await apiRequest("POST", `/api/gigster-coach/suggestions/${id}/apply`, {});
+    await load();
+  }
+
+  async function dismiss(id: string) {
+    await apiRequest("POST", `/api/gigster-coach/suggestions/${id}/dismiss`, {});
+    await load();
+  }
+
+  useEffect(() => { load(); }, []);
+
+  return (
+    <div className="p-6 space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold">Coach Suggestions Inbox</h1>
+        <p className="text-sm opacity-80">Review suggestions. Apply is always user-initiated.</p>
+      </div>
+
+      <button className="border rounded px-3 py-2 text-sm" onClick={load} disabled={loading}>
+        {loading ? "Refreshing…" : "Refresh"}
+      </button>
+
+      <div className="space-y-3">
+        {rows.map((s) => (
+          <div key={s.id} className="border rounded p-4 space-y-2">
+            <div className="flex justify-between">
+              <div className="font-semibold">{s.title}</div>
+              <div className="text-xs opacity-70">{s.severity}</div>
+            </div>
+            {s.reason ? <div className="text-sm opacity-80">{s.reason}</div> : null}
+
+            <div className="text-xs opacity-70">
+              action: {s.actionType} • source: {s.sourceIntent}
+            </div>
+
+            <div className="flex gap-2">
+              <button className="border rounded px-3 py-1 text-sm" onClick={() => apply(s.id)}>
+                Mark Applied
+              </button>
+              <button className="border rounded px-3 py-1 text-sm" onClick={() => dismiss(s.id)}>
+                Dismiss
+              </button>
+            </div>
+
+            {s.payload ? (
+              <pre className="text-xs bg-black/5 rounded p-2 overflow-auto">{JSON.stringify(s.payload, null, 2)}</pre>
+            ) : null}
+          </div>
+        ))}
+
+        {rows.length === 0 && !loading ? (
+          <div className="text-sm opacity-70">No open suggestions.</div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+# 7) CLIENT: ROUTES (PATCH)
+
+## 7A) `client/src/App.tsx` (PATCH)
+
+```tsx
+// PATCH: client/src/App.tsx
+import GigsterCoachSuggestionsPage from "./pages/gigster-coach-suggestions";
+
+// Add route:
+<Route path="/gigster-coach/suggestions" component={GigsterCoachSuggestionsPage} />
+```
+
+---
+
+# 8) WHERE TO MOUNT THE SIDEBAR (MINIMAL PATCH INSTRUCTIONS)
+
+Because your invoice/proposal/message pages are large, I’m not going to hallucinate exact JSX insertion points. Use this safe pattern:
+
+### In `client/src/pages/invoices.tsx` (create/edit view)
+
+Add a 2-column layout wrapper around your editor/form area:
+
+```tsx
+import { CoachSidebar } from "../components/gigsterCoach/CoachSidebar";
+
+<main className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
+  <section>
+    {/* existing invoice form/editor */}
+  </section>
+
+  <aside>
+    <CoachSidebar
+      surface="invoice"
+      contextRef={{ invoiceId: currentInvoiceId }}
+      structuredFields={{ /* pass invoice form state */ }}
+      artifactText={/* optional: current notes/terms text */}
+      onInsertText={(text) => {
+        // apply locally: setTerms(prev => prev + "\n" + text)
+      }}
+    />
+  </aside>
+</main>
+```
+
+### In `client/src/pages/create-proposal.tsx` (or proposal editor page)
+
+Same pattern with `surface="proposal"` + `proposalId`.
+
+### In `client/src/pages/messages.tsx` (composer panel)
+
+Mount CoachSidebar inside the compose UI with `surface="message"` + recipient/client context + draft content.
+
+---
+
+# Definition of Done (v1.1)
+
+* ✅ `gigster_coach_suggestions` table created + indexed
+* ✅ `/suggest` persists inbox items (Pro-gated)
+* ✅ `/suggestions` list + apply + dismiss endpoints
+* ✅ Inbox UI page works end-to-end
+* ✅ CoachSidebar component can mount in-flow and call existing endpoints
+* ✅ Apply remains human-controlled (server only records; client applies)
+
+---
+
+If you want the **next** increment after v1.1: I can add a **“Apply Engine”** that supports *safe, whitelisted* actions (e.g., inject invoice terms into a specific field) via typed payloads, while still requiring an explicit user click.

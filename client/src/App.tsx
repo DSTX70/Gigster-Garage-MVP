@@ -64,6 +64,7 @@ import SocialQueuePage from "@/pages/ops/SocialQueuePage";
 import RateLimitsPage from "@/pages/ops/RateLimitsPage";
 import ConnectionsPage from "@/pages/settings/connections";
 import MonitoringDashboard from "@/pages/monitoring/dashboard";
+import GigsterCoachPage from "@/pages/gigster-coach";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsGuide } from "@/components/KeyboardShortcutsGuide";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -171,6 +172,7 @@ function Router() {
       <Route path="/custom-fields" component={CustomFields} />
       <Route path="/workflow-automation" component={WorkflowAutomation} />
       <Route path="/garage-assistant" component={GarageAssistant} />
+      <Route path="/gigster-coach" component={GigsterCoachPage} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/ai-insights" component={AIInsights} />
       <Route path="/team-collaboration" component={TeamCollaboration} />

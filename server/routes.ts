@@ -56,6 +56,7 @@ import opsRateLimitsRoutes from './routes/ops.rateLimits.route.js';
 import platformCredentialsRoutes from './routes/platformCredentials';
 import loyaltyRoutes from './routes/loyalty.route.js';
 import monitoringRoutes from './routes/monitoring.route.js';
+import { mountGigsterCoachRoutes } from './routes/gigsterCoach.route.js';
 
 // Initialize OpenAI client
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -456,6 +457,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     return planFeatures[plan]?.includes(feature) || false;
   };
+
+  // Mount GigsterCoach routes
+  mountGigsterCoachRoutes(app, { requireAuth, requirePlan });
 
   // Error tracking endpoints for audit purposes (after session middleware)
   app.get('/api/_audit/errors/top', requireAdmin, (req, res) => {

@@ -26,17 +26,24 @@ export interface PlanFeatures {
   // Limits
   maxProjectsPerMonth: number; // New projects per month
   maxInvoicesPerMonth: number; // New invoices per month
+
+  // GigsterCoach
+  gigsterCoachBase: boolean; // Embedded assist in builders
+  gigsterCoachAskExpert: boolean; // Hub Q&A
+  gigsterCoachProactive: boolean; // Pattern-based nudges (Pro+)
+  gigsterCoachProfitInsights: boolean; // Analytics-style coaching (Pro+)
+  gigsterCoachMonthlyTokens: number; // Coach-only token bucket
 }
 
 // Feature entitlements by plan tier
 export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
   free: {
-    aiMonthlyTokens: 10, // 10 AI requests per month
+    aiMonthlyTokens: 10,
     workflowAutomation: false,
     aiProposalGeneration: false,
     fileUploadSizeMB: 5,
     totalStorageGB: 1,
-    maxTeamMembers: 1, // Solo user only
+    maxTeamMembers: 1,
     clientAccess: false,
     advancedReporting: false,
     customBranding: false,
@@ -44,9 +51,14 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     ssoIntegration: false,
     maxProjectsPerMonth: 3,
     maxInvoicesPerMonth: 5,
+    gigsterCoachBase: true,
+    gigsterCoachAskExpert: true,
+    gigsterCoachProactive: false,
+    gigsterCoachProfitInsights: false,
+    gigsterCoachMonthlyTokens: 10,
   },
   pro: {
-    aiMonthlyTokens: 100, // 100 AI requests per month
+    aiMonthlyTokens: 100,
     workflowAutomation: true,
     aiProposalGeneration: true,
     fileUploadSizeMB: 50,
@@ -59,21 +71,31 @@ export const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     ssoIntegration: false,
     maxProjectsPerMonth: 50,
     maxInvoicesPerMonth: 100,
+    gigsterCoachBase: true,
+    gigsterCoachAskExpert: true,
+    gigsterCoachProactive: true,
+    gigsterCoachProfitInsights: true,
+    gigsterCoachMonthlyTokens: 200,
   },
   enterprise: {
-    aiMonthlyTokens: 1000, // 1000 AI requests per month
+    aiMonthlyTokens: 1000,
     workflowAutomation: true,
     aiProposalGeneration: true,
     fileUploadSizeMB: 500,
     totalStorageGB: 500,
-    maxTeamMembers: 9999, // Unlimited
+    maxTeamMembers: 9999,
     clientAccess: true,
     advancedReporting: true,
     customBranding: true,
     prioritySupport: true,
     ssoIntegration: true,
-    maxProjectsPerMonth: 9999, // Unlimited
-    maxInvoicesPerMonth: 9999, // Unlimited
+    maxProjectsPerMonth: 9999,
+    maxInvoicesPerMonth: 9999,
+    gigsterCoachBase: true,
+    gigsterCoachAskExpert: true,
+    gigsterCoachProactive: true,
+    gigsterCoachProfitInsights: true,
+    gigsterCoachMonthlyTokens: 2000,
   },
 };
 
