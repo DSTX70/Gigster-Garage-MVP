@@ -1,0 +1,178 @@
+Yep — now that you gave the **real state variable names**, here are the **exact `FILE:` patch blocks** for the three client screens.
+
+**Important (so nothing “mysteriously fails”):**
+Your Apply Engine contract whitelist (v1.2) currently only supports:
+
+* `invoice.terms`
+* `proposal.terms`
+* `message.body`
+
+So these patches map:
+
+* **Invoice “notes” textarea** ⇒ treated as **`invoice.terms`** (same field, different name)
+* **Proposal “terms” textarea** ⇒ **`proposal.terms`**
+* **Message “content” textarea** ⇒ **`message.body`**
+
+Not included in v1.2 whitelist (would require contract+server whitelist update later):
+
+* `invoice.notes` (distinct target)
+* `proposal.scope` / `proposal.deliverables`
+* `message.subject`
+
+---
+
+## FILE: client/src/pages/create-invoice.tsx
+
+```tsx
+// FILE: client/src/pages/create-invoice.tsx
+
+// PATCH 1: React import — ensure useMemo/useCallback available
+// BEFORE (example): import React, { useState } from "react";
+// AFTER:
+import React, { useCallback, useMemo, useState } from "react";
+
+// ... existing imports ...
+import CoachSidebar from "@/components/gigstercoach/CoachSidebar"; // keep your actual path
+
+// PATCH 2: After your state definitions (after notesCount useState is perfect)
+// NOTE: formData.notes is treated as invoice.terms for Apply Engine v1.2.
+const coachDraft = useMemo(
+  () => ({ invoice: { terms: formData.notes ?? "" } }),
+  [formData.notes]
+);
+
+const setCoachDraft = useCallback(
+  (next: any) => {
+    const nextTerms = next?.invoice?.terms ?? "";
+    setFormData((prev) => ({ ...prev, notes: nextTerms }));
+    setNotesCount(nextTerms.length);
+  },
+  [setFormData, setNotesCount]
+);
+
+// PATCH 3: At the suggested mount location (after line ~901), swap to CoachSidebarAny
+// so we can pass v1.2 draft props without TS prop mismatch if sidebar types lag.
+const CoachSidebarAny = CoachSidebar as any;
+
+// REPLACE your existing CoachSidebar mount block with this:
+{/* GigsterCoach Sidebar */}
+<CoachSidebarAny
+  surface="invoice"
+  contextRef={{ clientName: formData.clientName }}
+  // Keep your structuredFields, but add a terms alias for engine consistency
+  structuredFields={{ notes: formData.notes, terms: formData.notes, lineItems }}
+  artifactText={formData.notes}
+  onInsertText={(text: string) => {
+    const updated = (formData.notes ?? "") + text;
+    setFormData((prev) => ({ ...prev, notes: updated }));
+    setNotesCount(updated.length);
+  }}
+  // v1.2 Apply Engine draft adapter
+  draft={coachDraft}
+  setDraft={setCoachDraft}
+/>
+```
+
+---
+
+## FILE: client/src/pages/create-proposal.tsx
+
+```tsx
+// FILE: client/src/pages/create-proposal.tsx
+
+// PATCH 1: React import — ensure useMemo/useCallback available
+// BEFORE (example): import React, { useState } from "react";
+// AFTER:
+import React, { useCallback, useMemo, useState } from "react";
+
+// ... existing imports ...
+import CoachSidebar from "@/components/gigstercoach/CoachSidebar"; // keep your actual path
+
+// PATCH 2: After your state definitions (after termsCount useState is perfect)
+const coachDraft = useMemo(
+  () => ({ proposal: { terms: formData.terms ?? "" } }),
+  [formData.terms]
+);
+
+const setCoachDraft = useCallback(
+  (next: any) => {
+    const nextTerms = next?.proposal?.terms ?? "";
+    setFormData((prev) => ({ ...prev, terms: nextTerms }));
+    setTermsCount(nextTerms.length);
+  },
+  [setFormData, setTermsCount]
+);
+
+// PATCH 3: At the suggested mount location (after line ~897), swap to CoachSidebarAny
+const CoachSidebarAny = CoachSidebar as any;
+
+// REPLACE your existing CoachSidebar mount block with this:
+{/* GigsterCoach Sidebar */}
+<CoachSidebarAny
+  surface="proposal"
+  contextRef={{ title: formData.title, clientName: formData.clientName }}
+  structuredFields={{ deliverables: formData.deliverables, terms: formData.terms }}
+  artifactText={formData.terms}
+  onInsertText={(text: string) => {
+    const updated = (formData.terms ?? "") + text;
+    setFormData((prev) => ({ ...prev, terms: updated }));
+    setTermsCount(updated.length);
+  }}
+  // v1.2 Apply Engine draft adapter (proposal.terms only)
+  draft={coachDraft}
+  setDraft={setCoachDraft}
+/>
+```
+
+---
+
+## FILE: client/src/pages/messages.tsx
+
+```tsx
+// FILE: client/src/pages/messages.tsx
+
+// PATCH 1: React import — ensure useMemo/useCallback available
+// BEFORE (example): import React, { useState } from "react";
+// AFTER:
+import React, { useCallback, useMemo, useState } from "react";
+
+// ... existing imports ...
+import CoachSidebar from "@/components/gigstercoach/CoachSidebar"; // keep your actual path
+
+// PATCH 2: After your composeData state definition
+// NOTE: Apply Engine v1.2 supports message.body (mapped to composeData.content).
+const coachDraft = useMemo(
+  () => ({ message: { body: composeData.content ?? "" } }),
+  [composeData.content]
+);
+
+const setCoachDraft = useCallback(
+  (next: any) => {
+    const nextBody = next?.message?.body ?? "";
+    setComposeData((prev) => ({ ...prev, content: nextBody }));
+  },
+  [setComposeData]
+);
+
+// PATCH 3: Inside the Dialog (after line ~473), swap to CoachSidebarAny and pass draft props
+const CoachSidebarAny = CoachSidebar as any;
+
+// REPLACE your existing CoachSidebar mount block with this:
+{/* GigsterCoach Sidebar */}
+<CoachSidebarAny
+  surface="message"
+  contextRef={{ to: composeData.to }}
+  structuredFields={{ subject: composeData.subject, body: composeData.content }}
+  artifactText={composeData.content}
+  onInsertText={(text: string) => {
+    setComposeData((prev) => ({ ...prev, content: (prev.content ?? "") + text }));
+  }}
+  // v1.2 Apply Engine draft adapter (message.body only)
+  draft={coachDraft}
+  setDraft={setCoachDraft}
+/>
+```
+
+---
+
+If you want, I can also generate a **single “FILE: …” patch block for `CoachSidebar`** that consumes `draft/setDraft` and renders `SuggestionApplyButton` for any suggestion that includes an `applyPayload` — but you didn’t ask for that file yet, so I’m keeping scope to the three screens.
