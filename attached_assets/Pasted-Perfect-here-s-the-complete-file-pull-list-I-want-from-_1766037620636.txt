@@ -1,0 +1,165 @@
+Perfect — here’s the **complete file pull list** I want from Replit, in **priority order**, so I can ingest the repo, map “repo reality” to our Gigster Garage v1.0 architecture, and prep safe Replit Drops.
+
+## A) Repo map first (required)
+
+1. **Full repo tree**
+
+   * Output of: `ls -R` (or a screenshot / pasted tree)
+
+2. **Root-level metadata**
+
+* `package.json` (root, if exists)
+* `README.md` (and any `README_*`)
+* `replit.nix` / `.replit` (if present)
+* `tsconfig.json` (root, if exists)
+* `.env.example` (or any env template)
+* `docker-compose.yml` (if present)
+
+---
+
+## B) Backend / Engine (required)
+
+### Core server entry + routing
+
+* `engine/src/index.ts` (or server entry file)
+* `engine/src/app.ts` (if present)
+* `engine/src/routes.ts` **or** `engine/src/routes/**` (all route files)
+* `engine/src/middleware/**` (all)
+* `engine/src/lib/**` (all, especially auth, config, helpers)
+
+### Database & ORM
+
+* `engine/src/db/**` (all)
+
+  * `engine/src/db/schema/**` (all tables)
+  * `engine/src/db/index.ts` (if exists)
+  * `engine/src/db/drizzle.config.ts` or drizzle config
+  * `engine/src/db/migrations/**` (all SQL/migration files)
+* Any `seed` scripts:
+
+  * `engine/src/db/seed/**` or `engine/scripts/**`
+
+### Auth & permissions
+
+* `engine/src/auth/**` (if exists)
+* Any RBAC/ACL files (roles, permissions, guards)
+
+### Feature flags / config
+
+* `engine/src/config/**`
+* Feature flags implementation file(s) wherever they live
+
+### Domain services
+
+* `engine/src/services/**` (all)
+* `engine/src/controllers/**` (if exists)
+
+### Integrations
+
+* `engine/src/integrations/**` (all)
+
+  * payments (Stripe/etc)
+  * VSuite
+  * Retail Shell / BrandConfig
+  * Symbioso IP Studio
+  * Drive Steward (if already stubbed)
+
+### Observability / jobs / events
+
+* `engine/src/events/**` (types + handlers)
+* `engine/src/queue/**` (if exists)
+* `engine/src/jobs/**` (if exists)
+* logging/metrics setup files (wherever they live)
+
+---
+
+## C) Frontend / App (required)
+
+### App entry + routing + layout
+
+* `app/src/main.tsx`
+* `app/src/App.tsx`
+* `app/src/routes/**` (all)
+* `app/src/pages/**` (if exists)
+* `app/src/components/**` (all)
+* `app/src/layout/**` (if exists)
+
+### Client API + state
+
+* `app/src/lib/apiClient.ts` (or equivalent)
+* `app/src/lib/**` (feature flags, auth, brand config loaders, utils)
+* `app/src/state/**` (if exists; Zustand/Redux/etc)
+* `app/src/hooks/**` (if exists)
+
+### Styling / UI system
+
+* `app/tailwind.config.*`
+* `app/postcss.config.*`
+* `app/src/styles/**` (or `globals.css`)
+* `app/src/components/ui/**` (shadcn if present)
+
+### Build config
+
+* `app/vite.config.ts`
+* `app/tsconfig.json`
+* `app/package.json`
+
+---
+
+## D) Shared contracts (required if present)
+
+* `shared/**` (all)
+
+  * `shared/contracts/**` (DTOs/zod/OpenAPI)
+  * `shared/events/**`
+  * `shared/brand/**` (BrandConfig types/loaders)
+  * `shared/featureFlags/**`
+
+---
+
+## E) Tests (strongly preferred)
+
+* `engine/test/**` or `engine/tests/**`
+* `app/test/**` or `app/tests/**`
+* Any Playwright/Cypress config:
+
+  * `playwright.config.*`, `cypress/**`, etc.
+
+---
+
+## F) Security / compliance / policies (if present)
+
+* `SECURITY.md`
+* `LICENSE`
+* `NOTICE`
+* `third_party_licenses/**` or OSS attribution files
+
+---
+
+# Minimal “I can still work” fallback set (if you don’t want to dump everything)
+
+If you want the smallest set that still lets me fully diagnose architecture + drift:
+
+1. Repo tree
+2. `engine/src/index.ts` + `engine/src/routes/**`
+3. `engine/src/db/schema/**` + migrations
+4. `shared/contracts/**` (if exists)
+5. `app/src/App.tsx` + `app/src/routes/**` + `app/src/lib/apiClient*`
+
+---
+
+## Paste format that’s easiest
+
+For folders, paste like:
+
+```text
+// FILE: engine/src/index.ts
+<contents>
+
+// FILE: engine/src/routes/bookings.ts
+<contents>
+```
+
+If you follow that, I can ingest with near-zero ambiguity and build a clean **Repo Reality Report** + “Step 4 ready” checklist for Gigster Garage.
+
+Whenever you’re ready: start with the **repo tree** first.
