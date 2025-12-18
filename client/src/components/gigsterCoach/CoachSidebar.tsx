@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Lightbulb, CheckCircle2 } from "lucide-react";
+import { SuggestionApplyButton } from "@/components/gigsterCoach/SuggestionApplyButton";
 
 type Props = {
   surface: "invoice" | "proposal" | "message" | "contract" | "other";
@@ -12,6 +13,9 @@ type Props = {
   structuredFields?: Record<string, any>;
   artifactText?: string;
   onInsertText?: (text: string) => void;
+  draft?: Record<string, any>;
+  setDraft?: (next: Record<string, any>) => void;
+  onAppliedSuggestion?: (suggestionId: string) => void;
 };
 
 export function CoachSidebar(props: Props) {
@@ -145,23 +149,38 @@ export function CoachSidebar(props: Props) {
             {Array.isArray(resp?.suggestions) && resp.suggestions.length > 0 && (
               <div className="space-y-1">
                 <div className="text-xs font-semibold opacity-80">Suggestions</div>
-                {resp.suggestions.map((s: any) => (
-                  <div key={s.id} className="text-xs border rounded p-2 bg-muted/50">
-                    <div className="font-medium">{s.title}</div>
-                    {s.reason ? <div className="opacity-70">{s.reason}</div> : null}
-                    {s.actionType === "insert_text" && s.payload?.text && props.onInsertText ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => props.onInsertText?.(String(s.payload.text))}
-                        data-testid={`button-insert-${s.id}`}
-                      >
-                        Insert text
-                      </Button>
-                    ) : null}
-                  </div>
-                ))}
+                {resp.suggestions.map((s: any) => {
+                  const applyPayload = s.applyPayload ?? s.apply_payload;
+                  const canApply = Boolean(applyPayload && props.draft && props.setDraft);
+
+                  return (
+                    <div key={s.id} className="text-xs border rounded p-2 bg-muted/50">
+                      <div className="font-medium">{s.title}</div>
+                      {s.reason ? <div className="opacity-70">{s.reason}</div> : null}
+                      <div className="mt-2 flex items-center gap-2">
+                        {s.actionType === "insert_text" && s.payload?.text && props.onInsertText ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => props.onInsertText?.(String(s.payload.text))}
+                            data-testid={`button-insert-${s.id}`}
+                          >
+                            Insert text
+                          </Button>
+                        ) : null}
+                        {canApply && (
+                          <SuggestionApplyButton
+                            suggestionId={s.id}
+                            payload={applyPayload}
+                            draft={props.draft!}
+                            setDraft={props.setDraft!}
+                            onApplied={() => props.onAppliedSuggestion?.(s.id)}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 

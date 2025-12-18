@@ -57,6 +57,21 @@ export default function CreateInvoice() {
   // AI writing states
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
 
+  // v1.2 Apply Engine draft adapter (invoice.terms maps to formData.notes)
+  const coachDraft = useMemo(
+    () => ({ invoice: { terms: formData.notes ?? "" } }),
+    [formData.notes]
+  );
+
+  const setCoachDraft = useCallback(
+    (next: any) => {
+      const nextTerms = next?.invoice?.terms ?? "";
+      setFormData((prev) => ({ ...prev, notes: nextTerms }));
+      setNotesCount(nextTerms.length);
+    },
+    []
+  );
+
   // Time import states
   const [showTimeImportDialog, setShowTimeImportDialog] = useState(false);
   const [selectedTimeLogIds, setSelectedTimeLogIds] = useState<string[]>([]);
@@ -905,13 +920,15 @@ export default function CreateInvoice() {
           <CoachSidebar
             surface="invoice"
             contextRef={{ clientName: formData.clientName }}
-            structuredFields={{ notes: formData.notes, lineItems }}
+            structuredFields={{ notes: formData.notes, terms: formData.notes, lineItems }}
             artifactText={formData.notes}
             onInsertText={(text) => {
-              const updated = formData.notes + text;
+              const updated = (formData.notes ?? "") + text;
               updateFormData("notes", updated);
               setNotesCount(updated.length);
             }}
+            draft={coachDraft}
+            setDraft={setCoachDraft}
           />
 
           {/* Action Buttons */}

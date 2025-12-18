@@ -68,6 +68,20 @@ export function MessagesPage() {
     priority: 'medium',
     attachments: []
   });
+
+  // v1.2 Apply Engine draft adapter (message.body maps to composeData.content)
+  const coachDraft = useMemo(
+    () => ({ message: { body: composeData.content ?? "" } }),
+    [composeData.content]
+  );
+
+  const setCoachDraft = useCallback(
+    (next: any) => {
+      const nextBody = next?.message?.body ?? "";
+      setComposeData((prev) => ({ ...prev, content: nextBody }));
+    },
+    []
+  );
   
   // Mock filing cabinet files
   const filingCabinetFiles = [
@@ -480,8 +494,10 @@ export function MessagesPage() {
                   structuredFields={{ subject: composeData.subject, body: composeData.content }}
                   artifactText={composeData.content}
                   onInsertText={(text) => {
-                    setComposeData(prev => ({ ...prev, content: prev.content + text }));
+                    setComposeData(prev => ({ ...prev, content: (prev.content ?? "") + text }));
                   }}
+                  draft={coachDraft}
+                  setDraft={setCoachDraft}
                 />
               </div>
               <DialogFooter>

@@ -1,0 +1,91 @@
+```tsx
+// FILE: client/src/components/gigstercoach/CoachSidebar.tsx
+
+// PATCH: Add Apply Engine support (draft/setDraft) + render SuggestionApplyButton for suggestions with applyPayload
+
+// 1) ADD this import near the top with other component imports:
+import { SuggestionApplyButton } from "@/components/gigstercoach/SuggestionApplyButton";
+
+// 2) EXTEND your props type/interface to accept draft + setDraft (optional)
+// Find your existing CoachSidebarProps (or inline props type) and add these:
+type CoachSidebarProps = {
+  // ...your existing props...
+  surface: "invoice" | "proposal" | "message" | string;
+  contextRef?: any;
+  structuredFields?: any;
+  artifactText?: string;
+  onInsertText?: (text: string) => void;
+
+  /** v1.2 Apply Engine (optional): when present, sidebar can apply structured suggestions */
+  draft?: any;
+  setDraft?: (next: any) => void;
+
+  /** optional hook if parent wants to react to successful apply */
+  onAppliedSuggestion?: (suggestionId: string) => void;
+};
+
+// 3) INSIDE the component, destructure the new props:
+export default function CoachSidebar(props: CoachSidebarProps) {
+  const {
+    // ...your existing destructures...
+    draft,
+    setDraft,
+    onAppliedSuggestion,
+  } = props;
+
+  // ...existing state/effects/fetching...
+
+  // 4) WHERE you render each suggestion row/card (you likely have: suggestions.map(...))
+  // Add the Apply button block inside the per-suggestion UI (usually in the actions/footer area).
+  //
+  // Example pattern — paste this inside your suggestions.map((s) => (...)) render:
+  //
+  //   const applyPayload = (s as any).applyPayload ?? (s as any).apply_payload;
+  //   const canApply = Boolean(applyPayload && draft && setDraft);
+
+  return (
+    <div className="...">
+      {/* ... your existing sidebar UI ... */}
+
+      {/* Suggestions List */}
+      <div className="space-y-3">
+        {(suggestions ?? []).map((s: any) => {
+          const applyPayload = s.applyPayload ?? s.apply_payload; // support either shape
+          const canApply = Boolean(applyPayload && draft && setDraft);
+
+          return (
+            <div key={s.id} className="rounded-lg border p-3">
+              {/* ... your existing suggestion content (title/text/etc.) ... */}
+
+              <div className="mt-3 flex items-center gap-2">
+                {/* Existing actions, e.g. Insert / Dismiss, keep as-is */}
+                {/* Example:
+                    <Button onClick={() => onInsertText?.(s.text)}>Insert</Button>
+                    <Button variant="outline" onClick={() => dismiss(s.id)}>Dismiss</Button>
+                */}
+
+                {/* NEW: Apply Engine button — only shows when suggestion has applyPayload AND parent provided draft/setDraft */}
+                {canApply ? (
+                  <SuggestionApplyButton
+                    suggestionId={s.id}
+                    payload={applyPayload}
+                    draft={draft}
+                    setDraft={setDraft!}
+                    onApplied={() => {
+                      onAppliedSuggestion?.(s.id);
+                      // If your sidebar already has a refetch() method, call it here:
+                      // refetchSuggestions?.();
+                    }}
+                  />
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ...rest of sidebar... */}
+    </div>
+  );
+}
+```

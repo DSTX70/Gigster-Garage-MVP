@@ -94,6 +94,21 @@ export default function CreateProposal() {
     confidentiality: ""
   });
 
+  // v1.2 Apply Engine draft adapter (proposal.terms)
+  const coachDraft = useMemo(
+    () => ({ proposal: { terms: formData.terms ?? "" } }),
+    [formData.terms]
+  );
+
+  const setCoachDraft = useCallback(
+    (next: any) => {
+      const nextTerms = next?.proposal?.terms ?? "";
+      setFormData((prev) => ({ ...prev, terms: nextTerms }));
+      setTermsCount(nextTerms.length);
+    },
+    []
+  );
+
   // Fetch projects
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -904,10 +919,12 @@ export default function CreateProposal() {
             structuredFields={{ deliverables: formData.deliverables, terms: formData.terms }}
             artifactText={formData.terms}
             onInsertText={(text) => {
-              const updated = formData.terms + text;
+              const updated = (formData.terms ?? "") + text;
               updateFormData("terms", updated);
               setTermsCount(updated.length);
             }}
+            draft={coachDraft}
+            setDraft={setCoachDraft}
           />
 
           {/* Action Buttons */}
