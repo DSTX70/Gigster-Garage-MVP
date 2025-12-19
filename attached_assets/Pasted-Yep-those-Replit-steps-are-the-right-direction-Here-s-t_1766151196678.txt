@@ -1,0 +1,70 @@
+Yep — those Replit steps are the right direction. Here’s the clean, “make it work” checklist I use when preview won’t open.
+
+## Fix the Replit Preview (Gigster Garage: Express on 5000)
+
+### 1) Ports / Networking panel
+
+In **Networking / Ports**:
+
+* **Delete** any existing entries for **3000** and **3001** (they can steal “primary preview”).
+* Ensure **internal port `5000`** is mapped to **external `80`**.
+* If you don’t see it, click **Open Port** and add:
+
+  * **Internal:** `5000`
+  * **External:** `80`
+
+Then click **Open in new tab** (or whatever Replit calls the external link).
+
+### 2) Use the “View preview” button in Checkpoints
+
+If you see **“View preview”** in the **checkpoint section (bottom right)**, click that — it often opens the correct bound port directly (even when the regular preview pane is confused).
+
+---
+
+## The #1 cause: server isn’t actually listening on the right interface/port
+
+Make sure your server binds like this (Express):
+
+```ts
+const port = Number(process.env.PORT ?? 5000);
+app.listen(port, "0.0.0.0", () => console.log(`Listening on ${port}`));
+```
+
+* **`0.0.0.0` matters** on Replit.
+* `process.env.PORT` should be honored if Replit injects it.
+
+---
+
+## If you’re running a separate client dev server (Vite/Next) too
+
+Replit preview often expects **one** “main” port.
+
+### Recommended for stability:
+
+* Run **server on 5000**
+* Serve built client **from the server** (static) so preview is always `:5000`
+
+If you *are* running Vite, it might be on `5173` (or `3000`). If so:
+
+* Either remove it from ports during debugging, **or**
+* Map that port instead (but your current guidance says the app should be on 5000, so keep 5000 as the main preview).
+
+---
+
+## Quick sanity checks
+
+* In Console logs: you should see **“Listening on 5000”** (or on whatever `PORT` is).
+* Hit your health endpoint in-browser:
+  `…/api/system/manifest` (or any known GET route)
+  If that loads, the server is up and the preview mapping is the only problem.
+
+---
+
+## If it still won’t open
+
+Paste **two things** and I’ll tell you exactly which case you’re in:
+
+1. The last ~30 lines of your **Replit console logs**
+2. What ports show up in the **Ports/Networking** panel after you clean them up (just the list)
+
+That’ll let me pinpoint whether it’s (a) port mapping, (b) bind address, or (c) client dev-server confusion.
