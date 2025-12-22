@@ -48,6 +48,7 @@ export default function Settings() {
   const [timezone, setTimezone] = useState("America/New_York");
   const [dateFormat, setDateFormat] = useState("MM/DD/YYYY");
   const [timeFormat, setTimeFormat] = useState("12h");
+  const [language, setLanguage] = useState("en");
 
   // Account settings
   const [currentPassword, setCurrentPassword] = useState("");
@@ -148,6 +149,7 @@ export default function Settings() {
       timezone,
       dateFormat,
       timeFormat,
+      language,
     });
   };
 
@@ -458,6 +460,24 @@ export default function Settings() {
                       <SelectItem value="24h">24-hour (15:00)</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language</Label>
+                  <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger id="language" data-testid="select-language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
+                      <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                      <SelectItem value="es">Español (Spanish)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">
+                    Choose your preferred display language
+                  </p>
                 </div>
               </CardContent>
             </Card>
