@@ -24,14 +24,17 @@ Complete documentation for all features and functionality.
 13. [AI Content Generation](#ai-content-generation)
 14. [Advanced Reporting](#advanced-reporting)
 15. [Team Collaboration](#team-collaboration)
+16. [GigsterCoach - AI Business Coach](#gigstercoach---ai-business-coach)
 
 ### Administration
-16. [User Management](#user-management)
-17. [Agent Management](#agent-management)
-18. [Social Media Queue System](#social-media-queue-system)
-19. [Settings & Preferences](#settings--preferences)
-20. [Integrations](#integrations)
-21. [Security & Privacy](#security--privacy)
+17. [User Management](#user-management)
+18. [Agent Management](#agent-management)
+19. [Social Media Queue System](#social-media-queue-system)
+20. [Platform Connections](#platform-connections)
+21. [Production Monitoring](#production-monitoring)
+22. [Settings & Preferences](#settings--preferences)
+23. [Integrations](#integrations)
+24. [Security & Privacy](#security--privacy)
 
 ### Reference
 22. [Keyboard Shortcuts](#keyboard-shortcuts)
@@ -778,6 +781,119 @@ Email reports automatically:
    - **Channels**: Choose in-app, email, SMS
    - **Types**: Select which events notify
 3. Click **"Save Preferences"**
+
+---
+
+## GigsterCoach - AI Business Coach
+
+**Plan Availability**: Free (base features), Pro+ (proactive suggestions)
+
+GigsterCoach is your AI-powered business assistant that helps you draft content, review documents, and get instant answers to business questions.
+
+### Accessing GigsterCoach
+
+1. Navigate to `/gigster-coach` or click **"GigsterCoach"** in the sidebar
+2. Choose your interaction mode:
+   - **Ask**: General Q&A about business topics
+   - **Draft**: Generate content for invoices, proposals, contracts
+   - **Review**: Get completeness checklists for documents
+
+### Ask Mode
+
+Get instant answers to business questions:
+
+1. Select **"Ask"** tab
+2. Type your question (e.g., "How should I price a web development project?")
+3. Coach responds with expert guidance
+4. Conversation history is saved for reference
+
+**Example Questions**:
+- "What should I include in a freelance contract?"
+- "How do I handle a late-paying client?"
+- "What's a fair hourly rate for graphic design?"
+
+### Draft Mode
+
+Generate professional content instantly:
+
+1. Select **"Draft"** tab
+2. Choose content type:
+   - **Invoice Terms**: Payment terms, late fees, etc.
+   - **Proposal Scope**: Project scope and deliverables
+   - **Contract Clauses**: Legal language for agreements
+   - **Email Messages**: Client communications
+3. Provide context (client name, project type, specifics)
+4. Click **"Generate"**
+5. Review and edit the AI-generated content
+6. Apply directly to your document
+
+### Review Mode
+
+Get completeness checklists for documents:
+
+1. Select **"Review"** tab
+2. Choose document type (invoice, proposal, contract)
+3. Coach analyzes your document
+4. Receive a checklist of:
+   - Required fields present/missing
+   - Suggested improvements
+   - Common issues to address
+   - Compliance recommendations
+
+### Suggestions Inbox
+
+**Plan Required**: Pro or Enterprise
+
+Proactive suggestions from Coach appear in your inbox:
+
+1. Navigate to `/gigster-coach/suggestions`
+2. View pending suggestions
+3. For each suggestion:
+   - **Apply**: Execute the suggested action
+   - **Dismiss**: Remove from inbox
+4. Applied suggestions update your documents automatically
+
+### Embedded Coach (Sidebar)
+
+GigsterCoach is embedded in key editors:
+
+**Invoice Builder**:
+- Suggest payment terms
+- Draft professional notes
+- Review invoice completeness
+
+**Proposal Editor**:
+- Generate scope sections
+- Draft deliverables lists
+- Add terms and conditions
+
+**Message Composer**:
+- Draft professional responses
+- Suggest follow-up language
+- Review message tone
+
+### Using the Apply Engine
+
+When Coach makes a suggestion:
+
+1. Review the suggested change
+2. Click **"Apply"** button
+3. Change is validated against whitelist:
+   - `invoice.terms` → Invoice notes field
+   - `proposal.scope` → Proposal terms
+   - `message.body` → Message content
+   - `proposal.deliverables` → Deliverables list
+4. Change applied to your document
+5. You can undo/edit after applying
+
+### Governance & Safety
+
+GigsterCoach operates under strict governance:
+
+- **L0 Level**: Fully supervised - user must approve all actions
+- **L1 Level**: Semi-autonomous - can draft but never send/post
+- **Never Autonomous**: Coach never sends emails, posts content, or modifies data without explicit approval
+- **Whitelist Validation**: Apply Engine only modifies pre-approved fields
 
 ---
 
@@ -1860,6 +1976,158 @@ export const customPlatform: PlatformAdapter = {
 
 ---
 
+## Platform Connections
+
+**Path**: `/settings/connections`
+
+Manage your social media platform credentials for the Social Queue System.
+
+### Overview
+
+Platform Connections provides a secure interface for managing API credentials for:
+- **X (Twitter)**: Post tweets and threads
+- **Instagram**: Share images and stories
+- **LinkedIn**: Professional content posting
+
+### Connecting a Platform
+
+#### X (Twitter)
+
+1. Navigate to **Settings → Connections**
+2. Find the **X/Twitter** card
+3. Enter credentials:
+   - **API Key**: From X Developer Portal
+   - **API Secret**: From X Developer Portal
+   - **Access Token**: Your account access token
+   - **Access Secret**: Your account access secret
+4. Click **"Save Credentials"**
+5. Click **"Test Connection"** to verify
+
+**Getting X API Credentials**:
+1. Go to https://developer.twitter.com
+2. Create a developer account
+3. Create a new App
+4. Generate API keys and Access tokens
+5. Ensure "Read and Write" permissions
+
+#### Instagram
+
+1. Find the **Instagram** card
+2. Enter credentials:
+   - **Access Token**: From Meta Developer Portal
+   - **Account ID**: Your Instagram Business Account ID
+3. Click **"Save Credentials"**
+4. Click **"Test Connection"** to verify
+
+**Requirements**:
+- Instagram Business or Creator account
+- Connected to a Facebook Page
+- Meta Developer App with Instagram Graph API enabled
+
+#### LinkedIn
+
+1. Find the **LinkedIn** card
+2. Enter credentials:
+   - **Access Token**: From LinkedIn Developer Portal
+3. Click **"Save Credentials"**
+4. Click **"Test Connection"** to verify
+
+**Getting LinkedIn Credentials**:
+1. Create app at https://developer.linkedin.com
+2. Request "Share on LinkedIn" permission
+3. Generate access token via OAuth flow
+
+### Managing Connections
+
+**Test Connection**:
+- Verifies credentials are valid
+- Shows success/failure status
+- Diagnoses common issues
+
+**Delete Credentials**:
+- Removes stored credentials
+- Requires re-configuration to post
+- Does not affect queued posts
+
+### Security
+
+- Credentials stored encrypted in database
+- Never displayed after initial entry
+- Access restricted to account owner
+- Audit logged for compliance
+
+---
+
+## Production Monitoring
+
+**Path**: `/monitoring`  
+**Role Required**: Admin
+
+Real-time monitoring dashboard for production operations.
+
+### SLO Metrics
+
+Service Level Objectives displayed in real-time:
+
+**Error Rate**:
+- Target: < 1%
+- Displays current error percentage
+- Color-coded: Green (good) / Red (breach)
+
+**Queue Age**:
+- Target: < 5 minutes
+- Oldest post waiting in queue
+- Alerts when backlog grows
+
+**Rate Limit Saturation**:
+- Target: < 80%
+- Usage across platforms
+- Warns before hitting limits
+
+### Queue Statistics
+
+Visual charts showing queue health:
+
+**Posts by Status**:
+- Pending: Awaiting processing
+- Processing: Currently posting
+- Completed: Successfully posted
+- Failed: Encountered errors
+
+**Throughput**:
+- Posts per hour
+- Platform breakdown
+- Historical trends
+
+### System Health
+
+**Worker Status**:
+- Active/Idle workers
+- Processing queue depth
+- Error counts
+
+**Platform Health**:
+- X/Twitter: API status
+- Instagram: API status
+- LinkedIn: API status
+
+### Auto-Refresh
+
+Configure dashboard refresh interval:
+- **10 seconds**: Live monitoring
+- **30 seconds**: Active monitoring
+- **60 seconds**: Background checks
+
+### Alerts
+
+System alerts displayed prominently:
+- **Error Rate Breach**: Investigation needed
+- **Queue Backup**: Processing delays
+- **Rate Limit Warning**: Approaching limits
+- **Worker Down**: Service interruption
+
+---
+
 ## Settings & Preferences
 
 ### Account Settings
@@ -2897,6 +3165,23 @@ Configure webhooks to receive real-time events:
 - **L0/L1**: Autonomy levels (supervised/semi-autonomous)
 
 ### Change Log
+
+**Version 1.2.0** (December 2025)
+- GigsterCoach AI Business Coach with Ask/Draft/Review modes
+- Suggestions Inbox with Apply/Dismiss actions
+- Apply Engine for safe document modifications
+- Embedded Coach sidebar in Invoice, Proposal, and Message editors
+- Platform Connections management (X, Instagram, LinkedIn)
+- Production Monitoring dashboard with SLO metrics
+- Real-time queue statistics and system health indicators
+- Auto-refresh monitoring with configurable intervals
+
+**Version 1.1.0** (November 2025)
+- Social Media Queue System with iCadence integration
+- Intelligent rate limiting and burst capacity
+- Webhook integrations for post scheduling
+- Quick-start onboarding flow
+- Brand development wizard
 
 **Version 1.0.0** (November 2025)
 - Initial release
