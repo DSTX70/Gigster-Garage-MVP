@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Download, RefreshCw, Calendar, Target, Users, Eye, EyeOff, TrendingUp, CheckCircle, XCircle, AlertCircle, Shield } from "lucide-react";
+import { Download, RefreshCw, Calendar, Target, Users, Eye, EyeOff, TrendingUp, CheckCircle, XCircle, AlertCircle, Shield, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 import type { Agent, AgentVisibilityFlag, AgentGraduationPlan, AgentKpi } from "@shared/schema";
 import { useHubFlags, promoteAgentToHub, ADMIN_WRITE } from "@/hooks/use-hub-flags";
 import AgentExposureCards from "@/components/agent-exposure/AgentExposureCards";
@@ -171,6 +172,14 @@ export default function AgentManagement() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-4 mb-2">
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="gap-2" data-testid="button-back-dashboard">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Agent Management</h1>
