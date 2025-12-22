@@ -18,15 +18,18 @@ import {
   Plus,
   Calendar,
   Eye,
-  Download
+  Download,
+  Send
 } from "lucide-react";
 import type { Client, Proposal, Invoice, Payment } from "@shared/schema";
 import { ClientDocuments } from "@/components/ClientDocuments";
 import { AppHeader } from "@/components/app-header";
+import { EmailComposerModal, useEmailComposer } from "@/components/EmailComposerModal";
 
 export default function ClientDetails() {
   const { clientId } = useParams() as { clientId: string };
   const [activeTab, setActiveTab] = useState("overview");
+  const emailComposer = useEmailComposer();
   
   // Scroll to top when component mounts
   useEffect(() => {
@@ -146,7 +149,29 @@ export default function ClientDetails() {
               New Invoice
             </Button>
           </Link>
+          {client.email && (
+            <Button 
+              variant="outline"
+              onClick={() => emailComposer.openComposer({ 
+                to: client.email || "", 
+                subject: `Message for ${client.name}` 
+              })}
+              data-testid="button-send-email"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Send Email
+            </Button>
+          )}
         </div>
+        
+        {/* Email Composer Modal */}
+        <EmailComposerModal
+          isOpen={emailComposer.isOpen}
+          onClose={emailComposer.closeComposer}
+          defaultTo={emailComposer.defaults.to}
+          defaultSubject={emailComposer.defaults.subject}
+          defaultBody={emailComposer.defaults.body}
+        />
 
         {/* Filing Cabinet - Always Visible */}
         <div className="mb-8">

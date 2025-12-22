@@ -2476,9 +2476,13 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         console.log(`📄 Created proposal "${proposal.title}" for client: ${proposal.clientName}`);
         res.status(201).json(proposal);
       }
-    } catch (error) {
-      console.error("Error creating proposal:", error);
-      res.status(500).json({ message: "Failed to create proposal" });
+    } catch (error: any) {
+      console.error("Error creating proposal:", error?.message || error);
+      console.error("Stack trace:", error?.stack);
+      res.status(500).json({ 
+        message: "Failed to create proposal", 
+        error: error?.message || "Unknown error"
+      });
     }
   });
 
