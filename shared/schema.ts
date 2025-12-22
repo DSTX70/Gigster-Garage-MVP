@@ -1605,3 +1605,26 @@ export const insertPlatformCredentialSchema = createInsertSchema(platformCredent
   updatedAt: true,
   lastValidated: true,
 });
+
+// Agency Hub Saved Items - Persistent storage for marketing content and visuals
+export const agencyHubItems = pgTable("agency_hub_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  type: varchar("type", { enum: ["marketing", "visual"] }).notNull(),
+  content: text("content").notNull(),
+  style: varchar("style"),
+  metadata: jsonb("metadata").$type<{
+    prompt?: string;
+    platform?: string;
+    visualStyle?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AgencyHubItem = typeof agencyHubItems.$inferSelect;
+export type InsertAgencyHubItem = typeof agencyHubItems.$inferInsert;
+
+export const insertAgencyHubItemSchema = createInsertSchema(agencyHubItems).omit({
+  id: true,
+  createdAt: true,
+});

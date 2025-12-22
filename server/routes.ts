@@ -3864,6 +3864,30 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Download proposal PDF
+  app.get("/api/proposals/:id/pdf", requireAuth, async (req, res) => {
+    try {
+      const proposal = await storage.getProposal(req.params.id, req.session.user!.id);
+      if (!proposal) {
+        return res.status(404).json({ error: "Proposal not found" });
+      }
+
+      // Generate PDF
+      const pdfBuffer = await generateProposalPDF({
+        ...proposal,
+        clientName: proposal.clientName || 'Valued Client',
+      });
+
+      const fileName = `proposal-${proposal.title?.replace(/[^a-zA-Z0-9]/g, '-') || 'document'}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating proposal PDF:", error);
+      res.status(500).json({ error: "Failed to generate PDF" });
+    }
+  });
+
   // Save proposal to Filing Cabinet
   app.post("/api/proposals/:id/save-to-filing-cabinet", requireAuth, async (req, res) => {
     try {
@@ -5276,6 +5300,98 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     } catch (error: any) {
       console.error("❌ Save to Filing Cabinet Error:", error.message || error);
       res.status(500).json({ error: "Failed to save visual to Filing Cabinet: " + (error.message || "Unknown error") });
+    }
+  });
+
+  // Agency Hub Saved Items endpoints
+  app.get("/api/agency/saved-items", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const type = req.query.type as 'marketing' | 'visual' | undefined;
+      
+      let query = `
+        SELECT id, user_id, type, content, style, metadata, created_at 
+        FROM agency_hub_items 
+        WHERE user_id = $1
+      `;
+      const params: any[] = [userId];
+      
+      if (type) {
+        query += ` AND type = $2`;
+        params.push(type);
+      }
+      
+      query += ` ORDER BY created_at DESC LIMIT 20`;
+      
+      const result = await pool.query(query, params);
+      res.json(result.rows);
+    } catch (error: any) {
+      console.error("Error fetching saved items:", error);
+      res.status(500).json({ error: "Failed to fetch saved items" });
+    }
+  });
+
+  app.post("/api/agency/saved-items", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const { type, content, style, metadata } = req.body;
+      
+      if (!type || !content) {
+        return res.status(400).json({ error: "Type and content are required" });
+      }
+      
+      if (!['marketing', 'visual'].includes(type)) {
+        return res.status(400).json({ error: "Type must be 'marketing' or 'visual'" });
+      }
+
+      // Count existing items and delete oldest if over 20
+      const countResult = await pool.query(
+        `SELECT COUNT(*)::int as count FROM agency_hub_items WHERE user_id = $1 AND type = $2`,
+        [userId, type]
+      );
+      
+      if (countResult.rows[0].count >= 20) {
+        await pool.query(`
+          DELETE FROM agency_hub_items WHERE id IN (
+            SELECT id FROM agency_hub_items 
+            WHERE user_id = $1 AND type = $2 
+            ORDER BY created_at ASC 
+            LIMIT 1
+          )
+        `, [userId, type]);
+      }
+
+      const result = await pool.query(`
+        INSERT INTO agency_hub_items (user_id, type, content, style, metadata)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `, [userId, type, content, style || null, metadata ? JSON.stringify(metadata) : null]);
+
+      res.status(201).json(result.rows[0]);
+    } catch (error: any) {
+      console.error("Error saving item:", error);
+      res.status(500).json({ error: "Failed to save item" });
+    }
+  });
+
+  app.delete("/api/agency/saved-items/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const itemId = req.params.id;
+      
+      const result = await pool.query(
+        `DELETE FROM agency_hub_items WHERE id = $1 AND user_id = $2 RETURNING id`,
+        [itemId, userId]
+      );
+      
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Item not found" });
+      }
+      
+      res.json({ message: "Item deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting item:", error);
+      res.status(500).json({ error: "Failed to delete item" });
     }
   });
 

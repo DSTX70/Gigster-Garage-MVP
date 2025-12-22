@@ -94,6 +94,14 @@ export default function CreateProposal() {
     confidentiality: ""
   });
 
+  // New Project dialog state
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectDescription, setNewProjectDescription] = useState("");
+
+  // Description style state
+  const [descriptionStyle, setDescriptionStyle] = useState<"casual" | "professional" | "technical">("professional");
+
   // v1.2 Apply Engine draft adapter (proposal.terms)
   const coachDraft = useMemo(
     () => ({ proposal: { terms: formData.terms ?? "" } }),
@@ -244,7 +252,15 @@ export default function CreateProposal() {
   const generateDescriptionWithQuestions = async () => {
     setIsGeneratingDescription(true);
     try {
-      const context = `Generate a professional project description for "${formData.title}" ${formData.clientName ? `for client ${formData.clientName}` : ''}. 
+      const styleGuide = {
+        casual: "Write in a warm, friendly, and approachable tone. Use conversational language that feels personal and relatable. Avoid jargon and keep sentences short and engaging.",
+        professional: "Write in a clear, polished, and business-appropriate tone. Use formal but accessible language. Maintain professionalism while being engaging and informative.",
+        technical: "Write using industry-specific terminology and technical language appropriate for experts in the field. Include relevant technical specifications, standards, and methodologies. Use precise language that demonstrates domain expertise."
+      };
+
+      const context = `Generate a ${descriptionStyle === "casual" ? "casual and warm" : descriptionStyle === "professional" ? "professional" : "highly technical/trade-specific"} project description for "${formData.title}" ${formData.clientName ? `for client ${formData.clientName}` : ''}. 
+      
+      WRITING STYLE: ${styleGuide[descriptionStyle]}
       
       Project Details:
       - Type: ${descriptionQuestions.projectType}
@@ -305,6 +321,13 @@ export default function CreateProposal() {
     try {
       const context = `Generate detailed deliverables list for project "${formData.title}".
       
+      PROJECT CONTEXT (use this to inform deliverable suggestions):
+      - Project Description: ${formData.projectDescription || "Not specified"}
+      - Industry: ${descriptionQuestions.industry || "General"}
+      - Project Type: ${descriptionQuestions.projectType || "Not specified"}
+      - Target Audience: ${descriptionQuestions.targetAudience || "Not specified"}
+      - Key Features: ${descriptionQuestions.keyFeatures || "Not specified"}
+      
       Deliverable Specifications:
       - Output Formats: ${deliverablesQuestions.outputFormats}
       - Quality Standards: ${deliverablesQuestions.qualityStandards}
@@ -312,7 +335,9 @@ export default function CreateProposal() {
       - Revision Rounds: ${deliverablesQuestions.revisionRounds}
       - Delivery Method: ${deliverablesQuestions.deliveryMethod}
       - Milestones: ${deliverablesQuestions.milestones}
-      - Acceptance Criteria: ${deliverablesQuestions.acceptanceCriteria}`;
+      - Acceptance Criteria: ${deliverablesQuestions.acceptanceCriteria}
+      
+      Generate deliverables that are highly relevant to this specific industry/project type.`;
 
       const response = await fetch("/api/ai/generate-content", {
         method: "POST",
@@ -595,12 +620,24 @@ export default function CreateProposal() {
                 </div>
                 <div className="space-y-2">
                   <Label>Project</Label>
-                  <Select value={formData.projectId} onValueChange={(value) => updateFormData("projectId", value)}>
+                  <Select value={formData.projectId} onValueChange={(value) => {
+                    if (value === "new-project") {
+                      setShowNewProjectDialog(true);
+                    } else {
+                      updateFormData("projectId", value);
+                    }
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select project (optional)" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="no-project">No project</SelectItem>
+                      <SelectItem value="new-project" className="text-blue-600 font-medium">
+                        <span className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          New Project
+                        </span>
+                      </SelectItem>
                       {projects.map(project => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
@@ -958,6 +995,24 @@ export default function CreateProposal() {
           <div className="flex-1 overflow-y-auto space-y-4 py-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="descriptionStyle">Writing Style</Label>
+                <Select value={descriptionStyle} onValueChange={(v: "casual" | "professional" | "technical") => setDescriptionStyle(v)}>
+                  <SelectTrigger id="descriptionStyle" data-testid="select-description-style">
+                    <SelectValue placeholder="Select writing style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="casual">Casual & Warm</SelectItem>
+                    <SelectItem value="professional">Professional</SelectItem>
+                    <SelectItem value="technical">Highly Technical/Trade</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {descriptionStyle === "casual" ? "Friendly, approachable language" : 
+                   descriptionStyle === "professional" ? "Clear, business-appropriate tone" : 
+                   "Industry-specific terminology for experts"}
+                </p>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="projectType">What type of project is this?</Label>
                 <Input
                   id="projectType"
@@ -1208,6 +1263,87 @@ export default function CreateProposal() {
               ) : (
                 "Generate Terms"
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Project Dialog */}
+      <Dialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newProjectName">Project Name *</Label>
+              <Input
+                id="newProjectName"
+                placeholder="Enter project name"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newProjectDesc">Description (optional)</Label>
+              <Textarea
+                id="newProjectDesc"
+                placeholder="Brief project description..."
+                value={newProjectDescription}
+                onChange={(e) => setNewProjectDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => {
+              setShowNewProjectDialog(false);
+              setNewProjectName("");
+              setNewProjectDescription("");
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!newProjectName.trim()) {
+                  toast({
+                    title: "Name Required",
+                    description: "Please enter a project name.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                try {
+                  const response = await fetch("/api/projects", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      name: newProjectName.trim(),
+                      description: newProjectDescription.trim() || null,
+                    }),
+                  });
+                  if (!response.ok) throw new Error("Failed to create project");
+                  const project = await response.json();
+                  updateFormData("projectId", project.id);
+                  setShowNewProjectDialog(false);
+                  setNewProjectName("");
+                  setNewProjectDescription("");
+                  toast({
+                    title: "Project Created",
+                    description: `Project "${project.name}" created and selected.`,
+                  });
+                } catch (error) {
+                  toast({
+                    title: "Error",
+                    description: "Failed to create project. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              data-testid="button-create-project"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Project
             </Button>
           </div>
         </DialogContent>

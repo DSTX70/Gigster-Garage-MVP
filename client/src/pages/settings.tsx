@@ -466,7 +466,8 @@ export default function Settings() {
                   <Label htmlFor="language">Language</Label>
                   <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger id="language" data-testid="select-language">
-                      <SelectValue />
+                      <Globe className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Select language" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="en">English</SelectItem>

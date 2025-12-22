@@ -70,6 +70,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsGuide } from "@/components/KeyboardShortcutsGuide";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { QuickActionButton } from "@/components/QuickActionButton";
+import { GigsterCoachFloatingButton } from "@/components/GigsterCoachFloatingButton";
 
 // Mobile Pages
 import MobileHome from "@/pages/mobile-home";
@@ -217,6 +218,7 @@ function App() {
             <KeyboardShortcutsGuide />
             <OfflineIndicator />
             <QuickActionButton />
+            <GigsterCoachFloatingButton />
             <Toaster />
             <Router />
           </TooltipProvider>

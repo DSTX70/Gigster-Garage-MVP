@@ -5,11 +5,55 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Zap, Palette, PenTool, Megaphone, BarChart3, Loader2, Copy, Download, ArrowLeft, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Zap, Palette, PenTool, Megaphone, BarChart3, Loader2, Copy, Download, ArrowLeft, X, Save, History, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+
+interface SavedItem {
+  id: string;
+  content: string;
+  type: 'marketing' | 'visual';
+  createdAt: string;
+  metadata?: { prompt?: string; visualStyle?: string; };
+}
+
+interface SavedItemAPI {
+  id: string;
+  content: string;
+  type: 'marketing' | 'visual';
+  created_at: string;
+  metadata?: { prompt?: string; visualStyle?: string; };
+}
+
+const mapSavedItem = (item: SavedItemAPI): SavedItem => ({
+  id: item.id,
+  content: item.content,
+  type: item.type,
+  createdAt: item.created_at,
+  metadata: item.metadata,
+});
+
+const VISUAL_STYLES = [
+  "Anime",
+  "Cartoon",
+  "Cyberpunk",
+  "Dystopian",
+  "Fantasy Worlds",
+  "Line Art",
+  "Minimalism",
+  "Photorealistic",
+  "Pixel Art",
+  "Pop-Art",
+  "Sci-Fi",
+  "Steampunk",
+  "Tropical",
+  "Vintage/Retro"
+];
 
 export default function AgencyHub() {
   const [createPrompt, setCreatePrompt] = useState("");
@@ -22,8 +66,42 @@ export default function AgencyHub() {
   const [promoteContent, setPromoteContent] = useState("");
   const [trackInsights, setTrackInsights] = useState("");
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+  
+  // Visual style dropdown
+  const [visualStyle, setVisualStyle] = useState<string>("Photorealistic");
+  
+  // Saved items state - using React Query for persistence
+  const [showSavedMarketing, setShowSavedMarketing] = useState(false);
+  const [showSavedVisuals, setShowSavedVisuals] = useState(false);
+  const queryClient = useQueryClient();
 
   const { toast } = useToast();
+  
+  // Fetch saved marketing content
+  const { data: savedMarketingContent = [] } = useQuery<SavedItem[]>({
+    queryKey: ['/api/agency/saved-items', 'marketing'],
+    queryFn: async () => {
+      const response = await fetch('/api/agency/saved-items?type=marketing', {
+        credentials: 'include'
+      });
+      if (!response.ok) return [];
+      const data: SavedItemAPI[] = await response.json();
+      return data.map(mapSavedItem);
+    },
+  });
+  
+  // Fetch saved visuals
+  const { data: savedVisuals = [] } = useQuery<SavedItem[]>({
+    queryKey: ['/api/agency/saved-items', 'visual'],
+    queryFn: async () => {
+      const response = await fetch('/api/agency/saved-items?type=visual', {
+        credentials: 'include'
+      });
+      if (!response.ok) return [];
+      const data: SavedItemAPI[] = await response.json();
+      return data.map(mapSavedItem);
+    },
+  });
 
   const createMutation = useMutation({
     mutationFn: async (prompt: string) => {
@@ -46,22 +124,99 @@ export default function AgencyHub() {
 
   const generateImageMutation = useMutation({
     mutationFn: async (prompt: string) => {
+      const styledPrompt = `${prompt}. Style: ${visualStyle}`;
       const response = await fetch("/api/agency/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: styledPrompt, style: visualStyle }),
       });
       if (!response.ok) throw new Error("Failed to generate image");
       return response.json();
     },
     onSuccess: (data) => {
-      setGeneratedImageUrl(data.imageUrl || data.url || data.path || data?.data?.imageUrl || "");
+      const imageUrl = data.imageUrl || data.url || data.path || data?.data?.imageUrl || "";
+      setGeneratedImageUrl(imageUrl);
       toast({ title: "Image generated!", description: "Your marketing visual is ready." });
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to generate image", variant: "destructive" });
     },
   });
+
+  // Save mutation for marketing content
+  const saveMarketingMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await apiRequest('/api/agency/saved-items', {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'marketing',
+          content,
+          metadata: { prompt: createPrompt }
+        }),
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', 'marketing'] });
+      toast({ title: "Saved!", description: "Marketing content saved to your library." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save content", variant: "destructive" });
+    }
+  });
+  
+  // Save mutation for visuals
+  const saveVisualMutation = useMutation({
+    mutationFn: async (imageUrl: string) => {
+      const response = await apiRequest('/api/agency/saved-items', {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'visual',
+          content: imageUrl,
+          style: visualStyle,
+          metadata: { prompt: createPrompt, visualStyle }
+        }),
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', 'visual'] });
+      toast({ title: "Saved!", description: "Visual saved to your library." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save visual", variant: "destructive" });
+    }
+  });
+  
+  // Delete mutation
+  const deleteSavedItemMutation = useMutation({
+    mutationFn: async ({ id, type }: { id: string; type: 'marketing' | 'visual' }) => {
+      await apiRequest(`/api/agency/saved-items/${id}`, { method: 'DELETE' });
+      return { type };
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', variables.type] });
+      toast({ title: "Deleted", description: "Item removed from library." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
+    }
+  });
+
+  // Save functions
+  const saveMarketingContent = () => {
+    if (!createdContent) return;
+    saveMarketingMutation.mutate(createdContent);
+  };
+
+  const saveVisual = () => {
+    if (!generatedImageUrl) return;
+    saveVisualMutation.mutate(generatedImageUrl);
+  };
+
+  const deleteSavedItem = (id: string, type: 'marketing' | 'visual') => {
+    deleteSavedItemMutation.mutate({ id, type });
+  };
 
   // AI Write function for generating marketing concept prompts
   const generateMarketingPrompt = async () => {
@@ -261,6 +416,22 @@ export default function AgencyHub() {
                         </>
                       )}
                     </Button>
+                    
+                    {/* Visual Style Dropdown */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Visual Style</label>
+                      <Select value={visualStyle} onValueChange={setVisualStyle}>
+                        <SelectTrigger data-testid="select-visual-style">
+                          <SelectValue placeholder="Select style" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {VISUAL_STYLES.map(style => (
+                            <SelectItem key={style} value={style}>{style}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
                     <Button 
                       onClick={() => generateImageMutation.mutate(createPrompt)}
                       disabled={!createPrompt.trim() || generateImageMutation.isPending}
@@ -287,20 +458,70 @@ export default function AgencyHub() {
                 {/* Generated Image */}
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                    <CardTitle>Generated Visual</CardTitle>
-                    {generatedImageUrl && (
+                    <div className="flex items-center gap-2">
+                      <CardTitle>Generated Visual</CardTitle>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setGeneratedImageUrl("")}
-                        className="h-8 w-8 p-0 text-gray-700 dark:text-gray-200 hover:bg-neutral-200 dark:hover:bg-neutral-800"
-                        data-testid="button-close-image"
+                        onClick={() => setShowSavedVisuals(!showSavedVisuals)}
+                        className="text-gray-500 hover:text-gray-700"
+                        data-testid="button-toggle-saved-visuals"
                       >
-                        <X className="h-4 w-4" />
+                        <History className="h-4 w-4 mr-1" />
+                        <Badge variant="secondary">{savedVisuals.length}</Badge>
                       </Button>
+                    </div>
+                    {generatedImageUrl && (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={saveVisual}
+                          className="h-8 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          data-testid="button-save-visual"
+                        >
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setGeneratedImageUrl("")}
+                          className="h-8 w-8 p-0 text-gray-700 dark:text-gray-200 hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                          data-testid="button-close-image"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </CardHeader>
                   <CardContent>
+                    {showSavedVisuals && savedVisuals.length > 0 && (
+                      <div className="mb-4 border rounded-lg p-3 bg-gray-50">
+                        <h4 className="text-sm font-medium mb-2">Saved Visuals ({savedVisuals.length})</h4>
+                        <ScrollArea className="h-[200px]">
+                          <div className="grid grid-cols-3 gap-2">
+                            {savedVisuals.map(item => (
+                              <div key={item.id} className="relative group">
+                                <img 
+                                  src={item.content} 
+                                  alt="Saved visual" 
+                                  className="w-full h-20 object-cover rounded cursor-pointer border hover:border-blue-500"
+                                  onClick={() => setGeneratedImageUrl(item.content)}
+                                />
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+                                  onClick={() => deleteSavedItem(item.id, 'visual')}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
                     {generatedImageUrl ? (
                       <div className="space-y-4">
                         <div className="bg-gray-50 p-4 rounded-lg border">
@@ -336,12 +557,12 @@ export default function AgencyHub() {
                           </Button>
                           <Button
                             variant="outline"
-                            onClick={() => setGeneratedImageUrl("")}
-                            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            data-testid="button-clear-image"
+                            onClick={saveVisual}
+                            className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            data-testid="button-save-visual-main"
                           >
-                            <X className="h-4 w-4 mr-2" />
-                            Clear
+                            <Save className="h-4 w-4 mr-2" />
+                            Save
                           </Button>
                         </div>
                       </div>
@@ -355,24 +576,85 @@ export default function AgencyHub() {
 
                 {/* Generated Content */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Marketing Concept</CardTitle>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                    <div className="flex items-center gap-2">
+                      <CardTitle>Marketing Concept</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowSavedMarketing(!showSavedMarketing)}
+                        className="text-gray-500 hover:text-gray-700"
+                        data-testid="button-toggle-saved-marketing"
+                      >
+                        <History className="h-4 w-4 mr-1" />
+                        <Badge variant="secondary">{savedMarketingContent.length}</Badge>
+                      </Button>
+                    </div>
+                    {createdContent && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={saveMarketingContent}
+                        className="h-8 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        data-testid="button-save-marketing-header"
+                      >
+                        <Save className="h-4 w-4" />
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent>
+                    {showSavedMarketing && savedMarketingContent.length > 0 && (
+                      <div className="mb-4 border rounded-lg p-3 bg-gray-50">
+                        <h4 className="text-sm font-medium mb-2">Saved Marketing Content ({savedMarketingContent.length})</h4>
+                        <ScrollArea className="h-[200px]">
+                          <div className="space-y-2">
+                            {savedMarketingContent.map(item => (
+                              <div key={item.id} className="flex items-start justify-between p-2 border rounded bg-white hover:bg-gray-50 group">
+                                <div 
+                                  className="flex-1 cursor-pointer text-sm line-clamp-2"
+                                  onClick={() => setCreatedContent(item.content)}
+                                >
+                                  {item.content.slice(0, 100)}...
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-red-500"
+                                  onClick={() => deleteSavedItem(item.id, 'marketing')}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
                     {createdContent ? (
                       <div className="space-y-4">
                         <div className="bg-gray-50 p-4 rounded-lg border">
                           <pre className="whitespace-pre-wrap text-sm">{createdContent}</pre>
                         </div>
-                        <Button
-                          variant="outline"
-                          onClick={() => copyToClipboard(createdContent)}
-                          className="w-full"
-                          data-testid="button-copy-created"
-                        >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy Content
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => copyToClipboard(createdContent)}
+                            className="flex-1"
+                            data-testid="button-copy-created"
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy Content
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={saveMarketingContent}
+                            className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            data-testid="button-save-marketing"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Save
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center text-gray-500 py-8">
