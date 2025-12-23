@@ -53,11 +53,12 @@ async function main() {
 
   const url = `${DRIVE_STEWARD_URL}/api/exports/push`;
 
+  const metaJson = JSON.stringify(meta).replace(/"/g, '\\"');
   const cmd = [
     `curl -sS -w "\\n__HTTP_CODE__:%{http_code}\\n" -X POST "${url}"`,
     `-H "x-i3-token: ${DRIVE_STEWARD_TOKEN}"`,
     `-F "bundle=@${tarPath}"`,
-    `-F "meta=${JSON.stringify(meta)}"`,
+    `-F "meta=${metaJson}"`,
   ].join(" ");
 
   const out = execSync(cmd, { stdio: ["ignore", "pipe", "pipe"] }).toString("utf8");
