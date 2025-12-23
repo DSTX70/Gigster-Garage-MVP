@@ -57,6 +57,7 @@ import platformCredentialsRoutes from './routes/platformCredentials';
 import loyaltyRoutes from './routes/loyalty.route.js';
 import monitoringRoutes from './routes/monitoring.route.js';
 import { mountGigsterCoachRoutes } from './routes/gigsterCoach.route.js';
+import { registerI3DropReceiver } from './routes/i3_drop_receiver';
 
 // Initialize OpenAI client
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -341,6 +342,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/ops", monitoringRoutes);
   app.use(platformCredentialsRoutes);
   app.use("/api/loyalty", loyaltyRoutes);
+  
+  // Mount i3 Drop Receiver for remote VSuiteHQ control
+  registerI3DropReceiver(app);
   
   // ========== PERMISSION ENFORCEMENT HELPERS ==========
   // NOTE: Two resource models exist in this app:

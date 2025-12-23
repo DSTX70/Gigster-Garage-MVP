@@ -1,0 +1,249 @@
+This makes each repo remotely drivable by VSuiteHQ:
+* POST /api/i3/drop/validate
+* POST /api/i3/drop/apply
+* POST /api/i3/drop/ship (streams logs)
+VERSIONING
+* Component: Publisher repo Drop Receiver
+* Drop: i3_drop_receiver_patch_v1_0
+* Date: 2025-12-22
+NEW ENV VARS (names only)
+* I3_REPO_OPS_TOKEN (required; repo-side auth)
+* I3_DROP_ALLOWED_PREFIXES_JSON (optional; JSON array of allowed prefixes)
+CHANGE_LOG
+* Adds Replit Drop parsing (FILE blocks)
+* Adds safe apply runner (allowlist + traversal guard)
+* Adds ship runner (runs bash tools/ship_publish.sh)
+
+FILES (add to each repo)
+FILE: server/lib/i3_drop/auth.ts
+import type { Request } from "express";
+
+export function requireRepoOpsToken(req: Request): { ok: true } | { ok: false; error: string } {
+  const expected = process.env.I3_REPO_OPS_TOKEN;
+  if (!expected) return { ok: false, error: "Server missing I3_REPO_OPS_TOKEN; drop receiver disabled." };
+
+  const got = req.header("x-ops-token");
+  if (!got) return { ok: false, error: "Missing x-ops-token header." };
+  if (got !== expected) return { ok: false, error: "Invalid x-ops-token." };
+
+  return { ok: true };
+}
+FILE: server/lib/i3_drop/parseDrop.ts
+export type DropFile = { path: string; content: string };
+
+export type ParseResult =
+  | { ok: true; files: DropFile[]; warnings: string[] }
+  | { ok: false; error: string; warnings?: string[] };
+
+const FILE_HEADER_RE = /^FILE:\s+(.+)\s*$/gm;
+
+export function parseDropText(dropText: string): ParseResult {
+  if (!dropText || !dropText.trim()) return { ok: false, error: "Empty drop text." };
+
+  const warnings: string[] = [];
+  const files: DropFile[] = [];
+  const headers: Array<{ path: string; startIdx: number; endIdx: number }> = [];
+  let m: RegExpExecArray | null;
+
+  while ((m = FILE_HEADER_RE.exec(dropText)) !== null) {
+    const rawPath = (m[1] || "").trim();
+    if (!rawPath) continue;
+    headers.push({ path: rawPath, startIdx: m.index, endIdx: FILE_HEADER_RE.lastIndex });
+  }
+
+  if (headers.length === 0) {
+    return { ok: false, error: "No FILE: blocks found." };
+  }
+
+  for (let i = 0; i < headers.length; i++) {
+    const h = headers[i];
+    const nextStart = i + 1 < headers.length ? headers[i + 1].startIdx : dropText.length;
+    const block = dropText.slice(h.endIdx, nextStart);
+
+    const fenceStart = block.indexOf("```");
+    if (fenceStart === -1) { warnings.push(`FILE: ${h.path} missing fence; skipped.`); continue; }
+    const fenceEnd = block.indexOf("```", fenceStart + 3);
+    if (fenceEnd === -1) { warnings.push(`FILE: ${h.path} unterminated fence; skipped.`); continue; }
+
+    const afterOpen = block.indexOf("\n", fenceStart);
+    if (afterOpen === -1) { warnings.push(`FILE: ${h.path} malformed fence; skipped.`); continue; }
+
+    const content = block.slice(afterOpen + 1, fenceEnd);
+    files.push({ path: h.path.trim(), content });
+  }
+
+  if (files.length === 0) return { ok: false, error: "No valid FILE blocks parsed.", warnings };
+  return { ok: true, files, warnings };
+}
+FILE: server/lib/i3_drop/applyDrop.ts
+import fs from "node:fs";
+import path from "node:path";
+import type { DropFile } from "./parseDrop";
+
+export type ApplyMode = "additive" | "overwrite";
+
+function isSafeRelativePath(p: string): boolean {
+  if (!p) return false;
+  if (p.includes("\u0000")) return false;
+  if (path.isAbsolute(p)) return false;
+  const norm = path.posix.normalize(p.replace(/\\/g, "/"));
+  if (norm.startsWith("../") || norm.includes("/../") || norm === "..") return false;
+  return true;
+}
+
+function isAllowed(p: string, allowedPrefixes: string[]): boolean {
+  const norm = p.replace(/\\/g, "/");
+  return allowedPrefixes.some(prefix => norm === prefix || norm.startsWith(prefix));
+}
+
+function getAllowedPrefixes(): string[] {
+  const raw = process.env.I3_DROP_ALLOWED_PREFIXES_JSON;
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.every(x => typeof x === "string")) return parsed;
+    } catch {}
+  }
+  return [
+    "tools/",
+    "server/",
+    "client/",
+    "MANIFEST.template.json",
+    "RELEASE_NOTES.template.md",
+    "MISSION.template.md",
+  ];
+}
+
+export function applyDropFiles(files: DropFile[], opts: { repoRoot: string; mode: ApplyMode; dryRun: boolean }) {
+  const allowedPrefixes = getAllowedPrefixes();
+  const results: Array<{ path: string; status: string; message?: string }> = [];
+
+  for (const f of files) {
+    const rel = f.path.trim();
+
+    if (!isSafeRelativePath(rel)) {
+      results.push({ path: rel, status: "rejected_path", message: "Unsafe path." });
+      continue;
+    }
+    if (!isAllowed(rel, allowedPrefixes)) {
+      results.push({ path: rel, status: "rejected_path", message: "Not in allowlist." });
+      continue;
+    }
+
+    const abs = path.resolve(opts.repoRoot, rel);
+    const dir = path.dirname(abs);
+    const exists = fs.existsSync(abs);
+
+    if (exists && opts.mode === "additive") {
+      results.push({ path: rel, status: "skipped_exists", message: "Additive mode." });
+      continue;
+    }
+
+    if (!opts.dryRun) {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(abs, f.content, "utf8");
+    }
+
+    results.push({ path: rel, status: exists ? "overwritten" : "created", message: opts.dryRun ? "dryRun" : undefined });
+  }
+
+  const bad = results.some(r => r.status === "rejected_path");
+  return { ok: !bad, results, allowedPrefixes };
+}
+FILE: server/routes/i3_drop_receiver.ts
+import type { Express, Request, Response } from "express";
+import path from "node:path";
+import { spawn } from "node:child_process";
+import { requireRepoOpsToken } from "../lib/i3_drop/auth";
+import { parseDropText } from "../lib/i3_drop/parseDrop";
+import { applyDropFiles, ApplyMode } from "../lib/i3_drop/applyDrop";
+
+export function registerI3DropReceiver(app: Express) {
+  app.post("/api/i3/drop/validate", (req: Request, res: Response) => {
+    const auth = requireRepoOpsToken(req);
+    if (!auth.ok) return res.status(403).json(auth);
+
+    const dropText = String(req.body?.dropText || "");
+    const parsed = parseDropText(dropText);
+    if (!parsed.ok) return res.status(400).json(parsed);
+
+    return res.json({
+      ok: true,
+      files: parsed.files.map(f => ({ path: f.path, bytes: Buffer.byteLength(f.content, "utf8") })),
+      warnings: parsed.warnings,
+    });
+  });
+
+  app.post("/api/i3/drop/apply", (req: Request, res: Response) => {
+    const auth = requireRepoOpsToken(req);
+    if (!auth.ok) return res.status(403).json(auth);
+
+    const dropText = String(req.body?.dropText || "");
+    const mode: ApplyMode = req.body?.mode === "overwrite" ? "overwrite" : "additive";
+    const dryRun = Boolean(req.body?.dryRun);
+
+    const parsed = parseDropText(dropText);
+    if (!parsed.ok) return res.status(400).json(parsed);
+
+    const repoRoot = path.resolve(process.cwd());
+    const out = applyDropFiles(parsed.files, { repoRoot, mode, dryRun });
+    return res.json(out);
+  });
+
+  // Runs tools/ship_publish.sh and streams logs
+  app.post("/api/i3/drop/ship", (req: Request, res: Response) => {
+    const auth = requireRepoOpsToken(req);
+    if (!auth.ok) return res.status(403).send(auth.error);
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Transfer-Encoding", "chunked");
+
+    const child = spawn("bash", ["tools/ship_publish.sh"], {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    res.write(`SHIP: start\nCMD: bash tools/ship_publish.sh\n\n`);
+    child.stdout.on("data", (d) => res.write(d));
+    child.stderr.on("data", (d) => res.write(d));
+
+    child.on("close", (code) => {
+      res.write(`\n\nSHIP: done (exit=${code})\n`);
+      res.end();
+    });
+
+    child.on("error", (err) => {
+      res.write(`\nSHIP: error ${String(err)}\n`);
+      res.end();
+    });
+  });
+}
+
+PATCHES (GigsterGarage + DreamTeamHub)
+PATCH: server/routes.ts (or your central route registration)
+Add:
+import { registerI3DropReceiver } from "./routes/i3_drop_receiver";
+And call:
+registerI3DropReceiver(app);
+Repo secrets required
+Set in each repo’s Replit Secrets:
+* I3_REPO_OPS_TOKEN (unique per repo)
+* Ensure the existing Step 4 secrets already exist for shipping:
+    * DRIVE_STEWARD_URL
+    * DRIVE_STEWARD_TOKEN
+    * PROJECT_KEY
+Then in VSuiteHQ secrets:
+* I3_REPO_TOKEN_GigsterGarage = (same as GigsterGarage I3_REPO_OPS_TOKEN)
+* I3_REPO_TOKEN_DreamTeamHub = (same as DreamTeamHub I3_REPO_OPS_TOKEN)
+
+What you’ll be able to do after these two drops
+From VSuiteHQ → /remote-ship:
+* Add repo URL(s) to registry
+* Paste or generate a drop
+* Save to inbox
+* Click Dispatch Apply+Ship
+* Watch ship logs
+* Confirm bundles show up in Drive Steward history (your existing post-verify)
+
+If you paste these into VSuiteHQ first, tell me the actual file that holds routing (e.g. server/routes.ts path + client router file path) if it differs—otherwise apply as written.
