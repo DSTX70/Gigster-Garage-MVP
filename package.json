@@ -11,7 +11,12 @@
     "db:push": "drizzle-kit push",
     "demo:video": "tsx demo/run-demo.ts",
     "demo:tutorial": "echo \"Open demo/interactive-tutorial.html in your browser\"",
-    "worker:social": "tsx worker/socialPoster.ts"
+    "worker:social": "tsx worker/socialPoster.ts",
+    "export:bundle": "npx tsx tools/export_bundle.ts",
+    "publish:drive-steward": "npx tsx tools/publish_drive_steward.ts",
+    "ship:dry": "bash tools/ci_gate.sh",
+    "ship:publish": "bash tools/ship_publish.sh",
+    "tag:release": "npx tsx tools/tag_release.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
