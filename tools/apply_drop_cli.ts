@@ -1,0 +1,181 @@
+#!/usr/bin/env tsx
+/**
+ * i³ Shared Drop Applier CLI
+ *
+ * Apply a ChatGPT "Replit Drop" from stdin.
+ *
+ * Usage:
+ *   tsx tools/apply_drop_cli.ts --mode=additive --dryRun < drop.txt
+ *   tsx tools/apply_drop_cli.ts --mode=additive < drop.txt
+ *
+ * Exit codes:
+ *   0 = success
+ *   1 = parse failure OR any rejected/error file
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+
+type DropFile = { path: string; content: string };
+
+type ParseResult =
+  | { ok: true; files: DropFile[]; warnings: string[] }
+  | { ok: false; error: string; warnings?: string[] };
+
+const FILE_HEADER_RE = /^FILE:\s+(.+)\s*$/gm;
+
+function parseDropText(dropText: string): ParseResult {
+  if (!dropText || !dropText.trim()) return { ok: false, error: "Empty drop text." };
+
+  const warnings: string[] = [];
+  const files: DropFile[] = [];
+
+  const headers: Array<{ path: string; startIdx: number; endIdx: number }> = [];
+  let m: RegExpExecArray | null;
+
+  while ((m = FILE_HEADER_RE.exec(dropText)) !== null) {
+    const rawPath = (m[1] || "").trim();
+    if (!rawPath) continue;
+    headers.push({ path: rawPath, startIdx: m.index, endIdx: FILE_HEADER_RE.lastIndex });
+  }
+
+  if (headers.length === 0) {
+    return { ok: false, error: "No FILE: blocks found. Expected at least one 'FILE: <path>' header." };
+  }
+
+  for (let i = 0; i < headers.length; i++) {
+    const h = headers[i];
+    const nextStart = i + 1 < headers.length ? headers[i + 1].startIdx : dropText.length;
+    const block = dropText.slice(h.endIdx, nextStart);
+
+    const fenceStart = block.indexOf("```");
+    if (fenceStart === -1) {
+      warnings.push(`FILE: ${h.path} has no code fence; skipping.`);
+      continue;
+    }
+    const fenceEnd = block.indexOf("```", fenceStart + 3);
+    if (fenceEnd === -1) {
+      warnings.push(`FILE: ${h.path} has an unterminated code fence; skipping.`);
+      continue;
+    }
+
+    const afterOpen = block.indexOf("\n", fenceStart);
+    if (afterOpen === -1) {
+      warnings.push(`FILE: ${h.path} has a malformed opening fence; skipping.`);
+      continue;
+    }
+
+    const content = block.slice(afterOpen + 1, fenceEnd);
+    files.push({ path: h.path.trim(), content });
+  }
+
+  if (files.length === 0) {
+    return { ok: false, error: "No valid FILE blocks parsed (missing or malformed code fences).", warnings };
+  }
+
+  return { ok: true, files, warnings };
+}
+
+function getArg(name: string): string | null {
+  const prefix = `--${name}=`;
+  const hit = process.argv.find((a) => a.startsWith(prefix));
+  return hit ? hit.slice(prefix.length) : null;
+}
+
+async function readStdin(): Promise<string> {
+  return new Promise((resolve) => {
+    let s = "";
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (d) => (s += d));
+    process.stdin.on("end", () => resolve(s));
+  });
+}
+
+function isSafeRelativePath(p: string): boolean {
+  if (!p) return false;
+  if (p.includes("\u0000")) return false;
+  if (path.isAbsolute(p)) return false;
+  const norm = path.posix.normalize(p.replace(/\\/g, "/"));
+  if (norm.startsWith("../") || norm.includes("/../") || norm === "..") return false;
+  return true;
+}
+
+function isAllowed(p: string, allowedPrefixes: string[]): boolean {
+  const norm = p.replace(/\\/g, "/");
+  return allowedPrefixes.some((prefix) => norm === prefix || norm.startsWith(prefix));
+}
+
+function applyFiles(
+  files: DropFile[],
+  opts: { repoRoot: string; mode: "additive" | "overwrite"; dryRun: boolean; allowedPrefixes: string[] }
+) {
+  const results: Array<{ path: string; status: string; message?: string }> = [];
+
+  for (const f of files) {
+    const rel = f.path.trim();
+
+    if (!isSafeRelativePath(rel)) {
+      results.push({ path: rel, status: "rejected_path", message: "Unsafe path (absolute or traversal)." });
+      continue;
+    }
+
+    if (!isAllowed(rel, opts.allowedPrefixes)) {
+      results.push({ path: rel, status: "rejected_path", message: "Path not in allowlist." });
+      continue;
+    }
+
+    const abs = path.resolve(opts.repoRoot, rel);
+    const dir = path.dirname(abs);
+    const exists = fs.existsSync(abs);
+
+    if (exists && opts.mode === "additive") {
+      results.push({ path: rel, status: "skipped_exists", message: "File exists; additive mode skips." });
+      continue;
+    }
+
+    if (!opts.dryRun) {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(abs, f.content, "utf8");
+    }
+
+    results.push({
+      path: rel,
+      status: exists ? "overwritten" : "created",
+      message: opts.dryRun ? "Dry run (no write)." : undefined,
+    });
+  }
+
+  return results;
+}
+
+(async () => {
+  const mode = getArg("mode") === "overwrite" ? "overwrite" : "additive";
+  const dryRun = getArg("dryRun") === "true" || process.argv.includes("--dryRun");
+
+  const allowedRaw = process.env.I3_DROP_ALLOWED_PREFIXES_JSON;
+  const allowedPrefixes: string[] = allowedRaw
+    ? JSON.parse(allowedRaw)
+    : [
+        "tools/",
+        "server/",
+        "client/",
+        "MANIFEST.template.json",
+        "RELEASE_NOTES.template.md",
+        "MISSION.template.md",
+      ];
+
+  const dropText = await readStdin();
+  const parsed = parseDropText(dropText);
+
+  if (!parsed.ok) {
+    console.error(JSON.stringify(parsed, null, 2));
+    process.exit(1);
+  }
+
+  const repoRoot = path.resolve(process.cwd());
+  const results = applyFiles(parsed.files, { repoRoot, mode, dryRun, allowedPrefixes });
+
+  const bad = results.some((r) => r.status === "rejected_path" || r.status === "error");
+  console.log(JSON.stringify({ ok: !bad, results, warnings: parsed.warnings }, null, 2));
+  process.exit(bad ? 1 : 0);
+})();
