@@ -1,6 +1,6 @@
 {
   "projectKey": "GigsterGarage",
-  "timestamp": "2025-12-23T06:30:24.318Z",
+  "timestamp": "2025-12-23T20:41:36.945Z",
   "commands_run": [
     "export_bundle"
   ],
@@ -15,5 +15,5 @@
   "releaseTagPrefix": "i3/GigsterGarage/",
   "releaseTag": null,
   "releaseRange": "HEAD~10..HEAD",
-  "releaseHeadSha": "c316634"
+  "releaseHeadSha": "b8c3ea5"
 }
