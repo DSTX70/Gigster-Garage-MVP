@@ -1,0 +1,352 @@
+✅ Repo: Gigster Garage
+What you will add
+* tools/export_bundle.ts → creates exports/*.tar.gz with MANIFEST.json, RELEASE_NOTES.md, MISSION.md
+* tools/publish_drive_steward.ts → publishes to Drive Steward via POST /api/exports/push
+    * header: x-i3-token: DRIVE_STEWARD_TOKEN
+    * multipart fields: bundle (file) + meta (JSON string)
+* wrappers:
+    * tools/ci_gate.sh
+    * tools/ship_publish.sh
+* optional tag support:
+    * tools/tag_release.ts
+    * tools/lib/releaseNotesSinceTag.ts
+
+FILE: tools/lib/releaseNotesSinceTag.ts (NEW)
+import { execSync } from "node:child_process";
+
+function sh(cmd: string, cwd?: string): string {
+  return execSync(cmd, { stdio: ["ignore", "pipe", "ignore"], cwd }).toString("utf8").trim();
+}
+function safeSh(cmd: string, cwd?: string): string {
+  try { return sh(cmd, cwd); } catch { return ""; }
+}
+export function getGitTopLevel(): string {
+  return sh("git rev-parse --show-toplevel");
+}
+export function getLatestI3Tag(projectKey: string, cwd?: string): string | null {
+  const refPrefix = `refs/tags/i3/${projectKey}`;
+  const out =
+    safeSh(`git for-each-ref --sort=-creatordate --format="%(refname:short)" ${refPrefix}`, cwd) ||
+    safeSh(`git for-each-ref --sort=-creatordate --format="%(refname:short)" ${refPrefix}/`, cwd);
+
+  const tags = out.split("\n").map(s => s.trim()).filter(Boolean);
+  if (tags.length) return tags[0];
+
+  const out2 =
+    safeSh(`git for-each-ref --sort=-version:refname --format="%(refname:short)" ${refPrefix}`, cwd) ||
+    safeSh(`git for-each-ref --sort=-version:refname --format="%(refname:short)" ${refPrefix}/`, cwd);
+
+  const tags2 = out2.split("\n").map(s => s.trim()).filter(Boolean);
+  return tags2.length ? tags2[tags2.length - 1] : null;
+}
+
+export function buildReleaseNotesSinceTag(opts: {
+  projectKey: string;
+  maxCommits: number;
+  title?: string;
+}): { markdown: string; releaseTag: string | null; releaseRange: string; releaseHeadSha: string } {
+  const top = getGitTopLevel();
+  const headShort = safeSh("git rev-parse --short HEAD", top) || "unknown";
+  const maxCommits = Math.min(Math.max(opts.maxCommits || 10, 5), 500);
+  const title = opts.title ?? "# Release Notes";
+
+  const latestTag = getLatestI3Tag(opts.projectKey, top);
+  const range = latestTag ? `${latestTag}..HEAD` : `HEAD~${maxCommits}..HEAD`;
+
+  const log = safeSh(
+    `git log ${range} --no-merges --date=short --pretty=format:"- %ad %h %s" -n ${maxCommits}`,
+    top
+  );
+
+  const lines = log ? log.split("\n").filter(Boolean) : [];
+  const header = [
+    title,
+    "",
+    `**Project:** ${opts.projectKey}`,
+    `**Head:** ${headShort}`,
+    latestTag ? `**Tag:** ${latestTag}` : `**Tag:** (none found, using last ${maxCommits} commits)`,
+    `**Range:** ${range}`,
+    "",
+  ].join("\n");
+
+  const body = lines.length ? lines.join("\n") : "- (No commits found in range.)";
+  return { markdown: `${header}${body}\n`, releaseTag: latestTag, releaseRange: range, releaseHeadSha: headShort };
+}
+
+FILE: tools/tag_release.ts (NEW)
+import { execSync } from "node:child_process";
+
+function out(cmd: string, cwd?: string): string {
+  return execSync(cmd, { stdio: ["ignore", "pipe", "ignore"], cwd }).toString("utf8").trim();
+}
+function run(cmd: string, cwd?: string) {
+  execSync(cmd, { stdio: "inherit", cwd });
+}
+function isoStampUTC(): string {
+  const iso = new Date().toISOString();
+  const y = iso.slice(0, 4), m = iso.slice(5, 7), d = iso.slice(8, 10);
+  const hh = iso.slice(11, 13), mm = iso.slice(14, 16), ss = iso.slice(17, 19);
+  return `${y}${m}${d}_${hh}${mm}${ss}Z`;
+}
+
+async function main() {
+  const projectKey = (process.env.PROJECT_KEY || "GigsterGarage").trim();
+  const remote = process.env.REMOTE || "origin";
+  const push = process.env.PUSH_TAG === "1";
+  const dryRun = process.env.DRY_RUN === "1";
+
+  const top = out("git rev-parse --show-toplevel");
+  const headShort = out("git rev-parse --short HEAD", top);
+
+  const stamp = isoStampUTC();
+  const tag = `i3/${projectKey}/r${stamp}`;
+  const msg = `i3 release ${projectKey} ${stamp} (${headShort})`;
+
+  console.log(`TAG: ${tag}`);
+  console.log(`HEAD: ${headShort}`);
+  console.log(`MODE: ${dryRun ? "DRY_RUN" : "LIVE"}`);
+  console.log(`PUSH: ${push ? `yes (${remote})` : "no"}`);
+
+  if (dryRun) return;
+
+  run(`git tag -a "${tag}" -m "${msg}"`, top);
+  if (push) run(`git push ${remote} "${tag}"`, top);
+
+  console.log(`✅ Created${push ? " + pushed" : ""} tag: ${tag}`);
+}
+
+main().catch((e: any) => {
+  console.error("FAIL ❌", e?.message || e);
+  process.exit(1);
+});
+
+FILE: tools/export_bundle.ts (NEW)
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { execSync } from "node:child_process";
+import { buildReleaseNotesSinceTag, getLatestI3Tag } from "./lib/releaseNotesSinceTag";
+
+function sh(cmd: string, cwd?: string): string {
+  return execSync(cmd, { stdio: ["ignore", "pipe", "ignore"], cwd }).toString("utf8").trim();
+}
+function ensureDir(p: string) { fs.mkdirSync(p, { recursive: true }); }
+function writeText(fp: string, content: string) { fs.writeFileSync(fp, content, "utf8"); }
+function nowStampUTC(): string { return new Date().toISOString().replace(/[:.]/g, "-"); }
+function sha256File(fp: string): string {
+  const hash = crypto.createHash("sha256");
+  const buf = fs.readFileSync(fp);
+  hash.update(buf);
+  return hash.digest("hex");
+}
+
+type Manifest = Record<string, any>;
+
+async function main() {
+  const projectKey = (process.env.PROJECT_KEY || "GigsterGarage").trim();
+  const EXPORTS_DIR = path.resolve(process.cwd(), "exports");
+  ensureDir(EXPORTS_DIR);
+
+  const stamp = nowStampUTC().slice(0, 19).replace(/T/, "_") + "Z";
+  const bundleName = `${projectKey.toLowerCase()}_bundle_${stamp}.tar.gz`;
+  const outTar = path.join(EXPORTS_DIR, bundleName);
+
+  const explicitNotes = process.env.RELEASE_NOTES?.trim();
+  const maxCommits = Number(process.env.RELEASE_NOTES_MAX_COMMITS || 10);
+
+  let releaseNotesMode: "manual" | "sinceTag" = explicitNotes ? "manual" : "sinceTag";
+  const releaseTagPrefix = `i3/${projectKey}/`;
+  let releaseTag: string | null = null;
+  let releaseRange: string | null = null;
+  let releaseHeadSha: string = "unknown";
+  let releaseNotesMd = "";
+
+  if (explicitNotes) {
+    releaseHeadSha = sh("git rev-parse --short HEAD") || "unknown";
+    releaseNotesMd = `# Release Notes\n\n**Project:** ${projectKey}\n**Head:** ${releaseHeadSha}\n\n${explicitNotes}\n`;
+    releaseTag = getLatestI3Tag(projectKey) ?? null;
+    releaseRange = null;
+  } else {
+    const gen = buildReleaseNotesSinceTag({ projectKey, maxCommits, title: "# Release Notes" });
+    releaseNotesMd = gen.markdown;
+    releaseTag = gen.releaseTag;
+    releaseRange = gen.releaseRange;
+    releaseHeadSha = gen.releaseHeadSha;
+  }
+
+  const mission = (process.env.MISSION || "").trim();
+  const missionMd = mission ? `# Mission\n\n${mission}\n` : `# Mission\n\n(Define MISSION env var to override.)\n`;
+
+  writeText(path.join(EXPORTS_DIR, "RELEASE_NOTES.md"), releaseNotesMd);
+  writeText(path.join(EXPORTS_DIR, "MISSION.md"), missionMd);
+
+  const manifest: Manifest = {
+    projectKey,
+    timestamp: new Date().toISOString(),
+    commands_run: ["export_bundle"],
+    notes: "export_bundle created a shareable archive.",
+    releaseNotes: { path: "RELEASE_NOTES.md" },
+    mission: { path: "MISSION.md" },
+
+    releaseNotesMode,
+    releaseTagPrefix,
+    releaseTag,
+    releaseRange,
+    releaseHeadSha,
+  };
+
+  const manifestPath = path.join(EXPORTS_DIR, "MANIFEST.json");
+  writeText(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+
+  execSync(`tar -czf "${outTar}" "MANIFEST.json" "RELEASE_NOTES.md" "MISSION.md"`, {
+    stdio: "inherit",
+    cwd: EXPORTS_DIR,
+  });
+
+  const tarSha = sha256File(outTar);
+  console.log(JSON.stringify({ ok: true, projectKey, bundleName, tarPath: path.relative(process.cwd(), outTar), sha256: tarSha }, null, 2));
+}
+
+main().catch((e: any) => {
+  console.error("FAIL ❌", e?.message || e);
+  process.exit(1);
+});
+
+FILE: tools/publish_drive_steward.ts (NEW)
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { execSync } from "node:child_process";
+
+function reqEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env var: ${name}`);
+  return v;
+}
+
+function findNewestTar(exportsDir: string): string {
+  const entries = fs.readdirSync(exportsDir)
+    .filter((f) => f.endsWith(".tar.gz"))
+    .map((f) => ({ f, mtime: fs.statSync(path.join(exportsDir, f)).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime);
+  if (!entries.length) throw new Error(`No .tar.gz found in ${exportsDir}`);
+  return path.join(exportsDir, entries[0].f);
+}
+
+function sha256File(fp: string): string {
+  const hash = crypto.createHash("sha256");
+  hash.update(fs.readFileSync(fp));
+  return hash.digest("hex");
+}
+
+function gitShortHead(): string {
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString("utf8").trim();
+  } catch {
+    return "unknown";
+  }
+}
+
+async function main() {
+  const DRIVE_STEWARD_URL = reqEnv("DRIVE_STEWARD_URL").replace(/\/$/, "");
+  const DRIVE_STEWARD_TOKEN = reqEnv("DRIVE_STEWARD_TOKEN");
+  const PROJECT_KEY = (process.env.PROJECT_KEY || "GigsterGarage").trim();
+
+  const EXPORTS_DIR = path.resolve(process.cwd(), "exports");
+  const tarPath = findNewestTar(EXPORTS_DIR);
+  const bundleName = path.basename(tarPath);
+  const sha256 = sha256File(tarPath);
+  const createdAt = new Date().toISOString();
+
+  const meta = {
+    projectKey: PROJECT_KEY,
+    bundleName,
+    sha256,
+    createdAt,
+    releaseHeadSha: gitShortHead(),
+  };
+
+  const url = `${DRIVE_STEWARD_URL}/api/exports/push`;
+
+  const cmd = [
+    `curl -sS -w "\\n__HTTP_CODE__:%{http_code}\\n" -X POST "${url}"`,
+    `-H "x-i3-token: ${DRIVE_STEWARD_TOKEN}"`,
+    `-F "bundle=@${tarPath}"`,
+    `-F "meta=${JSON.stringify(meta)}"`,
+  ].join(" ");
+
+  const out = execSync(cmd, { stdio: ["ignore", "pipe", "pipe"] }).toString("utf8");
+  const m = out.match(/__HTTP_CODE__:(\\d{3})\\s*$/) || out.match(/__HTTP_CODE__:(\d{3})\s*$/);
+  const code = m ? Number(m[1]) : 0;
+  const body = out.replace(/__HTTP_CODE__:\d{3}\s*$/, "").trim();
+
+  if (!(code >= 200 && code < 300)) {
+    console.error(`FAIL ❌ Publish failed HTTP ${code}`);
+    console.error(body);
+    process.exit(1);
+  }
+
+  if (body.toLowerCase().includes("<html")) {
+    console.error("FAIL ❌ Publish returned HTML (not an API response). Check endpoint.");
+    process.exit(1);
+  }
+
+  console.log(body);
+  console.log(`✅ Published ${bundleName} (${sha256}) to Drive Steward via /api/exports/push`);
+}
+
+main().catch((e: any) => {
+  console.error("FAIL ❌", e?.message || e);
+  process.exit(1);
+});
+
+FILE: tools/ci_gate.sh (NEW)
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_KEY="${PROJECT_KEY:-GigsterGarage}"
+echo "CI GATE (dry): ${PROJECT_KEY}"
+
+echo "Smoke: (none yet) PASS"
+PROJECT_KEY="$PROJECT_KEY" npx tsx tools/export_bundle.ts
+
+echo "CI GATE PASS ✅"
+
+FILE: tools/ship_publish.sh (NEW)
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_KEY="${PROJECT_KEY:-GigsterGarage}"
+echo "SHIP PUBLISH: ${PROJECT_KEY}"
+
+bash tools/ci_gate.sh
+PROJECT_KEY="$PROJECT_KEY" npx tsx tools/publish_drive_steward.ts
+
+echo "SHIP PUBLISH DONE ✅"
+
+PATCH: package.json (Gigster Garage)
+✅ Repo: Gigster Garage
+Add scripts:
+"export:bundle": "npx tsx tools/export_bundle.ts",
+"publish:drive-steward": "npx tsx tools/publish_drive_steward.ts",
+"ship:dry": "bash tools/ci_gate.sh",
+"ship:publish": "bash tools/ship_publish.sh",
+"tag:release": "npx tsx tools/tag_release.ts"
+If tsx isn’t already available in this repo, add devDependency:
+"devDependencies": {
+  "tsx": "^4.19.0"
+}
+
+Required Secrets
+✅ Repo: Gigster Garage → Replit Secrets
+* DRIVE_STEWARD_URL (same as VSuite HQ / DreamTeamHub)
+* DRIVE_STEWARD_TOKEN (same; Drive Steward expects x-i3-token)
+
+Run it (first publish)
+✅ Repo: Gigster Garage (Replit Shell)
+mkdir -p tools/lib
+mkdir -p exports
+
+PROJECT_KEY=GigsterGarage npx tsx tools/export_bundle.ts
+PROJECT_KEY=GigsterGarage npx tsx tools/publish_drive_steward.ts
+
