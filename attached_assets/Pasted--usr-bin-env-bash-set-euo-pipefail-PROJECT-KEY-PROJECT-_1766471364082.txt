@@ -30,7 +30,16 @@ fi
 NEWEST_TAR="$(ls -1t "${EXPORTS_DIR}"/*.tar.gz | head -n 1)"
 NEWEST_NAME="$(basename "$NEWEST_TAR")"
 
-NEWEST_SHA="$(sha256sum "$NEWEST_TAR" | cut -d' ' -f1)"
+NEWEST_SHA="$(python - << 'PY'
+import hashlib, sys
+p = sys.argv[1]
+h = hashlib.sha256()
+with open(p, "rb") as f:
+  for chunk in iter(lambda: f.read(1024*1024), b""):
+    h.update(chunk)
+print(h.hexdigest())
+PY
+"$NEWEST_TAR")"
 
 echo "Post-verify: newest bundle"
 echo "  bundle: ${NEWEST_NAME}"
