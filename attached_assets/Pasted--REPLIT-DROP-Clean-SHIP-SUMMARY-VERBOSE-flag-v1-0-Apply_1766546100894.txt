@@ -1,3 +1,25 @@
+## REPLIT DROP — Clean SHIP SUMMARY + VERBOSE flag (v1.0)
+
+**Apply to repos:** ✅ **GigsterGarage** + ✅ **DreamTeamHub**
+**Goal:** Print a clean **SHIP SUMMARY** at the end and hide the huge publish JSON unless `VERBOSE=1`.
+
+### VERSIONING
+
+* Patch: `i3_ship_publish_summary_verbose_v1_0`
+* Date: 2025-12-23
+* Mode: overwrite this script (behavior-compatible)
+
+### CHANGE_LOG
+
+* Add `VERBOSE=1` flag to print raw publish JSON
+* Always print a concise SHIP SUMMARY block (project, bundle, sha, receipt link if available, history link)
+* Keep post-verify enforcement intact
+
+---
+
+### FILE: tools/ship_publish.sh
+
+```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -127,3 +149,24 @@ fi
 echo "History: ${HISTORY_URL}"
 echo "Post-verify: ✅ SHA found in Drive Steward history."
 echo "SHIP: done (exit=0)"
+```
+
+---
+
+### How to use
+
+* Normal (clean output):
+
+```bash
+bash tools/ship_publish.sh
+```
+
+* Verbose (prints full publish JSON):
+
+```bash
+VERBOSE=1 bash tools/ship_publish.sh
+```
+
+---
+
+If you want, I can also patch VSuiteHQ’s Remote Ship UI to include a **“Verbose”** checkbox that sets `VERBOSE=1` when it triggers `/api/i3/drop/ship`.
