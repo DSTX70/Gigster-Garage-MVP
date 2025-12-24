@@ -129,7 +129,7 @@ export function parseDropText(dropText: string): ParseResult {
   if (dropText.includes("\nCONTENT:") || dropText.trim().startsWith("CONTENT:") || dropText.includes("\nEND_FILE")) {
     const { files, warnings } = parseContentBlocks(dropText);
     if (files.length > 0) return { ok: true, files, warnings };
-    // fall through to fenced parser if content blocks weren't valid
+    // fall through to fenced parser if content blocks weren’t valid
     const fenced = parseFencedBlocks(dropText);
     if (fenced.files.length > 0) return { ok: true, files: fenced.files, warnings: [...warnings, ...fenced.warnings] };
     return { ok: false, error: "No valid FILE blocks parsed.", warnings: [...warnings, ...fenced.warnings] };
