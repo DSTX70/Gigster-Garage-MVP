@@ -38,9 +38,9 @@ async function verifyHttpLocal(args: { urlPath: string; expectStatus?: number; e
   const urlPath = args.urlPath.startsWith("/") ? args.urlPath : `/${args.urlPath}`;
   const url = `http://127.0.0.1:${port}${urlPath}`;
 
-  const expectStatus = typeof args.expectStatus === "number" && !Number.isNaN(args.expectStatus) ? args.expectStatus : 200;
+  const expectStatus = typeof args.expectStatus === "number" ? args.expectStatus : 200;
   const expectContains = args.expectContains || "";
-  const timeoutMs = typeof args.timeoutMs === "number" && !Number.isNaN(args.timeoutMs) ? args.timeoutMs : 4000;
+  const timeoutMs = typeof args.timeoutMs === "number" ? args.timeoutMs : 4000;
 
   const ac = new AbortController();
   const to = setTimeout(() => ac.abort(), timeoutMs);
@@ -71,7 +71,7 @@ async function verifyHttpLocal(args: { urlPath: string; expectStatus?: number; e
 function verifyFile(args: { filePath: string; expectContains?: string; maxBytes?: number }) {
   const filePath = args.filePath;
   const expectContains = args.expectContains || "";
-  const maxBytes = typeof args.maxBytes === "number" && !Number.isNaN(args.maxBytes) ? args.maxBytes : 65536;
+  const maxBytes = typeof args.maxBytes === "number" ? args.maxBytes : 65536;
 
   if (!isSafeRelativePath(filePath)) {
     return { ok: false, details: { error: "Unsafe filePath (absolute or traversal)." } };
