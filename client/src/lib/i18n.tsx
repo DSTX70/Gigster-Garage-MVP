@@ -278,9 +278,10 @@ type TranslationKeys = {
   invoiceDate: string;
   dueAmount: string;
   paidAmount: string;
+  outstanding: string;
   invoiceStatus: string;
   draft: string;
-  sent: string;
+  invoiceSent: string;
   paid: string;
   overdueLower: string;
   partiallyPaid: string;
@@ -686,8 +687,10 @@ const translations: Record<string, TranslationKeys> = {
     invoiceDate: "Invoice Date",
     dueAmount: "Amount Due",
     paidAmount: "Amount Paid",
+    outstanding: "Outstanding",
     invoiceStatus: "Invoice Status",
     draft: "Draft",
+    invoiceSent: "Sent",
     paid: "Paid",
     overdueLower: "overdue",
     partiallyPaid: "Partially Paid",
@@ -1078,8 +1081,10 @@ const translations: Record<string, TranslationKeys> = {
     invoiceDate: "Fecha de Factura",
     dueAmount: "Monto Adeudado",
     paidAmount: "Monto Pagado",
+    outstanding: "Pendiente",
     invoiceStatus: "Estado de Factura",
     draft: "Borrador",
+    invoiceSent: "Enviada",
     paid: "Pagado",
     overdueLower: "atrasado",
     partiallyPaid: "Parcialmente Pagado",
@@ -1470,8 +1475,10 @@ const translations: Record<string, TranslationKeys> = {
     invoiceDate: "Date de Facture",
     dueAmount: "Montant Dû",
     paidAmount: "Montant Payé",
+    outstanding: "En cours",
     invoiceStatus: "Statut de la Facture",
     draft: "Brouillon",
+    invoiceSent: "Envoyée",
     paid: "Payé",
     overdueLower: "en retard",
     partiallyPaid: "Partiellement Payé",
@@ -1862,8 +1869,10 @@ const translations: Record<string, TranslationKeys> = {
     invoiceDate: "Rechnungsdatum",
     dueAmount: "Fälliger Betrag",
     paidAmount: "Bezahlter Betrag",
+    outstanding: "Ausstehend",
     invoiceStatus: "Rechnungsstatus",
     draft: "Entwurf",
+    invoiceSent: "Gesendet",
     paid: "Bezahlt",
     overdueLower: "überfällig",
     partiallyPaid: "Teilweise bezahlt",
@@ -2254,8 +2263,10 @@ const translations: Record<string, TranslationKeys> = {
     invoiceDate: "Data da Fatura",
     dueAmount: "Valor Devido",
     paidAmount: "Valor Pago",
+    outstanding: "Pendente",
     invoiceStatus: "Status da Fatura",
     draft: "Rascunho",
+    invoiceSent: "Enviada",
     paid: "Pago",
     overdueLower: "atrasado",
     partiallyPaid: "Parcialmente Pago",
@@ -2646,8 +2657,10 @@ const translations: Record<string, TranslationKeys> = {
     invoiceDate: "請求日",
     dueAmount: "請求額",
     paidAmount: "支払済額",
+    outstanding: "未払い",
     invoiceStatus: "請求書ステータス",
     draft: "下書き",
+    invoiceSent: "送信済",
     paid: "支払済",
     overdueLower: "期限切れ",
     partiallyPaid: "一部支払済",

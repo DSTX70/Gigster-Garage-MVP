@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDemoGuard, DEMO_LIMITATIONS } from "@/hooks/useDemoGuard";
 import { AppHeader } from "@/components/app-header";
 import { copy } from "@/lib/copy";
+import { useTranslation } from "@/lib/i18n";
 import type { Client } from "@shared/schema";
 
 interface NewClientForm {
@@ -31,6 +32,7 @@ interface NewClientForm {
 export default function ClientList() {
   const { toast } = useToast();
   const { canPerformAction } = useDemoGuard();
+  const { t } = useTranslation();
   
   // Scroll to top when component mounts
   useEffect(() => {
@@ -68,8 +70,8 @@ export default function ClientList() {
     
     if (!formData.name.trim()) {
       toast({
-        title: "Error",
-        description: "Client name is required",
+        title: t('error'),
+        description: t('required'),
         variant: "destructive",
       });
       return;
@@ -98,13 +100,13 @@ export default function ClientList() {
       });
       
       toast({
-        title: "Success",
-        description: "Client created successfully",
+        title: t('success'),
+        description: t('clientAdded'),
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to create client",
+        title: t('error'),
+        description: t('errorOccurred'),
         variant: "destructive",
       });
     }
@@ -149,12 +151,12 @@ export default function ClientList() {
             <Link href="/">
               <Button variant="outline" size="sm" data-testid="button-back-to-dashboard">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
+                {t('back')}
               </Button>
             </Link>
             <div className="flex items-center gap-3">
               <Users className="h-8 w-8 text-[var(--signal)]" />
-              <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('clientManagement')}</h1>
             </div>
           </div>
           
@@ -168,18 +170,18 @@ export default function ClientList() {
             }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            New Client
+            {t('newClient')}
           </Button>
           
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Client</DialogTitle>
+                <DialogTitle>{t('addClient')}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Client Name *</Label>
+                    <Label htmlFor="name">{t('clientName')} *</Label>
                     <Input
                       id="name"
                       placeholder="Enter client name"
@@ -190,7 +192,7 @@ export default function ClientList() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="company">Company</Label>
+                    <Label htmlFor="company">{t('company')}</Label>
                     <Input
                       id="company"
                       placeholder="Company name"
@@ -200,7 +202,7 @@ export default function ClientList() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t('email')}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -211,7 +213,7 @@ export default function ClientList() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
+                    <Label htmlFor="phone">{t('phone')}</Label>
                     <Input
                       id="phone"
                       type="tel"
@@ -222,7 +224,7 @@ export default function ClientList() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="website">Website</Label>
+                    <Label htmlFor="website">{t('website')}</Label>
                     <Input
                       id="website"
                       type="url"
@@ -233,21 +235,21 @@ export default function ClientList() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
+                    <Label htmlFor="status">{t('status')}</Label>
                     <Select value={formData.status} onValueChange={(value) => updateFormData("status", value as any)}>
                       <SelectTrigger data-testid="select-status">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="prospect">Prospect</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="prospect">{t('prospect')}</SelectItem>
+                        <SelectItem value="active">{t('active')}</SelectItem>
+                        <SelectItem value="inactive">{t('inactive')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('address')}</Label>
                   <Textarea
                     id="address"
                     placeholder="Client address"
@@ -258,7 +260,7 @@ export default function ClientList() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t('notes')}</Label>
                   <Textarea
                     id="notes"
                     placeholder="Additional notes about this client"
@@ -270,10 +272,10 @@ export default function ClientList() {
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button type="submit" className="bg-[#FF7F00] hover:bg-[#e6720a] text-white" data-testid="button-create-client">
-                    Create Client
+                    {t('create')}
                   </Button>
                 </div>
               </form>
@@ -286,7 +288,7 @@ export default function ClientList() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search clients..."
+              placeholder={t('search')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -300,7 +302,7 @@ export default function ClientList() {
           <Card className="text-center py-12">
             <CardContent>
               <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No clients found</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('noClients')}</h3>
               <p className="text-gray-600 mb-4">
                 {searchTerm ? copy.emptyStates.search.nothingMatches : copy.emptyStates.clients.noClients}
               </p>
@@ -315,7 +317,7 @@ export default function ClientList() {
                   data-testid="button-add-first-client"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add First Client
+                  {t('addClient')}
                 </Button>
               )}
             </CardContent>
@@ -359,7 +361,7 @@ export default function ClientList() {
                       <div className="flex justify-between text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <FileText className="h-4 w-4" />
-                          <span>{client.totalProposals || 0} proposals</span>
+                          <span>{client.totalProposals || 0} {t('proposals')}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-4 w-4" />
@@ -368,7 +370,7 @@ export default function ClientList() {
                       </div>
                       {client.outstandingBalance && Number(client.outstandingBalance) > 0 && (
                         <div className="mt-2 text-sm text-orange-600 font-medium">
-                          Outstanding: ${Number(client.outstandingBalance).toLocaleString()}
+                          {t('outstanding')}: ${Number(client.outstandingBalance).toLocaleString()}
                         </div>
                       )}
                     </div>

@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "@/lib/i18n";
 import type { Task } from "@shared/schema";
 
 interface TaskDetailModalProps {
@@ -45,6 +46,7 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
   const [newProgressComment, setNewProgressComment] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   const addProgressMutation = useMutation({
     mutationFn: async ({ taskId, date, comment }: { taskId: string; date: string; comment: string }) => {
@@ -54,14 +56,14 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setNewProgressComment("");
       toast({
-        title: "Progress Updated",
-        description: "Task progress note has been added successfully.",
+        title: t('progressUpdated'),
+        description: t('progressAdded'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to add progress note",
+        title: t('error'),
+        description: error.message || t('errorOccurred'),
         variant: "destructive",
       });
     },
@@ -74,16 +76,16 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: task?.completed ? "Task Reopened" : "Task Completed",
+        title: task?.completed ? t('taskReopened') : t('taskCompleted'),
         description: task?.completed 
-          ? "Task has been marked as active." 
-          : "Great job! Task has been completed.",
+          ? t('taskReopened')
+          : t('taskCompleted'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update task",
+        title: t('error'),
+        description: error.message || t('errorOccurred'),
         variant: "destructive",
       });
     },
@@ -102,6 +104,15 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
     });
   };
 
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'high': return t('high');
+      case 'medium': return t('medium');
+      case 'low': return t('low');
+      default: return priority;
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800 border-red-200';
@@ -115,7 +126,7 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
     if (task.completed) {
       return {
         icon: <CheckCircle className="text-green-600" size={16} />,
-        label: "Completed",
+        label: t('completed'),
         color: "bg-green-100 text-green-800 border-green-200"
       };
     }
@@ -128,7 +139,7 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
       if (isOverdue) {
         return {
           icon: <AlertTriangle className="text-red-600" size={16} />,
-          label: "Overdue",
+          label: t('overdue'),
           color: "bg-red-100 text-red-800 border-red-200"
         };
       }
@@ -138,7 +149,6 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
   };
 
   const statusInfo = getStatusInfo(task);
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.completed;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -150,7 +160,7 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
             </span>
             <div className="flex items-center gap-2">
               <Badge className={getPriorityColor(task.priority)}>
-                {task.priority}
+                {getPriorityLabel(task.priority)}
               </Badge>
               {statusInfo && (
                 <Badge className={statusInfo.color}>
@@ -163,21 +173,20 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
             </div>
           </DialogTitle>
           <DialogDescription>
-            Complete task details and progress tracking
+            {t('taskDetailDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[70vh]">
           <div className="space-y-6">
-            {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Calendar size={16} />
                   <span>
                     {task.dueDate 
-                      ? `Due: ${format(new Date(task.dueDate), 'PPPP \'at\' h:mm a')}`
-                      : 'No due date set'
+                      ? `${t('dueDate')}: ${format(new Date(task.dueDate), 'PPPP')}`
+                      : t('none')
                     }
                   </span>
                 </div>
@@ -185,14 +194,14 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                 {task.assignedTo && (
                   <div className="flex items-center gap-2 text-sm text-blue-600">
                     <User size={16} />
-                    <span>Assigned to: {task.assignedTo.name}</span>
+                    <span>{t('assignedTo')}: {task.assignedTo.name}</span>
                   </div>
                 )}
 
                 {task.project && (
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <FileText size={16} />
-                    <span>Project: {task.project.name}</span>
+                    <span>{t('project')}: {task.project.name}</span>
                   </div>
                 )}
               </div>
@@ -201,7 +210,7 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Clock size={16} />
                   <span>
-                    Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
                   </span>
                 </div>
                 
@@ -212,9 +221,10 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                     variant={task.completed ? "outline" : "default"}
                     size="sm"
                     className="flex items-center gap-2"
+                    data-testid="button-toggle-complete"
                   >
                     <CheckCircle size={16} />
-                    {task.completed ? 'Reopen Task' : 'Mark Complete'}
+                    {task.completed ? t('reopenTask') : t('markComplete')}
                   </Button>
                 </div>
               </div>
@@ -222,12 +232,11 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
 
             <Separator />
 
-            {/* Notes Section */}
             {task.notes && (
               <div className="space-y-3">
                 <h3 className="text-lg font-medium flex items-center gap-2">
                   <FileText size={20} />
-                  Notes
+                  {t('notes')}
                 </h3>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-700 whitespace-pre-wrap">{task.notes}</p>
@@ -235,12 +244,11 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
               </div>
             )}
 
-            {/* Attachments Section */}
             {task.attachments && task.attachments.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-lg font-medium flex items-center gap-2">
                   <Paperclip size={20} />
-                  Attachments ({task.attachments.length})
+                  {t('attachments')} ({task.attachments.length})
                 </h3>
                 <div className="space-y-2">
                   {task.attachments.map((file, index) => (
@@ -253,7 +261,6 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
               </div>
             )}
 
-            {/* Links Section */}
             {task.links && task.links.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-lg font-medium flex items-center gap-2">
@@ -278,14 +285,12 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
               </div>
             )}
 
-            {/* Progress Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <MessageSquare size={20} />
-                Progress Notes ({Array.isArray(task.progressNotes) ? task.progressNotes.length : 0})
+                {t('progressNotes')} ({Array.isArray(task.progressNotes) ? task.progressNotes.length : 0})
               </h3>
 
-              {/* Existing Progress Notes */}
               {task.progressNotes && Array.isArray(task.progressNotes) && task.progressNotes.length > 0 && (
                 <div className="space-y-3">
                   {task.progressNotes
@@ -294,7 +299,7 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                       <div key={note.id} className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-blue-800">
-                            Progress Update
+                            {t('progressNotes')}
                           </span>
                           <span className="text-xs text-blue-600">
                             {format(new Date(note.date), 'MMM d, yyyy')}
@@ -306,13 +311,12 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                 </div>
               )}
 
-              {/* Add New Progress Note */}
               <form onSubmit={handleAddProgress} className="space-y-3 border-t pt-4">
-                <h4 className="font-medium text-gray-900">Add Progress Update</h4>
+                <h4 className="font-medium text-gray-900">{t('addProgressNote')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
                     <Label htmlFor="progress-date" className="text-sm font-medium">
-                      Date
+                      {t('date')}
                     </Label>
                     <Input
                       id="progress-date"
@@ -320,19 +324,21 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                       value={newProgressDate}
                       onChange={(e) => setNewProgressDate(e.target.value)}
                       required
+                      data-testid="input-progress-date"
                     />
                   </div>
                   <div className="md:col-span-3">
                     <Label htmlFor="progress-comment" className="text-sm font-medium">
-                      Progress Update
+                      {t('progressComment')}
                     </Label>
                     <Textarea
                       id="progress-comment"
                       value={newProgressComment}
                       onChange={(e) => setNewProgressComment(e.target.value)}
-                      placeholder="Describe what progress was made on this task..."
+                      placeholder={t('writeComment')}
                       rows={3}
                       required
+                      data-testid="input-progress-comment"
                     />
                   </div>
                 </div>
@@ -340,9 +346,10 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
                   type="submit"
                   disabled={addProgressMutation.isPending || !newProgressComment.trim()}
                   className="flex items-center gap-2"
+                  data-testid="button-add-progress"
                 >
                   <Plus size={16} />
-                  {addProgressMutation.isPending ? 'Adding...' : 'Add Progress Update'}
+                  {addProgressMutation.isPending ? t('saving') : t('addProgressNote')}
                 </Button>
               </form>
             </div>
@@ -350,17 +357,16 @@ export function TaskDetailModal({ task, isOpen, onOpenChange }: TaskDetailModalP
 
           <Separator className="my-6" />
 
-          {/* Team Collaboration Section */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-[var(--ignition-teal)] flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
-              Team Collaboration
+              {t('team')}
             </h2>
             
             <Tabs defaultValue="comments" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="comments">Comments & Discussion</TabsTrigger>
-                <TabsTrigger value="activity">Activity Feed</TabsTrigger>
+                <TabsTrigger value="comments" data-testid="tab-comments">{t('comments')}</TabsTrigger>
+                <TabsTrigger value="activity" data-testid="tab-activity">{t('activityFeed')}</TabsTrigger>
               </TabsList>
               
               <TabsContent value="comments" className="space-y-4">
