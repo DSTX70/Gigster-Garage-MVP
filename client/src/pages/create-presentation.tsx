@@ -13,6 +13,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Presentation, Plus, X, Send, Download, Eye, Monitor, ChevronUp, ChevronDown, ArrowUp, ArrowDown, Save, PenTool, Loader2, FolderOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 import type { Project } from "@shared/schema";
 
 interface Slide {
@@ -25,6 +26,7 @@ interface Slide {
 
 export default function CreatePresentation() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isPreview, setIsPreview] = useState(false);
   
   // Form data
@@ -133,8 +135,8 @@ export default function CreatePresentation() {
       if (responseData && responseData.id) {
         setCreatedPresentationId(responseData.id);
         toast({
-          title: "Presentation saved",
-          description: "Your presentation has been saved successfully. Saving to Filing Cabinet...",
+          title: t('presentationSaved'),
+          description: t('presentationSavedDesc'),
         });
         // Automatically save to Filing Cabinet
         saveToFilingCabinetMutation.mutate(responseData.id);
@@ -148,8 +150,8 @@ export default function CreatePresentation() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to save presentation.",
+        title: t('error'),
+        description: t('failedToSavePresentation'),
         variant: "destructive",
       });
     },
@@ -390,15 +392,15 @@ export default function CreatePresentation() {
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                {t('back')}
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <Presentation className="h-8 w-8 text-orange-600" />
-                Create Presentation
+                {t('createPresentation')}
               </h1>
-              <p className="text-gray-600 mt-1">Build professional presentations with multiple slide types</p>
+              <p className="text-gray-600 mt-1">{t('createPresentationDesc')}</p>
             </div>
           </div>
         </div>
@@ -407,13 +409,13 @@ export default function CreatePresentation() {
           {/* Presentation Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Presentation Information</CardTitle>
-              <CardDescription>Basic details about your presentation</CardDescription>
+              <CardTitle>{t('presentationInformation')}</CardTitle>
+              <CardDescription>{t('basicPresentationDetails')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Presentation Title *</Label>
+                  <Label htmlFor="title">{t('presentationTitle')} *</Label>
                   <Input
                     id="title"
                     placeholder="Enter presentation title"
@@ -423,7 +425,7 @@ export default function CreatePresentation() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subtitle">Subtitle</Label>
+                  <Label htmlFor="subtitle">{t('subtitle')}</Label>
                   <Input
                     id="subtitle"
                     placeholder="Optional subtitle"
@@ -469,7 +471,7 @@ export default function CreatePresentation() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Theme</Label>
+                  <Label>{t('theme')}</Label>
                   <Select value={formData.theme} onValueChange={(value) => updateFormData("theme", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select theme" />
@@ -530,7 +532,7 @@ export default function CreatePresentation() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Objective & Goals 
+                  {t('objectiveGoals')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -573,13 +575,13 @@ export default function CreatePresentation() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Slides</span>
+                <span>{t('slides')}</span>
                 <Button size="sm" onClick={addSlide} data-testid="button-create-slide">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Slide
+                  {t('createSlide')}
                 </Button>
               </CardTitle>
-              <CardDescription>Manage your presentation slides and content</CardDescription>
+              <CardDescription>{t('manageSlidesDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -735,15 +737,15 @@ export default function CreatePresentation() {
               <div className="flex items-center justify-center space-x-4">
                 <Button variant="outline" onClick={() => setIsPreview(true)}>
                   <Eye className="h-4 w-4 mr-2" />
-                  Preview
+                  {t('preview')}
                 </Button>
                 <Button onClick={handleSave} disabled={savePresentationMutation.isPending}>
                   <Save className="h-4 w-4 mr-2" />
-                  {savePresentationMutation.isPending ? "Saving..." : "Save Presentation"}
+                  {savePresentationMutation.isPending ? t('saving') : t('savePresentation')}
                 </Button>
                 <Button onClick={handleSave} disabled={savePresentationMutation.isPending}>
                   <Send className="h-4 w-4 mr-2" />
-                  Send Presentation
+                  {t('sendPresentation')}
                 </Button>
               </div>
             </CardContent>

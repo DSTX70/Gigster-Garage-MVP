@@ -13,6 +13,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Receipt, Plus, X, Send, Download, Eye, DollarSign, Save, CreditCard, FolderOpen, ChevronDown, PenTool, Loader2, Clock } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 import type { Project, TimeLog } from "@shared/schema";
 import { TimeImportDialog } from "@/components/time-import-dialog";
 import { CoachSidebar } from "@/components/gigsterCoach/CoachSidebar";
@@ -27,6 +28,7 @@ interface LineItem {
 
 export default function CreateInvoice() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isPreview, setIsPreview] = useState(false);
   
   // Form data
@@ -189,8 +191,8 @@ export default function CreateInvoice() {
         }
         
         toast({
-          title: "Invoice saved",
-          description: `Invoice saved successfully! Saving to Filing Cabinet...`,
+          title: t('invoiceSaved'),
+          description: t('invoiceSavedDesc'),
         });
         
         // Automatically save to Filing Cabinet
@@ -206,8 +208,8 @@ export default function CreateInvoice() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to save invoice.",
+        title: t('error'),
+        description: t('failedToSaveInvoice'),
         variant: "destructive",
       });
     },
@@ -220,16 +222,16 @@ export default function CreateInvoice() {
     },
     onSuccess: (responseData: any) => {
       toast({
-        title: "Invoice sent!",
-        description: responseData.message || "Invoice has been sent successfully",
+        title: t('invoiceSent'),
+        description: responseData.message || t('invoiceSentDesc'),
       });
       // Redirect to invoices list after sending
       window.location.href = "/invoices";
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to send invoice email.",
+        title: t('error'),
+        description: t('failedToSendInvoice'),
         variant: "destructive",
       });
     },
@@ -553,15 +555,15 @@ export default function CreateInvoice() {
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                {t('back')}
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <Receipt className="h-8 w-8 text-green-600" />
-                Create Invoice
+                {t('createInvoice')}
               </h1>
-              <p className="text-gray-600 mt-1">Generate professional invoices with automatic calculations</p>
+              <p className="text-gray-600 mt-1">{t('createInvoiceDesc')}</p>
             </div>
           </div>
         </div>
@@ -570,8 +572,8 @@ export default function CreateInvoice() {
           {/* Invoice Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Invoice Information</CardTitle>
-              <CardDescription>Basic invoice details and client information</CardDescription>
+              <CardTitle>{t('invoiceInformation')}</CardTitle>
+              <CardDescription>{t('basicInvoiceDetails')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Company Information */}
@@ -613,7 +615,7 @@ export default function CreateInvoice() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="invoiceDate">Invoice Date</Label>
+                  <Label htmlFor="invoiceDate">{t('invoiceDate')}</Label>
                   <Input
                     id="invoiceDate"
                     type="date"
@@ -623,7 +625,7 @@ export default function CreateInvoice() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Label htmlFor="dueDate">{t('dueDate')}</Label>
                   <Input
                     id="dueDate"
                     type="date"
@@ -708,7 +710,7 @@ export default function CreateInvoice() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Billable Items 
+                {t('billableItems')} 
                 <Badge variant="outline" className="text-xs">line items</Badge>
               </CardTitle>
             </CardHeader>
@@ -826,7 +828,7 @@ export default function CreateInvoice() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Tax & Discount
+                {t('taxDiscount')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -877,7 +879,7 @@ export default function CreateInvoice() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Notes & Terms 
+                  {t('notesTerms')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -937,11 +939,11 @@ export default function CreateInvoice() {
               <div className="flex items-center justify-center space-x-4">
                 <Button variant="outline" onClick={() => setIsPreview(true)}>
                   <Eye className="h-4 w-4 mr-2" />
-                  Preview
+                  {t('preview')}
                 </Button>
                 <Button onClick={handleSave} disabled={saveInvoiceMutation.isPending}>
                   <Save className="h-4 w-4 mr-2" />
-                  {saveInvoiceMutation.isPending ? "Saving..." : "Save Invoice"}
+                  {saveInvoiceMutation.isPending ? t('saving') : t('saveInvoice')}
                 </Button>
                 {createdInvoiceId && (
                   <Button onClick={handleSend} disabled={sendInvoiceMutation.isPending}>
@@ -950,7 +952,7 @@ export default function CreateInvoice() {
                     ) : (
                       <Send className="h-4 w-4 mr-2" />
                     )}
-                    Send Invoice
+                    {t('sendInvoice')}
                   </Button>
                 )}
               </div>

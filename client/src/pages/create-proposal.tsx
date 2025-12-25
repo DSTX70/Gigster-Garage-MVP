@@ -14,6 +14,7 @@ import { Link } from "wouter";
 import { ArrowLeft, FileText, Plus, X, Send, Download, Eye, PenTool, Loader2, ChevronDown, FolderOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 import type { Project } from "@shared/schema";
 import { CoachSidebar } from "@/components/gigsterCoach/CoachSidebar";
 
@@ -27,6 +28,7 @@ interface LineItem {
 
 export default function CreateProposal() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isPreview, setIsPreview] = useState(false);
   
   // Form data
@@ -586,15 +588,15 @@ export default function CreateProposal() {
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                {t('back')}
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <FileText className="h-8 w-8 text-blue-600" />
-                Create Proposal
+                {t('createProposal')}
               </h1>
-              <p className="text-gray-600 mt-1">Generate professional proposals with enhanced field types</p>
+              <p className="text-gray-600 mt-1">{t('createProposalDesc')}</p>
             </div>
           </div>
         </div>
@@ -603,13 +605,13 @@ export default function CreateProposal() {
           {/* Basic Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Proposal Details</CardTitle>
-              <CardDescription>Basic information about your proposal</CardDescription>
+              <CardTitle>{t('proposalDetails')}</CardTitle>
+              <CardDescription>{t('basicProposalInfo')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Proposal Title *</Label>
+                  <Label htmlFor="title">{t('proposalTitle')} *</Label>
                   <Input
                     id="title"
                     placeholder="Enter proposal title"
@@ -650,7 +652,7 @@ export default function CreateProposal() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="clientName">Client Name</Label>
+                  <Label htmlFor="clientName">{t('clientName')}</Label>
                   <Input
                     id="clientName"
                     placeholder="Enter client name"
@@ -660,7 +662,7 @@ export default function CreateProposal() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clientEmail">Client Email</Label>
+                  <Label htmlFor="clientEmail">{t('clientEmail')}</Label>
                   <Input
                     id="clientEmail"
                     type="email"
@@ -679,7 +681,7 @@ export default function CreateProposal() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Project Description 
+                  {t('projectDescription')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -722,7 +724,7 @@ export default function CreateProposal() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Services & Pricing 
+                {t('servicesPricing')} 
                 <Badge variant="outline" className="text-xs">line items</Badge>
               </CardTitle>
             </CardHeader>
@@ -826,7 +828,7 @@ export default function CreateProposal() {
           {/* Timeline & Budget */}
           <Card>
             <CardHeader>
-              <CardTitle>Timeline & Budget</CardTitle>
+              <CardTitle>{t('timelineBudget')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -866,7 +868,7 @@ export default function CreateProposal() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Deliverables 
+                  {t('deliverables')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -910,7 +912,7 @@ export default function CreateProposal() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Terms & Conditions 
+                  {t('termsConditions')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -970,15 +972,15 @@ export default function CreateProposal() {
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsPreview(true)}>
                   <Eye className="h-4 w-4 mr-2" />
-                  Preview
+                  {t('preview')}
                 </Button>
                 <Button onClick={handleSave} disabled={saveProposalMutation.isPending}>
                   <FileText className="h-4 w-4 mr-2" />
-                  Save Proposal
+                  {t('saveProposal')}
                 </Button>
                 <Button variant="default" className="bg-green-600 hover:bg-green-700">
                   <Send className="h-4 w-4 mr-2" />
-                  Send Proposal
+                  {t('sendProposal')}
                 </Button>
               </div>
             </CardContent>

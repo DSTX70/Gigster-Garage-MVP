@@ -13,10 +13,12 @@ import { Link } from "wouter";
 import { ArrowLeft, FileCheck, Send, Download, Eye, Scale, Calendar, Save, PenTool, Loader2, ChevronDown, FolderOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 import type { Project } from "@shared/schema";
 
 export default function CreateContract() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isPreview, setIsPreview] = useState(false);
   
   // Form data
@@ -579,15 +581,15 @@ export default function CreateContract() {
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                {t('back')}
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <FileCheck className="h-8 w-8 text-purple-600" />
-                Create Contract
+                {t('createContract')}
               </h1>
-              <p className="text-gray-600 mt-1">Generate professional contracts with legal terms and conditions</p>
+              <p className="text-gray-600 mt-1">{t('createContractDesc')}</p>
             </div>
           </div>
         </div>
@@ -596,13 +598,13 @@ export default function CreateContract() {
           {/* Contract Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Contract Information</CardTitle>
-              <CardDescription>Basic contract details and parties involved</CardDescription>
+              <CardTitle>{t('contractInformation')}</CardTitle>
+              <CardDescription>{t('basicContractDetails')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="contractTitle">Contract Title *</Label>
+                  <Label htmlFor="contractTitle">{t('contractTitle')} *</Label>
                   <Input
                     id="contractTitle"
                     placeholder="Service Agreement"
@@ -612,7 +614,7 @@ export default function CreateContract() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contractType">Contract Type</Label>
+                  <Label htmlFor="contractType">{t('contractType')}</Label>
                   <Select value={formData.contractType} onValueChange={(value) => updateFormData("contractType", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select contract type" />
@@ -629,7 +631,7 @@ export default function CreateContract() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="clientName">Client Name *</Label>
+                  <Label htmlFor="clientName">{t('clientName')} *</Label>
                   <Input
                     id="clientName"
                     placeholder="Enter client name"
@@ -639,7 +641,7 @@ export default function CreateContract() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clientEmail">Client Email</Label>
+                  <Label htmlFor="clientEmail">{t('clientEmail')}</Label>
                   <Input
                     id="clientEmail"
                     type="email"
@@ -690,13 +692,13 @@ export default function CreateContract() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Contract Terms
+                {t('contractTerms')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
+                  <Label htmlFor="startDate">{t('startDate')}</Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -706,7 +708,7 @@ export default function CreateContract() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
+                  <Label htmlFor="endDate">{t('endDate')}</Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -742,7 +744,7 @@ export default function CreateContract() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Scope of Work 
+                  {t('scopeOfWork')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -786,7 +788,7 @@ export default function CreateContract() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Deliverables 
+                  {t('deliverables')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -830,7 +832,7 @@ export default function CreateContract() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Payment Terms 
+                  {t('paymentTerms')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -874,7 +876,7 @@ export default function CreateContract() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  Responsibilities 
+                  {t('responsibilities')} 
                   <Badge variant="outline" className="text-xs">textarea</Badge>
                 </div>
                 <Button
@@ -918,7 +920,7 @@ export default function CreateContract() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Scale className="h-5 w-5" />
-                Legal Terms
+                {t('legalTerms')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1035,15 +1037,15 @@ export default function CreateContract() {
               <div className="flex items-center justify-center space-x-4">
                 <Button variant="outline" onClick={() => setIsPreview(true)}>
                   <Eye className="h-4 w-4 mr-2" />
-                  Preview
+                  {t('preview')}
                 </Button>
                 <Button onClick={handleSave} disabled={saveContractMutation.isPending}>
                   <Save className="h-4 w-4 mr-2" />
-                  {saveContractMutation.isPending ? "Saving..." : "Save Contract"}
+                  {saveContractMutation.isPending ? t('saving') : t('saveContract')}
                 </Button>
                 <Button onClick={handleSave} disabled={saveContractMutation.isPending}>
                   <Send className="h-4 w-4 mr-2" />
-                  Send Contract
+                  {t('sendContract')}
                 </Button>
               </div>
             </CardContent>
