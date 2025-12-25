@@ -5019,10 +5019,20 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Language mapping for AI content generation
+  const languageNames: Record<string, string> = {
+    'en': 'English',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'pt-BR': 'Brazilian Portuguese',
+    'ja': 'Japanese'
+  };
+
   // Agency Hub AI-powered endpoints
   app.post("/api/agency/create", requireAuth, async (req, res) => {
     try {
-      const { prompt } = req.body;
+      const { prompt, language = 'en' } = req.body;
       if (!prompt) {
         return res.status(400).json({ error: "Prompt is required" });
       }
@@ -5031,14 +5041,15 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
-      console.log("🎨 Creating marketing content for:", prompt.substring(0, 50) + "...");
+      const targetLanguage = languageNames[language] || 'English';
+      console.log("🎨 Creating marketing content for:", prompt.substring(0, 50) + "... (Language: " + targetLanguage + ")");
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // Use gpt-4o instead as gpt-5 may not be available yet
+      const response = await openai!.chat.completions.create({
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `You are a creative marketing expert specializing in visual content and social media mockups. Create detailed, professional marketing content concepts including visual descriptions, copy suggestions, and design recommendations. Focus on creating actionable, implementable marketing materials.`
+            content: `You are a creative marketing expert specializing in visual content and social media mockups. Create detailed, professional marketing content concepts including visual descriptions, copy suggestions, and design recommendations. Focus on creating actionable, implementable marketing materials. IMPORTANT: Generate all content in ${targetLanguage}.`
           },
           {
             role: "user",
@@ -5063,7 +5074,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
   app.post("/api/agency/write", requireAuth, async (req, res) => {
     try {
-      const { prompt } = req.body;
+      const { prompt, language = 'en' } = req.body;
       if (!prompt) {
         return res.status(400).json({ error: "Prompt is required" });
       }
@@ -5072,14 +5083,15 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
-      console.log("✍️ Writing content for:", prompt.substring(0, 50) + "...");
+      const targetLanguage = languageNames[language] || 'English';
+      console.log("✍️ Writing content for:", prompt.substring(0, 50) + "... (Language: " + targetLanguage + ")");
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `You are a professional copywriter and content creator with expertise in writing compelling marketing materials, press releases, presentations, and advertising copy. Create engaging, persuasive, and well-structured content that drives action and communicates value effectively.`
+            content: `You are a professional copywriter and content creator with expertise in writing compelling marketing materials, press releases, presentations, and advertising copy. Create engaging, persuasive, and well-structured content that drives action and communicates value effectively. IMPORTANT: Generate all content in ${targetLanguage}.`
           },
           {
             role: "user",
@@ -5104,7 +5116,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
   app.post("/api/agency/promote", requireAuth, async (req, res) => {
     try {
-      const { prompt } = req.body;
+      const { prompt, language = 'en' } = req.body;
       if (!prompt) {
         return res.status(400).json({ error: "Prompt is required" });
       }
@@ -5113,14 +5125,15 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
-      console.log("📢 Creating promotion strategy for:", prompt.substring(0, 50) + "...");
+      const targetLanguage = languageNames[language] || 'English';
+      console.log("📢 Creating promotion strategy for:", prompt.substring(0, 50) + "... (Language: " + targetLanguage + ")");
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `You are a digital marketing strategist and advertising expert with deep knowledge of paid advertising platforms, audience targeting, budget optimization, and campaign strategy. Provide detailed, actionable advertising strategies with specific recommendations for platforms, budgets, targeting, and campaign structures.`
+            content: `You are a digital marketing strategist and advertising expert with deep knowledge of paid advertising platforms, audience targeting, budget optimization, and campaign strategy. Provide detailed, actionable advertising strategies with specific recommendations for platforms, budgets, targeting, and campaign structures. IMPORTANT: Generate all content in ${targetLanguage}.`
           },
           {
             role: "user",
@@ -5145,7 +5158,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
 
   app.post("/api/agency/track", requireAuth, async (req, res) => {
     try {
-      const { data } = req.body;
+      const { data, language = 'en' } = req.body;
       if (!data) {
         return res.status(400).json({ error: "Data is required" });
       }
@@ -5154,14 +5167,15 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
-      console.log("📊 Analyzing marketing data:", data.substring(0, 50) + "...");
+      const targetLanguage = languageNames[language] || 'English';
+      console.log("📊 Analyzing marketing data:", data.substring(0, 50) + "... (Language: " + targetLanguage + ")");
 
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `You are a marketing analytics expert and data analyst specializing in campaign performance, ROI analysis, and marketing metrics interpretation. Analyze marketing data and provide actionable insights, recommendations, and performance assessments. Focus on practical improvements and strategic guidance.`
+            content: `You are a marketing analytics expert and data analyst specializing in campaign performance, ROI analysis, and marketing metrics interpretation. Analyze marketing data and provide actionable insights, recommendations, and performance assessments. Focus on practical improvements and strategic guidance. IMPORTANT: Provide all analysis and insights in ${targetLanguage}.`
           },
           {
             role: "user",
@@ -6699,7 +6713,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   // AI Proposal Generation Route
   app.post("/api/ai/generate-proposal", requireAuth, requirePlan("pro"), async (req, res) => {
     try {
-      const { projectTitle, clientName, projectDescription, totalBudget, timeline, scope, requirements } = req.body;
+      const { projectTitle, clientName, projectDescription, totalBudget, timeline, scope, requirements, language = 'en' } = req.body;
 
       if (!process.env.OPENAI_API_KEY) {
         return res.status(503).json({ 
@@ -6714,6 +6728,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         });
       }
 
+      const targetLanguage = languageNames[language] || 'English';
       const prompt = `Generate a professional business proposal for the following project:
 
 Project Title: ${projectTitle}
@@ -6737,12 +6752,12 @@ Create a comprehensive proposal that includes:
 Make it professional, persuasive, and tailored to the client's needs. Use clear sections and bullet points where appropriate. The tone should be confident but not overly sales-oriented.`;
 
       // Using gpt-4o as it's reliable and available
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are a professional business consultant specializing in creating compelling project proposals. Generate well-structured, professional proposals that clearly communicate value and build client confidence."
+            content: `You are a professional business consultant specializing in creating compelling project proposals. Generate well-structured, professional proposals that clearly communicate value and build client confidence. IMPORTANT: Generate all content in ${targetLanguage}.`
           },
           {
             role: "user",
@@ -6777,7 +6792,8 @@ Make it professional, persuasive, and tailored to the client's needs. Use clear 
   // AI Content Generation Route
   app.post("/api/ai/generate-content", requireAuth, requirePlan("pro"), async (req, res) => {
     try {
-      const { type, projectTitle, clientName, projectDescription, totalBudget, timeline, context } = req.body;
+      const { type, projectTitle, clientName, projectDescription, totalBudget, timeline, context, language = 'en' } = req.body;
+      const targetLanguage = languageNames[language] || 'English';
 
       if (!process.env.OPENAI_API_KEY) {
         return res.status(503).json({ 
@@ -6961,12 +6977,12 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
       }
 
       // Using gpt-4o as it's reliable and available
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are a professional business consultant helping to write proposal content. Generate clear, professional, and persuasive content that would be appropriate for client-facing business proposals."
+            content: `You are a professional business consultant helping to write proposal content. Generate clear, professional, and persuasive content that would be appropriate for client-facing business proposals. IMPORTANT: Generate all content in ${targetLanguage}.`
           },
           {
             role: "user",

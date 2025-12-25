@@ -57,7 +57,7 @@ const VISUAL_STYLES = [
 ];
 
 export default function AgencyHub() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [createPrompt, setCreatePrompt] = useState("");
   const [writePrompt, setWritePrompt] = useState("");
   const [promotePrompt, setPromotePrompt] = useState("");
@@ -110,7 +110,7 @@ export default function AgencyHub() {
       const response = await fetch("/api/agency/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, language }),
       });
       if (!response.ok) throw new Error("Failed to generate content");
       return response.json();
@@ -130,7 +130,7 @@ export default function AgencyHub() {
       const response = await fetch("/api/agency/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: styledPrompt, style: visualStyle }),
+        body: JSON.stringify({ prompt: styledPrompt, style: visualStyle, language }),
       });
       if (!response.ok) throw new Error("Failed to generate image");
       return response.json();
@@ -229,7 +229,8 @@ export default function AgencyHub() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "marketing_concept_prompt",
-          context: "Generate a detailed marketing concept prompt that includes target audience, brand style, platform specifications, and creative direction. Make it specific and actionable for creating professional marketing mockups."
+          context: "Generate a detailed marketing concept prompt that includes target audience, brand style, platform specifications, and creative direction. Make it specific and actionable for creating professional marketing mockups.",
+          language
         }),
       });
 
@@ -238,13 +239,13 @@ export default function AgencyHub() {
       
       setCreatePrompt(data.content);
       toast({
-        title: "Marketing Prompt Generated!",
-        description: "AI has created a detailed marketing concept prompt.",
+        title: t('success'),
+        description: t('createdSuccessfully'),
       });
     } catch (error) {
       toast({
-        title: "Generation Failed",
-        description: "Failed to generate marketing prompt. Please try again.",
+        title: t('error'),
+        description: t('errorOccurred'),
         variant: "destructive",
       });
     } finally {
@@ -257,7 +258,7 @@ export default function AgencyHub() {
       const response = await fetch("/api/agency/write", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, language }),
       });
       if (!response.ok) throw new Error("Failed to write content");
       return response.json();
@@ -276,7 +277,7 @@ export default function AgencyHub() {
       const response = await fetch("/api/agency/promote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, language }),
       });
       if (!response.ok) throw new Error("Failed to generate promotion strategy");
       return response.json();
@@ -295,7 +296,7 @@ export default function AgencyHub() {
       const response = await fetch("/api/agency/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data }),
+        body: JSON.stringify({ data, language }),
       });
       if (!response.ok) throw new Error("Failed to analyze data");
       return response.json();
