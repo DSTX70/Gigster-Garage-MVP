@@ -16,10 +16,12 @@ import { useLocation } from "wouter";
 import type { Task, TimeLog } from "@shared/schema";
 import { startOfDay, addDays } from "date-fns";
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 export function AppHeader() {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [currentTime, setCurrentTime] = useState(0);
 
@@ -165,7 +167,7 @@ export function AppHeader() {
               )}
               
               <span style={{ color: 'var(--brand-amber-tint)' }} className="font-medium hidden sm:inline">|</span>
-              <p className="text-xs sm:text-sm font-medium hidden sm:block" style={{ color: 'var(--brand-amber-tint)' }}>Smarter tools for bolder dreams</p>
+              <p className="text-xs sm:text-sm font-medium hidden sm:block" style={{ color: 'var(--brand-amber-tint)' }}>{t("tagline")}</p>
             </div>
           </div>
 
@@ -191,7 +193,7 @@ export function AppHeader() {
               </Button>
               {user?.role === 'admin' && (
                 <span className="bg-white/20 text-white px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium border border-white/30">
-                  Admin
+                  {t("admin")}
                 </span>
               )}
             </div>
@@ -207,7 +209,7 @@ export function AppHeader() {
                 onClick={() => navigate("/")}
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
                 data-testid="button-home"
-                title="Dashboard"
+                title={t("dashboard")}
               >
                 <Home size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
@@ -219,7 +221,7 @@ export function AppHeader() {
                 onClick={() => navigate("/tasks")}
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
                 data-testid="button-tasks"
-                title="Tasks"
+                title={t("tasks")}
               >
                 <CheckCheck size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
@@ -237,7 +239,7 @@ export function AppHeader() {
                 onClick={() => navigate("/settings")}
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
                 data-testid="button-settings"
-                title="Settings & Language"
+                title={t("settings")}
               >
                 <Globe size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               </Button>
@@ -249,7 +251,7 @@ export function AppHeader() {
                 onClick={() => navigate("/messages")}
                 className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
                 data-testid="button-messages"
-                title="Messages"
+                title={t("messages")}
               >
                 <Mail size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
                 {/* Show badge if there are unread messages */}

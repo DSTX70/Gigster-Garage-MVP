@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { MoodPaletteProvider } from "@/hooks/useMoodPalette";
+import { I18nProvider } from "@/lib/i18n";
 import { DemoModeProvider } from "@/hooks/useDemoMode";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { DemoSessionWarning } from "@/components/DemoSessionWarning";
@@ -208,22 +209,24 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <DemoModeProvider>
-        <MoodPaletteProvider>
-          <TooltipProvider>
-            <DemoModeStatusBar />
-            <DemoModeBanner />
-            <DemoSessionWarning />
-            <CommandPalette />
-            <KeyboardShortcutsGuide />
-            <OfflineIndicator />
-            <QuickActionButton />
-            <GigsterCoachFloatingButton />
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </MoodPaletteProvider>
-      </DemoModeProvider>
+      <I18nProvider>
+        <DemoModeProvider>
+          <MoodPaletteProvider>
+            <TooltipProvider>
+              <DemoModeStatusBar />
+              <DemoModeBanner />
+              <DemoSessionWarning />
+              <CommandPalette />
+              <KeyboardShortcutsGuide />
+              <OfflineIndicator />
+              <QuickActionButton />
+              <GigsterCoachFloatingButton />
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </MoodPaletteProvider>
+        </DemoModeProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

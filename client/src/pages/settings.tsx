@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +36,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t, language: contextLanguage, setLanguage: setContextLanguage } = useTranslation();
   const [activeTab, setActiveTab] = useState("account");
 
   // Preferences state - load from localStorage with defaults
@@ -73,9 +75,7 @@ export default function Settings() {
   const [timeFormat, setTimeFormat] = useState(() => {
     return localStorage.getItem("pref_timeFormat") || "12h";
   });
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem("pref_language") || "en";
-  });
+  const [language, setLanguage] = useState(contextLanguage);
 
   // Account settings
   const [currentPassword, setCurrentPassword] = useState("");
@@ -176,7 +176,9 @@ export default function Settings() {
     localStorage.setItem("pref_timezone", timezone);
     localStorage.setItem("pref_dateFormat", dateFormat);
     localStorage.setItem("pref_timeFormat", timeFormat);
-    localStorage.setItem("pref_language", language);
+    
+    // Update language in context (this also saves to localStorage)
+    setContextLanguage(language);
     
     // Also save to backend
     savePreferencesMutation.mutate({
