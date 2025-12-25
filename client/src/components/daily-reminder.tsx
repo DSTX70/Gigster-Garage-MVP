@@ -17,11 +17,31 @@ interface ProductivityStats {
 }
 
 export function DailyReminder() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState("09:00");
   const [hasLoggedToday, setHasLoggedToday] = useState(false);
   const { toast } = useToast();
+
+  // Format time based on current language/locale
+  const formatTime = (hour: number) => {
+    const localeMap: Record<string, string> = {
+      en: 'en-US',
+      es: 'es-ES',
+      fr: 'fr-FR',
+      de: 'de-DE',
+      'pt-BR': 'pt-BR',
+      ja: 'ja-JP'
+    };
+    const locale = localeMap[language] || 'en-US';
+    const date = new Date();
+    date.setHours(hour, 0, 0, 0);
+    return new Intl.DateTimeFormat(locale, { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: locale === 'en-US' || locale === 'es-ES'
+    }).format(date);
+  };
 
   // Check productivity stats for today
   const { data: stats } = useQuery<ProductivityStats>({
@@ -209,19 +229,19 @@ export function DailyReminder() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="08:00">8:00 AM</SelectItem>
-                  <SelectItem value="09:00">9:00 AM</SelectItem>
-                  <SelectItem value="10:00">10:00 AM</SelectItem>
-                  <SelectItem value="11:00">11:00 AM</SelectItem>
-                  <SelectItem value="12:00">12:00 PM</SelectItem>
-                  <SelectItem value="13:00">1:00 PM</SelectItem>
-                  <SelectItem value="14:00">2:00 PM</SelectItem>
-                  <SelectItem value="15:00">3:00 PM</SelectItem>
-                  <SelectItem value="16:00">4:00 PM</SelectItem>
-                  <SelectItem value="17:00">5:00 PM</SelectItem>
-                  <SelectItem value="18:00">6:00 PM</SelectItem>
-                  <SelectItem value="19:00">7:00 PM</SelectItem>
-                  <SelectItem value="20:00">8:00 PM</SelectItem>
+                  <SelectItem value="08:00">{formatTime(8)}</SelectItem>
+                  <SelectItem value="09:00">{formatTime(9)}</SelectItem>
+                  <SelectItem value="10:00">{formatTime(10)}</SelectItem>
+                  <SelectItem value="11:00">{formatTime(11)}</SelectItem>
+                  <SelectItem value="12:00">{formatTime(12)}</SelectItem>
+                  <SelectItem value="13:00">{formatTime(13)}</SelectItem>
+                  <SelectItem value="14:00">{formatTime(14)}</SelectItem>
+                  <SelectItem value="15:00">{formatTime(15)}</SelectItem>
+                  <SelectItem value="16:00">{formatTime(16)}</SelectItem>
+                  <SelectItem value="17:00">{formatTime(17)}</SelectItem>
+                  <SelectItem value="18:00">{formatTime(18)}</SelectItem>
+                  <SelectItem value="19:00">{formatTime(19)}</SelectItem>
+                  <SelectItem value="20:00">{formatTime(20)}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
