@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ const VISUAL_STYLES = [
 ];
 
 export default function AgencyHub() {
+  const { t } = useTranslation();
   const [createPrompt, setCreatePrompt] = useState("");
   const [writePrompt, setWritePrompt] = useState("");
   const [promotePrompt, setPromotePrompt] = useState("");
@@ -115,10 +117,10 @@ export default function AgencyHub() {
     },
     onSuccess: (data) => {
       setCreatedContent(data.content);
-      toast({ title: "Marketing mockup created!", description: "Your creative content is ready." });
+      toast({ title: t('success'), description: t('createdSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to create content", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     },
   });
 
@@ -136,10 +138,10 @@ export default function AgencyHub() {
     onSuccess: (data) => {
       const imageUrl = data.imageUrl || data.url || data.path || data?.data?.imageUrl || "";
       setGeneratedImageUrl(imageUrl);
-      toast({ title: "Image generated!", description: "Your marketing visual is ready." });
+      toast({ title: t('success'), description: t('createdSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to generate image", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     },
   });
 
@@ -158,10 +160,10 @@ export default function AgencyHub() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', 'marketing'] });
-      toast({ title: "Saved!", description: "Marketing content saved to your library." });
+      toast({ title: t('success'), description: t('savedSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to save content", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     }
   });
   
@@ -181,10 +183,10 @@ export default function AgencyHub() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', 'visual'] });
-      toast({ title: "Saved!", description: "Visual saved to your library." });
+      toast({ title: t('success'), description: t('savedSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to save visual", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     }
   });
   
@@ -196,10 +198,10 @@ export default function AgencyHub() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', variables.type] });
-      toast({ title: "Deleted", description: "Item removed from library." });
+      toast({ title: t('success'), description: t('deletedSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     }
   });
 
@@ -262,10 +264,10 @@ export default function AgencyHub() {
     },
     onSuccess: (data) => {
       setWrittenContent(data.content);
-      toast({ title: "Copy written!", description: "Your marketing copy is ready." });
+      toast({ title: t('success'), description: t('createdSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to write content", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     },
   });
 
@@ -281,10 +283,10 @@ export default function AgencyHub() {
     },
     onSuccess: (data) => {
       setPromoteContent(data.content);
-      toast({ title: "Promotion strategy ready!", description: "Your advertising strategy is prepared." });
+      toast({ title: t('success'), description: t('createdSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to generate promotion strategy", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     },
   });
 
@@ -300,16 +302,16 @@ export default function AgencyHub() {
     },
     onSuccess: (data) => {
       setTrackInsights(data.insights);
-      toast({ title: "Analysis complete!", description: "Your marketing insights are ready." });
+      toast({ title: t('success'), description: t('createdSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to analyze data", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     },
   });
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", description: "Content copied to clipboard." });
+    toast({ title: t('copiedToClipboard'), description: t('copiedToClipboard') });
   };
 
   return (
@@ -323,15 +325,15 @@ export default function AgencyHub() {
             <Link href="/">
               <Button variant="outline" size="sm" className="flex items-center gap-2" data-testid="button-back-to-dashboard">
                 <ArrowLeft className="w-4 h-4" />
-                Back to My Dashboard
+                {t('backToMyDashboard')}
               </Button>
             </Link>
             <div className="bg-[var(--surface)] p-3 rounded-lg border border-[color:var(--keyline)]">
               <Zap className="h-8 w-8 text-[var(--brand)]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[var(--text)]">Agency Hub</h1>
-              <p className="text-[var(--muted)]">AI-powered marketing and creative tools for your business</p>
+              <h1 className="text-3xl font-bold text-[var(--text)]">{t('agencyHubTitle')}</h1>
+              <p className="text-[var(--muted)]">{t('agencyHubDesc')}</p>
             </div>
           </div>
         </div>
@@ -341,19 +343,19 @@ export default function AgencyHub() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="create" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
-              Create
+              {t('create')}
             </TabsTrigger>
             <TabsTrigger value="write" className="flex items-center gap-2">
               <PenTool className="h-4 w-4" />
-              Write
+              {t('writeTab')}
             </TabsTrigger>
             <TabsTrigger value="promote" className="flex items-center gap-2">
               <Megaphone className="h-4 w-4" />
-              Promote
+              {t('promoteTab')}
             </TabsTrigger>
             <TabsTrigger value="track" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Track
+              {t('trackTab')}
             </TabsTrigger>
           </TabsList>
 
@@ -364,7 +366,7 @@ export default function AgencyHub() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Palette className="h-5 w-5 text-purple-600" />
-                    Create Marketing Mockups
+                    {t('createMarketingMockups')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -407,19 +409,19 @@ export default function AgencyHub() {
                       {createMutation.isPending ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Creating Concept...
+                          {t('creatingConcept')}
                         </>
                       ) : (
                         <>
                           <Palette className="h-4 w-4 mr-2" />
-                          Generate Concept
+                          {t('generateConcept')}
                         </>
                       )}
                     </Button>
                     
                     {/* Visual Style Dropdown */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Visual Style</label>
+                      <label className="text-sm font-medium text-gray-700">{t('visualStyle')}</label>
                       <Select value={visualStyle} onValueChange={setVisualStyle}>
                         <SelectTrigger data-testid="select-visual-style">
                           <SelectValue placeholder="Select style" />
@@ -459,7 +461,7 @@ export default function AgencyHub() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                     <div className="flex items-center gap-2">
-                      <CardTitle>Generated Visual</CardTitle>
+                      <CardTitle>{t('generatedVisual')}</CardTitle>
                       <Button
                         variant="ghost"
                         size="sm"

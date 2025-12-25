@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "@/lib/i18n";
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,8 @@ interface EnhancedFilingCabinetDocument extends ClientDocument {
 type ViewMode = 'grid' | 'list';
 
 export default function FilingCabinet() {
+  const { t } = useTranslation();
+  
   // Advanced search hook
   const {
     // State
@@ -86,9 +89,9 @@ export default function FilingCabinet() {
 
   // Virtual folders state (stored in component state for demo - would be persisted in real app)
   const [virtualFolders, setVirtualFolders] = useState<VirtualFolder[]>([
-    { id: 'recent', name: 'Recent Files', documentCount: 0 },
-    { id: 'favorites', name: 'Favorites', documentCount: 0 },
-    { id: 'archived', name: 'Archived', documentCount: 0 }
+    { id: 'recent', name: t('recentFiles'), documentCount: 0 },
+    { id: 'favorites', name: t('favorites'), documentCount: 0 },
+    { id: 'archived', name: t('archived'), documentCount: 0 }
   ]);
 
   // Missing state variables for filters
@@ -133,10 +136,10 @@ export default function FilingCabinet() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/client-documents"] });
       refresh(); // Refresh search results too
-      toast({ title: "Document updated successfully" });
+      toast({ title: t('updatedSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Failed to update document", variant: "destructive" });
+      toast({ title: t('error'), variant: "destructive" });
     }
   });
 
@@ -151,10 +154,10 @@ export default function FilingCabinet() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/client-documents"] });
       refresh(); // Refresh search results too
-      toast({ title: "Document deleted successfully" });
+      toast({ title: t('deletedSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Failed to delete document", variant: "destructive" });
+      toast({ title: t('error'), variant: "destructive" });
     }
   });
 
@@ -405,7 +408,7 @@ export default function FilingCabinet() {
               data-testid={`button-download-${document.id}`}
             >
               <Download className="h-4 w-4 mr-1" />
-              Download
+              {t('download')}
             </Button>
 
             {/* Document Actions Menu */}
@@ -422,34 +425,34 @@ export default function FilingCabinet() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setEditingDocument(document)}>
                   <Edit2 className="h-4 w-4 mr-2" />
-                  Edit Properties
+                  {t('edit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.open(document.fileUrl, '_blank')}>
                   <Eye className="h-4 w-4 mr-2" />
-                  View/Preview
+                  {t('view')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Document
+                      {t('delete')}
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                      <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete "{document.name}"? This action cannot be undone.
+                        {t('cannotUndo')}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                       <AlertDialogAction 
                         onClick={() => deleteDocumentMutation.mutate(document.id)}
                         className="bg-red-600 hover:bg-red-700"
                       >
-                        Delete
+                        {t('delete')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -483,7 +486,7 @@ export default function FilingCabinet() {
           <div className="p-6 space-y-6">
             <div className="flex items-center gap-3">
               <FolderOpen className="h-6 w-6 text-gray-600" />
-              <h2 className="font-semibold text-lg">File Organization</h2>
+              <h2 className="font-semibold text-lg">{t('fileOrganization')}</h2>
             </div>
 
             {/* Folder Manager */}
@@ -524,7 +527,7 @@ export default function FilingCabinet() {
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <FolderOpen className="h-5 w-5" />
-                File Organization
+                {t('fileOrganization')}
               </SheetTitle>
             </SheetHeader>
             
@@ -585,17 +588,17 @@ export default function FilingCabinet() {
               <Link href="/">
                 <Button variant="outline" size="sm" data-testid="button-back-to-dashboard">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
+                  {t('back')}
                 </Button>
               </Link>
               
               <div className="flex items-center gap-3">
                 <FolderOpen className="h-8 w-8 text-gray-600" />
-                <h1 className="text-3xl font-bold text-gray-900">Filing Cabinet</h1>
+                <h1 className="text-3xl font-bold text-gray-900">{t('filingCabinet')}</h1>
               </div>
               
               <Badge variant="secondary" className="text-sm">
-                {documents.length} files
+                {documents.length} {t('files')}
               </Badge>
             </div>
             <p className="text-gray-600">Advanced file organization and management system</p>
@@ -719,7 +722,7 @@ export default function FilingCabinet() {
                     data-testid="button-advanced-search"
                   >
                     <Filter className="h-4 w-4 mr-2" />
-                    Advanced Search
+                    {t('advancedSearch')}
                   </Button>
                   <Button 
                     variant="outline" 

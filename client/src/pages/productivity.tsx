@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "@/lib/i18n";
 import { AppHeader } from "@/components/app-header";
 import { TimerWidget } from "@/components/timer-widget";
 import { StreakCard } from "@/components/streak-card";
@@ -40,6 +41,7 @@ const formatDuration = (seconds: number): string => {
 };
 
 export default function ProductivityPage() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [selectedForInvoice, setSelectedForInvoice] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all");
@@ -150,10 +152,10 @@ export default function ProductivityPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
-      toast({ title: "Success", description: "Time log deleted successfully" });
+      toast({ title: t('success'), description: t('deletedSuccessfully') });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to delete time log", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     },
   });
 
@@ -164,13 +166,13 @@ export default function ProductivityPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
-      toast({ title: "Success", description: "Time log updated successfully" });
+      toast({ title: t('success'), description: t('updatedSuccessfully') });
       setEditingLog(null);
       setEditNotes("");
       setEditDescription("");
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update time log", variant: "destructive" });
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     },
   });
 
@@ -212,14 +214,14 @@ export default function ProductivityPage() {
               data-testid="button-back-to-dashboard"
             >
               <ArrowLeft size={16} />
-              <span>Back to Dashboard</span>
+              <span>{t('back')}</span>
             </Button>
             <div>
               <h2 className="text-2xl font-bold brand-heading" data-testid="page-title">
-                Time & Productivity Tools
+                {t('timeProductivityTools')}
               </h2>
               <p className="text-gray-700 text-sm">
-                Track your time, maintain productivity streaks, and stay focused on your goals.
+                {t('timeProductivityDesc')}
               </p>
             </div>
           </div>
@@ -249,7 +251,7 @@ export default function ProductivityPage() {
             <CardHeader className="pb-3">
               <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <Clock className="h-4 w-4" />
-                <span>Running Total</span>
+                <span>{t('runningTotal')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -264,7 +266,7 @@ export default function ProductivityPage() {
                     {formatTotalDuration(totalHours)}
                   </div>
                   <div className="text-xs text-gray-600 mt-1">
-                    All time entries
+                    {t('allTimeEntries')}
                   </div>
                 </>
               )}
@@ -275,7 +277,7 @@ export default function ProductivityPage() {
             <CardHeader className="pb-3">
               <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <Calendar className="h-4 w-4" />
-                <span>Last 7 Days</span>
+                <span>{t('last7Days')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -301,7 +303,7 @@ export default function ProductivityPage() {
             <CardHeader className="pb-3">
               <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <TrendingUp className="h-4 w-4" />
-                <span>Last 30 Days</span>
+                <span>{t('last30Days')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -327,7 +329,7 @@ export default function ProductivityPage() {
             <CardHeader className="pb-3">
               <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <BarChart3 className="h-4 w-4" />
-                <span>Streak Days</span>
+                <span>{t('streakDays')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -335,7 +337,7 @@ export default function ProductivityPage() {
                 {stats7Days ? stats7Days.streakDays : 0}
               </div>
               <div className="text-xs text-gray-600 mt-1">
-                Current streak
+                {t('currentStreak')}
               </div>
             </CardContent>
           </Card>
@@ -344,7 +346,7 @@ export default function ProductivityPage() {
             <CardHeader className="pb-3">
               <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
                 <Clock className="h-4 w-4" />
-                <span>Total Sessions</span>
+                <span>{t('totalSessions')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -352,7 +354,7 @@ export default function ProductivityPage() {
                 {timeLogs.length}
               </div>
               <div className="text-xs text-gray-600 mt-1">
-                Time entries
+                {t('timeEntries')}
               </div>
             </CardContent>
           </Card>
@@ -401,11 +403,11 @@ export default function ProductivityPage() {
             ) : filteredTimeLogs.length === 0 ? (
               <div className="text-center py-8 text-orange-700" data-testid="no-timelogs">
                 <Clock className="h-12 w-12 mx-auto mb-4 text-orange-400" />
-                <p className="text-lg font-medium mb-2">No time logs found</p>
+                <p className="text-lg font-medium mb-2">{t('noTimeLogged')}</p>
                 <p className="text-sm">
                   {activeTab === "all" 
-                    ? "Start your first timer to begin tracking your productivity!"
-                    : `No ${activeTab} time logs available.`
+                    ? t('startTimerToTrack')
+                    : t('noResults')
                   }
                 </p>
               </div>
