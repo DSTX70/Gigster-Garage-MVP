@@ -37,18 +37,45 @@ export default function Settings() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("account");
 
-  // Preferences state
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [smsNotifications, setSmsNotifications] = useState(false);
-  const [taskReminders, setTaskReminders] = useState(true);
-  const [invoiceAlerts, setInvoiceAlerts] = useState(true);
-  const [weeklyDigest, setWeeklyDigest] = useState(true);
-  const [quietHoursStart, setQuietHoursStart] = useState("22:00");
-  const [quietHoursEnd, setQuietHoursEnd] = useState("08:00");
-  const [timezone, setTimezone] = useState("America/New_York");
-  const [dateFormat, setDateFormat] = useState("MM/DD/YYYY");
-  const [timeFormat, setTimeFormat] = useState("12h");
-  const [language, setLanguage] = useState("en");
+  // Preferences state - load from localStorage with defaults
+  const [emailNotifications, setEmailNotifications] = useState(() => {
+    const saved = localStorage.getItem("pref_emailNotifications");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [smsNotifications, setSmsNotifications] = useState(() => {
+    const saved = localStorage.getItem("pref_smsNotifications");
+    return saved !== null ? saved === "true" : false;
+  });
+  const [taskReminders, setTaskReminders] = useState(() => {
+    const saved = localStorage.getItem("pref_taskReminders");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [invoiceAlerts, setInvoiceAlerts] = useState(() => {
+    const saved = localStorage.getItem("pref_invoiceAlerts");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [weeklyDigest, setWeeklyDigest] = useState(() => {
+    const saved = localStorage.getItem("pref_weeklyDigest");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [quietHoursStart, setQuietHoursStart] = useState(() => {
+    return localStorage.getItem("pref_quietHoursStart") || "22:00";
+  });
+  const [quietHoursEnd, setQuietHoursEnd] = useState(() => {
+    return localStorage.getItem("pref_quietHoursEnd") || "08:00";
+  });
+  const [timezone, setTimezone] = useState(() => {
+    return localStorage.getItem("pref_timezone") || "America/New_York";
+  });
+  const [dateFormat, setDateFormat] = useState(() => {
+    return localStorage.getItem("pref_dateFormat") || "MM/DD/YYYY";
+  });
+  const [timeFormat, setTimeFormat] = useState(() => {
+    return localStorage.getItem("pref_timeFormat") || "12h";
+  });
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem("pref_language") || "en";
+  });
 
   // Account settings
   const [currentPassword, setCurrentPassword] = useState("");
@@ -138,6 +165,20 @@ export default function Settings() {
   };
 
   const handleSavePreferences = () => {
+    // Save to localStorage for persistence
+    localStorage.setItem("pref_emailNotifications", String(emailNotifications));
+    localStorage.setItem("pref_smsNotifications", String(smsNotifications));
+    localStorage.setItem("pref_taskReminders", String(taskReminders));
+    localStorage.setItem("pref_invoiceAlerts", String(invoiceAlerts));
+    localStorage.setItem("pref_weeklyDigest", String(weeklyDigest));
+    localStorage.setItem("pref_quietHoursStart", quietHoursStart);
+    localStorage.setItem("pref_quietHoursEnd", quietHoursEnd);
+    localStorage.setItem("pref_timezone", timezone);
+    localStorage.setItem("pref_dateFormat", dateFormat);
+    localStorage.setItem("pref_timeFormat", timeFormat);
+    localStorage.setItem("pref_language", language);
+    
+    // Also save to backend
     savePreferencesMutation.mutate({
       emailNotifications,
       smsNotifications,
