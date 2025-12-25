@@ -578,20 +578,20 @@ export default function CreateInvoice() {
             <CardContent className="space-y-6">
               {/* Company Information */}
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-900 mb-3">Your Company Information</h4>
+                <h4 className="font-medium text-blue-900 mb-3">{t('yourCompanyInformation')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="companyName">Company Name *</Label>
+                    <Label htmlFor="companyName">{t('companyName')} *</Label>
                     <Input
                       id="companyName"
-                      placeholder="Your Company Name"
+                      placeholder={t('companyName')}
                       value={formData.companyName}
                       onChange={(e) => updateFormData("companyName", e.target.value)}
                       className="border-blue-200 focus:border-blue-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="companyAddress">Company Address</Label>
+                    <Label htmlFor="companyAddress">{t('companyAddress')}</Label>
                     <Input
                       id="companyAddress"
                       placeholder="123 Business St, City, State 12345"
@@ -605,7 +605,7 @@ export default function CreateInvoice() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                  <Label htmlFor="invoiceNumber">{t('invoiceNumber')}</Label>
                   <Input
                     id="invoiceNumber"
                     placeholder="INV-001"
@@ -638,20 +638,20 @@ export default function CreateInvoice() {
 
               {/* Client Information */}
               <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                <h4 className="font-medium text-orange-900 mb-3">Client Information</h4>
+                <h4 className="font-medium text-orange-900 mb-3">{t('clientInformation')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="clientName">Client Name *</Label>
+                    <Label htmlFor="clientName">{t('clientName')} *</Label>
                     <Input
                       id="clientName"
-                      placeholder="Enter client name"
+                      placeholder={t('clientName')}
                       value={formData.clientName}
                       onChange={(e) => updateFormData("clientName", e.target.value)}
                       className="border-orange-200 focus:border-orange-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="clientEmail">Client Email</Label>
+                    <Label htmlFor="clientEmail">{t('clientEmail')}</Label>
                     <Input
                       id="clientEmail"
                       type="email"
@@ -665,11 +665,11 @@ export default function CreateInvoice() {
 
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
-                    Client Address
+                    {t('clientAddress')}
                     <Badge variant="outline" className="text-xs">textarea</Badge>
                   </Label>
                   <Textarea
-                    placeholder="Enter client billing address..."
+                    placeholder={t('clientBillingAddress')}
                     rows={3}
                     className="min-h-[80px] resize-y bg-orange-50 border-orange-200 focus:border-orange-500"
                     maxLength={500}
@@ -680,8 +680,8 @@ export default function CreateInvoice() {
                     }}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>📍 Client's billing address</span>
-                    <span className="font-medium">{addressCount} / 500 characters</span>
+                    <span>📍 {t('clientBillingAddress')}</span>
+                    <span className="font-medium">{addressCount} / 500 {t('characters')}</span>
                   </div>
                 </div>
               </div>

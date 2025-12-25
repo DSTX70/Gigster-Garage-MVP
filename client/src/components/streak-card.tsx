@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, Flame, Clock, TrendingUp, Target } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface StreakData {
   last14Days: {
@@ -21,6 +22,7 @@ interface StreakData {
 }
 
 export function StreakCard() {
+  const { t } = useTranslation();
   const { data: streakData, isLoading } = useQuery<StreakData>({
     queryKey: ["/api/streaks"],
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -32,7 +34,7 @@ export function StreakCard() {
         <CardHeader className="pb-3">
           <CardTitle className="text-amber-900 flex items-center space-x-2">
             <Flame className="h-5 w-5" />
-            <span>Productivity Streaks</span>
+            <span>{t('productivityStreaks')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -50,12 +52,12 @@ export function StreakCard() {
         <CardHeader className="pb-3">
           <CardTitle className="text-amber-900 flex items-center space-x-2">
             <Flame className="h-5 w-5" />
-            <span>Productivity Streaks</span>
+            <span>{t('productivityStreaks')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-amber-700">
-            No streak data available
+            {t('noTimeLogged')}
           </div>
         </CardContent>
       </Card>
@@ -67,7 +69,7 @@ export function StreakCard() {
       <CardHeader className="pb-3">
         <CardTitle className="text-amber-900 flex items-center space-x-2">
           <Flame className="h-5 w-5" />
-          <span>Productivity Streaks</span>
+          <span>{t('productivityStreaks')}</span>
         </CardTitle>
       </CardHeader>
       
@@ -75,10 +77,10 @@ export function StreakCard() {
         <Tabs defaultValue="14days" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-amber-100">
             <TabsTrigger value="14days" className="text-amber-800 data-[state=active]:bg-amber-200" data-testid="tab-14days">
-              14 Days
+              {t('days14')}
             </TabsTrigger>
             <TabsTrigger value="30days" className="text-amber-800 data-[state=active]:bg-amber-200" data-testid="tab-30days">
-              30 Days
+              {t('days30')}
             </TabsTrigger>
           </TabsList>
           
@@ -88,14 +90,14 @@ export function StreakCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Flame className="h-4 w-4 text-orange-600" />
-                  <span className="text-sm font-medium text-amber-900">Current Streak</span>
+                  <span className="text-sm font-medium text-amber-900">{t('currentStreak')}</span>
                 </div>
                 <Badge 
                   variant="secondary" 
                   className="bg-orange-100 text-orange-800 border-orange-200"
                   data-testid="streak-days-14"
                 >
-                  {streakData.last14Days.streakDays} days
+                  {streakData.last14Days.streakDays} {t('streakDays')}
                 </Badge>
               </div>
               
@@ -103,7 +105,7 @@ export function StreakCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-900">Total Hours</span>
+                  <span className="text-sm font-medium text-amber-900">{t('totalHours')}</span>
                 </div>
                 <span className="text-sm font-semibold text-amber-800" data-testid="total-hours-14">
                   {streakData.last14Days.totalHours}h
@@ -114,7 +116,7 @@ export function StreakCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-900">Daily Average</span>
+                  <span className="text-sm font-medium text-amber-900">{t('dailyAverage')}</span>
                 </div>
                 <span className="text-sm font-semibold text-amber-800" data-testid="daily-average-14">
                   {streakData.last14Days.averageDailyHours}h
@@ -126,7 +128,7 @@ export function StreakCard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Target className="h-4 w-4 text-amber-600" />
-                    <span className="text-sm font-medium text-amber-900">Utilization</span>
+                    <span className="text-sm font-medium text-amber-900">{t('utilization')}</span>
                   </div>
                   <span className="text-sm font-semibold text-amber-800" data-testid="utilization-percent-14">
                     {streakData.last14Days.utilizationPercent}%
@@ -147,14 +149,14 @@ export function StreakCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Flame className="h-4 w-4 text-orange-600" />
-                  <span className="text-sm font-medium text-amber-900">Current Streak</span>
+                  <span className="text-sm font-medium text-amber-900">{t('currentStreak')}</span>
                 </div>
                 <Badge 
                   variant="secondary" 
                   className="bg-orange-100 text-orange-800 border-orange-200"
                   data-testid="streak-days-30"
                 >
-                  {streakData.last30Days.streakDays} days
+                  {streakData.last30Days.streakDays} {t('streakDays')}
                 </Badge>
               </div>
               
@@ -162,7 +164,7 @@ export function StreakCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-900">Total Hours</span>
+                  <span className="text-sm font-medium text-amber-900">{t('totalHours')}</span>
                 </div>
                 <span className="text-sm font-semibold text-amber-800" data-testid="total-hours-30">
                   {streakData.last30Days.totalHours}h
@@ -173,7 +175,7 @@ export function StreakCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-900">Daily Average</span>
+                  <span className="text-sm font-medium text-amber-900">{t('dailyAverage')}</span>
                 </div>
                 <span className="text-sm font-semibold text-amber-800" data-testid="daily-average-30">
                   {streakData.last30Days.averageDailyHours}h
@@ -185,7 +187,7 @@ export function StreakCard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Target className="h-4 w-4 text-amber-600" />
-                    <span className="text-sm font-medium text-amber-900">Utilization</span>
+                    <span className="text-sm font-medium text-amber-900">{t('utilization')}</span>
                   </div>
                   <span className="text-sm font-semibold text-amber-800" data-testid="utilization-percent-30">
                     {streakData.last30Days.utilizationPercent}%
@@ -205,8 +207,8 @@ export function StreakCard() {
         <div className="mt-4 p-3 bg-amber-100 rounded-md border border-amber-200">
           <div className="text-xs text-amber-800 text-center" data-testid="motivational-message">
             {streakData.last14Days.streakDays > 0 
-              ? `🔥 Amazing! You're on a ${streakData.last14Days.streakDays}-day streak!`
-              : "💪 Start your productivity streak today!"}
+              ? `🔥 ${streakData.last14Days.streakDays} ${t('streakDays')}!`
+              : `💪 ${t('startYourProductivityStreak')}`}
           </div>
         </div>
       </CardContent>

@@ -438,27 +438,27 @@ export default function CreatePresentation() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="author">Author/Presenter</Label>
+                  <Label htmlFor="author">{t('authorPresenter')}</Label>
                   <Input
                     id="author"
-                    placeholder="Your name"
+                    placeholder={t('yourName')}
                     value={formData.author}
                     onChange={(e) => updateFormData("author", e.target.value)}
                     className="border-blue-200 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="company">Company</Label>
+                  <Label htmlFor="company">{t('companyName')}</Label>
                   <Input
                     id="company"
-                    placeholder="Your company"
+                    placeholder={t('yourCompany')}
                     value={formData.company}
                     onChange={(e) => updateFormData("company", e.target.value)}
                     className="border-blue-200 focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="date">{t('date')}</Label>
                   <Input
                     id="date"
                     type="date"
@@ -474,28 +474,28 @@ export default function CreatePresentation() {
                   <Label>{t('theme')}</Label>
                   <Select value={formData.theme} onValueChange={(value) => updateFormData("theme", value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select theme" />
+                      <SelectValue placeholder={t('theme')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="modern">Modern</SelectItem>
-                      <SelectItem value="classic">Classic</SelectItem>
-                      <SelectItem value="minimal">Minimal</SelectItem>
+                      <SelectItem value="modern">{t('modern')}</SelectItem>
+                      <SelectItem value="classic">{t('classic')}</SelectItem>
+                      <SelectItem value="minimal">{t('minimal')}</SelectItem>
                       <SelectItem value="corporate">Corporate</SelectItem>
                       <SelectItem value="creative">Creative</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="audience">Target Audience</Label>
+                  <Label htmlFor="audience">{t('targetAudience')}</Label>
                   <Input
                     id="audience"
-                    placeholder="e.g., Executives, Team"
+                    placeholder={t('targetAudienceExample')}
                     value={formData.audience}
                     onChange={(e) => updateFormData("audience", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (minutes)</Label>
+                  <Label htmlFor="duration">{t('durationMinutes')}</Label>
                   <Input
                     id="duration"
                     type="number"
@@ -509,13 +509,13 @@ export default function CreatePresentation() {
               </div>
 
               <div className="space-y-2">
-                <Label>Related Project</Label>
+                <Label>{t('relatedProject')}</Label>
                 <Select value={formData.projectId} onValueChange={(value) => updateFormData("projectId", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select project (optional)" />
+                    <SelectValue placeholder={t('selectProjectOptional')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="no-project">No project</SelectItem>
+                    <SelectItem value="no-project">{t('noProjects')}</SelectItem>
                     {projects.map(project => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}

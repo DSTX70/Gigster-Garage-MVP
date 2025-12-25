@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bell, Clock, BellOff, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 
 interface ProductivityStats {
   totalHours: number;
@@ -16,6 +17,7 @@ interface ProductivityStats {
 }
 
 export function DailyReminder() {
+  const { t } = useTranslation();
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState("09:00");
   const [hasLoggedToday, setHasLoggedToday] = useState(false);
@@ -65,16 +67,16 @@ export function DailyReminder() {
       ) {
         // Request notification permission if not granted (check if Notification API is available)
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          new Notification("Gigster Garage - Time to Work! 🔥", {
-            body: "Don't break your productivity streak! Start your timer and get to work.",
+          new Notification(`Gigster Garage - ${t('timeToWork')} 🔥`, {
+            body: t('dontBreakStreak'),
             icon: "/favicon.ico",
             tag: "daily-reminder",
           });
         } else if (typeof Notification !== "undefined" && Notification.permission !== "denied") {
           Notification.requestPermission().then((permission) => {
             if (permission === "granted") {
-              new Notification("Gigster Garage - Time to Work! 🔥", {
-                body: "Don't break your productivity streak! Start your timer and get to work.",
+              new Notification(`Gigster Garage - ${t('timeToWork')} 🔥`, {
+                body: t('dontBreakStreak'),
                 icon: "/favicon.ico",
                 tag: "daily-reminder",
               });
@@ -84,8 +86,8 @@ export function DailyReminder() {
 
         // Show toast notification as backup
         toast({
-          title: "🔥 Time to Work!",
-          description: "Don't break your productivity streak! Start your timer and get to work.",
+          title: `🔥 ${t('timeToWork')}`,
+          description: t('dontBreakStreak'),
           duration: 10000,
         });
       }
@@ -106,32 +108,32 @@ export function DailyReminder() {
         Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
             toast({
-              title: "Reminders Enabled",
-              description: "You'll receive daily productivity reminders at the scheduled time.",
+              title: t('remindersEnabled'),
+              description: t('remindersEnabledDesc'),
             });
           } else {
             toast({
-              title: "Notifications Blocked",
-              description: "Please enable notifications in your browser settings for reminders to work.",
+              title: t('notificationsBlocked'),
+              description: t('notificationsBlockedDesc'),
               variant: "destructive",
             });
           }
         });
       } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
         toast({
-          title: "Reminders Enabled",
-          description: "You'll receive daily productivity reminders at the scheduled time.",
+          title: t('remindersEnabled'),
+          description: t('remindersEnabledDesc'),
         });
       } else if (typeof Notification === "undefined") {
         toast({
-          title: "Reminders Enabled",
-          description: "Notifications aren't supported in this browser, but you'll still get in-app reminders.",
+          title: t('remindersEnabled'),
+          description: t('browserNoNotifications'),
         });
       }
     } else {
       toast({
-        title: "Reminders Disabled",
-        description: "Daily productivity reminders have been turned off.",
+        title: t('remindersDisabled'),
+        description: t('remindersDisabledDesc'),
       });
     }
   };
@@ -143,25 +145,25 @@ export function DailyReminder() {
 
   const sendTestNotification = () => {
     if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-      new Notification("Gigster Garage - Test Reminder", {
-        body: "This is a test of your daily productivity reminder!",
+      new Notification(`Gigster Garage - ${t('testNotificationSent')}`, {
+        body: t('testReminderBody'),
         icon: "/favicon.ico",
         tag: "test-reminder",
       });
       toast({
-        title: "Test Notification Sent",
-        description: "Check if you received the browser notification.",
+        title: t('testNotificationSent'),
+        description: t('checkNotificationReceived'),
       });
     } else if (typeof Notification === "undefined") {
       toast({
-        title: "Notifications Not Supported",
-        description: "Your browser doesn't support notifications, but in-app reminders will still work.",
+        title: t('notificationsNotSupported'),
+        description: t('browserNoNotifications'),
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Notifications Not Enabled",
-        description: "Please enable notifications to receive reminders.",
+        title: t('notificationsNotEnabled'),
+        description: t('enableNotificationsForReminders'),
         variant: "destructive",
       });
     }
@@ -173,7 +175,7 @@ export function DailyReminder() {
         <CardTitle className="text-purple-900 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Bell className="h-5 w-5" />
-            <span>Daily Reminders</span>
+            <span>{t('dailyReminders')}</span>
           </div>
           {hasLoggedToday && (
             <CheckCircle className="h-5 w-5 text-green-600" data-testid="icon-logged-today" />
@@ -185,7 +187,7 @@ export function DailyReminder() {
         {/* Enable/Disable Switch */}
         <div className="flex items-center justify-between">
           <Label htmlFor="enable-reminders" className="text-sm font-medium text-purple-900">
-            Enable Daily Reminders
+            {t('enableDailyReminders')}
           </Label>
           <Switch
             id="enable-reminders"
@@ -200,7 +202,7 @@ export function DailyReminder() {
             {/* Reminder Time Selection */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-purple-900">
-                Reminder Time
+                {t('reminderTime')}
               </Label>
               <Select value={reminderTime} onValueChange={handleTimeChange}>
                 <SelectTrigger data-testid="select-reminder-time">
@@ -233,7 +235,7 @@ export function DailyReminder() {
               data-testid="button-test-notification"
             >
               <BellOff className="h-4 w-4 mr-2" />
-              Send Test Notification
+              {t('sendTestNotification')}
             </Button>
           </>
         )}
@@ -243,21 +245,21 @@ export function DailyReminder() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium text-purple-900">Today's Progress</span>
+              <span className="text-sm font-medium text-purple-900">{t('todaysProgress')}</span>
             </div>
             <div className="text-sm font-semibold text-purple-800" data-testid="today-progress">
-              {stats ? `${stats.totalHours}h logged` : "No time logged"}
+              {stats ? `${stats.totalHours}h` : t('noTimeLogged')}
             </div>
           </div>
           
           {hasLoggedToday ? (
             <div className="mt-2 text-xs text-green-700 flex items-center space-x-1" data-testid="status-logged">
               <CheckCircle className="h-3 w-3" />
-              <span>Great job! You've logged time today.</span>
+              <span>{t('success')}</span>
             </div>
           ) : (
             <div className="mt-2 text-xs text-purple-700" data-testid="status-not-logged">
-              💡 Start your timer to begin tracking your productivity!
+              💡 {t('startTimerToTrack')}
             </div>
           )}
         </div>
@@ -265,13 +267,13 @@ export function DailyReminder() {
         {/* Notification Permission Status */}
         <div className="text-xs text-purple-600 text-center" data-testid="notification-status">
           {typeof Notification === "undefined" ? (
-            "📱 Browser notifications not supported"
+            `📱 ${t('notificationsNotAvailable')}`
           ) : Notification.permission === "granted" ? (
-            "✅ Browser notifications enabled"
+            `✅ ${t('notificationsGranted')}`
           ) : Notification.permission === "denied" ? (
-            "❌ Browser notifications blocked"
+            `❌ ${t('notificationsDenied')}`
           ) : (
-            "⚠️ Browser notifications not configured"
+            `⚠️ ${t('notificationsDefault')}`
           )}
         </div>
       </CardContent>
