@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook, Key, FileText } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook, Key, FileText, Globe } from "lucide-react";
 import { NavigationMenu } from "./navigation-menu";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
@@ -229,6 +229,18 @@ export function AppHeader() {
               
               {/* Mood Palette Switcher */}
               <MoodPaletteSwitcher size="sm" className="text-white border-white/20 hover:bg-white/10" />
+              
+              {/* Settings/Language Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/settings")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-settings"
+                title="Settings & Language"
+              >
+                <Globe size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
               
               {/* Keep Message System for notifications */}
               <Button
