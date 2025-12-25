@@ -1,5 +1,6 @@
 import { AppHeader } from "@/components/app-header";
 import { copy } from "@/lib/copy";
+import { useTranslation } from "@/lib/i18n";
 import { TaskForm } from "@/components/task-form";
 import { TaskFilters } from "@/components/task-filters";
 import { TaskList } from "@/components/task-list";
@@ -22,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DemoUpgradePrompt } from "@/components/DemoUpgradePrompt";
 
 export default function Home() {
+  const { t } = useTranslation();
   const { isAdmin } = useAuth();
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
@@ -71,7 +73,7 @@ export default function Home() {
         {/* Dashboard Header */}
         <div className="mb-8 lg:mb-12">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
-            <h1 className="gg-h1 text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text)' }}>My Dashboard</h1>
+            <h1 className="gg-h1 text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text)' }}>{t('myDashboard')}</h1>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
               {isAdmin && (
                 <>
@@ -83,8 +85,8 @@ export default function Home() {
                       data-testid="button-agent-management"
                     >
                       <Bot className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Agent Management</span>
-                      <span className="sm:hidden">Agents</span>
+                      <span className="hidden sm:inline">{t('agentManagement')}</span>
+                      <span className="sm:hidden">{t('agentManagement')}</span>
                     </Button>
                   </Link>
                   <Link href="/dashboard">
@@ -95,8 +97,8 @@ export default function Home() {
                       data-testid="button-analytics-dashboard"
                     >
                       <TrendingUp className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Analytics Dashboard</span>
-                      <span className="sm:hidden">Analytics</span>
+                      <span className="hidden sm:inline">{t('analyticsDashboard')}</span>
+                      <span className="sm:hidden">{t('analyticsDashboard')}</span>
                     </Button>
                   </Link>
                 </>
@@ -109,8 +111,8 @@ export default function Home() {
                   data-testid="button-user-manual"
                 >
                   <BookOpen className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">User Manual</span>
-                  <span className="sm:hidden">Manual</span>
+                  <span className="hidden sm:inline">{t('userManual')}</span>
+                  <span className="sm:hidden">{t('userManual')}</span>
                 </Button>
               </Link>
               <Button 
@@ -136,7 +138,7 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening with your tasks and projects.</p>
+          <p className="text-sm sm:text-base text-gray-600">{t('welcomeMessage')}</p>
         </div>
 
         {/* Demo Mode Upgrade Prompt */}
@@ -154,7 +156,7 @@ export default function Home() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium text-red-600">Overdue</p>
+                        <p className="text-xs font-medium text-red-600">{t('overdue')}</p>
                         <p className="text-2xl font-bold text-red-700">{overdueTasks.length}</p>
                       </div>
                       <AlertTriangle className="h-6 w-6 text-red-500" />
@@ -164,7 +166,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Tasks that are past their due date. Click to view and prioritize overdue tasks.</p>
+              <p>{t('overdueTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -176,7 +178,7 @@ export default function Home() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium text-yellow-600">Due Soon</p>
+                        <p className="text-xs font-medium text-yellow-600">{t('dueSoon')}</p>
                         <p className="text-2xl font-bold text-yellow-700">{urgentTasks.length}</p>
                       </div>
                       <Clock className="h-6 w-6 text-yellow-500" />
@@ -186,7 +188,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Tasks due within the next 24 hours. Click to review upcoming deadlines.</p>
+              <p>{t('dueSoonTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -198,7 +200,7 @@ export default function Home() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium text-orange-600">High Priority</p>
+                        <p className="text-xs font-medium text-orange-600">{t('highPriority')}</p>
                         <p className="text-2xl font-bold text-orange-700">{highPriorityTasks.length}</p>
                       </div>
                       <AlertTriangle className="h-6 w-6 text-orange-500" />
@@ -208,7 +210,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Tasks marked as high priority that need immediate attention. Click to view all high priority items.</p>
+              <p>{t('highPriorityTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -220,7 +222,7 @@ export default function Home() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium text-green-600">Completed Today</p>
+                        <p className="text-xs font-medium text-green-600">{t('completedToday')}</p>
                         <p className="text-2xl font-bold text-green-700">{completedToday.length}</p>
                       </div>
                       <CheckCircle2 className="h-6 w-6 text-green-500" />
@@ -230,7 +232,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Tasks you've completed today. Great job! Click to review your daily accomplishments.</p>
+              <p>{t('completedTodayTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -242,8 +244,8 @@ export default function Home() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium text-amber-600">Time Tracking</p>
-                        <p className="text-lg font-bold text-amber-800">Tools</p>
+                        <p className="text-xs font-medium text-amber-600">{t('timeTracking')}</p>
+                        <p className="text-lg font-bold text-amber-800">{t('tools')}</p>
                       </div>
                       <BarChart3 className="h-6 w-6 text-amber-500" />
                     </div>
@@ -252,7 +254,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Access time tracking tools and productivity insights to monitor your work patterns and efficiency.</p>
+              <p>{t('timeTrackingTooltip')}</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -270,8 +272,8 @@ export default function Home() {
                           <Users className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                         </div>
                         <div>
-                          <h3 className="text-sm sm:text-base font-semibold text-gray-900">Client Management</h3>
-                          <p className="text-xs sm:text-sm text-gray-600">Manage client relationships & history</p>
+                          <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('clientManagement')}</h3>
+                          <p className="text-xs sm:text-sm text-gray-600">{t('clientManagementDesc')}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -279,7 +281,7 @@ export default function Home() {
                 </Link>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Manage client profiles, contact information, and relationship history for better client service.</p>
+                <p>{t('clientManagementTooltip')}</p>
               </TooltipContent>
             </Tooltip>
 
@@ -293,8 +295,8 @@ export default function Home() {
                           <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="text-sm sm:text-base font-semibold text-gray-900">Messages</h3>
-                          <p className="text-xs sm:text-sm text-gray-600">Client communication</p>
+                          <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('messages')}</h3>
+                          <p className="text-xs sm:text-sm text-gray-600">{t('messagesDesc')}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -302,7 +304,7 @@ export default function Home() {
                 </Link>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Send and receive professional emails with clients. Integrated communication system for streamlined correspondence.</p>
+                <p>{t('messagesTooltip')}</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -320,8 +322,8 @@ export default function Home() {
                         <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">Create Proposal</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">Professional project proposals</p>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('createProposal')}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{t('createProposalDesc')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -329,7 +331,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Create professional project proposals with detailed scope, timeline, and pricing information for clients.</p>
+              <p>{t('createProposalTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -343,8 +345,8 @@ export default function Home() {
                         <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">Create Invoice</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">Professional billing & invoices</p>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('createInvoice')}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{t('createInvoiceDesc')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -352,7 +354,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Generate professional invoices with itemized services, rates, and payment terms. Includes draft system for approval workflows.</p>
+              <p>{t('createInvoiceTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -366,8 +368,8 @@ export default function Home() {
                         <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">Create Contract</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">Legal agreements & terms</p>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('createContract')}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{t('createContractDesc')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -375,7 +377,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Draft legal agreements and contracts with clear terms, conditions, and project specifications.</p>
+              <p>{t('createContractTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -389,8 +391,8 @@ export default function Home() {
                         <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">Create Presentation</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">Slide decks & presentations</p>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('createPresentation')}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{t('createPresentationDesc')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -398,7 +400,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Build professional slide decks and presentations for client meetings, project pitches, and business proposals.</p>
+              <p>{t('createPresentationTooltip')}</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -415,8 +417,8 @@ export default function Home() {
                         <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">Productivity Tools</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">Time tracking & insights</p>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('productivityTools')}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{t('productivityToolsDesc')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -424,7 +426,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Track time spent on tasks and projects. Monitor productivity patterns and generate insightful reports for better time management.</p>
+              <p>{t('productivityToolsTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -438,8 +440,8 @@ export default function Home() {
                         <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">Agency Hub</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">AI-powered marketing tools</p>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('agencyHub')}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{t('agencyHubDesc')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -447,7 +449,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Access AI-powered marketing tools including content creation, image generation, copywriting, and campaign strategy development.</p>
+              <p>{t('agencyHubTooltip')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -461,8 +463,8 @@ export default function Home() {
                         <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">Filing Cabinet</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">Organize all files & documents</p>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('filingCabinet')}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{t('filingCabinetDesc')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -470,7 +472,7 @@ export default function Home() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Centralized document management system for organizing files, contracts, proposals, and business documents with search capabilities.</p>
+              <p>{t('filingCabinetTooltip')}</p>
             </TooltipContent>
           </Tooltip>
         </div>
