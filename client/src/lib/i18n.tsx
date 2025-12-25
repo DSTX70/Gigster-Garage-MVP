@@ -601,6 +601,11 @@ type TranslationKeys = {
   addLink: string;
   createTask: string;
   
+  // Quick Actions
+  quickActions: string;
+  timerStarted: string;
+  workSessionBegun: string;
+  
   // Quick Navigation / Help
   quickNavigation: string;
   gettingStarted: string;
@@ -1195,6 +1200,11 @@ const translations: Record<string, TranslationKeys> = {
     addLink: "Add Link",
     createTask: "Create Task",
     
+    // Quick Actions
+    quickActions: "Quick Actions",
+    timerStarted: "Timer started",
+    workSessionBegun: "Your work session has begun",
+    
     // Quick Navigation / Help
     quickNavigation: "Quick Navigation",
     gettingStarted: "Getting Started",
@@ -1786,6 +1796,11 @@ const translations: Record<string, TranslationKeys> = {
     addAttachment: "Agregar Adjunto",
     addLink: "Agregar Enlace",
     createTask: "Crear Tarea",
+    
+    // Quick Actions
+    quickActions: "Acciones Rápidas",
+    timerStarted: "Temporizador iniciado",
+    workSessionBegun: "Tu sesión de trabajo ha comenzado",
     
     // Quick Navigation / Help
     quickNavigation: "Navegación Rápida",
@@ -2379,6 +2394,11 @@ const translations: Record<string, TranslationKeys> = {
     addLink: "Ajouter Lien",
     createTask: "Créer Tâche",
     
+    // Quick Actions
+    quickActions: "Actions Rapides",
+    timerStarted: "Minuteur démarré",
+    workSessionBegun: "Votre session de travail a commencé",
+    
     // Quick Navigation / Help
     quickNavigation: "Navigation Rapide",
     gettingStarted: "Premiers Pas",
@@ -2970,6 +2990,11 @@ const translations: Record<string, TranslationKeys> = {
     addAttachment: "Anhang Hinzufügen",
     addLink: "Link Hinzufügen",
     createTask: "Aufgabe Erstellen",
+    
+    // Quick Actions
+    quickActions: "Schnellaktionen",
+    timerStarted: "Timer gestartet",
+    workSessionBegun: "Ihre Arbeitssitzung hat begonnen",
     
     // Quick Navigation / Help
     quickNavigation: "Schnellnavigation",
@@ -3563,6 +3588,11 @@ const translations: Record<string, TranslationKeys> = {
     addLink: "Adicionar Link",
     createTask: "Criar Tarefa",
     
+    // Quick Actions
+    quickActions: "Ações Rápidas",
+    timerStarted: "Temporizador iniciado",
+    workSessionBegun: "Sua sessão de trabalho começou",
+    
     // Quick Navigation / Help
     quickNavigation: "Navegação Rápida",
     gettingStarted: "Primeiros Passos",
@@ -4154,6 +4184,11 @@ const translations: Record<string, TranslationKeys> = {
     addAttachment: "添付を追加",
     addLink: "リンクを追加",
     createTask: "タスクを作成",
+    
+    // Quick Actions
+    quickActions: "クイックアクション",
+    timerStarted: "タイマー開始",
+    workSessionBegun: "作業セッションが開始しました",
     
     // Quick Navigation / Help
     quickNavigation: "クイックナビゲーション",

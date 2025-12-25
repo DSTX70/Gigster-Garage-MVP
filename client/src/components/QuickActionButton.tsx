@@ -13,10 +13,12 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from "@/lib/i18n";
 
 export function QuickActionButton() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const startTimerMutation = useMutation({
@@ -26,8 +28,8 @@ export function QuickActionButton() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/timelogs/active"] });
       toast({
-        title: "Timer started",
-        description: "Your work session has begun",
+        title: t('timerStarted'),
+        description: t('workSessionBegun'),
       });
       setOpen(false);
     },
@@ -36,7 +38,7 @@ export function QuickActionButton() {
   const quickActions = [
     {
       icon: <Clock className="h-4 w-4" />,
-      label: "New Task",
+      label: t('newTask'),
       shortcut: "N",
       action: () => {
         navigate("/tasks");
@@ -45,7 +47,7 @@ export function QuickActionButton() {
     },
     {
       icon: <Play className="h-4 w-4" />,
-      label: "Start Timer",
+      label: t('startTimer'),
       shortcut: "T",
       action: () => {
         startTimerMutation.mutate();
@@ -53,7 +55,7 @@ export function QuickActionButton() {
     },
     {
       icon: <Folder className="h-4 w-4" />,
-      label: "New Project",
+      label: t('newProject'),
       action: () => {
         navigate("/");
         setOpen(false);
@@ -61,7 +63,7 @@ export function QuickActionButton() {
     },
     {
       icon: <FileText className="h-4 w-4" />,
-      label: "Create Invoice",
+      label: t('createInvoice'),
       action: () => {
         navigate("/create-invoice");
         setOpen(false);
@@ -69,7 +71,7 @@ export function QuickActionButton() {
     },
     {
       icon: <FileSignature className="h-4 w-4" />,
-      label: "Create Proposal",
+      label: t('createProposal'),
       action: () => {
         navigate("/create-proposal");
         setOpen(false);
@@ -77,7 +79,7 @@ export function QuickActionButton() {
     },
     {
       icon: <Users className="h-4 w-4" />,
-      label: "Add Client",
+      label: t('addClient'),
       action: () => {
         navigate("/clients");
         setOpen(false);
@@ -101,7 +103,7 @@ export function QuickActionButton() {
         <DropdownMenuContent align="end" className="w-56 mb-2">
           <DropdownMenuLabel className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
-            Quick Actions
+            {t('quickActions')}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {quickActions.map((action, index) => (
