@@ -421,6 +421,204 @@ type TranslationKeys = {
   custom: string;
   selectDate: string;
   selectDateRange: string;
+  
+  // Filing Cabinet Extended
+  recentFiles: string;
+  favorites: string;
+  archived: string;
+  includeArchived: string;
+  advancedSearch: string;
+  searchBuilder: string;
+  noFilesMatchFilters: string;
+  tryAdjustingFilters: string;
+  noTagsAvailable: string;
+  fileOrganization: string;
+  clearAll: string;
+  
+  // Agency Hub
+  backToMyDashboard: string;
+  agencyHubTitle: string;
+  writeTab: string;
+  promoteTab: string;
+  trackTab: string;
+  createMarketingMockups: string;
+  describeMarketingConcept: string;
+  generateConcept: string;
+  visualStyle: string;
+  photorealistic: string;
+  generateVisual: string;
+  generatedVisual: string;
+  marketingConcept: string;
+  yourGeneratedVisualHere: string;
+  yourMarketingConceptHere: string;
+  writeCreativeCopy: string;
+  whatNeedWritten: string;
+  generateCopy: string;
+  generatedCopy: string;
+  advertisingStrategy: string;
+  describePromotionGoals: string;
+  generateStrategy: string;
+  promotionStrategy: string;
+  marketingAnalytics: string;
+  pasteMarketingData: string;
+  analyzeData: string;
+  marketingInsights: string;
+  yourMarketingInsightsHere: string;
+  creatingConcept: string;
+  writing: string;
+  strategizing: string;
+  analyzing: string;
+  copyToClipboard: string;
+  copiedToClipboard: string;
+  
+  // Productivity & Timer Extended
+  timeProductivityTools: string;
+  timeProductivityDesc: string;
+  timerReady: string;
+  clickStartToTrack: string;
+  productivityStreaks: string;
+  days14: string;
+  days30: string;
+  currentStreak: string;
+  totalHours: string;
+  dailyAverage: string;
+  utilization: string;
+  dailyReminders: string;
+  enableDailyReminders: string;
+  todaysProgress: string;
+  noTimeLogged: string;
+  startTimerToTrack: string;
+  browserNotificationsEnabled: string;
+  runningTotal: string;
+  last7Days: string;
+  last30Days: string;
+  streakDays: string;
+  totalSessions: string;
+  allTimeEntries: string;
+  avgPerDay: string;
+  startYourProductivityStreak: string;
+  
+  // Create Invoice Extended
+  invoiceInformation: string;
+  basicInvoiceDetails: string;
+  yourCompanyInformation: string;
+  companyName: string;
+  companyAddress: string;
+  clientInformation: string;
+  clientEmail: string;
+  clientAddress: string;
+  clientBillingAddress: string;
+  characters: string;
+  billableItems: string;
+  servicesProducts: string;
+  importFromTimesheet: string;
+  addItem: string;
+  taxDiscount: string;
+  taxRate: string;
+  discountAmount: string;
+  totalAmount: string;
+  notesTerms: string;
+  generateNotes: string;
+  saveInvoice: string;
+  sendInvoice: string;
+  previewInvoice: string;
+  invoiceSavedSuccess: string;
+  
+  // Create Contract Extended
+  contractInformation: string;
+  basicContractDetails: string;
+  contractTitle: string;
+  contractType: string;
+  selectContractType: string;
+  serviceAgreement: string;
+  productAgreement: string;
+  recurringContract: string;
+  oneTimeContract: string;
+  relatedProject: string;
+  selectProjectOptional: string;
+  clientsFullAddress: string;
+  contractTerms: string;
+  scopeOfWork: string;
+  deliverables: string;
+  responsibilities: string;
+  terminationClause: string;
+  confidentiality: string;
+  disputeResolution: string;
+  governingLaw: string;
+  signatures: string;
+  saveContract: string;
+  generateTerms: string;
+  
+  // Create Proposal Extended
+  proposalDetails: string;
+  basicProposalInfo: string;
+  proposalTitle: string;
+  projectDescription: string;
+  enterDetailedDescription: string;
+  pricingDeliverables: string;
+  timeline: string;
+  termsConditions: string;
+  saveProposal: string;
+  generateProposal: string;
+  
+  // Create Presentation Extended
+  presentationInformation: string;
+  basicPresentationDetails: string;
+  presentationTitle: string;
+  subtitle: string;
+  optionalSubtitle: string;
+  authorPresenter: string;
+  yourName: string;
+  yourCompany: string;
+  theme: string;
+  modern: string;
+  classic: string;
+  minimal: string;
+  bold: string;
+  targetAudience: string;
+  targetAudienceExample: string;
+  durationMinutes: string;
+  slides: string;
+  addSlide: string;
+  slideTitle: string;
+  slideContent: string;
+  savePresentation: string;
+  generateSlides: string;
+  
+  // Spark New Task
+  sparkNewTask: string;
+  createFirstTask: string;
+  whatNeedsGetDone: string;
+  dueTime: string;
+  breakItDown: string;
+  selectOrCreateProject: string;
+  createNewProject: string;
+  assignTo: string;
+  unassigned: string;
+  fileAttachments: string;
+  links: string;
+  addAttachment: string;
+  addLink: string;
+  createTask: string;
+  
+  // Quick Navigation / Help
+  quickNavigation: string;
+  gettingStarted: string;
+  basicSetupNavigation: string;
+  taskManagement: string;
+  projectOrganization: string;
+  messagesEmail: string;
+  invoicingSystem: string;
+  proposalSystem: string;
+  timeTrackingProductivity: string;
+  agencyHubAIMarketing: string;
+  adminFeatures: string;
+  notificationsReminders: string;
+  fileStorageDocuments: string;
+  paymentTrackingManagement: string;
+  dashboardOverview: string;
+  dashboardOverviewDesc: string;
+  navigation: string;
 };
 
 const translations: Record<string, TranslationKeys> = {
@@ -817,6 +1015,204 @@ const translations: Record<string, TranslationKeys> = {
     custom: "Custom",
     selectDate: "Select Date",
     selectDateRange: "Select Date Range",
+    
+    // Filing Cabinet Extended
+    recentFiles: "Recent Files",
+    favorites: "Favorites",
+    archived: "Archived",
+    includeArchived: "Include Archived",
+    advancedSearch: "Advanced Search",
+    searchBuilder: "Search Builder",
+    noFilesMatchFilters: "No files match your filters",
+    tryAdjustingFilters: "Try adjusting your search criteria or clearing filters",
+    noTagsAvailable: "No tags available",
+    fileOrganization: "File Organization",
+    clearAll: "Clear All",
+    
+    // Agency Hub
+    backToMyDashboard: "Back to My Dashboard",
+    agencyHubTitle: "Agency Hub",
+    writeTab: "Write",
+    promoteTab: "Promote",
+    trackTab: "Track",
+    createMarketingMockups: "Create Marketing Mockups",
+    describeMarketingConcept: "Describe your marketing concept",
+    generateConcept: "Generate Concept",
+    visualStyle: "Visual Style",
+    photorealistic: "Photorealistic",
+    generateVisual: "Generate Visual",
+    generatedVisual: "Generated Visual",
+    marketingConcept: "Marketing Concept",
+    yourGeneratedVisualHere: "Your generated visual will appear here",
+    yourMarketingConceptHere: "Your marketing concept will appear here",
+    writeCreativeCopy: "Write Creative Copy",
+    whatNeedWritten: "What do you need written?",
+    generateCopy: "Generate Copy",
+    generatedCopy: "Generated Copy",
+    advertisingStrategy: "Advertising Strategy",
+    describePromotionGoals: "Describe your promotion goals",
+    generateStrategy: "Generate Strategy",
+    promotionStrategy: "Promotion Strategy",
+    marketingAnalytics: "Marketing Analytics",
+    pasteMarketingData: "Paste your marketing data or describe what you want to track",
+    analyzeData: "Analyze Data",
+    marketingInsights: "Marketing Insights",
+    yourMarketingInsightsHere: "Your marketing insights will appear here",
+    creatingConcept: "Creating Concept...",
+    writing: "Writing...",
+    strategizing: "Strategizing...",
+    analyzing: "Analyzing...",
+    copyToClipboard: "Copy to Clipboard",
+    copiedToClipboard: "Copied to clipboard",
+    
+    // Productivity & Timer Extended
+    timeProductivityTools: "Time & Productivity Tools",
+    timeProductivityDesc: "Track your time, maintain productivity streaks, and stay focused on your goals.",
+    timerReady: "Timer Ready",
+    clickStartToTrack: "Click start to begin tracking",
+    productivityStreaks: "Productivity Streaks",
+    days14: "14 Days",
+    days30: "30 Days",
+    currentStreak: "Current Streak",
+    totalHours: "Total Hours",
+    dailyAverage: "Daily Average",
+    utilization: "Utilization",
+    dailyReminders: "Daily Reminders",
+    enableDailyReminders: "Enable Daily Reminders",
+    todaysProgress: "Today's Progress",
+    noTimeLogged: "No time logged",
+    startTimerToTrack: "Start your timer to begin tracking your productivity!",
+    browserNotificationsEnabled: "Browser notifications enabled",
+    runningTotal: "Running Total",
+    last7Days: "Last 7 Days",
+    last30Days: "Last 30 Days",
+    streakDays: "Streak Days",
+    totalSessions: "Total Sessions",
+    allTimeEntries: "All time entries",
+    avgPerDay: "Avg/day",
+    startYourProductivityStreak: "Start your productivity streak today!",
+    
+    // Create Invoice Extended
+    invoiceInformation: "Invoice Information",
+    basicInvoiceDetails: "Basic invoice details and client information",
+    yourCompanyInformation: "Your Company Information",
+    companyName: "Company Name",
+    companyAddress: "Company Address",
+    clientInformation: "Client Information",
+    clientEmail: "Client Email",
+    clientAddress: "Client Address",
+    clientBillingAddress: "Client's billing address",
+    characters: "characters",
+    billableItems: "Billable Items",
+    servicesProducts: "Services & Products",
+    importFromTimesheet: "Import from Timesheet",
+    addItem: "Add Item",
+    taxDiscount: "Tax & Discount",
+    taxRate: "Tax Rate",
+    discountAmount: "Discount Amount",
+    totalAmount: "Total Amount",
+    notesTerms: "Notes & Terms",
+    generateNotes: "Generate Notes",
+    saveInvoice: "Save Invoice",
+    sendInvoice: "Send Invoice",
+    previewInvoice: "Preview Invoice",
+    invoiceSavedSuccess: "Invoice saved successfully!",
+    
+    // Create Contract Extended
+    contractInformation: "Contract Information",
+    basicContractDetails: "Basic contract details and parties involved",
+    contractTitle: "Contract Title",
+    contractType: "Contract Type",
+    selectContractType: "Select contract type",
+    serviceAgreement: "Service Agreement",
+    productAgreement: "Product Agreement",
+    recurringContract: "Recurring Contract",
+    oneTimeContract: "One-Time Contract",
+    relatedProject: "Related Project",
+    selectProjectOptional: "Select project (optional)",
+    clientsFullAddress: "Enter client's full business address...",
+    contractTerms: "Contract Terms",
+    scopeOfWork: "Scope of Work",
+    deliverables: "Deliverables",
+    responsibilities: "Responsibilities",
+    terminationClause: "Termination Clause",
+    confidentiality: "Confidentiality",
+    disputeResolution: "Dispute Resolution",
+    governingLaw: "Governing Law",
+    signatures: "Signatures",
+    saveContract: "Save Contract",
+    generateTerms: "Generate Terms",
+    
+    // Create Proposal Extended
+    proposalDetails: "Proposal Details",
+    basicProposalInfo: "Basic information about your proposal",
+    proposalTitle: "Proposal Title",
+    projectDescription: "Project Description",
+    enterDetailedDescription: "Enter detailed project description...",
+    pricingDeliverables: "Pricing & Deliverables",
+    timeline: "Timeline",
+    termsConditions: "Terms & Conditions",
+    saveProposal: "Save Proposal",
+    generateProposal: "Generate Proposal",
+    
+    // Create Presentation Extended
+    presentationInformation: "Presentation Information",
+    basicPresentationDetails: "Basic details about your presentation",
+    presentationTitle: "Presentation Title",
+    subtitle: "Subtitle",
+    optionalSubtitle: "Optional subtitle",
+    authorPresenter: "Author/Presenter",
+    yourName: "Your name",
+    yourCompany: "Your company",
+    theme: "Theme",
+    modern: "Modern",
+    classic: "Classic",
+    minimal: "Minimal",
+    bold: "Bold",
+    targetAudience: "Target Audience",
+    targetAudienceExample: "e.g., Executives, Team",
+    durationMinutes: "Duration (minutes)",
+    slides: "Slides",
+    addSlide: "Add Slide",
+    slideTitle: "Slide title",
+    slideContent: "Slide content",
+    savePresentation: "Save Presentation",
+    generateSlides: "Generate Slides",
+    
+    // Spark New Task
+    sparkNewTask: "Spark New Task",
+    createFirstTask: "Create your first task to get the hustle started.",
+    whatNeedsGetDone: "What needs to get done?",
+    dueTime: "Due Time",
+    breakItDown: "Break it down — what's the plan?",
+    selectOrCreateProject: "Select or create a project...",
+    createNewProject: "Create New Project",
+    assignTo: "Assign To",
+    unassigned: "Unassigned",
+    fileAttachments: "File Attachments",
+    links: "Links",
+    addAttachment: "Add Attachment",
+    addLink: "Add Link",
+    createTask: "Create Task",
+    
+    // Quick Navigation / Help
+    quickNavigation: "Quick Navigation",
+    gettingStarted: "Getting Started",
+    basicSetupNavigation: "Basic setup and navigation",
+    taskManagement: "Task Management",
+    projectOrganization: "Project Organization",
+    messagesEmail: "Messages & Email",
+    invoicingSystem: "Invoicing System",
+    proposalSystem: "Proposal System",
+    timeTrackingProductivity: "Time Tracking & Productivity",
+    agencyHubAIMarketing: "Agency Hub - AI Marketing",
+    adminFeatures: "Admin Features",
+    notificationsReminders: "Notifications & Reminders",
+    fileStorageDocuments: "File Storage & Documents",
+    paymentTrackingManagement: "Payment Tracking & Management",
+    dashboardOverview: "Dashboard Overview",
+    dashboardOverviewDesc: "The dashboard provides an at-a-glance view of your critical tasks, project status, and quick actions.",
+    navigation: "Navigation",
   },
   es: {
     dashboard: "Panel",
@@ -1211,6 +1607,204 @@ const translations: Record<string, TranslationKeys> = {
     custom: "Personalizado",
     selectDate: "Seleccionar Fecha",
     selectDateRange: "Seleccionar Rango de Fechas",
+    
+    // Filing Cabinet Extended
+    recentFiles: "Archivos Recientes",
+    favorites: "Favoritos",
+    archived: "Archivados",
+    includeArchived: "Incluir Archivados",
+    advancedSearch: "Búsqueda Avanzada",
+    searchBuilder: "Constructor de Búsqueda",
+    noFilesMatchFilters: "No hay archivos que coincidan con tus filtros",
+    tryAdjustingFilters: "Intenta ajustar tus criterios de búsqueda o limpia los filtros",
+    noTagsAvailable: "Sin etiquetas disponibles",
+    fileOrganization: "Organización de Archivos",
+    clearAll: "Limpiar Todo",
+    
+    // Agency Hub
+    backToMyDashboard: "Volver a Mi Panel",
+    agencyHubTitle: "Centro de Agencia",
+    writeTab: "Escribir",
+    promoteTab: "Promocionar",
+    trackTab: "Seguimiento",
+    createMarketingMockups: "Crear Maquetas de Marketing",
+    describeMarketingConcept: "Describe tu concepto de marketing",
+    generateConcept: "Generar Concepto",
+    visualStyle: "Estilo Visual",
+    photorealistic: "Fotorrealista",
+    generateVisual: "Generar Visual",
+    generatedVisual: "Visual Generado",
+    marketingConcept: "Concepto de Marketing",
+    yourGeneratedVisualHere: "Tu visual generado aparecerá aquí",
+    yourMarketingConceptHere: "Tu concepto de marketing aparecerá aquí",
+    writeCreativeCopy: "Escribir Texto Creativo",
+    whatNeedWritten: "¿Qué necesitas que escribamos?",
+    generateCopy: "Generar Texto",
+    generatedCopy: "Texto Generado",
+    advertisingStrategy: "Estrategia Publicitaria",
+    describePromotionGoals: "Describe tus objetivos de promoción",
+    generateStrategy: "Generar Estrategia",
+    promotionStrategy: "Estrategia de Promoción",
+    marketingAnalytics: "Análisis de Marketing",
+    pasteMarketingData: "Pega tus datos de marketing o describe qué quieres rastrear",
+    analyzeData: "Analizar Datos",
+    marketingInsights: "Insights de Marketing",
+    yourMarketingInsightsHere: "Tus insights de marketing aparecerán aquí",
+    creatingConcept: "Creando Concepto...",
+    writing: "Escribiendo...",
+    strategizing: "Estrategizando...",
+    analyzing: "Analizando...",
+    copyToClipboard: "Copiar al Portapapeles",
+    copiedToClipboard: "Copiado al portapapeles",
+    
+    // Productivity & Timer Extended
+    timeProductivityTools: "Herramientas de Tiempo y Productividad",
+    timeProductivityDesc: "Rastrea tu tiempo, mantén rachas de productividad y enfócate en tus metas.",
+    timerReady: "Cronómetro Listo",
+    clickStartToTrack: "Haz clic en iniciar para comenzar a rastrear",
+    productivityStreaks: "Rachas de Productividad",
+    days14: "14 Días",
+    days30: "30 Días",
+    currentStreak: "Racha Actual",
+    totalHours: "Horas Totales",
+    dailyAverage: "Promedio Diario",
+    utilization: "Utilización",
+    dailyReminders: "Recordatorios Diarios",
+    enableDailyReminders: "Activar Recordatorios Diarios",
+    todaysProgress: "Progreso de Hoy",
+    noTimeLogged: "Sin tiempo registrado",
+    startTimerToTrack: "¡Inicia tu cronómetro para comenzar a rastrear tu productividad!",
+    browserNotificationsEnabled: "Notificaciones del navegador activadas",
+    runningTotal: "Total Acumulado",
+    last7Days: "Últimos 7 Días",
+    last30Days: "Últimos 30 Días",
+    streakDays: "Días de Racha",
+    totalSessions: "Sesiones Totales",
+    allTimeEntries: "Todas las entradas de tiempo",
+    avgPerDay: "Prom/día",
+    startYourProductivityStreak: "¡Comienza tu racha de productividad hoy!",
+    
+    // Create Invoice Extended
+    invoiceInformation: "Información de Factura",
+    basicInvoiceDetails: "Detalles básicos de factura e información del cliente",
+    yourCompanyInformation: "Información de Tu Empresa",
+    companyName: "Nombre de Empresa",
+    companyAddress: "Dirección de Empresa",
+    clientInformation: "Información del Cliente",
+    clientEmail: "Email del Cliente",
+    clientAddress: "Dirección del Cliente",
+    clientBillingAddress: "Dirección de facturación del cliente",
+    characters: "caracteres",
+    billableItems: "Artículos Facturables",
+    servicesProducts: "Servicios y Productos",
+    importFromTimesheet: "Importar de Hoja de Tiempo",
+    addItem: "Agregar Artículo",
+    taxDiscount: "Impuesto y Descuento",
+    taxRate: "Tasa de Impuesto",
+    discountAmount: "Monto de Descuento",
+    totalAmount: "Monto Total",
+    notesTerms: "Notas y Términos",
+    generateNotes: "Generar Notas",
+    saveInvoice: "Guardar Factura",
+    sendInvoice: "Enviar Factura",
+    previewInvoice: "Vista Previa de Factura",
+    invoiceSavedSuccess: "¡Factura guardada exitosamente!",
+    
+    // Create Contract Extended
+    contractInformation: "Información del Contrato",
+    basicContractDetails: "Detalles básicos del contrato y partes involucradas",
+    contractTitle: "Título del Contrato",
+    contractType: "Tipo de Contrato",
+    selectContractType: "Seleccionar tipo de contrato",
+    serviceAgreement: "Acuerdo de Servicio",
+    productAgreement: "Acuerdo de Producto",
+    recurringContract: "Contrato Recurrente",
+    oneTimeContract: "Contrato Único",
+    relatedProject: "Proyecto Relacionado",
+    selectProjectOptional: "Seleccionar proyecto (opcional)",
+    clientsFullAddress: "Ingresa la dirección comercial completa del cliente...",
+    contractTerms: "Términos del Contrato",
+    scopeOfWork: "Alcance del Trabajo",
+    deliverables: "Entregables",
+    responsibilities: "Responsabilidades",
+    terminationClause: "Cláusula de Terminación",
+    confidentiality: "Confidencialidad",
+    disputeResolution: "Resolución de Disputas",
+    governingLaw: "Ley Aplicable",
+    signatures: "Firmas",
+    saveContract: "Guardar Contrato",
+    generateTerms: "Generar Términos",
+    
+    // Create Proposal Extended
+    proposalDetails: "Detalles de la Propuesta",
+    basicProposalInfo: "Información básica sobre tu propuesta",
+    proposalTitle: "Título de la Propuesta",
+    projectDescription: "Descripción del Proyecto",
+    enterDetailedDescription: "Ingresa descripción detallada del proyecto...",
+    pricingDeliverables: "Precios y Entregables",
+    timeline: "Cronograma",
+    termsConditions: "Términos y Condiciones",
+    saveProposal: "Guardar Propuesta",
+    generateProposal: "Generar Propuesta",
+    
+    // Create Presentation Extended
+    presentationInformation: "Información de Presentación",
+    basicPresentationDetails: "Detalles básicos sobre tu presentación",
+    presentationTitle: "Título de Presentación",
+    subtitle: "Subtítulo",
+    optionalSubtitle: "Subtítulo opcional",
+    authorPresenter: "Autor/Presentador",
+    yourName: "Tu nombre",
+    yourCompany: "Tu empresa",
+    theme: "Tema",
+    modern: "Moderno",
+    classic: "Clásico",
+    minimal: "Mínimo",
+    bold: "Audaz",
+    targetAudience: "Audiencia Objetivo",
+    targetAudienceExample: "ej., Ejecutivos, Equipo",
+    durationMinutes: "Duración (minutos)",
+    slides: "Diapositivas",
+    addSlide: "Agregar Diapositiva",
+    slideTitle: "Título de diapositiva",
+    slideContent: "Contenido de diapositiva",
+    savePresentation: "Guardar Presentación",
+    generateSlides: "Generar Diapositivas",
+    
+    // Spark New Task
+    sparkNewTask: "Crear Nueva Tarea",
+    createFirstTask: "Crea tu primera tarea para comenzar.",
+    whatNeedsGetDone: "¿Qué necesita hacerse?",
+    dueTime: "Hora de Vencimiento",
+    breakItDown: "Desglósalo — ¿cuál es el plan?",
+    selectOrCreateProject: "Selecciona o crea un proyecto...",
+    createNewProject: "Crear Nuevo Proyecto",
+    assignTo: "Asignar A",
+    unassigned: "Sin Asignar",
+    fileAttachments: "Archivos Adjuntos",
+    links: "Enlaces",
+    addAttachment: "Agregar Adjunto",
+    addLink: "Agregar Enlace",
+    createTask: "Crear Tarea",
+    
+    // Quick Navigation / Help
+    quickNavigation: "Navegación Rápida",
+    gettingStarted: "Primeros Pasos",
+    basicSetupNavigation: "Configuración básica y navegación",
+    taskManagement: "Gestión de Tareas",
+    projectOrganization: "Organización de Proyectos",
+    messagesEmail: "Mensajes y Email",
+    invoicingSystem: "Sistema de Facturación",
+    proposalSystem: "Sistema de Propuestas",
+    timeTrackingProductivity: "Seguimiento de Tiempo y Productividad",
+    agencyHubAIMarketing: "Centro de Agencia - Marketing IA",
+    adminFeatures: "Funciones de Administrador",
+    notificationsReminders: "Notificaciones y Recordatorios",
+    fileStorageDocuments: "Almacenamiento de Archivos y Documentos",
+    paymentTrackingManagement: "Seguimiento y Gestión de Pagos",
+    dashboardOverview: "Vista General del Panel",
+    dashboardOverviewDesc: "El panel proporciona una vista rápida de tus tareas críticas, estado del proyecto y acciones rápidas.",
+    navigation: "Navegación",
   },
   fr: {
     dashboard: "Tableau de Bord",
@@ -1605,6 +2199,204 @@ const translations: Record<string, TranslationKeys> = {
     custom: "Personnalisé",
     selectDate: "Sélectionner une Date",
     selectDateRange: "Sélectionner une Plage de Dates",
+    
+    // Filing Cabinet Extended
+    recentFiles: "Fichiers Récents",
+    favorites: "Favoris",
+    archived: "Archivés",
+    includeArchived: "Inclure Archivés",
+    advancedSearch: "Recherche Avancée",
+    searchBuilder: "Constructeur de Recherche",
+    noFilesMatchFilters: "Aucun fichier ne correspond à vos filtres",
+    tryAdjustingFilters: "Essayez d'ajuster vos critères de recherche ou de supprimer les filtres",
+    noTagsAvailable: "Aucun tag disponible",
+    fileOrganization: "Organisation des Fichiers",
+    clearAll: "Tout Effacer",
+    
+    // Agency Hub
+    backToMyDashboard: "Retour à Mon Tableau de Bord",
+    agencyHubTitle: "Hub Agence",
+    writeTab: "Écrire",
+    promoteTab: "Promouvoir",
+    trackTab: "Suivre",
+    createMarketingMockups: "Créer des Maquettes Marketing",
+    describeMarketingConcept: "Décrivez votre concept marketing",
+    generateConcept: "Générer le Concept",
+    visualStyle: "Style Visuel",
+    photorealistic: "Photoréaliste",
+    generateVisual: "Générer le Visuel",
+    generatedVisual: "Visuel Généré",
+    marketingConcept: "Concept Marketing",
+    yourGeneratedVisualHere: "Votre visuel généré apparaîtra ici",
+    yourMarketingConceptHere: "Votre concept marketing apparaîtra ici",
+    writeCreativeCopy: "Écrire du Texte Créatif",
+    whatNeedWritten: "Que devons-nous écrire?",
+    generateCopy: "Générer le Texte",
+    generatedCopy: "Texte Généré",
+    advertisingStrategy: "Stratégie Publicitaire",
+    describePromotionGoals: "Décrivez vos objectifs de promotion",
+    generateStrategy: "Générer la Stratégie",
+    promotionStrategy: "Stratégie de Promotion",
+    marketingAnalytics: "Analyses Marketing",
+    pasteMarketingData: "Collez vos données marketing ou décrivez ce que vous voulez suivre",
+    analyzeData: "Analyser les Données",
+    marketingInsights: "Insights Marketing",
+    yourMarketingInsightsHere: "Vos insights marketing apparaîtront ici",
+    creatingConcept: "Création du Concept...",
+    writing: "Écriture...",
+    strategizing: "Élaboration de Stratégie...",
+    analyzing: "Analyse...",
+    copyToClipboard: "Copier dans le Presse-papiers",
+    copiedToClipboard: "Copié dans le presse-papiers",
+    
+    // Productivity & Timer Extended
+    timeProductivityTools: "Outils de Temps et Productivité",
+    timeProductivityDesc: "Suivez votre temps, maintenez des séries de productivité et restez concentré sur vos objectifs.",
+    timerReady: "Minuteur Prêt",
+    clickStartToTrack: "Cliquez sur démarrer pour commencer le suivi",
+    productivityStreaks: "Séries de Productivité",
+    days14: "14 Jours",
+    days30: "30 Jours",
+    currentStreak: "Série Actuelle",
+    totalHours: "Heures Totales",
+    dailyAverage: "Moyenne Quotidienne",
+    utilization: "Utilisation",
+    dailyReminders: "Rappels Quotidiens",
+    enableDailyReminders: "Activer les Rappels Quotidiens",
+    todaysProgress: "Progrès d'Aujourd'hui",
+    noTimeLogged: "Aucun temps enregistré",
+    startTimerToTrack: "Démarrez votre minuteur pour commencer à suivre votre productivité!",
+    browserNotificationsEnabled: "Notifications du navigateur activées",
+    runningTotal: "Total Cumulé",
+    last7Days: "7 Derniers Jours",
+    last30Days: "30 Derniers Jours",
+    streakDays: "Jours de Série",
+    totalSessions: "Sessions Totales",
+    allTimeEntries: "Toutes les entrées de temps",
+    avgPerDay: "Moy/jour",
+    startYourProductivityStreak: "Commencez votre série de productivité aujourd'hui!",
+    
+    // Create Invoice Extended
+    invoiceInformation: "Informations de Facture",
+    basicInvoiceDetails: "Détails de base de la facture et informations client",
+    yourCompanyInformation: "Informations de Votre Entreprise",
+    companyName: "Nom de l'Entreprise",
+    companyAddress: "Adresse de l'Entreprise",
+    clientInformation: "Informations Client",
+    clientEmail: "Email Client",
+    clientAddress: "Adresse Client",
+    clientBillingAddress: "Adresse de facturation du client",
+    characters: "caractères",
+    billableItems: "Articles Facturables",
+    servicesProducts: "Services et Produits",
+    importFromTimesheet: "Importer de la Feuille de Temps",
+    addItem: "Ajouter Article",
+    taxDiscount: "Taxe et Réduction",
+    taxRate: "Taux de Taxe",
+    discountAmount: "Montant de Réduction",
+    totalAmount: "Montant Total",
+    notesTerms: "Notes et Conditions",
+    generateNotes: "Générer Notes",
+    saveInvoice: "Enregistrer Facture",
+    sendInvoice: "Envoyer Facture",
+    previewInvoice: "Aperçu Facture",
+    invoiceSavedSuccess: "Facture enregistrée avec succès!",
+    
+    // Create Contract Extended
+    contractInformation: "Informations du Contrat",
+    basicContractDetails: "Détails de base du contrat et parties impliquées",
+    contractTitle: "Titre du Contrat",
+    contractType: "Type de Contrat",
+    selectContractType: "Sélectionner le type de contrat",
+    serviceAgreement: "Contrat de Service",
+    productAgreement: "Contrat de Produit",
+    recurringContract: "Contrat Récurrent",
+    oneTimeContract: "Contrat Ponctuel",
+    relatedProject: "Projet Associé",
+    selectProjectOptional: "Sélectionner projet (optionnel)",
+    clientsFullAddress: "Entrez l'adresse commerciale complète du client...",
+    contractTerms: "Conditions du Contrat",
+    scopeOfWork: "Portée des Travaux",
+    deliverables: "Livrables",
+    responsibilities: "Responsabilités",
+    terminationClause: "Clause de Résiliation",
+    confidentiality: "Confidentialité",
+    disputeResolution: "Résolution des Litiges",
+    governingLaw: "Droit Applicable",
+    signatures: "Signatures",
+    saveContract: "Enregistrer Contrat",
+    generateTerms: "Générer Conditions",
+    
+    // Create Proposal Extended
+    proposalDetails: "Détails de la Proposition",
+    basicProposalInfo: "Informations de base sur votre proposition",
+    proposalTitle: "Titre de la Proposition",
+    projectDescription: "Description du Projet",
+    enterDetailedDescription: "Entrez une description détaillée du projet...",
+    pricingDeliverables: "Prix et Livrables",
+    timeline: "Calendrier",
+    termsConditions: "Conditions Générales",
+    saveProposal: "Enregistrer Proposition",
+    generateProposal: "Générer Proposition",
+    
+    // Create Presentation Extended
+    presentationInformation: "Informations de Présentation",
+    basicPresentationDetails: "Détails de base sur votre présentation",
+    presentationTitle: "Titre de Présentation",
+    subtitle: "Sous-titre",
+    optionalSubtitle: "Sous-titre optionnel",
+    authorPresenter: "Auteur/Présentateur",
+    yourName: "Votre nom",
+    yourCompany: "Votre entreprise",
+    theme: "Thème",
+    modern: "Moderne",
+    classic: "Classique",
+    minimal: "Minimal",
+    bold: "Audacieux",
+    targetAudience: "Audience Cible",
+    targetAudienceExample: "ex., Dirigeants, Équipe",
+    durationMinutes: "Durée (minutes)",
+    slides: "Diapositives",
+    addSlide: "Ajouter Diapositive",
+    slideTitle: "Titre de diapositive",
+    slideContent: "Contenu de diapositive",
+    savePresentation: "Enregistrer Présentation",
+    generateSlides: "Générer Diapositives",
+    
+    // Spark New Task
+    sparkNewTask: "Créer Nouvelle Tâche",
+    createFirstTask: "Créez votre première tâche pour commencer.",
+    whatNeedsGetDone: "Que faut-il faire?",
+    dueTime: "Heure d'Échéance",
+    breakItDown: "Décomposez — quel est le plan?",
+    selectOrCreateProject: "Sélectionner ou créer un projet...",
+    createNewProject: "Créer Nouveau Projet",
+    assignTo: "Assigner À",
+    unassigned: "Non Assigné",
+    fileAttachments: "Pièces Jointes",
+    links: "Liens",
+    addAttachment: "Ajouter Pièce Jointe",
+    addLink: "Ajouter Lien",
+    createTask: "Créer Tâche",
+    
+    // Quick Navigation / Help
+    quickNavigation: "Navigation Rapide",
+    gettingStarted: "Premiers Pas",
+    basicSetupNavigation: "Configuration de base et navigation",
+    taskManagement: "Gestion des Tâches",
+    projectOrganization: "Organisation des Projets",
+    messagesEmail: "Messages et Email",
+    invoicingSystem: "Système de Facturation",
+    proposalSystem: "Système de Propositions",
+    timeTrackingProductivity: "Suivi du Temps et Productivité",
+    agencyHubAIMarketing: "Hub Agence - Marketing IA",
+    adminFeatures: "Fonctions Admin",
+    notificationsReminders: "Notifications et Rappels",
+    fileStorageDocuments: "Stockage de Fichiers et Documents",
+    paymentTrackingManagement: "Suivi et Gestion des Paiements",
+    dashboardOverview: "Aperçu du Tableau de Bord",
+    dashboardOverviewDesc: "Le tableau de bord offre une vue d'ensemble de vos tâches critiques, de l'état des projets et des actions rapides.",
+    navigation: "Navigation",
   },
   de: {
     dashboard: "Dashboard",
@@ -1999,6 +2791,204 @@ const translations: Record<string, TranslationKeys> = {
     custom: "Benutzerdefiniert",
     selectDate: "Datum auswählen",
     selectDateRange: "Datumsbereich auswählen",
+    
+    // Filing Cabinet Extended
+    recentFiles: "Aktuelle Dateien",
+    favorites: "Favoriten",
+    archived: "Archiviert",
+    includeArchived: "Archivierte einbeziehen",
+    advancedSearch: "Erweiterte Suche",
+    searchBuilder: "Such-Builder",
+    noFilesMatchFilters: "Keine Dateien entsprechen Ihren Filtern",
+    tryAdjustingFilters: "Versuchen Sie, Ihre Suchkriterien anzupassen oder Filter zu löschen",
+    noTagsAvailable: "Keine Tags verfügbar",
+    fileOrganization: "Dateiorganisation",
+    clearAll: "Alle Löschen",
+    
+    // Agency Hub
+    backToMyDashboard: "Zurück zu Meinem Dashboard",
+    agencyHubTitle: "Agentur-Hub",
+    writeTab: "Schreiben",
+    promoteTab: "Bewerben",
+    trackTab: "Verfolgen",
+    createMarketingMockups: "Marketing-Mockups Erstellen",
+    describeMarketingConcept: "Beschreiben Sie Ihr Marketing-Konzept",
+    generateConcept: "Konzept Generieren",
+    visualStyle: "Visueller Stil",
+    photorealistic: "Fotorealistisch",
+    generateVisual: "Visual Generieren",
+    generatedVisual: "Generiertes Visual",
+    marketingConcept: "Marketing-Konzept",
+    yourGeneratedVisualHere: "Ihr generiertes Visual erscheint hier",
+    yourMarketingConceptHere: "Ihr Marketing-Konzept erscheint hier",
+    writeCreativeCopy: "Kreativen Text Schreiben",
+    whatNeedWritten: "Was sollen wir schreiben?",
+    generateCopy: "Text Generieren",
+    generatedCopy: "Generierter Text",
+    advertisingStrategy: "Werbestrategie",
+    describePromotionGoals: "Beschreiben Sie Ihre Werbeziele",
+    generateStrategy: "Strategie Generieren",
+    promotionStrategy: "Werbestrategie",
+    marketingAnalytics: "Marketing-Analytik",
+    pasteMarketingData: "Fügen Sie Ihre Marketingdaten ein oder beschreiben Sie, was Sie verfolgen möchten",
+    analyzeData: "Daten Analysieren",
+    marketingInsights: "Marketing-Einblicke",
+    yourMarketingInsightsHere: "Ihre Marketing-Einblicke erscheinen hier",
+    creatingConcept: "Konzept wird erstellt...",
+    writing: "Schreiben...",
+    strategizing: "Strategieentwicklung...",
+    analyzing: "Analysieren...",
+    copyToClipboard: "In Zwischenablage Kopieren",
+    copiedToClipboard: "In Zwischenablage kopiert",
+    
+    // Productivity & Timer Extended
+    timeProductivityTools: "Zeit- und Produktivitätswerkzeuge",
+    timeProductivityDesc: "Verfolgen Sie Ihre Zeit, halten Sie Produktivitätsserien aufrecht und bleiben Sie auf Ihre Ziele fokussiert.",
+    timerReady: "Timer Bereit",
+    clickStartToTrack: "Klicken Sie auf Start, um die Verfolgung zu beginnen",
+    productivityStreaks: "Produktivitätsserien",
+    days14: "14 Tage",
+    days30: "30 Tage",
+    currentStreak: "Aktuelle Serie",
+    totalHours: "Gesamtstunden",
+    dailyAverage: "Tagesdurchschnitt",
+    utilization: "Auslastung",
+    dailyReminders: "Tägliche Erinnerungen",
+    enableDailyReminders: "Tägliche Erinnerungen Aktivieren",
+    todaysProgress: "Heutiger Fortschritt",
+    noTimeLogged: "Keine Zeit erfasst",
+    startTimerToTrack: "Starten Sie Ihren Timer, um Ihre Produktivität zu verfolgen!",
+    browserNotificationsEnabled: "Browser-Benachrichtigungen aktiviert",
+    runningTotal: "Laufende Summe",
+    last7Days: "Letzte 7 Tage",
+    last30Days: "Letzte 30 Tage",
+    streakDays: "Serientage",
+    totalSessions: "Gesamtsitzungen",
+    allTimeEntries: "Alle Zeiteinträge",
+    avgPerDay: "Durchschn./Tag",
+    startYourProductivityStreak: "Starten Sie heute Ihre Produktivitätsserie!",
+    
+    // Create Invoice Extended
+    invoiceInformation: "Rechnungsinformationen",
+    basicInvoiceDetails: "Grundlegende Rechnungsdetails und Kundeninformationen",
+    yourCompanyInformation: "Ihre Unternehmensinformationen",
+    companyName: "Firmenname",
+    companyAddress: "Firmenadresse",
+    clientInformation: "Kundeninformationen",
+    clientEmail: "Kunden-E-Mail",
+    clientAddress: "Kundenadresse",
+    clientBillingAddress: "Rechnungsadresse des Kunden",
+    characters: "Zeichen",
+    billableItems: "Abrechenbare Artikel",
+    servicesProducts: "Dienstleistungen & Produkte",
+    importFromTimesheet: "Von Zeiterfassung Importieren",
+    addItem: "Artikel Hinzufügen",
+    taxDiscount: "Steuer & Rabatt",
+    taxRate: "Steuersatz",
+    discountAmount: "Rabattbetrag",
+    totalAmount: "Gesamtbetrag",
+    notesTerms: "Notizen & Bedingungen",
+    generateNotes: "Notizen Generieren",
+    saveInvoice: "Rechnung Speichern",
+    sendInvoice: "Rechnung Senden",
+    previewInvoice: "Rechnungsvorschau",
+    invoiceSavedSuccess: "Rechnung erfolgreich gespeichert!",
+    
+    // Create Contract Extended
+    contractInformation: "Vertragsinformationen",
+    basicContractDetails: "Grundlegende Vertragsdetails und beteiligte Parteien",
+    contractTitle: "Vertragstitel",
+    contractType: "Vertragsart",
+    selectContractType: "Vertragsart auswählen",
+    serviceAgreement: "Dienstleistungsvertrag",
+    productAgreement: "Produktvertrag",
+    recurringContract: "Wiederkehrender Vertrag",
+    oneTimeContract: "Einmaliger Vertrag",
+    relatedProject: "Zugehöriges Projekt",
+    selectProjectOptional: "Projekt auswählen (optional)",
+    clientsFullAddress: "Vollständige Geschäftsadresse des Kunden eingeben...",
+    contractTerms: "Vertragsbedingungen",
+    scopeOfWork: "Arbeitsumfang",
+    deliverables: "Liefergegenstände",
+    responsibilities: "Verantwortlichkeiten",
+    terminationClause: "Kündigungsklausel",
+    confidentiality: "Vertraulichkeit",
+    disputeResolution: "Streitbeilegung",
+    governingLaw: "Anwendbares Recht",
+    signatures: "Unterschriften",
+    saveContract: "Vertrag Speichern",
+    generateTerms: "Bedingungen Generieren",
+    
+    // Create Proposal Extended
+    proposalDetails: "Angebotsdetails",
+    basicProposalInfo: "Grundinformationen zu Ihrem Angebot",
+    proposalTitle: "Angebotstitel",
+    projectDescription: "Projektbeschreibung",
+    enterDetailedDescription: "Detaillierte Projektbeschreibung eingeben...",
+    pricingDeliverables: "Preise & Liefergegenstände",
+    timeline: "Zeitplan",
+    termsConditions: "Allgemeine Geschäftsbedingungen",
+    saveProposal: "Angebot Speichern",
+    generateProposal: "Angebot Generieren",
+    
+    // Create Presentation Extended
+    presentationInformation: "Präsentationsinformationen",
+    basicPresentationDetails: "Grunddetails zu Ihrer Präsentation",
+    presentationTitle: "Präsentationstitel",
+    subtitle: "Untertitel",
+    optionalSubtitle: "Optionaler Untertitel",
+    authorPresenter: "Autor/Präsentator",
+    yourName: "Ihr Name",
+    yourCompany: "Ihr Unternehmen",
+    theme: "Thema",
+    modern: "Modern",
+    classic: "Klassisch",
+    minimal: "Minimal",
+    bold: "Kühn",
+    targetAudience: "Zielgruppe",
+    targetAudienceExample: "z.B., Führungskräfte, Team",
+    durationMinutes: "Dauer (Minuten)",
+    slides: "Folien",
+    addSlide: "Folie Hinzufügen",
+    slideTitle: "Folientitel",
+    slideContent: "Folieninhalt",
+    savePresentation: "Präsentation Speichern",
+    generateSlides: "Folien Generieren",
+    
+    // Spark New Task
+    sparkNewTask: "Neue Aufgabe Erstellen",
+    createFirstTask: "Erstellen Sie Ihre erste Aufgabe, um loszulegen.",
+    whatNeedsGetDone: "Was muss erledigt werden?",
+    dueTime: "Fälligkeitszeit",
+    breakItDown: "Aufschlüsseln — was ist der Plan?",
+    selectOrCreateProject: "Projekt auswählen oder erstellen...",
+    createNewProject: "Neues Projekt Erstellen",
+    assignTo: "Zuweisen An",
+    unassigned: "Nicht Zugewiesen",
+    fileAttachments: "Dateianhänge",
+    links: "Links",
+    addAttachment: "Anhang Hinzufügen",
+    addLink: "Link Hinzufügen",
+    createTask: "Aufgabe Erstellen",
+    
+    // Quick Navigation / Help
+    quickNavigation: "Schnellnavigation",
+    gettingStarted: "Erste Schritte",
+    basicSetupNavigation: "Grundeinrichtung und Navigation",
+    taskManagement: "Aufgabenverwaltung",
+    projectOrganization: "Projektorganisation",
+    messagesEmail: "Nachrichten & E-Mail",
+    invoicingSystem: "Rechnungssystem",
+    proposalSystem: "Angebotssystem",
+    timeTrackingProductivity: "Zeiterfassung & Produktivität",
+    agencyHubAIMarketing: "Agentur-Hub - KI-Marketing",
+    adminFeatures: "Admin-Funktionen",
+    notificationsReminders: "Benachrichtigungen & Erinnerungen",
+    fileStorageDocuments: "Dateispeicher & Dokumente",
+    paymentTrackingManagement: "Zahlungsverfolgung & -verwaltung",
+    dashboardOverview: "Dashboard-Übersicht",
+    dashboardOverviewDesc: "Das Dashboard bietet einen Überblick über Ihre kritischen Aufgaben, den Projektstatus und Schnellaktionen.",
+    navigation: "Navigation",
   },
   "pt-BR": {
     dashboard: "Painel",
@@ -2393,6 +3383,204 @@ const translations: Record<string, TranslationKeys> = {
     custom: "Personalizado",
     selectDate: "Selecionar Data",
     selectDateRange: "Selecionar Período",
+    
+    // Filing Cabinet Extended
+    recentFiles: "Arquivos Recentes",
+    favorites: "Favoritos",
+    archived: "Arquivados",
+    includeArchived: "Incluir Arquivados",
+    advancedSearch: "Pesquisa Avançada",
+    searchBuilder: "Construtor de Pesquisa",
+    noFilesMatchFilters: "Nenhum arquivo corresponde aos seus filtros",
+    tryAdjustingFilters: "Tente ajustar seus critérios de pesquisa ou limpar filtros",
+    noTagsAvailable: "Sem tags disponíveis",
+    fileOrganization: "Organização de Arquivos",
+    clearAll: "Limpar Tudo",
+    
+    // Agency Hub
+    backToMyDashboard: "Voltar ao Meu Painel",
+    agencyHubTitle: "Hub da Agência",
+    writeTab: "Escrever",
+    promoteTab: "Promover",
+    trackTab: "Rastrear",
+    createMarketingMockups: "Criar Mockups de Marketing",
+    describeMarketingConcept: "Descreva seu conceito de marketing",
+    generateConcept: "Gerar Conceito",
+    visualStyle: "Estilo Visual",
+    photorealistic: "Fotorrealista",
+    generateVisual: "Gerar Visual",
+    generatedVisual: "Visual Gerado",
+    marketingConcept: "Conceito de Marketing",
+    yourGeneratedVisualHere: "Seu visual gerado aparecerá aqui",
+    yourMarketingConceptHere: "Seu conceito de marketing aparecerá aqui",
+    writeCreativeCopy: "Escrever Texto Criativo",
+    whatNeedWritten: "O que você precisa escrever?",
+    generateCopy: "Gerar Texto",
+    generatedCopy: "Texto Gerado",
+    advertisingStrategy: "Estratégia de Publicidade",
+    describePromotionGoals: "Descreva seus objetivos de promoção",
+    generateStrategy: "Gerar Estratégia",
+    promotionStrategy: "Estratégia de Promoção",
+    marketingAnalytics: "Análise de Marketing",
+    pasteMarketingData: "Cole seus dados de marketing ou descreva o que deseja rastrear",
+    analyzeData: "Analisar Dados",
+    marketingInsights: "Insights de Marketing",
+    yourMarketingInsightsHere: "Seus insights de marketing aparecerão aqui",
+    creatingConcept: "Criando Conceito...",
+    writing: "Escrevendo...",
+    strategizing: "Estrategizando...",
+    analyzing: "Analisando...",
+    copyToClipboard: "Copiar para Área de Transferência",
+    copiedToClipboard: "Copiado para área de transferência",
+    
+    // Productivity & Timer Extended
+    timeProductivityTools: "Ferramentas de Tempo e Produtividade",
+    timeProductivityDesc: "Rastreie seu tempo, mantenha sequências de produtividade e foque em seus objetivos.",
+    timerReady: "Cronômetro Pronto",
+    clickStartToTrack: "Clique em iniciar para começar a rastrear",
+    productivityStreaks: "Sequências de Produtividade",
+    days14: "14 Dias",
+    days30: "30 Dias",
+    currentStreak: "Sequência Atual",
+    totalHours: "Horas Totais",
+    dailyAverage: "Média Diária",
+    utilization: "Utilização",
+    dailyReminders: "Lembretes Diários",
+    enableDailyReminders: "Ativar Lembretes Diários",
+    todaysProgress: "Progresso de Hoje",
+    noTimeLogged: "Sem tempo registrado",
+    startTimerToTrack: "Inicie seu cronômetro para começar a rastrear sua produtividade!",
+    browserNotificationsEnabled: "Notificações do navegador ativadas",
+    runningTotal: "Total Acumulado",
+    last7Days: "Últimos 7 Dias",
+    last30Days: "Últimos 30 Dias",
+    streakDays: "Dias de Sequência",
+    totalSessions: "Sessões Totais",
+    allTimeEntries: "Todas as entradas de tempo",
+    avgPerDay: "Média/dia",
+    startYourProductivityStreak: "Comece sua sequência de produtividade hoje!",
+    
+    // Create Invoice Extended
+    invoiceInformation: "Informações da Fatura",
+    basicInvoiceDetails: "Detalhes básicos da fatura e informações do cliente",
+    yourCompanyInformation: "Informações da Sua Empresa",
+    companyName: "Nome da Empresa",
+    companyAddress: "Endereço da Empresa",
+    clientInformation: "Informações do Cliente",
+    clientEmail: "Email do Cliente",
+    clientAddress: "Endereço do Cliente",
+    clientBillingAddress: "Endereço de cobrança do cliente",
+    characters: "caracteres",
+    billableItems: "Itens Faturáveis",
+    servicesProducts: "Serviços e Produtos",
+    importFromTimesheet: "Importar da Planilha de Horas",
+    addItem: "Adicionar Item",
+    taxDiscount: "Imposto e Desconto",
+    taxRate: "Taxa de Imposto",
+    discountAmount: "Valor do Desconto",
+    totalAmount: "Valor Total",
+    notesTerms: "Notas e Termos",
+    generateNotes: "Gerar Notas",
+    saveInvoice: "Salvar Fatura",
+    sendInvoice: "Enviar Fatura",
+    previewInvoice: "Pré-visualizar Fatura",
+    invoiceSavedSuccess: "Fatura salva com sucesso!",
+    
+    // Create Contract Extended
+    contractInformation: "Informações do Contrato",
+    basicContractDetails: "Detalhes básicos do contrato e partes envolvidas",
+    contractTitle: "Título do Contrato",
+    contractType: "Tipo de Contrato",
+    selectContractType: "Selecionar tipo de contrato",
+    serviceAgreement: "Contrato de Serviço",
+    productAgreement: "Contrato de Produto",
+    recurringContract: "Contrato Recorrente",
+    oneTimeContract: "Contrato Único",
+    relatedProject: "Projeto Relacionado",
+    selectProjectOptional: "Selecionar projeto (opcional)",
+    clientsFullAddress: "Digite o endereço comercial completo do cliente...",
+    contractTerms: "Termos do Contrato",
+    scopeOfWork: "Escopo do Trabalho",
+    deliverables: "Entregáveis",
+    responsibilities: "Responsabilidades",
+    terminationClause: "Cláusula de Rescisão",
+    confidentiality: "Confidencialidade",
+    disputeResolution: "Resolução de Disputas",
+    governingLaw: "Lei Aplicável",
+    signatures: "Assinaturas",
+    saveContract: "Salvar Contrato",
+    generateTerms: "Gerar Termos",
+    
+    // Create Proposal Extended
+    proposalDetails: "Detalhes da Proposta",
+    basicProposalInfo: "Informações básicas sobre sua proposta",
+    proposalTitle: "Título da Proposta",
+    projectDescription: "Descrição do Projeto",
+    enterDetailedDescription: "Digite descrição detalhada do projeto...",
+    pricingDeliverables: "Preços e Entregáveis",
+    timeline: "Cronograma",
+    termsConditions: "Termos e Condições",
+    saveProposal: "Salvar Proposta",
+    generateProposal: "Gerar Proposta",
+    
+    // Create Presentation Extended
+    presentationInformation: "Informações da Apresentação",
+    basicPresentationDetails: "Detalhes básicos sobre sua apresentação",
+    presentationTitle: "Título da Apresentação",
+    subtitle: "Subtítulo",
+    optionalSubtitle: "Subtítulo opcional",
+    authorPresenter: "Autor/Apresentador",
+    yourName: "Seu nome",
+    yourCompany: "Sua empresa",
+    theme: "Tema",
+    modern: "Moderno",
+    classic: "Clássico",
+    minimal: "Mínimo",
+    bold: "Ousado",
+    targetAudience: "Público-Alvo",
+    targetAudienceExample: "ex., Executivos, Equipe",
+    durationMinutes: "Duração (minutos)",
+    slides: "Slides",
+    addSlide: "Adicionar Slide",
+    slideTitle: "Título do slide",
+    slideContent: "Conteúdo do slide",
+    savePresentation: "Salvar Apresentação",
+    generateSlides: "Gerar Slides",
+    
+    // Spark New Task
+    sparkNewTask: "Criar Nova Tarefa",
+    createFirstTask: "Crie sua primeira tarefa para começar.",
+    whatNeedsGetDone: "O que precisa ser feito?",
+    dueTime: "Hora de Vencimento",
+    breakItDown: "Detalhe — qual é o plano?",
+    selectOrCreateProject: "Selecionar ou criar um projeto...",
+    createNewProject: "Criar Novo Projeto",
+    assignTo: "Atribuir A",
+    unassigned: "Não Atribuído",
+    fileAttachments: "Anexos de Arquivo",
+    links: "Links",
+    addAttachment: "Adicionar Anexo",
+    addLink: "Adicionar Link",
+    createTask: "Criar Tarefa",
+    
+    // Quick Navigation / Help
+    quickNavigation: "Navegação Rápida",
+    gettingStarted: "Primeiros Passos",
+    basicSetupNavigation: "Configuração básica e navegação",
+    taskManagement: "Gestão de Tarefas",
+    projectOrganization: "Organização de Projetos",
+    messagesEmail: "Mensagens e Email",
+    invoicingSystem: "Sistema de Faturamento",
+    proposalSystem: "Sistema de Propostas",
+    timeTrackingProductivity: "Rastreamento de Tempo e Produtividade",
+    agencyHubAIMarketing: "Hub da Agência - Marketing IA",
+    adminFeatures: "Recursos de Admin",
+    notificationsReminders: "Notificações e Lembretes",
+    fileStorageDocuments: "Armazenamento de Arquivos e Documentos",
+    paymentTrackingManagement: "Rastreamento e Gestão de Pagamentos",
+    dashboardOverview: "Visão Geral do Painel",
+    dashboardOverviewDesc: "O painel fornece uma visão rápida de suas tarefas críticas, status do projeto e ações rápidas.",
+    navigation: "Navegação",
   },
   ja: {
     dashboard: "ダッシュボード",
@@ -2787,6 +3975,204 @@ const translations: Record<string, TranslationKeys> = {
     custom: "カスタム",
     selectDate: "日付を選択",
     selectDateRange: "期間を選択",
+    
+    // Filing Cabinet Extended
+    recentFiles: "最近のファイル",
+    favorites: "お気に入り",
+    archived: "アーカイブ済み",
+    includeArchived: "アーカイブを含む",
+    advancedSearch: "詳細検索",
+    searchBuilder: "検索ビルダー",
+    noFilesMatchFilters: "フィルターに一致するファイルがありません",
+    tryAdjustingFilters: "検索条件を調整するかフィルターをクリアしてください",
+    noTagsAvailable: "利用可能なタグがありません",
+    fileOrganization: "ファイル整理",
+    clearAll: "すべてクリア",
+    
+    // Agency Hub
+    backToMyDashboard: "マイダッシュボードに戻る",
+    agencyHubTitle: "エージェンシーハブ",
+    writeTab: "作成",
+    promoteTab: "プロモーション",
+    trackTab: "追跡",
+    createMarketingMockups: "マーケティングモックアップを作成",
+    describeMarketingConcept: "マーケティングコンセプトを説明してください",
+    generateConcept: "コンセプトを生成",
+    visualStyle: "ビジュアルスタイル",
+    photorealistic: "フォトリアリスティック",
+    generateVisual: "ビジュアルを生成",
+    generatedVisual: "生成されたビジュアル",
+    marketingConcept: "マーケティングコンセプト",
+    yourGeneratedVisualHere: "生成されたビジュアルがここに表示されます",
+    yourMarketingConceptHere: "マーケティングコンセプトがここに表示されます",
+    writeCreativeCopy: "クリエイティブコピーを作成",
+    whatNeedWritten: "何を書く必要がありますか？",
+    generateCopy: "コピーを生成",
+    generatedCopy: "生成されたコピー",
+    advertisingStrategy: "広告戦略",
+    describePromotionGoals: "プロモーション目標を説明してください",
+    generateStrategy: "戦略を生成",
+    promotionStrategy: "プロモーション戦略",
+    marketingAnalytics: "マーケティング分析",
+    pasteMarketingData: "マーケティングデータを貼り付けるか、追跡したい内容を説明してください",
+    analyzeData: "データを分析",
+    marketingInsights: "マーケティングインサイト",
+    yourMarketingInsightsHere: "マーケティングインサイトがここに表示されます",
+    creatingConcept: "コンセプト作成中...",
+    writing: "作成中...",
+    strategizing: "戦略策定中...",
+    analyzing: "分析中...",
+    copyToClipboard: "クリップボードにコピー",
+    copiedToClipboard: "クリップボードにコピーしました",
+    
+    // Productivity & Timer Extended
+    timeProductivityTools: "時間と生産性ツール",
+    timeProductivityDesc: "時間を追跡し、生産性の連続記録を維持し、目標に集中しましょう。",
+    timerReady: "タイマー準備完了",
+    clickStartToTrack: "開始をクリックして追跡を開始",
+    productivityStreaks: "生産性連続記録",
+    days14: "14日間",
+    days30: "30日間",
+    currentStreak: "現在の連続記録",
+    totalHours: "合計時間",
+    dailyAverage: "1日平均",
+    utilization: "稼働率",
+    dailyReminders: "毎日のリマインダー",
+    enableDailyReminders: "毎日のリマインダーを有効にする",
+    todaysProgress: "今日の進捗",
+    noTimeLogged: "時間が記録されていません",
+    startTimerToTrack: "タイマーを開始して生産性の追跡を始めましょう！",
+    browserNotificationsEnabled: "ブラウザ通知が有効です",
+    runningTotal: "累計",
+    last7Days: "過去7日間",
+    last30Days: "過去30日間",
+    streakDays: "連続日数",
+    totalSessions: "セッション数",
+    allTimeEntries: "全時間記録",
+    avgPerDay: "平均/日",
+    startYourProductivityStreak: "今日から生産性の連続記録を始めましょう！",
+    
+    // Create Invoice Extended
+    invoiceInformation: "請求書情報",
+    basicInvoiceDetails: "請求書の基本情報とクライアント情報",
+    yourCompanyInformation: "あなたの会社情報",
+    companyName: "会社名",
+    companyAddress: "会社住所",
+    clientInformation: "クライアント情報",
+    clientEmail: "クライアントメール",
+    clientAddress: "クライアント住所",
+    clientBillingAddress: "クライアントの請求先住所",
+    characters: "文字",
+    billableItems: "請求項目",
+    servicesProducts: "サービスと製品",
+    importFromTimesheet: "タイムシートからインポート",
+    addItem: "項目を追加",
+    taxDiscount: "税金と割引",
+    taxRate: "税率",
+    discountAmount: "割引額",
+    totalAmount: "合計金額",
+    notesTerms: "備考と条件",
+    generateNotes: "備考を生成",
+    saveInvoice: "請求書を保存",
+    sendInvoice: "請求書を送信",
+    previewInvoice: "請求書をプレビュー",
+    invoiceSavedSuccess: "請求書が正常に保存されました！",
+    
+    // Create Contract Extended
+    contractInformation: "契約情報",
+    basicContractDetails: "契約の基本情報と当事者",
+    contractTitle: "契約タイトル",
+    contractType: "契約タイプ",
+    selectContractType: "契約タイプを選択",
+    serviceAgreement: "サービス契約",
+    productAgreement: "製品契約",
+    recurringContract: "継続契約",
+    oneTimeContract: "単発契約",
+    relatedProject: "関連プロジェクト",
+    selectProjectOptional: "プロジェクトを選択（任意）",
+    clientsFullAddress: "クライアントの事業所住所を入力...",
+    contractTerms: "契約条件",
+    scopeOfWork: "作業範囲",
+    deliverables: "成果物",
+    responsibilities: "責任",
+    terminationClause: "解約条項",
+    confidentiality: "機密保持",
+    disputeResolution: "紛争解決",
+    governingLaw: "準拠法",
+    signatures: "署名",
+    saveContract: "契約を保存",
+    generateTerms: "条件を生成",
+    
+    // Create Proposal Extended
+    proposalDetails: "提案詳細",
+    basicProposalInfo: "提案に関する基本情報",
+    proposalTitle: "提案タイトル",
+    projectDescription: "プロジェクト説明",
+    enterDetailedDescription: "詳細なプロジェクト説明を入力...",
+    pricingDeliverables: "価格と成果物",
+    timeline: "スケジュール",
+    termsConditions: "利用規約",
+    saveProposal: "提案を保存",
+    generateProposal: "提案を生成",
+    
+    // Create Presentation Extended
+    presentationInformation: "プレゼンテーション情報",
+    basicPresentationDetails: "プレゼンテーションに関する基本情報",
+    presentationTitle: "プレゼンテーションタイトル",
+    subtitle: "サブタイトル",
+    optionalSubtitle: "任意のサブタイトル",
+    authorPresenter: "著者/発表者",
+    yourName: "あなたの名前",
+    yourCompany: "あなたの会社",
+    theme: "テーマ",
+    modern: "モダン",
+    classic: "クラシック",
+    minimal: "ミニマル",
+    bold: "ボールド",
+    targetAudience: "対象者",
+    targetAudienceExample: "例：経営陣、チーム",
+    durationMinutes: "時間（分）",
+    slides: "スライド",
+    addSlide: "スライドを追加",
+    slideTitle: "スライドタイトル",
+    slideContent: "スライドコンテンツ",
+    savePresentation: "プレゼンテーションを保存",
+    generateSlides: "スライドを生成",
+    
+    // Spark New Task
+    sparkNewTask: "新しいタスクを作成",
+    createFirstTask: "最初のタスクを作成して始めましょう。",
+    whatNeedsGetDone: "何をする必要がありますか？",
+    dueTime: "期限時刻",
+    breakItDown: "分解しましょう — 計画は？",
+    selectOrCreateProject: "プロジェクトを選択または作成...",
+    createNewProject: "新しいプロジェクトを作成",
+    assignTo: "担当者",
+    unassigned: "未割当",
+    fileAttachments: "添付ファイル",
+    links: "リンク",
+    addAttachment: "添付を追加",
+    addLink: "リンクを追加",
+    createTask: "タスクを作成",
+    
+    // Quick Navigation / Help
+    quickNavigation: "クイックナビゲーション",
+    gettingStarted: "はじめに",
+    basicSetupNavigation: "基本設定とナビゲーション",
+    taskManagement: "タスク管理",
+    projectOrganization: "プロジェクト整理",
+    messagesEmail: "メッセージとメール",
+    invoicingSystem: "請求システム",
+    proposalSystem: "提案システム",
+    timeTrackingProductivity: "時間追跡と生産性",
+    agencyHubAIMarketing: "エージェンシーハブ - AIマーケティング",
+    adminFeatures: "管理機能",
+    notificationsReminders: "通知とリマインダー",
+    fileStorageDocuments: "ファイルストレージとドキュメント",
+    paymentTrackingManagement: "支払い追跡と管理",
+    dashboardOverview: "ダッシュボード概要",
+    dashboardOverviewDesc: "ダッシュボードは重要なタスク、プロジェクト状況、クイックアクションの概要を提供します。",
+    navigation: "ナビゲーション",
   },
 };
 
