@@ -75,7 +75,13 @@ export default function Settings() {
   const [timeFormat, setTimeFormat] = useState(() => {
     return localStorage.getItem("pref_timeFormat") || "12h";
   });
-  const [language, setLanguage] = useState(contextLanguage);
+  const [language, setLanguageLocal] = useState(contextLanguage);
+  
+  // Update language immediately when changed (not just on save)
+  const setLanguage = (newLang: string) => {
+    setLanguageLocal(newLang);
+    setContextLanguage(newLang); // Update context immediately so UI changes
+  };
 
   // Account settings
   const [currentPassword, setCurrentPassword] = useState("");

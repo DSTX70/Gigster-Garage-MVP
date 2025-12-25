@@ -283,7 +283,7 @@ const translations: Record<string, TranslationKeys> = {
     
     tagline: "Intelligentere Werkzeuge für kühnere Träume",
   },
-  pt: {
+  "pt-BR": {
     dashboard: "Painel",
     settings: "Configurações",
     messages: "Mensagens",
