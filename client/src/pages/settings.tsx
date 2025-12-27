@@ -30,6 +30,7 @@ import {
   Save,
   AlertCircle,
   Check,
+  Info,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -38,6 +39,20 @@ export default function Settings() {
   const { toast } = useToast();
   const { t, language: contextLanguage, setLanguage: setContextLanguage } = useTranslation();
   const [activeTab, setActiveTab] = useState("account");
+
+  // Fetch app version info with long stale time (15 minutes)
+  const { data: healthInfo } = useQuery<{
+    ok: boolean;
+    service: string;
+    version: string;
+    build: { sha: string | null; time: string | null };
+    uptimeSeconds: number;
+    timestamp: string;
+  }>({
+    queryKey: ['/api/health'],
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: false,
+  });
 
   // Preferences state - load from localStorage with defaults
   const [emailNotifications, setEmailNotifications] = useState(() => {
@@ -649,6 +664,21 @@ export default function Settings() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Version Info Footer */}
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <Info className="h-4 w-4" />
+            <span data-testid="text-app-version">
+              {healthInfo?.service || "GigsterGarage"} v{healthInfo?.version || "..."}
+            </span>
+            {healthInfo?.build?.sha && (
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                ({healthInfo.build.sha.slice(0, 7)})
+              </span>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );

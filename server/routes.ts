@@ -346,6 +346,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount i3 Drop Receiver for remote VSuiteHQ control
   registerI3DropReceiver(app);
   
+  // ========== HEALTH/VERSION ENDPOINT (PUBLIC, NO AUTH) ==========
+  // Track server start time for uptime calculation
+  const serverStartTime = Date.now();
+  
+  // Derive version from environment or fallback
+  const getAppVersion = (): string => {
+    return process.env.APP_VERSION 
+      || process.env.COMMIT_SHA 
+      || process.env.GIT_SHA 
+      || process.env.npm_package_version 
+      || 'dev';
+  };
+  
+  // GET /api/health - Public health check endpoint
+  app.get("/api/health", (req, res) => {
+    const uptimeSeconds = Math.floor((Date.now() - serverStartTime) / 1000);
+    
+    res.json({
+      ok: true,
+      service: "GigsterGarage",
+      version: getAppVersion(),
+      build: {
+        sha: process.env.COMMIT_SHA || process.env.GIT_SHA || null,
+        time: process.env.BUILD_TIME || null
+      },
+      uptimeSeconds,
+      timestamp: new Date().toISOString()
+    });
+  });
+  
+  // GET /api/version - Alias for health endpoint
+  app.get("/api/version", (req, res) => {
+    const uptimeSeconds = Math.floor((Date.now() - serverStartTime) / 1000);
+    
+    res.json({
+      ok: true,
+      service: "GigsterGarage",
+      version: getAppVersion(),
+      build: {
+        sha: process.env.COMMIT_SHA || process.env.GIT_SHA || null,
+        time: process.env.BUILD_TIME || null
+      },
+      uptimeSeconds,
+      timestamp: new Date().toISOString()
+    });
+  });
+  
   // ========== PERMISSION ENFORCEMENT HELPERS ==========
   // NOTE: Two resource models exist in this app:
   // 1. OWNED resources (invoices, tasks, proposals) - have createdById field
