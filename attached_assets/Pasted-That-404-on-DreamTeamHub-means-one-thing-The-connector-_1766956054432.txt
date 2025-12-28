@@ -1,0 +1,152 @@
+That 404 on **DreamTeamHub** means one thing:
+
+✅ The **connector page route isn’t registered in DTH’s router** (wouter), so the app is falling into your “Did you forget to add the page to the router?” NotFound screen.
+
+Let’s fix that first (then you’ll at least see the connector UI, even if env vars/token aren’t set yet).
+
+---
+
+# ✅ Replit Drop — apply to **DreamTeamHub** repo
+
+## 1) Add the connector page (if it doesn’t already exist)
+
+```diff
+FILE: client/src/pages/connectors/gigsterGarage.tsx
++import { useMemo, useState } from "react";
++import { useMutation } from "@tanstack/react-query";
++import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
++import { Button } from "@/components/ui/button";
++import { Textarea } from "@/components/ui/textarea";
++import { Badge } from "@/components/ui/badge";
++
++type FileResult = { path: string; ok: boolean; content?: string; error?: string };
++
++export default function GigsterGarageConnectorPage() {
++  const [pathsText, setPathsText] = useState(
++    "client/src/hooks/useAuth.ts\nclient/src/lib/queryClient.ts\nserver/routes.ts"
++  );
++
++  const paths = useMemo(
++    () =>
++      pathsText
++        .split("\n")
++        .map((s) => s.trim())
++        .filter(Boolean),
++    [pathsText]
++  );
++
++  const m = useMutation({
++    mutationFn: async () => {
++      const res = await fetch("/api/connectors/gigsterGarage/files", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ paths }),
++      });
++      const json = await res.json().catch(() => ({}));
++      if (!res.ok) throw new Error(json?.error || `fetch failed (${res.status})`);
++      return (json.files || []) as FileResult[];
++    },
++  });
++
++  return (
++    <div className="space-y-4 p-4">
++      <Card>
++        <CardHeader>
++          <CardTitle>GigsterGarage Read-only Connector</CardTitle>
++          <CardDescription>
++            Server-side proxy fetch (read-only). No writes, no apply. Token never reaches the browser.
++          </CardDescription>
++        </CardHeader>
++        <CardContent className="space-y-3">
++          <Textarea
++            value={pathsText}
++            onChange={(e) => setPathsText(e.target.value)}
++            className="min-h-[120px]"
++          />
++          <div className="flex flex-wrap gap-2">
++            <Button onClick={() => m.mutate()} disabled={m.isPending || paths.length === 0}>
++              Fetch files
++            </Button>
++            {m.isPending ? <Badge variant="secondary">Loading…</Badge> : null}
++            {m.error ? <Badge variant="destructive">{(m.error as Error).message}</Badge> : null}
++            {Array.isArray(m.data) ? <Badge variant="secondary">Files: {m.data.length}</Badge> : null}
++          </div>
++        </CardContent>
++      </Card>
++
++      {Array.isArray(m.data) ? (
++        <div className="space-y-3">
++          {m.data.map((f) => (
++            <Card key={f.path}>
++              <CardHeader>
++                <div className="flex items-center justify-between gap-2">
++                  <CardTitle className="text-base">{f.path}</CardTitle>
++                  <Badge variant={f.ok ? "secondary" : "destructive"}>{f.ok ? "OK" : "FAIL"}</Badge>
++                </div>
++                {!f.ok && f.error ? <CardDescription>{f.error}</CardDescription> : null}
++              </CardHeader>
++              {f.ok ? (
++                <CardContent>
++                  <Textarea value={f.content || ""} readOnly className="min-h-[220px]" />
++                </CardContent>
++              ) : null}
++            </Card>
++          ))}
++        </div>
++      ) : null}
++    </div>
++  );
++}
++
+END_FILE
+```
+
+## 2) Register the route in **DTH** router (this is what fixes your 404)
+
+Make sure this goes **above your NotFound/catch-all** route.
+
+```diff
+FILE: client/src/App.tsx
+@@
++import GigsterGarageConnectorPage from "@/pages/connectors/gigsterGarage";
+@@
++  {/* Connectors */}
++  <Route path="/connectors/gigsterGarage" component={GigsterGarageConnectorPage} />
++  <Route path="/connectors/gigster-garage" component={GigsterGarageConnectorPage} />
+ 
+ END_FILE
+```
+
+> Key point: if your App has a final “NotFound” `<Route>` with no `path`, insert these **before** it.
+
+---
+
+## After applying
+
+Reload DTH and go to:
+
+* `/connectors/gigsterGarage`
+
+You should now see the connector UI instead of the router 404.
+
+### If you then get an error like “GIGSTER_GARAGE_BASE_URL not set”
+
+That’s expected until env is set + GigsterGarage exposes the read-only endpoint.
+
+---
+
+## Quick sanity checklist for connector to actually fetch files
+
+### In **GigsterGarage** repo:
+
+* `DTH_READONLY_TOKEN` set
+* read-only route registered (`/api/dth/files`)
+
+### In **DreamTeamHub** repo:
+
+* `GIGSTER_GARAGE_BASE_URL` set (your GigsterGarage public base URL)
+* `GIGSTER_GARAGE_READONLY_TOKEN` set (same as `DTH_READONLY_TOKEN`)
+
+---
+
+If you paste the bottom portion of **DreamTeamHub `client/src/App.tsx`** where routes are declared (just ~40 lines), I’ll give you a perfectly placed micro-diff to ensure it lands before the NotFound route.
