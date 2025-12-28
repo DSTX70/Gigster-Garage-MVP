@@ -32,7 +32,7 @@ export function AppHeader() {
   // Fetch active timer
   const { data: activeTimer } = useQuery<TimeLog | null>({
     queryKey: ["/api/timelogs/active"],
-    refetchInterval: 5000, // Update every 5 seconds
+    refetchInterval: (data) => (data && (data as any).isActive ? 5000 : 30000),
     staleTime: 1000 * 2,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

@@ -1,3 +1,35 @@
+Good news: your Network screenshot shows **zero 401s** ✅ — so the core Pilot C goal (“stop 401 spam”) is working.
+
+What I *do* see is the **“query noise” bug**:
+
+* requests named **`[object%20Object]`** coming from `queryClient.ts:76`
+
+That’s caused by this line in `getQueryFn`:
+
+```ts
+fetch(queryKey.join("/") as string)
+```
+
+When a queryKey includes an object (like `["/api/productivity/stats", { days: 7 }]`), `join("/")` becomes:
+`/api/productivity/stats/[object Object]`
+
+So we need to **serialize object parts into query params** (e.g. `?days=7`) instead of smashing them into the path.
+
+Also: your AppHeader polls `/api/timelogs/active` every 5s even when there’s no active timer. That’s extra noise. We can reduce it to 30s when inactive.
+
+Below is the patch drop.
+
+---
+
+# PATCH DROP — GigsterGarage (manual apply)
+
+## 1) Fix queryKey object → querystring, eliminate `[object Object]` noise
+
+**Repo:** `GigsterGarage`
+**File:** `client/src/lib/queryClient.ts` (replace)
+
+```ts
+FILE: client/src/lib/queryClient.ts
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 // Simple URL resolution - uses relative paths for same-origin requests
@@ -180,3 +212,57 @@ export const queryClient = new QueryClient({
 
 // Expose queryClient for best-effort auth invalidation without circular TS ordering issues
 (globalThis as any).__GG_QUERY_CLIENT__ = queryClient;
+END_FILE
+```
+
+---
+
+## 2) Reduce `/api/timelogs/active` polling noise in header
+
+**Repo:** `GigsterGarage`
+**File:** `client/src/components/app-header.tsx` (small edit only)
+
+Find this query:
+
+```ts
+const { data: activeTimer } = useQuery<TimeLog | null>({
+  queryKey: ["/api/timelogs/active"],
+  enabled: authed,
+  refetchInterval: 5000,
+  ...
+});
+```
+
+Replace `refetchInterval: 5000` with:
+
+```ts
+refetchInterval: (data) => (data && (data as any).isActive ? 5000 : 30000),
+```
+
+So the whole block becomes:
+
+```ts
+const { data: activeTimer } = useQuery<TimeLog | null>({
+  queryKey: ["/api/timelogs/active"],
+  enabled: authed,
+  refetchInterval: (data) => (data && (data as any).isActive ? 5000 : 30000),
+  staleTime: 1000 * 2,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
+```
+
+---
+
+# What you should see after applying
+
+In DevTools → Network:
+
+* ✅ No more requests named **`[object%20Object]`**
+* ✅ The productivity stats calls should become something like:
+
+  * `/api/productivity/stats?days=7`
+  * `/api/productivity/stats?days=30`
+* ✅ Active timer polling in header slows down when no timer is running
+
+If you drop a screenshot after this patch, I’ll confirm the noise is gone and the polling cadence looks right.
