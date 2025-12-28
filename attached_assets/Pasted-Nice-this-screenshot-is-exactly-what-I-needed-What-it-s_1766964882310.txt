@@ -1,0 +1,110 @@
+Nice — this screenshot is **exactly what I needed**.
+
+### What it shows
+
+* ✅ No more `[object Object]` requests (so the queryKey→querystring fix is working)
+* ✅ The only **401** visible is **`/api/auth/user`** (shown as `user`)
+* ❗ That 401 is coming from `queryClient.ts:153` and it will keep happening **once per minute** because `useAuth()` currently has `refetchInterval: 60_000` even when logged out.
+
+So: **401 spam is gone for the noisy endpoints**, but we can eliminate the *remaining* periodic 401 while logged out by making auth polling conditional.
+
+---
+
+# Patch Drop — GigsterGarage (manual apply)
+
+## 1) Stop periodic 401s when logged out (conditional refetch interval)
+
+**Repo:** `GigsterGarage`
+**File:** `client/src/hooks/useAuth.ts` (edit)
+
+Change:
+
+```ts
+refetchInterval: 60_000,
+```
+
+to:
+
+```ts
+refetchInterval: (data) => (data?.user ? 60_000 : false),
+```
+
+Full file replacement:
+
+```ts
+FILE: client/src/hooks/useAuth.ts
+import { useQuery } from "@tanstack/react-query";
+import type { User } from "@shared/schema";
+
+interface AuthResponse {
+  user: User;
+}
+
+export function useAuth() {
+  const { data, isLoading, isFetching, error } = useQuery<AuthResponse | null>({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/user", { credentials: "include" });
+
+      // Treat 401 as "not authenticated" (not an error)
+      if (res.status === 401) return null;
+
+      if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`Auth check failed (${res.status}): ${text}`);
+      }
+
+      return (await res.json()) as AuthResponse;
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 30_000,
+    // ✅ Only poll if logged in; prevents repeated 401s when logged out
+    refetchInterval: (data) => (data?.user ? 60_000 : false),
+  });
+
+  const user = data?.user;
+  const authReady = !isLoading && !isFetching;
+
+  return {
+    user,
+    authReady,
+    isLoading,
+    isFetching,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === "admin",
+    isDemoUser: !!user?.isDemo,
+    demoSessionId: user?.demoSessionId,
+    sessionExpiresAt: user?.sessionExpiresAt,
+    error,
+  };
+}
+END_FILE
+```
+
+## 2) Optional hardening (only if you want): never throw for `/api/auth/user` in default queryFn
+
+This addresses cases where some component is querying `["/api/auth/user"]` **without** using `useAuth()`, which could be why DevTools shows `queryClient.ts` as the initiator.
+
+**Repo:** `GigsterGarage`
+**File:** `client/src/lib/queryClient.ts`
+Inside `getQueryFn`, after `const res = await fetch(...)`, add:
+
+```ts
+if (res.status === 401 && (queryKey[0] === "/api/auth/user" || String(queryKey[0]).includes("/api/auth/user"))) {
+  return null as any;
+}
+```
+
+If you don’t want any optional work, skip this — the conditional polling change above usually resolves it.
+
+---
+
+# Expected result after Patch 1
+
+* You’ll still see **one** 401 on initial load when logged out (that’s normal)
+* You should **not** see `/api/auth/user` repeating every minute anymore
+* Other polling endpoints remain quiet when logged out
+
+If you refresh and share a quick Network screenshot filtered to `Fetch/XHR` + `401`, I’ll confirm it’s totally clean.
