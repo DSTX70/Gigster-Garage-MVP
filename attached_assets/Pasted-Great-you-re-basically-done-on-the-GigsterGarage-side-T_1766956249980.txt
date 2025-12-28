@@ -1,0 +1,77 @@
+Great — you’re basically done on the **GigsterGarage** side. ✅
+Two things remain:
+
+1. **Set `DTH_READONLY_TOKEN`** in GigsterGarage Secrets
+2. **Register `registerDthReadonlyRoutes(app)`** in `server/routes.ts`
+
+---
+
+## 1) Set `DTH_READONLY_TOKEN` (GigsterGarage)
+
+In Replit → **Secrets** tab:
+
+* Key: `DTH_READONLY_TOKEN`
+* Value: a long random token (32+ chars)
+
+After setting it, **restart** the repl (important).
+
+> I can’t request or set secrets from here — you’ll need to set it manually.
+
+---
+
+## 2) Register `registerDthReadonlyRoutes(app)` (GigsterGarage)
+
+### A) Import it at the top of `server/routes.ts`
+
+Near your other imports:
+
+```ts
+import { registerDthReadonlyRoutes } from "./routes_dth_readonly";
+```
+
+### B) Call it inside your main route registration function
+
+Find your `registerRoutes(app)` (or equivalent) and add this **early**.
+
+Best placement:
+
+* **after** `app.use(express.json())` is already in effect (usually in `server/index.ts`)
+* **before** any global auth middleware that could block `/api/dth/files`
+
+Example:
+
+```ts
+export function registerRoutes(app: Express) {
+  // ✅ DTH read-only connector (token-protected, read-only)
+  registerDthReadonlyRoutes(app);
+
+  // existing routes...
+  // app.post("/api/login", ...)
+  // app.get("/api/projects", ...)
+}
+```
+
+**If your auth is applied globally like** `app.use(requireAuth)`
+then register this route **before** that middleware, otherwise it will require login even with the token.
+
+---
+
+## 3) Quick test (GigsterGarage)
+
+Once token is set + server restarted:
+
+```bash
+curl -s -X POST https://<your-domain>/api/dth/files \
+  -H "Content-Type: application/json" \
+  -H "x-dth-token: <YOUR_TOKEN>" \
+  -d '{"paths":["client/src/hooks/useAuth.ts","server/routes.ts"]}'
+```
+
+Expected:
+
+* `ok: true`
+* `files[]` includes content for allowed paths
+
+---
+
+If you paste the top ~40 lines of **GigsterGarage `server/routes.ts`** showing the `registerRoutes` function signature and any auth middleware usage, I can tell you the **exact safest insertion point** (before/after auth).
