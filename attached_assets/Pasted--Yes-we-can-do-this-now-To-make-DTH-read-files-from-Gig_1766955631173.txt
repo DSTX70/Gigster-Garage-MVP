@@ -1,0 +1,356 @@
+✅ **Yes — we can do this now.**
+To make **DTH read files from GigsterGarage** (read-only), we need **two small pieces**:
+
+1. **GigsterGarage** exposes a **token-protected read-only file API** (no secrets, whitelisted paths)
+2. **DreamTeamHub (DTH)** adds a **connector client + UI** to fetch those files server-side (token never reaches browser)
+
+Below are **two paste-ready drops**, clearly separated by repo.
+
+---
+
+# 1) ✅ APPLY TO: **GigsterGarage repo**
+
+### Adds a token-protected endpoint: `POST /api/dth/files` (read-only)
+
+```diff
+FILE: server/routes_dth_readonly.ts
+import type { Express } from "express";
+import path from "node:path";
+import { promises as fs } from "node:fs";
+
+type FileResult = { path: string; ok: boolean; content?: string; error?: string };
+
+const MAX_BYTES = 250_000;
+
+// Only allow code/docs folders (no .env, no node_modules, no .git, etc.)
+const ALLOWED_PREFIXES = ["client/", "server/", "shared/", "docs/"];
+const BLOCKED_PREFIXES = [
+  ".git",
+  "node_modules",
+  "dist",
+  "build",
+  ".env",
+  ".replit",
+  "replit.nix",
+  ".config",
+  ".ssh",
+];
+
+function isBlocked(p: string): boolean {
+  const lower = p.toLowerCase();
+  return BLOCKED_PREFIXES.some((b) => lower.startsWith(b) || lower.includes(`/${b}`));
+}
+
+function normalizeSafeRelativePath(p: string): string | null {
+  if (!p || typeof p !== "string") return null;
+  if (p.startsWith("http://") || p.startsWith("https://")) return null;
+  if (path.isAbsolute(p)) return null;
+
+  const norm = path.posix.normalize(p.replace(/\\/g, "/"));
+  if (norm.startsWith("../") || norm.includes("/../") || norm === "..") return null;
+  if (norm.startsWith("./")) return norm.slice(2);
+
+  // must start with an allowed prefix
+  if (!ALLOWED_PREFIXES.some((pre) => norm.startsWith(pre))) return null;
+  if (isBlocked(norm)) return null;
+
+  return norm;
+}
+
+function requireToken(req: any, res: any): boolean {
+  const expected = process.env.DTH_READONLY_TOKEN;
+  if (!expected) {
+    res.status(500).json({ ok: false, error: "DTH_READONLY_TOKEN not set on server" });
+    return false;
+  }
+  const got = req.headers["x-dth-token"];
+  if (!got || String(got) !== expected) {
+    res.status(401).json({ ok: false, error: "Unauthorized" });
+    return false;
+  }
+  return true;
+}
+
+async function readOneFile(relPath: string): Promise<FileResult> {
+  const safe = normalizeSafeRelativePath(relPath);
+  if (!safe) return { path: relPath, ok: false, error: "Path not allowed" };
+
+  const abs = path.join(process.cwd(), safe);
+  try {
+    const st = await fs.stat(abs);
+    if (!st.isFile()) return { path: safe, ok: false, error: "Not a file" };
+    if (st.size > MAX_BYTES) return { path: safe, ok: false, error: "File too large" };
+
+    const content = await fs.readFile(abs, "utf-8");
+    return { path: safe, ok: true, content };
+  } catch (e: any) {
+    return { path: safe, ok: false, error: e?.message || "Read failed" };
+  }
+}
+
+export function registerDthReadonlyRoutes(app: Express) {
+  // Batch read (preferred)
+  app.post("/api/dth/files", async (req: any, res: any) => {
+    if (!requireToken(req, res)) return;
+
+    const paths = Array.isArray(req.body?.paths) ? req.body.paths : [];
+    if (!paths.length) return res.status(400).json({ ok: false, error: "paths[] required" });
+
+    const files = await Promise.all(paths.map((p: string) => readOneFile(String(p))));
+    res.json({ ok: true, files });
+  });
+}
+END_FILE
+```
+
+````diff
+FILE: docs/DTH_READONLY_CONNECTOR_INSTALL.md
+# DTH Read-only Connector — GigsterGarage Install
+
+## 1) Set environment variable (GigsterGarage)
+Set a strong shared token:
+- DTH_READONLY_TOKEN=<random long value>
+
+## 2) Register routes in server/routes.ts
+In GigsterGarage `server/routes.ts`:
+1) Add import near top:
+```ts
+import { registerDthReadonlyRoutes } from "./routes_dth_readonly";
+````
+
+2. Inside `registerRoutes(app)` add early (before auth routes is fine, token still required):
+
+```ts
+registerDthReadonlyRoutes(app);
+```
+
+## 3) Test locally
+
+```bash
+curl -s -X POST http://localhost:5000/api/dth/files \
+  -H "Content-Type: application/json" \
+  -H "x-dth-token: $DTH_READONLY_TOKEN" \
+  -d '{"paths":["client/src/hooks/useAuth.ts"]}'
+```
+
+Should return JSON with the file content.
+END_FILE
+
+````
+
+✅ **GigsterGarage side is done once you:**
+- set `DTH_READONLY_TOKEN`
+- add the 2-line registration in `server/routes.ts`
+
+---
+
+# 2) ✅ APPLY TO: **DreamTeamHub (DTH) repo**
+### Adds server-side connector + UI to fetch files (token stays on server)
+
+## Backend: connector client + routes
+
+```diff
+FILE: server/services/gigsterGarageReadonlyClient.ts
+type FileResult = { path: string; ok: boolean; content?: string; error?: string };
+
+export async function fetchGigsterGarageFiles(paths: string[]): Promise<FileResult[]> {
+  const base = process.env.GIGSTER_GARAGE_BASE_URL;
+  const token = process.env.GIGSTER_GARAGE_READONLY_TOKEN;
+
+  if (!base) throw new Error("GIGSTER_GARAGE_BASE_URL not set");
+  if (!token) throw new Error("GIGSTER_GARAGE_READONLY_TOKEN not set");
+
+  const url = `${base.replace(/\/+$/, "")}/api/dth/files`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-dth-token": token,
+    },
+    body: JSON.stringify({ paths }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`GigsterGarage fetch failed (${res.status}) ${text}`.trim());
+  }
+
+  const json = (await res.json()) as { ok: boolean; files: FileResult[] };
+  return Array.isArray(json.files) ? json.files : [];
+}
+END_FILE
+````
+
+```diff
+FILE: server/routes/connectorsGigsterGarage.ts
+import type { Express } from "express";
+import { fetchGigsterGarageFiles } from "../services/gigsterGarageReadonlyClient";
+
+export function registerGigsterGarageConnectorRoutes(app: Express) {
+  // Proxy (server-side) so token is never exposed to browser
+  app.post("/api/connectors/gigsterGarage/files", async (req, res) => {
+    const paths = Array.isArray(req.body?.paths) ? req.body.paths.map(String) : [];
+    if (!paths.length) return res.status(400).json({ ok: false, error: "paths[] required" });
+
+    try {
+      const files = await fetchGigsterGarageFiles(paths);
+      res.json({ ok: true, files });
+    } catch (e: any) {
+      res.status(500).json({ ok: false, error: e?.message || "connector failed" });
+    }
+  });
+}
+END_FILE
+```
+
+```diff
+FILE: server/routes.ts
+@@
++import { registerGigsterGarageConnectorRoutes } from "./routes/connectorsGigsterGarage";
+@@
+ export function registerRoutes(app: any) {
+@@
++  // Read-only connector: GigsterGarage file fetch (server-side proxy)
++  registerGigsterGarageConnectorRoutes(app);
+@@
+ }
+END_FILE
+```
+
+## UI: a simple “Connector Tester” page (no coupling to Work Item detail)
+
+```diff
+FILE: client/src/pages/connectors/gigsterGarage.tsx
+import { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+
+type FileResult = { path: string; ok: boolean; content?: string; error?: string };
+
+export default function GigsterGarageConnectorPage() {
+  const [pathsText, setPathsText] = useState("client/src/hooks/useAuth.ts\nclient/src/lib/queryClient.ts");
+
+  const paths = useMemo(() => {
+    return pathsText
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [pathsText]);
+
+  const m = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/connectors/gigsterGarage/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths }),
+      });
+      if (!res.ok) throw new Error(`fetch failed (${res.status})`);
+      const json = (await res.json()) as { ok: boolean; files: FileResult[] };
+      return json.files || [];
+    },
+  });
+
+  return (
+    <div className="space-y-4 p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>GigsterGarage Read-only Connector</CardTitle>
+          <CardDescription>
+            Fetch files from GigsterGarage (read-only) via server-side proxy. No write, no apply.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-sm text-muted-foreground">
+            Paste file paths (one per line). Allowed prefixes: <span className="font-medium">client/</span>,{" "}
+            <span className="font-medium">server/</span>, <span className="font-medium">shared/</span>,{" "}
+            <span className="font-medium">docs/</span>.
+          </div>
+          <Textarea value={pathsText} onChange={(e) => setPathsText(e.target.value)} className="min-h-[120px]" />
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => m.mutate()} disabled={m.isPending || paths.length === 0}>
+              Fetch files
+            </Button>
+            {m.isPending ? <Badge variant="secondary">Loading…</Badge> : null}
+            {m.error ? <Badge variant="destructive">Error</Badge> : null}
+            {m.data ? <Badge variant="secondary">Files: {m.data.length}</Badge> : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      {Array.isArray(m.data) ? (
+        <div className="space-y-3">
+          {m.data.map((f: FileResult) => (
+            <Card key={f.path}>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-base">{f.path}</CardTitle>
+                  <Badge variant={f.ok ? "secondary" : "destructive"}>{f.ok ? "OK" : "BLOCKED/FAIL"}</Badge>
+                </div>
+                {!f.ok && f.error ? <CardDescription>{f.error}</CardDescription> : null}
+              </CardHeader>
+              {f.ok ? (
+                <CardContent>
+                  <Textarea value={f.content || ""} readOnly className="min-h-[220px]" />
+                </CardContent>
+              ) : null}
+            </Card>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+END_FILE
+```
+
+### Route add (wouter)
+
+Add this route in **DTH** `client/src/App.tsx` wherever you declare routes:
+
+```diff
+FILE: client/src/App.tsx
+@@
++import GigsterGarageConnectorPage from "@/pages/connectors/gigsterGarage";
+@@
++  <Route path="/connectors/gigsterGarage" component={GigsterGarageConnectorPage} />
+END_FILE
+```
+
+---
+
+## Required env vars (DTH)
+
+Set these in **DreamTeamHub**:
+
+* `GIGSTER_GARAGE_BASE_URL` = your GigsterGarage deployed base URL (e.g. `https://gigster-garage.<your-domain>`)
+* `GIGSTER_GARAGE_READONLY_TOKEN` = same value as GigsterGarage `DTH_READONLY_TOKEN`
+
+---
+
+# How you test it (end-to-end)
+
+1. In **GigsterGarage**: set `DTH_READONLY_TOKEN` and register `registerDthReadonlyRoutes(app)`
+2. In **DTH**: set `GIGSTER_GARAGE_BASE_URL` + `GIGSTER_GARAGE_READONLY_TOKEN`
+3. Open in DTH browser:
+
+* **`/connectors/gigsterGarage`**
+
+4. Click **Fetch files**
+   You should see file contents for:
+
+* `client/src/hooks/useAuth.ts`
+* `client/src/lib/queryClient.ts`
+
+✅ That proves DTH can read GigsterGarage files without any manual copy/paste and without any write capability.
+
+---
+
+## Next (once connector works)
+
+We’ll upgrade the Work Item pipeline so **Recommendation generation automatically fetches the file context** for the file paths listed in the Work Item inputs and attaches them to the stage record — no more placeholder drops.
+
+If you want that next step, say: **“Connector working — attach fetched files to Work Item stage.”**

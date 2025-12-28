@@ -58,6 +58,7 @@ import loyaltyRoutes from './routes/loyalty.route.js';
 import monitoringRoutes from './routes/monitoring.route.js';
 import { mountGigsterCoachRoutes } from './routes/gigsterCoach.route.js';
 import { registerI3DropReceiver } from './routes/i3_drop_receiver';
+import { registerDthReadonlyRoutes } from './routes_dth_readonly';
 
 // Initialize OpenAI client
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -345,6 +346,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount i3 Drop Receiver for remote VSuiteHQ control
   registerI3DropReceiver(app);
+  
+  // Mount DTH read-only file connector (token-protected)
+  registerDthReadonlyRoutes(app);
   
   // ========== HEALTH/VERSION ENDPOINT (PUBLIC, NO AUTH) ==========
   // Track server start time for uptime calculation
