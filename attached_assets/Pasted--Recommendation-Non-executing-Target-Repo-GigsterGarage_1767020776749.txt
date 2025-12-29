@@ -1,0 +1,1707 @@
+# Recommendation (Non-executing)
+
+**Target Repo:** GigsterGarage
+
+**Strategy Session: (none)**
+
+## What we're doing
+Convert the locked strategy into an implementation plan for **GigsterGarage**.
+
+## Proposed approach
+1) Confirm the exact files/route(s) in GigsterGarage impacted by this change.
+2) Implement the smallest additive patch (no refactors) behind safe guards.
+3) Provide post-apply verification steps.
+
+## Inputs (from Work Item)
+
+---
+Intent: (Pilot C-style test):
+
+Intent / Goal: Stop 401 spam + query noise when logged out/expired auth in GigsterGarage.
+
+Expected outcome: No repeated 401s; no [object Object] requests; polling slows when inactive.
+
+Autonomy: STANDARD
+
+---
+Cast Receipt
+Mode: AUTO
+Autonomy: STANDARD
+Target Context: GigsterGarage
+Pods:
+  - AUTO
+Personas:
+  - AUTO
+---
+
+---
+
+## Approval required
+No drop should be generated or applied until Dustin approves this recommendation.
+
+
+---
+## Read-only repo context (GigsterGarage)
+**Source:** DreamTeamHub → GigsterGarage read-only connector
+**Meta:** requested=7 returned=7 nonEmpty=7 errors=0 truncatedChars=7111
+
+Use the file blocks below to propose *specific diffs* that stop 401 spam + query noise.
+
+FILE: client/src/hooks/useAuth.ts
+import { useQuery } from "@tanstack/react-query";
+import type { User } from "@shared/schema";
+
+interface AuthResponse {
+  user: User;
+}
+
+export function useAuth() {
+  const { data, isLoading, isFetching, error } = useQuery<AuthResponse | null>({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/user", { credentials: "include" });
+
+      // Treat 401 as "not authenticated" (not an error)
+      if (res.status === 401) return null;
+
+      if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`Auth check failed (${res.status}): ${text}`);
+      }
+
+      return (await res.json()) as AuthResponse;
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 30_000,
+    // Only poll if logged in; prevents repeated 401s when logged out
+    refetchInterval: (query) => (query.state.data?.user ? 60_000 : false),
+  });
+
+  const user = data?.user;
+  const authReady = !isLoading && !isFetching;
+
+  return {
+    user,
+    authReady,
+    isLoading,
+    isFetching,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === "admin",
+    isDemoUser: !!user?.isDemo,
+    demoSessionId: user?.demoSessionId,
+    sessionExpiresAt: user?.sessionExpiresAt,
+    error,
+  };
+}
+
+END_FILE
+
+FILE: client/src/lib/queryClient.ts
+import { QueryClient, QueryFunction } from "@tanstack/react-query";
+
+// Simple URL resolution - uses relative paths for same-origin requests
+const resolveUrl = (path: string): string => {
+  if (!path) throw new Error("apiRequest: empty path");
+  // If already absolute URL, use as-is
+  if (/^https?:\/\//i.test(path)) return path;
+  // Otherwise use relative path (Vite serves backend on same port)
+  return path;
+};
+
+// Safe JSON stringify (handles BigInt by stringifying it)
+const safeStringify = (value: unknown): string => {
+  try {
+    return JSON.stringify(value, (_, v) => (typeof v === "bigint" ? v.toString() : v));
+  } catch (e: any) {
+    throw new Error(`apiRequest: JSON serialization failed: ${e?.message || String(e)}`);
+  }
+};
+
+// Best-effort: if we see 401/403 anywhere, force re-check of /api/auth/user
+function invalidateAuthUserQuery() {
+  try {
+    const qc = (globalThis as any).__GG_QUERY_CLIENT__;
+    if (qc?.invalidateQueries) {
+      qc.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export type ApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+export async function apiRequest<T = unknown>(
+  method: ApiMethod,
+  path: string,
+  body?: unknown,
+  init?: RequestInit
+): Promise<T> {
+  const url = resolveUrl(path);
+  const hasBody = body !== undefined && method !== "GET";
+  const serialized = hasBody ? safeStringify(body) : undefined;
+
+  const res = await fetch(url, {
+    method,
+    credentials: "include",
+    headers: {
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...(init?.headers || {}),
+    },
+    body: serialized,
+    ...init,
+  });
+
+  // If auth expired, force /api/auth/user to re-check so polling can stop via gating
+  if (res.status === 401 || res.status === 403) {
+    invalidateAuthUserQuery();
+  }
+
+  const contentType = res.headers.get("content-type") || "";
+  let parsed: any = null;
+  try {
+    parsed = contentType.includes("application/json") ? await res.json() : await res.text();
+  } catch {
+    // Ignore parse error; keep parsed=null so we can surface status text
+  }
+
+  if (!res.ok) {
+    const serverMsg =
+      (parsed && typeof parsed === "object" && (parsed.error?.message || parsed.message)) ||
+      (typeof parsed === "string" ? parsed : res.statusText);
+
+    throw new Error(`HTTP ${res.status} ${res.statusText}: ${serverMsg || "Request failed"}`);
+  }
+
+  return parsed as T;
+}
+
+async function throwIfResNotOk(res: Response) {
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      invalidateAuthUserQuery();
+    }
+    const text = (await res.text()) || res.statusText;
+    throw new Error(`${res.status}: ${text}`);
+  }
+}
+
+type UnauthorizedBehavior = "returnNull" | "throw";
+
+function isPlainObject(v: any): v is Record<string, any> {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+/**
+ * Builds a URL from a TanStack queryKey.
+ * Fixes "/[object Object]" noise by converting object parts into query params.
+ *
+ * Examples:
+ *  ["/api/timelogs"] -> "/api/timelogs"
+ *  ["/api/productivity/stats", {days:7}] -> "/api/productivity/stats?days=7"
+ *  ["/api/x", "abc"] -> "/api/x/abc"
+ */
+function buildUrlFromQueryKey(queryKey: unknown[]): string {
+  if (!Array.isArray(queryKey) || queryKey.length === 0) {
+    throw new Error("QueryFn: invalid queryKey");
+  }
+
+  const base = queryKey[0];
+  if (typeof base !== "string") {
+    throw new Error("QueryFn: queryKey[0] must be a string path");
+  }
+
+  let path = base;
+  const params = new URLSearchParams();
+
+  for (let i = 1; i < queryKey.length; i++) {
+    const part: any = queryKey[i];
+
+    if (part == null) continue;
+
+    if (isPlainObject(part)) {
+      for (const [k, v] of Object.entries(part)) {
+        if (v == null) continue;
+        params.set(k, String(v));
+      }
+      continue;
+    }
+
+    // primitives become path segments
+    if (typeof part === "string" || typeof part === "number" || typeof part === "boolean") {
+      path += `/${encodeURIComponent(String(part))}`;
+      continue;
+    }
+
+    // last resort: stringify to query param
+    try {
+      params.set(`q${i}`, JSON.stringify(part));
+    } catch {
+      params.set(`q${i}`, String(part));
+    }
+  }
+
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
+export const getQueryFn: <T>(options: { on401: UnauthorizedBehavior }) => QueryFunction<T> =
+  ({ on401: unauthorizedBehavior }) =>
+  async ({ queryKey }) => {
+    const url = buildUrlFromQueryKey(queryKey as unknown[]);
+    const res = await fetch(resolveUrl(url), {
+      credentials: "include",
+    });
+
+    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      return null as any;
+    }
+
+    await throwIfResNotOk(res);
+    return await res.json();
+  };
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      queryFn: getQueryFn({ on401: "throw" }),
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: Infinity,
+      retry: false,
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+});
+
+// Expose queryClient for best-effort auth invalidation without circular TS ordering issues
+(globalThis as any).__GG_QUERY_CLIENT__ = queryClient;
+
+END_FILE
+
+FILE: client/src/components/timer-widget.tsx
+import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Play, Square, Clock, Settings } from "lucide-react";
+import type { TimeLog, Task, Project } from "@shared/schema";
+
+// Helper function to format duration
+const formatDuration = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+};
+
+export function TimerWidget() {
+  const [selectedTaskId, setSelectedTaskId] = useState<string>("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const queryClient = useQueryClient();
+  
+  // Fetch active timer
+  const { data: activeTimer, isLoading: timerLoading } = useQuery<TimeLog | null>({
+    queryKey: ["/api/timelogs/active"],
+    refetchInterval: (data) => data ? 5000 : 30000, // Update every 5 seconds if active, otherwise every 30 seconds
+    staleTime: 1000 * 2, // 2 seconds stale time to reduce flashing
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    refetchOnReconnect: false, // Prevent refetch on reconnect
+  });
+
+  // Fetch projects and tasks for selection
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: tasks = [] } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    refetchOnWindowFocus: false,
+  });
+
+  // Update current time for active timer
+  useEffect(() => {
+    if (activeTimer && activeTimer.isActive) {
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const startTime = new Date(activeTimer.startTime).getTime();
+        setCurrentTime(Math.floor((now - startTime) / 1000));
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [activeTimer]);
+
+  // Start timer mutation
+  const startTimerMutation = useMutation({
+    mutationFn: async (data: { taskId?: string; projectId?: string; description?: string }) => {
+      return apiRequest("POST", "/api/timelogs/start", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      setIsDialogOpen(false);
+      setSelectedTaskId("");
+      setSelectedProjectId("");
+      setDescription("");
+    },
+  });
+
+  // Stop timer mutation
+  const stopTimerMutation = useMutation({
+    mutationFn: async (timeLogId: string) => {
+      return apiRequest("POST", "/api/timelogs/stop", { timeLogId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/productivity/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/streaks"] });
+      setCurrentTime(0);
+      // Reset timer display to show "Timer Ready" state
+    },
+  });
+
+  const handleStartTimer = () => {
+    startTimerMutation.mutate({
+      taskId: selectedTaskId === "no-task" ? undefined : selectedTaskId || undefined,
+      projectId: selectedProjectId === "no-project" ? undefined : selectedProjectId || undefined,
+      description: description.trim() || "Working",
+    });
+  };
+
+  const handleStopTimer = () => {
+    if (activeTimer) {
+      stopTimerMutation.mutate(activeTimer.id);
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-md bg-orange-50 border-orange-200" data-testid="timer-widget">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Clock className="h-5 w-5 text-orange-600" />
+            <div>
+              {timerLoading ? (
+                <div>
+                  <div className="text-lg font-semibold text-orange-900">Loading...</div>
+                  <div className="text-xs text-orange-700">Checking timer status</div>
+                </div>
+              ) : activeTimer && activeTimer.isActive ? (
+                <div>
+                  <div className="text-2xl font-bold text-orange-900" data-testid="timer-display">
+                    {formatDuration(currentTime)}
+                  </div>
+                  <div className="text-xs text-orange-700" data-testid="timer-description">
+                    {activeTimer.description || "Working on task"}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="text-lg font-semibold text-orange-900">Timer Ready</div>
+                  <div className="text-xs text-orange-700">Click start to begin tracking</div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {!timerLoading && activeTimer && activeTimer.isActive ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleStopTimer}
+                disabled={stopTimerMutation.isPending}
+                className="border-red-300 text-red-700 hover:bg-red-50"
+                data-testid="button-stop-timer"
+              >
+                <Square className="h-4 w-4" />
+                Stop
+              </Button>
+            ) : !timerLoading ? (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                    data-testid="button-start-timer"
+                  >
+                    <Play className="h-4 w-4" />
+                    Start
+                  </Button>
+                </DialogTrigger>
+                
+                <DialogContent data-testid="dialog-start-timer">
+                  <DialogHeader>
+                    <DialogTitle className="text-orange-900">Start Timer</DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="timer-project" className="text-sm font-medium">
+                        Project (Optional)
+                      </Label>
+                      <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                        <SelectTrigger data-testid="select-timer-project">
+                          <SelectValue placeholder="Select a project" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no-project">No project</SelectItem>
+                          {projects.map((project) => (
+                            <SelectItem key={project.id} value={project.id}>
+                              {project.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="timer-task" className="text-sm font-medium">
+                        Task (Optional)
+                      </Label>
+                      <Select value={selectedTaskId} onValueChange={setSelectedTaskId}>
+                        <SelectTrigger data-testid="select-timer-task">
+                          <SelectValue placeholder="Select a task" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no-task">No task</SelectItem>
+                          {tasks.map((task) => (
+                            <SelectItem key={task.id} value={task.id}>
+                              {task.description}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="timer-description" className="text-sm font-medium">
+                        What are you working on?
+                      </Label>
+                      <Input
+                        id="timer-description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Enter description (optional)"
+                        data-testid="input-timer-description"
+                      />
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                        data-testid="button-cancel-timer"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleStartTimer}
+                        disabled={startTimerMutation.isPending}
+                        className="bg-orange-600 hover:bg-orange-700"
+                        data-testid="button-confirm-start-timer"
+                      >
+                        {startTimerMutation.isPending ? "Starting..." : "Get to Work"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ) : null}
+            
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-orange-600 hover:bg-orange-100"
+              data-testid="button-timer-settings"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+END_FILE
+
+FILE: client/src/pages/productivity.tsx
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "@/lib/i18n";
+import { AppHeader } from "@/components/app-header";
+import { TimerWidget } from "@/components/timer-widget";
+import { StreakCard } from "@/components/streak-card";
+import { DailyReminder } from "@/components/daily-reminder";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { apiRequest } from "@/lib/queryClient";
+import { Clock, TrendingUp, Calendar, BarChart3, Edit, Trash2, ArrowLeft, CheckCircle, XCircle, FileText, DollarSign } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import type { TimeLog } from "@shared/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+
+interface ProductivityStats {
+  totalHours: number;
+  averageDailyHours: number;
+  streakDays: number;
+  utilizationPercent: number;
+}
+
+// Helper function to format duration
+const formatDuration = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+};
+
+export default function ProductivityPage() {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+  const [selectedForInvoice, setSelectedForInvoice] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
+  const [editNotes, setEditNotes] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+  
+  // Fetch recent time logs
+  const { data: timeLogs = [], isLoading: timeLogsLoading, isError: timeLogsError } = useQuery<TimeLog[]>({
+    queryKey: ["/api/timelogs"],
+    staleTime: 1000 * 60 * 2, // 2 minutes to reduce frequent refetching
+    refetchInterval: 1000 * 30, // Refetch every 30 seconds instead of constantly
+  });
+
+  // Fetch productivity stats for different periods
+  const { data: stats7Days, isLoading: stats7Loading } = useQuery<ProductivityStats>({
+    queryKey: ["/api/productivity/stats", { days: 7 }],
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time for stats
+    refetchInterval: 1000 * 60, // Refetch every minute
+  });
+
+  const { data: stats30Days, isLoading: stats30Loading } = useQuery<ProductivityStats>({
+    queryKey: ["/api/productivity/stats", { days: 30 }],
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time for stats
+    refetchInterval: 1000 * 60, // Refetch every minute
+  });
+
+  // Calculate running total of hours
+  const totalHours = timeLogs.reduce((total, log) => {
+    if (log.duration) {
+      return total + parseInt(log.duration);
+    }
+    return total;
+  }, 0);
+
+  const formatTotalDuration = (totalSeconds: number): string => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  // Filter time logs based on approval status
+  const filteredTimeLogs = timeLogs.filter(log => {
+    if (activeTab === "all") return true;
+    return log.approvalStatus === activeTab;
+  });
+
+  // Approval mutation
+  const approveTimeLogMutation = useMutation({
+    mutationFn: async ({ timeLogId, status }: { timeLogId: string; status: "approved" | "rejected" }) => {
+      return apiRequest("POST", `/api/timelogs/${timeLogId}/approve`, { 
+        approvalStatus: status 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+    },
+  });
+
+  // Invoice selection mutation
+  const updateInvoiceSelectionMutation = useMutation({
+    mutationFn: async ({ timeLogIds, selected }: { timeLogIds: string[]; selected: boolean }) => {
+      return apiRequest("POST", "/api/timelogs/invoice-selection", { 
+        timeLogIds, 
+        isSelectedForInvoice: selected 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      setSelectedForInvoice(new Set());
+    },
+  });
+
+  const handleApproval = (timeLogId: string, status: "approved" | "rejected") => {
+    approveTimeLogMutation.mutate({ timeLogId, status });
+  };
+
+  const handleInvoiceSelection = (timeLogId: string, selected: boolean) => {
+    const newSelection = new Set(selectedForInvoice);
+    if (selected) {
+      newSelection.add(timeLogId);
+    } else {
+      newSelection.delete(timeLogId);
+    }
+    setSelectedForInvoice(newSelection);
+  };
+
+  const handleBulkInvoiceUpdate = () => {
+    if (selectedForInvoice.size > 0) {
+      updateInvoiceSelectionMutation.mutate({ 
+        timeLogIds: Array.from(selectedForInvoice), 
+        selected: true 
+      });
+    }
+  };
+
+  // Delete time log mutation
+  const deleteTimeLogMutation = useMutation({
+    mutationFn: async (timeLogId: string) => {
+      return apiRequest("DELETE", `/api/timelogs/${timeLogId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      toast({ title: t('success'), description: t('deletedSuccessfully') });
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
+    },
+  });
+
+  // Update time log mutation
+  const updateTimeLogMutation = useMutation({
+    mutationFn: async ({ timeLogId, description, notes }: { timeLogId: string; description: string; notes: string }) => {
+      return apiRequest("PUT", `/api/timelogs/${timeLogId}`, { description, notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      toast({ title: t('success'), description: t('updatedSuccessfully') });
+      setEditingLog(null);
+      setEditNotes("");
+      setEditDescription("");
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
+    },
+  });
+
+  const handleDelete = (timeLogId: string) => {
+    if (confirm("Are you sure you want to delete this time log entry?")) {
+      deleteTimeLogMutation.mutate(timeLogId);
+    }
+  };
+
+  const handleEdit = (log: TimeLog) => {
+    setEditingLog(log);
+    setEditDescription(log.description || "");
+    setEditNotes(log.notes || "");
+  };
+
+  const handleSaveEdit = () => {
+    if (editingLog) {
+      updateTimeLogMutation.mutate({
+        timeLogId: editingLog.id,
+        description: editDescription,
+        notes: editNotes
+      });
+    }
+  };
+
+  return (
+    <div className="min-h-screen" style={{background: 'var(--cream-card)'}} data-testid="productivity-page">
+      <AppHeader />
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Navigation */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/")}
+              className="flex items-center space-x-2"
+              data-testid="button-back-to-dashboard"
+            >
+              <ArrowLeft size={16} />
+              <span>{t('back')}</span>
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold brand-heading" data-testid="page-title">
+                {t('timeProductivityTools')}
+              </h2>
+              <p className="text-gray-700 text-sm">
+                {t('timeProductivityDesc')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Widget Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Timer Widget */}
+          <div className="lg:col-span-1">
+            <TimerWidget />
+          </div>
+          
+          {/* Streak Card */}
+          <div className="lg:col-span-1">
+            <StreakCard />
+          </div>
+          
+          {/* Daily Reminder */}
+          <div className="lg:col-span-1">
+            <DailyReminder />
+          </div>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <Card className="gigster-card" data-testid="stat-card-running-total">
+            <CardHeader className="pb-3">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
+                <Clock className="h-4 w-4" />
+                <span>{t('runningTotal')}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {timeLogsLoading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-20"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold brand-heading text-blue-600" data-testid="stat-running-total">
+                    {formatTotalDuration(totalHours)}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {t('allTimeEntries')}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="gigster-card" data-testid="stat-card-7days">
+            <CardHeader className="pb-3">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
+                <Calendar className="h-4 w-4" />
+                <span>{t('last7Days')}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats7Loading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-24"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold brand-heading" data-testid="stat-hours-7days">
+                    {stats7Days ? `${stats7Days.totalHours}h` : "0h"}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Avg: {stats7Days ? `${stats7Days.averageDailyHours}h/day` : "0h/day"}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="gigster-card" data-testid="stat-card-30days">
+            <CardHeader className="pb-3">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
+                <TrendingUp className="h-4 w-4" />
+                <span>{t('last30Days')}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats30Loading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-28"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold brand-heading" data-testid="stat-hours-30days">
+                    {stats30Days ? `${stats30Days.totalHours}h` : "0h"}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Utilization: {stats30Days ? `${stats30Days.utilizationPercent}%` : "0%"}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="gigster-card" data-testid="stat-card-streak">
+            <CardHeader className="pb-3">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>{t('streakDays')}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold brand-heading" data-testid="stat-streak-days">
+                {stats7Days ? stats7Days.streakDays : 0}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">
+                {t('currentStreak')}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="gigster-card" data-testid="stat-card-total-logs">
+            <CardHeader className="pb-3">
+              <CardTitle className="brand-heading text-sm font-medium flex items-center space-x-2">
+                <Clock className="h-4 w-4" />
+                <span>{t('totalSessions')}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold brand-heading" data-testid="stat-total-sessions">
+                {timeLogs.length}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">
+                {t('timeEntries')}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Enhanced Time Logs Management */}
+        <Card className="gigster-card" data-testid="enhanced-timelogs-card">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="brand-heading flex items-center space-x-2">
+                <Clock className="h-5 w-5" />
+                <span>Time Logs Management</span>
+              </CardTitle>
+              {selectedForInvoice.size > 0 && (
+                <Button
+                  onClick={handleBulkInvoiceUpdate}
+                  disabled={updateInvoiceSelectionMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  data-testid="button-add-to-invoice"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Add {selectedForInvoice.size} to Invoice
+                </Button>
+              )}
+            </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab as any} className="mt-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="all" data-testid="tab-all">All ({timeLogs.length})</TabsTrigger>
+                <TabsTrigger value="pending" data-testid="tab-pending">
+                  Pending ({timeLogs.filter(log => log.approvalStatus === "pending").length})
+                </TabsTrigger>
+                <TabsTrigger value="approved" data-testid="tab-approved">
+                  Approved ({timeLogs.filter(log => log.approvalStatus === "approved").length})
+                </TabsTrigger>
+                <TabsTrigger value="rejected" data-testid="tab-rejected">
+                  Rejected ({timeLogs.filter(log => log.approvalStatus === "rejected").length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
+          <CardContent>
+            {timeLogsLoading ? (
+              <div className="flex items-center justify-center py-8" data-testid="timelogs-loading">
+                <div className="animate-spin w-6 h-6 border-2 border-orange-600 border-t-transparent rounded-full" />
+              </div>
+            ) : filteredTimeLogs.length === 0 ? (
+              <div className="text-center py-8 text-orange-700" data-testid="no-timelogs">
+                <Clock className="h-12 w-12 mx-auto mb-4 text-orange-400" />
+                <p className="text-lg font-medium mb-2">{t('noTimeLogged')}</p>
+                <p className="text-sm">
+                  {activeTab === "all" 
+                    ? t('startTimerToTrack')
+                    : t('noResults')
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3" data-testid="timelogs-list">
+                {filteredTimeLogs.slice(0, 20).map((log) => (
+                  <div
+                    key={log.id}
+                    className={`flex items-center justify-between p-4 rounded-lg border ${
+                      log.approvalStatus === "approved" 
+                        ? "bg-green-50 border-green-200" 
+                        : log.approvalStatus === "rejected"
+                        ? "bg-red-50 border-red-200"
+                        : "bg-orange-50 border-orange-100"
+                    }`}
+                    data-testid={`timelog-${log.id}`}
+                  >
+                    <div className="flex items-center space-x-3 flex-1">
+                      {/* Invoice Selection Checkbox */}
+                      {log.approvalStatus === "approved" && (
+                        <Checkbox
+                          checked={selectedForInvoice.has(log.id) || Boolean(log.isSelectedForInvoice)}
+                          onCheckedChange={(checked) => handleInvoiceSelection(log.id, Boolean(checked))}
+                          disabled={Boolean(log.isSelectedForInvoice)}
+                          data-testid={`checkbox-invoice-${log.id}`}
+                        />
+                      )}
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-1">
+                            <div className="font-medium brand-heading">
+                
+
+/* TRUNCATED_AT_18000_CHARS */
+
+END_FILE
+
+FILE: client/src/pages/mobile-time-tracking.tsx
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { 
+  ArrowLeft, 
+  Play, 
+  Pause, 
+  Square, 
+  Clock, 
+  Calendar,
+  BarChart3,
+  Plus,
+  Home,
+  Timer
+} from "lucide-react";
+import { format } from "date-fns";
+
+interface TimeLog {
+  id: string;
+  taskId?: string;
+  projectId?: string;
+  description: string;
+  duration: number;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export default function MobileTimeTracking() {
+  const [isTracking, setIsTracking] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [description, setDescription] = useState("");
+
+  // Update timer every second when tracking
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isTracking && startTime) {
+      interval = setInterval(() => {
+        setCurrentTime(Math.floor((new Date().getTime() - startTime.getTime()) / 1000));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTracking, startTime]);
+
+  const { data: timeLogs = [], isLoading } = useQuery<TimeLog[]>({
+    queryKey: ["/api/timelogs"],
+  });
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
+  const handleStartTimer = () => {
+    setIsTracking(true);
+    setStartTime(new Date());
+    setCurrentTime(0);
+  };
+
+  const handlePauseTimer = () => {
+    setIsTracking(false);
+  };
+
+  const handleStopTimer = () => {
+    setIsTracking(false);
+    setStartTime(null);
+    setCurrentTime(0);
+    setDescription("");
+    // Here you would save the time log
+  };
+
+  // Calculate today's total time
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = timeLogs.filter(log => log.date === today);
+  const todayTotal = todayLogs.reduce((sum, log) => sum + log.duration, 0);
+
+  // Calculate this week's total time
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekLogs = timeLogs.filter(log => new Date(log.date) >= weekStart);
+  const weekTotal = weekLogs.reduce((sum, log) => sum + log.duration, 0);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#004C6D] to-[#0B1D3A] flex items-center justify-center p-4">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-lg font-medium">Loading Time Tracking...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#004C6D] to-[#0B1D3A]">
+      {/* Header */}
+      <div className="bg-[#004C6D] px-4 py-6 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Link href="/mobile">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20 p-2"
+                data-testid="button-back"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-white">⏱️ Time Tracking</h1>
+              <p className="text-blue-100 text-sm">Track your productivity</p>
+            </div>
+          </div>
+          <Link href="/mobile">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20 p-2"
+              data-testid="button-home"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-6">
+        {/* Active Timer */}
+        <Card className="bg-white/95 backdrop-blur border-0 shadow-lg" data-testid="card-active-timer">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              {/* Timer Display */}
+              <div className="text-4xl font-mono font-bold text-[#004C6D]" data-testid="text-timer-display">
+                {formatTime(currentTime)}
+              </div>
+              
+              {isTracking && (
+                <div className="flex items-center justify-center text-sm text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                  Recording time...
+                </div>
+              )}
+
+              {/* Description Input */}
+              <div className="space-y-2">
+                <Input
+                  placeholder="What are you working on?"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="text-center"
+                  data-testid="input-description"
+                />
+              </div>
+
+              {/* Timer Controls */}
+              <div className="flex justify-center space-x-4">
+                {!isTracking ? (
+                  <Button
+                    onClick={handleStartTimer}
+                    className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-full"
+                    data-testid="button-start-timer"
+                  >
+                    <Play className="h-5 w-5 mr-2" />
+                    Start
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      onClick={handlePauseTimer}
+                      variant="outline"
+                      className="px-6 py-3 rounded-full"
+                      data-testid="button-pause-timer"
+                    >
+                      <Pause className="h-5 w-5 mr-2" />
+                      Pause
+                    </Button>
+                    <Button
+                      onClick={handleStopTimer}
+                      className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-full"
+                      data-testid="button-stop-timer"
+                    >
+                      <Square className="h-4 w-4 mr-2" />
+                      Stop
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Time Summary */}
+        <Card className="bg-white/95 backdrop-blur border-0 shadow-lg" data-testid="card-time-summary">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-[#004C6D]">
+              <BarChart3 className="h-5 w-5 mr-2" />
+              Time Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-xl font-bold text-blue-600" data-testid="text-today-total">
+                  {formatDuration(todayTotal)}
+                </div>
+                <div className="text-xs text-blue-600">Today</div>
+              </div>
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="text-xl font-bold text-green-600" data-testid="text-week-total">
+                  {formatDuration(weekTotal)}
+                </div>
+                <div className="text-xs text-green-600">This Week</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Time Logs */}
+        <Card className="bg-white/95 backdrop-blur border-0 shadow-lg" data-testid="card-recent-logs">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-[#004C6D]">
+              <Clock className="h-5 w-5 mr-2" />
+              Recent Logs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {todayLogs.slice(0, 5).map((log, index) => (
+                <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg" data-testid={`row-time-log-${index}`}>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900">
+                      {log.description || 'Untitled session'}
+                    </div>
+                    <div className="text-xs text-gray-500 flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {format(new Date(log.date), 'MMM d, yyyy')}
+                      {log.startTime && (
+                        <span className="ml-2">
+                          {format(new Date(log.startTime), 'h:mm a')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-[#004C6D]">
+                      {formatDuration(log.duration)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {todayLogs.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Timer className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No time logged today</p>
+                  <p className="text-xs">Start your first timer above</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Switch to Desktop */}
+        <Card className="bg-white/95 backdrop-blur border-0 shadow-lg" data-testid="card-switch-desktop">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-3">
+                Need the full platform?
+              </p>
+              <a 
+                href="/?desktop=true"
+                className="inline-block bg-[#004C6D] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#003A52] transition-colors"
+                data-testid="link-desktop-version"
+              >
+                🖥️ Switch to Desktop Version
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add bottom padding */}
+        <div className="h-8"></div>
+      </div>
+    </div>
+  );
+}
+END_FILE
+
+FILE: client/src/components/app-header.tsx
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook, Key, FileText, Globe } from "lucide-react";
+import { NavigationMenu } from "./navigation-menu";
+import { Link } from "wouter";
+import { GigsterLogo } from "./vsuite-logo";
+import { ReminderModal } from "@/components/reminder-modal";
+import { GlobalSearch } from "@/components/global-search";
+import { MoodPaletteSwitcher } from "@/components/MoodPaletteSwitcher";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { DemoModeIndicator } from "@/components/DemoModeBanner";
+import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
+import type { Task, TimeLog } from "@shared/schema";
+import { startOfDay, addDays } from "date-fns";
+import { useState, useEffect } from "react";
+import { useTranslation } from "@/lib/i18n";
+
+export function AppHeader() {
+  const { user, isAdmin } = useAuth();
+  const { toast } = useToast();
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const { data: tasks = [] } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
+  // Fetch active timer
+  const { data: activeTimer } = useQuery<TimeLog | null>({
+    queryKey: ["/api/timelogs/active"],
+    refetchInterval: (data) => (data && (data as any).isActive ? 5000 : 30000),
+    staleTime: 1000 * 2,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  // Update current time for active timer
+  useEffect(() => {
+    if (activeTimer && activeTimer.isActive) {
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const startTime = new Date(activeTimer.startTime).getTime();
+        setCurrentTime(Math.floor((now - startTime) / 1000));
+      }, 1000);
+
+      return () => clearInterval(interval);
+    } else {
+      setCurrentTime(0);
+    }
+  }, [activeTimer]);
+
+  // Format duration for display
+  const formatDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/logout");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const stopTimerMutation = useMutation({
+    mutationFn: async (timeLogId: string) => {
+      return apiRequest("POST", "/api/timelogs/stop", { timeLogId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/productivity/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/streaks"] });
+      setCurrentTime(0);
+      toast({
+        title: "Timer stopped",
+        description: "Your work session has been saved",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStopTimer = () => {
+    if (activeTimer) {
+      stopTimerMutation.mutate(activeTimer.id);
+    }
+  };
+
+  // Calculate reminder count
+  const getReminderCount = () => {
+    const now = new Date();
+    const today = startOfDay(now);
+    const tomorrow = addDays(today, 1);
+    
+    return tasks.filter(task => {
+      if (task.completed || !task.dueDate) return false;
+      
+      const dueDate = startOfDay(new Date(task.dueDate));
+      return dueDate.getTime() <= tomorrow.getTime();
+    }).length;
+  };
+
+  const reminderCount = getReminderCount();
+
+  return (
+    <header className="gg-header border-b sticky top-0 z-50 shadow-lg">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="flex flex-col space-y-3 sm:space-y-4">
+          {/* Top line: Shield + Logo + Tagline + Timer */}
+          <div className="flex items-center justify-center">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <GigsterLogo size="small" showText={false} />
+              <h1 className="text-lg sm:text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+                Gigster Garage
+              </h1>
+              
+              {/* Active Timer Display */}
+              {activeTimer && activeTimer.isActive && (
+                <>
+                  <span style={{ color: 'var(--brand-amber-tint)' }} className="font-medium">|</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleStopTimer}
+                    disabled={stopTimerMutation.isPending}
+                    className="flex items-center space-x-1 sm:space-x-2 bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 hover:bg-white/30 transition-colors"
+                    title="Click to stop timer"
+                  >
+                    <Clock size={14} className="text-white animate-pulse" />
+                    <span className="text-sm sm:text-base font-bold text-white" style={{ fontFamily: 'monospace' }}>
+                      {formatDuration(currentTime)}
+                    </span>
+                    <span className="text-xs text-white/80 hidden sm:inline">
+                      {activeTimer.description || "Working"}
+                    </span>
+                  </Button>
+                </>
+              )}
+              
+              <span style={{ color: 'var(--brand-amber-tint)' }} className="font-medium hidden sm:inline">|</span>
+              <p className="text-xs sm:text-sm font-medium hidden sm:block" style={{ color: 'var(--brand-amber-tint)' }}>{t("tagline")}</p>
+            </div>
+          </div>
+
+          {/* Middle line: Search */}
+          <div className="flex justify-center px-2">
+            <div className="w-full max-w-md">
+              <GlobalSearch className="w-full" />
+            </div>
+          </div>
+          
+          {/* Bottom line: User + Messages */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 sm:space-x-3 text-xs sm:text-sm text-white/80">
+              <User size={14} className="sm:w-4 sm:h-4 text-white" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                className="text-white hover:bg-white/10 font-medium p-1 h-auto text-xs sm:text-sm"
+              >
+                {user?.name}
+              </Button>
+              {user?.role === 'admin' && (
+                <span className="bg-white/20 text-white px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium border border-white/30">
+                  {t("admin")}
+                </span>
+              )}
+            </div>
+            
+            {/* Demo Mode Indicator */}
+            <DemoModeIndicator />
+            
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* Home Button - Keep for quick access */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-home"
+                title={t("dashboard")}
+              >
+                <Home size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              {/* Quick Access Tasks Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/tasks")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-tasks"
+                title={t("tasks")}
+              >
+                <CheckCheck size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+
+              {/* Organized Navigation Menu - Replaces all the scattered buttons */}
+              <NavigationMenu />
+              
+              {/* Mood Palette Switcher */}
+              <MoodPaletteSwitcher size="sm" className="text-white border-white/20 hover:bg-white/10" />
+              
+              {/* Settings/Language Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/settings")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-settings"
+                title={t("settings")}
+              >
+                <Globe size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              </Button>
+              
+              {/* Keep Message System for notifications */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/messages")}
+                className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                data-testid="button-messages"
+                title={t("messages")}
+              >
+                <Mail size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+                {/* Show badge if there are unread messages */}
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-bold">
+                  0
+                </span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+END_FILE
+
+FILE: client/src/components/QuickActionButton.tsx
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Clock, FileText, Users, Folder, FileSignature, Play, Zap } from "lucide-react";
+import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from "@/lib/i18n";
+
+export function QuickActionButton() {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  const startTimerMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/timelogs/start", { description: "Working" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timelogs/active"] });
+      toast({
+        title: t('timerStarted'),
+        description: t('workSessionBegun'),
+      });
+      setOpen(false);
+    },
+  });
+
+  const quickActions = [
+    {
+      icon: <Clock className="h-4 w-4" />,
+      label: t('newTask'),
+      shortcut: "N",
+      action: () => {
+        navigate("/tasks");
+        setOpen(false);
+      },
+    },
+    {
+      icon: <Play className="h-4 w-4" />,
+      label: t('startTimer'),
+      shortcut: "T",
+      action: () => {
+        startTimerMutation.mutate();
+      },
+    },
+    {
+      icon: <Folder className="h-4 w-4" />,
+      label: t('newProject'),
+      action: () => {
+        navigate("/");
+        setOpen(false);
+      },
+    },
+    {
+      icon: <FileText className="h-4 w-4" />,
+      label: t('createInvoice'),
+      action: () => {
+        navigate("/create-invoice");
+        setOpen(false);
+      },
+    },
+    {
+      icon: <FileSignature className="h-4 w-4" />,
+      label: t('createProposal'),
+      action: () => {
+        navigate("/create-proposal");
+        setOpen(false);
+      },
+    },
+    {
+      icon: <Users className="h-4 w-4" />,
+      label: t('addClient'),
+      action: () => {
+        navigate("/clients");
+        setOpen(false);
+      },
+    },
+  ];
+
+  return (
+    <div className="fixed bottom-6 right-6 z-40">
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+            style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
+            data-testid="quick-action-fab"
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 mb-2">
+          <DropdownMenuLabel className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            {t('quickActions')}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {quickActions.map((action, index) => (
+            <DropdownMenuItem
+              key={index}
+              onClick={action.action}
+              className="flex items-center gap-3 cursor-pointer"
+              data-testid={`quick-action-${action.label.toLowerCase().replace(/\s+/g, "-")}`}
+            >
+              {action.icon}
+              <span className="flex-1">{action.label}</span>
+              {action.shortcut && (
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                  {action.shortcut}
+                </kbd>
+              )}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+END_FILE
+
