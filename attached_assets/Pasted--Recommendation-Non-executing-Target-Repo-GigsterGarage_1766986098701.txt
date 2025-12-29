@@ -1,0 +1,129 @@
+# Recommendation (Non-executing)
+
+**Target Repo:** GigsterGarage
+
+**Strategy Session: (none)**
+
+## What we're doing
+Convert the locked strategy into an implementation plan for **GigsterGarage**.
+
+## Proposed approach
+1) Confirm the exact files/route(s) in GigsterGarage impacted by this change.
+2) Implement the smallest additive patch (no refactors) behind safe guards.
+3) Provide post-apply verification steps.
+
+## Inputs (from Work Item)
+
+---
+Intent: Intent / Goal: Stop 401 spam + query noise when logged out/expired auth in GigsterGarage.
+
+Expected outcome: No repeated 401s; no [object Object] requests; polling slows when inactive.              401
+
+useAuth
+
+queryClient
+
+refetch
+
+Autonomy: STANDARD
+
+---
+Cast Receipt
+Mode: AUTO
+Autonomy: STANDARD
+Target Context: GigsterGarage
+Pods:
+  - AUTO
+Personas:
+  - AUTO
+---
+
+---
+
+## Approval required
+No drop should be generated or applied until Dustin approves this recommendation.
+
+
+---
+## Read-only repo context (GigsterGarage)
+**Source:** DreamTeamHub → GigsterGarage read-only connector
+**Meta:** requested=7 returned=0 nonEmpty=0 errors=7 truncatedChars=0
+
+Use the file blocks below to propose *specific diffs* that stop 401 spam + query noise.
+
+FILE: client/src/hooks/useAuth.ts
+ERROR: Upstream error 502: <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Hmm... We couldn&#39;t reach this app</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans">
+  <style>
+    bod
+END_FILE
+
+FILE: client/src/lib/queryClient.ts
+ERROR: Upstream error 502: <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Hmm... We couldn&#39;t reach this app</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans">
+  <style>
+    bod
+END_FILE
+
+FILE: client/src/components/timer-widget.tsx
+ERROR: Upstream error 502: <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Hmm... We couldn&#39;t reach this app</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans">
+  <style>
+    bod
+END_FILE
+
+FILE: client/src/pages/productivity.tsx
+ERROR: Upstream error 502: <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Hmm... We couldn&#39;t reach this app</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans">
+  <style>
+    bod
+END_FILE
+
+FILE: client/src/pages/mobile-time-tracking.tsx
+ERROR: Upstream error 502: <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Hmm... We couldn&#39;t reach this app</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans">
+  <style>
+    bod
+END_FILE
+
+FILE: client/src/components/app-header.tsx
+ERROR: Upstream error 502: <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Hmm... We couldn&#39;t reach this app</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans">
+  <style>
+    bod
+END_FILE
+
+FILE: client/src/components/QuickActionButton.tsx
+ERROR: Upstream error 502: <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Hmm... We couldn&#39;t reach this app</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans">
+  <style>
+    bod
+END_FILE
