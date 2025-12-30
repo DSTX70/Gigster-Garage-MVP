@@ -14,6 +14,7 @@ import { Zap, Palette, PenTool, Megaphone, BarChart3, Loader2, Copy, Download, A
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { SaveOptionsDialog } from "@/components/SaveOptionsDialog";
 
 interface SavedItem {
   id: string;
@@ -730,15 +731,23 @@ export default function AgencyHub() {
                             <Download className="h-4 w-4 mr-2" />
                             Download
                           </Button>
-                          <Button
-                            variant="outline"
-                            onClick={saveVisual}
-                            className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                            data-testid="button-save-visual-main"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Save
-                          </Button>
+                          <SaveOptionsDialog
+                            content={generatedImageUrl}
+                            contentType="image"
+                            defaultFileName="generated-visual"
+                            defaultDocType="other"
+                            disabled={!generatedImageUrl}
+                            trigger={
+                              <Button
+                                variant="outline"
+                                className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                data-testid="button-save-visual-main"
+                              >
+                                <Save className="h-4 w-4 mr-2" />
+                                Save
+                              </Button>
+                            }
+                          />
                         </div>
                       </div>
                     ) : (
@@ -820,15 +829,23 @@ export default function AgencyHub() {
                             <Copy className="h-4 w-4 mr-2" />
                             Copy Content
                           </Button>
-                          <Button
-                            variant="outline"
-                            onClick={saveMarketingContent}
-                            className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                            data-testid="button-save-marketing"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Save
-                          </Button>
+                          <SaveOptionsDialog
+                            content={createdContent}
+                            contentType="text"
+                            defaultFileName="marketing-content"
+                            defaultDocType="report"
+                            disabled={!createdContent}
+                            trigger={
+                              <Button
+                                variant="outline"
+                                className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                data-testid="button-save-marketing"
+                              >
+                                <Save className="h-4 w-4 mr-2" />
+                                Save
+                              </Button>
+                            }
+                          />
                         </div>
                       </div>
                     ) : (
@@ -949,15 +966,23 @@ export default function AgencyHub() {
                           <Copy className="h-4 w-4 mr-2" />
                           Copy Content
                         </Button>
-                        <Button
-                          variant="outline"
-                          onClick={saveWriteContent}
-                          className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          data-testid="button-save-write"
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          Save
-                        </Button>
+                        <SaveOptionsDialog
+                          content={writtenContent}
+                          contentType="text"
+                          defaultFileName="generated-copy"
+                          defaultDocType="other"
+                          disabled={!writtenContent}
+                          trigger={
+                            <Button
+                              variant="outline"
+                              className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              data-testid="button-save-write"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Save
+                            </Button>
+                          }
+                        />
                       </div>
                     </div>
                   ) : (
@@ -1077,15 +1102,23 @@ export default function AgencyHub() {
                           <Copy className="h-4 w-4 mr-2" />
                           Copy Strategy
                         </Button>
-                        <Button
-                          variant="outline"
-                          onClick={savePromoteContent}
-                          className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          data-testid="button-save-promote"
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          Save
-                        </Button>
+                        <SaveOptionsDialog
+                          content={promoteContent}
+                          contentType="text"
+                          defaultFileName="promotion-strategy"
+                          defaultDocType="report"
+                          disabled={!promoteContent}
+                          trigger={
+                            <Button
+                              variant="outline"
+                              className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              data-testid="button-save-promote"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Save
+                            </Button>
+                          }
+                        />
                       </div>
                     </div>
                   ) : (
@@ -1260,15 +1293,23 @@ export default function AgencyHub() {
                           <Copy className="h-4 w-4 mr-2" />
                           Copy Insights
                         </Button>
-                        <Button
-                          variant="outline"
-                          onClick={saveTrackContent}
-                          className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          data-testid="button-save-track"
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          Save
-                        </Button>
+                        <SaveOptionsDialog
+                          content={trackInsights}
+                          contentType="text"
+                          defaultFileName="marketing-insights"
+                          defaultDocType="report"
+                          disabled={!trackInsights}
+                          trigger={
+                            <Button
+                              variant="outline"
+                              className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              data-testid="button-save-track"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Save
+                            </Button>
+                          }
+                        />
                       </div>
                     </div>
                   ) : (

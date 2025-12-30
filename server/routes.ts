@@ -5406,6 +5406,102 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Generic endpoint to save any content to Filing Cabinet
+  app.post("/api/documents/from-content", requireAuth, async (req, res) => {
+    try {
+      const { name, content, contentType, type, mimeType, fileName } = req.body;
+      
+      if (!name || !content) {
+        return res.status(400).json({ error: "Name and content are required" });
+      }
+
+      console.log("💾 Saving content to Filing Cabinet:", name);
+
+      // Convert content to buffer based on type
+      let fileBuffer: Buffer;
+      let finalMimeType = mimeType || 'text/plain';
+      let finalFileName = fileName || `${name.replace(/[^a-zA-Z0-9]/g, '-')}.txt`;
+
+      if (contentType === 'image') {
+        // Handle base64 image
+        const base64Data = content.replace(/^data:image\/\w+;base64,/, '');
+        fileBuffer = Buffer.from(base64Data, 'base64');
+        finalMimeType = 'image/png';
+        finalFileName = fileName || `${name.replace(/[^a-zA-Z0-9]/g, '-')}.png`;
+      } else if (contentType === 'json') {
+        fileBuffer = Buffer.from(typeof content === 'string' ? content : JSON.stringify(content, null, 2));
+        finalMimeType = 'application/json';
+        finalFileName = fileName || `${name.replace(/[^a-zA-Z0-9]/g, '-')}.json`;
+      } else {
+        fileBuffer = Buffer.from(content);
+        finalMimeType = 'text/plain';
+        finalFileName = fileName || `${name.replace(/[^a-zA-Z0-9]/g, '-')}.txt`;
+      }
+
+      // Save to object storage
+      const objectStorageService = new ObjectStorageService();
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const objectPath = `${privateDir}/${req.session.user!.id}/filing-cabinet/${Date.now()}-${finalFileName}`;
+      
+      const { bucketName, objectName } = parseObjectPath(objectPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      await file.save(fileBuffer, {
+        metadata: {
+          contentType: finalMimeType
+        }
+      });
+
+      const fileUrl = file.publicUrl();
+
+      // Get or create client for generated content
+      let existingClients = await storage.getClients();
+      let generatedClient = existingClients.find(c => c.name === "Generated Content" && c.createdById === req.session.user!.id);
+      
+      if (!generatedClient) {
+        generatedClient = await storage.createClient({
+          name: "Generated Content",
+          email: '',
+          phone: '',
+          address: '',
+          notes: 'Auto-created for generated and saved content',
+          createdById: req.session.user!.id
+        });
+      }
+
+      // Create document in Filing Cabinet
+      const documentData = {
+        clientId: generatedClient.id,
+        name: name,
+        description: `Saved content from application`,
+        type: (type || 'other') as 'proposal' | 'invoice' | 'contract' | 'presentation' | 'report' | 'agreement' | 'other',
+        fileUrl: fileUrl,
+        fileName: finalFileName,
+        fileSize: fileBuffer.length,
+        mimeType: finalMimeType,
+        uploadedById: req.session.user!.id,
+        createdById: req.session.user!.id,
+        tags: ['generated', 'saved-content'],
+        metadata: {
+          savedAt: new Date().toISOString(),
+          source: 'app-save-dialog'
+        }
+      };
+
+      const document = await storage.createClientDocument(documentData);
+      console.log(`✅ Content saved to Filing Cabinet: ${name}`);
+
+      res.status(201).json({ 
+        message: "Content saved to Filing Cabinet successfully",
+        document
+      });
+    } catch (error: any) {
+      console.error("❌ Save content to Filing Cabinet Error:", error.message || error);
+      res.status(500).json({ error: "Failed to save content: " + (error.message || "Unknown error") });
+    }
+  });
+
   // Agency Hub Saved Items endpoints
   app.get("/api/agency/saved-items", requireAuth, async (req, res) => {
     try {
