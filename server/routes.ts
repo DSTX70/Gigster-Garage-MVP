@@ -9215,6 +9215,9 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
 
   // Create payment intent for public invoice payment
   app.post("/api/public/create-payment-intent", async (req, res) => {
+    // Stripe is disabled
+    return res.status(503).json({ error: "Online payments are currently disabled" });
+    
     try {
       const { paymentLink } = req.body;
       
@@ -9276,6 +9279,9 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
 
   // Stripe webhook to handle payment completion
   app.post("/api/webhooks/stripe", express.raw({ type: 'application/json' }), async (req, res) => {
+    // Stripe is disabled
+    return res.status(503).json({ error: "Stripe webhooks are disabled" });
+    
     try {
       const sig = req.headers['stripe-signature'];
       
