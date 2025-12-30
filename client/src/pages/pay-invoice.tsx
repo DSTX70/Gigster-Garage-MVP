@@ -10,8 +10,9 @@ import { CreditCard, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Load Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
+// Load Stripe - guard against missing key
+const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
 
 interface Invoice {
   id: string;
@@ -319,7 +320,13 @@ export default function PayInvoice() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isCreatingPayment ? (
+              {!stripePromise ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-8 w-8 text-amber-500 mx-auto mb-4" />
+                  <p className="text-gray-600">Online payments are currently disabled.</p>
+                  <p className="text-sm text-gray-500 mt-2">Please contact the sender for alternative payment methods.</p>
+                </div>
+              ) : isCreatingPayment ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mx-auto mb-4"></div>
                   <p className="text-gray-600">Setting up payment...</p>
