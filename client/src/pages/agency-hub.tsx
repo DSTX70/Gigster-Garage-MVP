@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Zap, Palette, PenTool, Megaphone, BarChart3, Loader2, Copy, Download, ArrowLeft, X, Save, History, Trash2 } from "lucide-react";
+import { Zap, Palette, PenTool, Megaphone, BarChart3, Loader2, Copy, Download, ArrowLeft, X, Save, History, Trash2, Upload, FileText, File } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -79,6 +79,8 @@ export default function AgencyHub() {
   const [showSavedTrack, setShowSavedTrack] = useState(false);
   const [showSavedWrite, setShowSavedWrite] = useState(false);
   const [showFullSizeModal, setShowFullSizeModal] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{name: string; content: string; type: string}[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { toast } = useToast();
@@ -338,6 +340,46 @@ export default function AgencyHub() {
   const saveWriteContent = () => {
     if (!writtenContent) return;
     saveWriteMutation.mutate(writtenContent);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        setUploadedFiles(prev => [...prev, {
+          name: file.name,
+          content: content,
+          type: file.type || 'text/plain'
+        }]);
+        toast({ title: "File uploaded", description: `${file.name} ready for analysis` });
+      };
+      reader.onerror = () => {
+        toast({ title: "Upload failed", description: `Could not read ${file.name}`, variant: "destructive" });
+      };
+      reader.readAsText(file);
+    });
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeUploadedFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const getAnalysisData = () => {
+    let data = trackData;
+    if (uploadedFiles.length > 0) {
+      const fileData = uploadedFiles.map(f => `\n--- File: ${f.name} ---\n${f.content}`).join('\n');
+      data = data + fileData;
+    }
+    return data;
   };
 
   const savePromoteContent = () => {
@@ -1080,9 +1122,64 @@ export default function AgencyHub() {
                       data-testid="textarea-track-data"
                     />
                   </div>
+                  
+                  {/* File Upload Area */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-green-500 transition-colors">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".csv,.txt,.json,.xml,.xlsx,.xls"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="track-file-upload"
+                      data-testid="input-track-file-upload"
+                    />
+                    <label
+                      htmlFor="track-file-upload"
+                      className="flex flex-col items-center cursor-pointer"
+                    >
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                      <span className="text-sm font-medium text-gray-700">Upload Data Files</span>
+                      <span className="text-xs text-gray-500 mt-1">CSV, TXT, JSON, XML, Excel (max 5MB each)</span>
+                    </label>
+                  </div>
+                  
+                  {/* Uploaded Files List */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Uploaded Files ({uploadedFiles.length})</label>
+                      <div className="space-y-1">
+                        {uploadedFiles.map((file, index) => (
+                          <div 
+                            key={index}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded border"
+                          >
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-green-600" />
+                              <span className="text-sm truncate max-w-[200px]">{file.name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {Math.round(file.content.length / 1024)}KB
+                              </Badge>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeUploadedFile(index)}
+                              className="h-6 w-6 p-0 text-gray-500 hover:text-red-500"
+                              data-testid={`button-remove-file-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <Button 
-                    onClick={() => trackMutation.mutate(trackData)}
-                    disabled={!trackData.trim() || trackMutation.isPending}
+                    onClick={() => trackMutation.mutate(getAnalysisData())}
+                    disabled={(!trackData.trim() && uploadedFiles.length === 0) || trackMutation.isPending}
                     className="w-full bg-[var(--success)] hover:opacity-90 text-white"
                     data-testid="button-track-analyze"
                   >
@@ -1094,7 +1191,7 @@ export default function AgencyHub() {
                     ) : (
                       <>
                         <BarChart3 className="h-4 w-4 mr-2" />
-                        Analyze Data
+                        Analyze Data {uploadedFiles.length > 0 && `(${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''})`}
                       </>
                     )}
                   </Button>
