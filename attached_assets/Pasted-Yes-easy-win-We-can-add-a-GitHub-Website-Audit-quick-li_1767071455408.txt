@@ -1,0 +1,93 @@
+Yes — easy win. We can add a **“GitHub Website Audit”** quick-link on the **Gigster Garage Admin** page that opens the workflow (and optionally the latest runs) in a new tab.
+
+**Repo to paste into:** ✅ **Gigster-Garage-MVP (GigsterGarage repo)**
+
+### The two URLs you’ll want
+
+* Workflow page (Run button lives here):
+  `https://github.com/DSTX70/Gigster-Garage-MVP/actions/workflows/website-audit.yml`
+* Filtered runs for `main` (optional convenience):
+  `https://github.com/DSTX70/Gigster-Garage-MVP/actions/workflows/website-audit.yml?query=branch%3Amain`
+
+---
+
+## Patch approach (minimal + safe)
+
+Because I don’t have the exact admin page file path in front of me, here’s the **paste-ready snippet** + the **exact commands to locate the right file**. You’ll drop this into your admin dashboard component where you already render other admin actions/links.
+
+### 1) Find the Admin page component
+
+Run from repo root:
+
+```bash
+rg -n "Admin" client/src/pages client/src -S
+rg -n "admin" client/src/pages client/src -S
+rg -n "AdminPage|AdminDashboard|/admin" client/src -S
+```
+
+Open the file that clearly renders the Admin landing page (often something like):
+
+* `client/src/pages/admin.tsx`
+* `client/src/pages/admin/index.tsx`
+* `client/src/pages/Admin.tsx`
+* `client/src/routes.tsx` (to see what component is mounted at `/admin`)
+
+### 2) Add a “Quick Links” card/button (drop-in JSX)
+
+Add this wherever your Admin page renders its main blocks:
+
+```tsx
+const GITHUB_WEBSITE_AUDIT_URL =
+  "https://github.com/DSTX70/Gigster-Garage-MVP/actions/workflows/website-audit.yml";
+
+const GITHUB_WEBSITE_AUDIT_RUNS_MAIN_URL =
+  "https://github.com/DSTX70/Gigster-Garage-MVP/actions/workflows/website-audit.yml?query=branch%3Amain";
+```
+
+Then in the JSX:
+
+```tsx
+<div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+  <a
+    href={GITHUB_WEBSITE_AUDIT_URL}
+    target="_blank"
+    rel="noreferrer"
+    style={{
+      padding: "10px 12px",
+      border: "1px solid rgba(0,0,0,0.12)",
+      borderRadius: 10,
+      textDecoration: "none",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+    }}
+  >
+    🔍 Website Audit (Lighthouse + a11y)
+  </a>
+
+  <a
+    href={GITHUB_WEBSITE_AUDIT_RUNS_MAIN_URL}
+    target="_blank"
+    rel="noreferrer"
+    style={{
+      padding: "10px 12px",
+      border: "1px solid rgba(0,0,0,0.12)",
+      borderRadius: 10,
+      textDecoration: "none",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+    }}
+  >
+    🧾 Audit Runs (main)
+  </a>
+</div>
+```
+
+That’s it. No schema changes, no backend changes, no auth changes.
+
+---
+
+## If you want, I can give you an exact FILE: patch drop
+
+Paste the **file path** of the Admin page component you want to edit (just the path + a small excerpt of the JSX header), and I’ll return a **single clean patch drop** for that exact file.

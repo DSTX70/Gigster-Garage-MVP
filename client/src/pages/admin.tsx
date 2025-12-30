@@ -8,7 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus, Trash2, Users, UserPlus, ArrowLeft, CheckCheck } from "lucide-react";
+import { Plus, Trash2, Users, UserPlus, ArrowLeft, CheckCheck, ExternalLink, Search, FileText } from "lucide-react";
+
+const GITHUB_WEBSITE_AUDIT_URL =
+  "https://github.com/DSTX70/Gigster-Garage-MVP/actions/workflows/website-audit.yml";
+
+const GITHUB_WEBSITE_AUDIT_RUNS_MAIN_URL =
+  "https://github.com/DSTX70/Gigster-Garage-MVP/actions/workflows/website-audit.yml?query=branch%3Amain";
 import type { User } from "@shared/schema";
 import { useLocation } from "wouter";
 
@@ -124,6 +130,39 @@ export default function Admin() {
             Add User
           </Button>
         </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ExternalLink size={20} />
+              Quick Links
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3 flex-wrap">
+              <a
+                href={GITHUB_WEBSITE_AUDIT_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                data-testid="link-website-audit"
+              >
+                <Search size={16} />
+                Website Audit (Lighthouse + a11y)
+              </a>
+              <a
+                href={GITHUB_WEBSITE_AUDIT_RUNS_MAIN_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                data-testid="link-audit-runs"
+              >
+                <FileText size={16} />
+                Audit Runs (main)
+              </a>
+            </div>
+          </CardContent>
+        </Card>
 
         {showAddUser && (
           <Card className="mb-6">
