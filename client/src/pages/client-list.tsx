@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Plus, Mail, Phone, Building, DollarSign, FileText, Search, ArrowLeft } from "lucide-react";
+import { Users, Plus, Mail, Phone, Building, DollarSign, FileText, Search, ArrowLeft, Upload, X, File } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useDemoGuard, DEMO_LIMITATIONS } from "@/hooks/useDemoGuard";
@@ -29,6 +29,11 @@ interface NewClientForm {
   status: "active" | "inactive" | "prospect";
 }
 
+interface UploadedFile {
+  file: File;
+  preview?: string;
+}
+
 export default function ClientList() {
   const { toast } = useToast();
   const { canPerformAction } = useDemoGuard();
@@ -40,6 +45,8 @@ export default function ClientList() {
   }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState<NewClientForm>({
     name: "",
     email: "",
@@ -65,6 +72,35 @@ export default function ClientList() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    const newFiles: UploadedFile[] = Array.from(files).map(file => ({
+      file,
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+    }));
+    
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+    e.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => {
+      const file = prev[index];
+      if (file.preview) {
+        URL.revokeObjectURL(file.preview);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -83,7 +119,30 @@ export default function ClientList() {
     }
 
     try {
-      await apiRequest("POST", "/api/clients", formData);
+      setIsUploading(true);
+      const response = await apiRequest("POST", "/api/clients", formData) as Response;
+      const newClient = await response.json();
+      
+      // Upload files if any
+      if (uploadedFiles.length > 0 && newClient.id) {
+        for (const uploadedFile of uploadedFiles) {
+          const fileFormData = new FormData();
+          fileFormData.append('file', uploadedFile.file);
+          fileFormData.append('name', uploadedFile.file.name);
+          fileFormData.append('type', 'other');
+          fileFormData.append('description', `Uploaded with new client: ${formData.name}`);
+          
+          try {
+            await fetch(`/api/clients/${newClient.id}/documents`, {
+              method: 'POST',
+              body: fileFormData,
+              credentials: 'include'
+            });
+          } catch (fileError) {
+            console.error('Failed to upload file:', uploadedFile.file.name, fileError);
+          }
+        }
+      }
       
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       
@@ -98,10 +157,13 @@ export default function ClientList() {
         notes: "",
         status: "prospect"
       });
+      setUploadedFiles([]);
       
       toast({
         title: t('success'),
-        description: t('clientAdded'),
+        description: uploadedFiles.length > 0 
+          ? `${t('clientAdded')} with ${uploadedFiles.length} file(s)`
+          : t('clientAdded'),
       });
     } catch (error) {
       toast({
@@ -109,6 +171,8 @@ export default function ClientList() {
         description: t('errorOccurred'),
         variant: "destructive",
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -241,9 +305,9 @@ export default function ClientList() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="prospect">{t('prospect')}</SelectItem>
+                        <SelectItem value="prospect">Prospect</SelectItem>
                         <SelectItem value="active">{t('active')}</SelectItem>
-                        <SelectItem value="inactive">{t('inactive')}</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -270,12 +334,81 @@ export default function ClientList() {
                     data-testid="textarea-notes"
                   />
                 </div>
+                
+                {/* File Upload Section */}
+                <div className="space-y-3">
+                  <Label>Attachments</Label>
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#FF7F00] transition-colors cursor-pointer"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    data-testid="upload-dropzone"
+                  >
+                    <input
+                      id="file-upload"
+                      type="file"
+                      multiple
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.png,.jpg,.jpeg,.gif"
+                      data-testid="input-file-upload"
+                    />
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">Click to upload files</p>
+                    <p className="text-xs text-gray-400 mt-1">PDF, DOC, XLS, TXT, CSV, Images (Max 10MB each)</p>
+                  </div>
+                  
+                  {/* Uploaded Files List */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {uploadedFiles.map((item, index) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border"
+                          data-testid={`uploaded-file-${index}`}
+                        >
+                          {item.preview ? (
+                            <img src={item.preview} alt="" className="h-10 w-10 object-cover rounded" />
+                          ) : (
+                            <File className="h-10 w-10 text-gray-400 p-2 bg-white rounded" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{item.file.name}</p>
+                            <p className="text-xs text-gray-500">{formatFileSize(item.file.size)}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile(index)}
+                            className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
+                            data-testid={`remove-file-${index}`}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex justify-end gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                     {t('cancel')}
                   </Button>
-                  <Button type="submit" className="bg-[#FF7F00] hover:bg-[#e6720a] text-white" data-testid="button-create-client">
-                    {t('create')}
+                  <Button 
+                    type="submit" 
+                    className="bg-[#FF7F00] hover:bg-[#e6720a] text-white" 
+                    data-testid="button-create-client"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Creating...
+                      </>
+                    ) : (
+                      t('create')
+                    )}
                   </Button>
                 </div>
               </form>
