@@ -18,7 +18,7 @@ import { apiRequest } from "@/lib/queryClient";
 interface SavedItem {
   id: string;
   content: string;
-  type: 'marketing' | 'visual' | 'promote' | 'track';
+  type: 'marketing' | 'visual' | 'promote' | 'track' | 'write';
   createdAt: string;
   metadata?: { prompt?: string; visualStyle?: string; };
 }
@@ -26,7 +26,7 @@ interface SavedItem {
 interface SavedItemAPI {
   id: string;
   content: string;
-  type: 'marketing' | 'visual' | 'promote' | 'track';
+  type: 'marketing' | 'visual' | 'promote' | 'track' | 'write';
   created_at: string;
   metadata?: { prompt?: string; visualStyle?: string; };
 }
@@ -77,6 +77,7 @@ export default function AgencyHub() {
   const [showSavedVisuals, setShowSavedVisuals] = useState(false);
   const [showSavedPromote, setShowSavedPromote] = useState(false);
   const [showSavedTrack, setShowSavedTrack] = useState(false);
+  const [showSavedWrite, setShowSavedWrite] = useState(false);
   const [showFullSizeModal, setShowFullSizeModal] = useState(false);
   const queryClient = useQueryClient();
 
@@ -132,6 +133,21 @@ export default function AgencyHub() {
     queryKey: ['/api/agency/saved-items', { type: 'track' }],
     queryFn: async () => {
       const response = await fetch(`/api/agency/saved-items?type=track&_ts=${Date.now()}`, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      if (response.status === 304) return [];
+      if (!response.ok) return [];
+      const data: SavedItemAPI[] = await response.json();
+      return data.map(mapSavedItem);
+    },
+  });
+
+  // Fetch saved write content
+  const { data: savedWriteContent = [] } = useQuery<SavedItem[]>({
+    queryKey: ['/api/agency/saved-items', { type: 'write' }],
+    queryFn: async () => {
+      const response = await fetch(`/api/agency/saved-items?type=write&_ts=${Date.now()}`, {
         credentials: 'include',
         cache: 'no-store'
       });
@@ -269,10 +285,29 @@ export default function AgencyHub() {
       toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     }
   });
+
+  // Save mutation for write content
+  const saveWriteMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await apiRequest('POST', '/api/agency/saved-items', {
+        type: 'write',
+        content,
+        metadata: { prompt: writePrompt }
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', { type: 'write' }] });
+      toast({ title: t('success'), description: t('savedSuccessfully') });
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
+    }
+  });
   
   // Delete mutation
   const deleteSavedItemMutation = useMutation({
-    mutationFn: async ({ id, type }: { id: string; type: 'marketing' | 'visual' | 'promote' | 'track' }) => {
+    mutationFn: async ({ id, type }: { id: string; type: 'marketing' | 'visual' | 'promote' | 'track' | 'write' }) => {
       await apiRequest('DELETE', `/api/agency/saved-items/${id}`);
       return { type };
     },
@@ -296,8 +331,13 @@ export default function AgencyHub() {
     saveVisualMutation.mutate(generatedImageUrl);
   };
 
-  const deleteSavedItem = (id: string, type: 'marketing' | 'visual' | 'promote' | 'track') => {
+  const deleteSavedItem = (id: string, type: 'marketing' | 'visual' | 'promote' | 'track' | 'write') => {
     deleteSavedItemMutation.mutate({ id, type });
+  };
+
+  const saveWriteContent = () => {
+    if (!writtenContent) return;
+    saveWriteMutation.mutate(writtenContent);
   };
 
   const savePromoteContent = () => {
@@ -806,24 +846,77 @@ export default function AgencyHub() {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Generated Copy</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Generated Copy</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSavedWrite(!showSavedWrite)}
+                      className="text-gray-500 hover:text-gray-700"
+                      data-testid="button-toggle-saved-write"
+                    >
+                      <History className="h-4 w-4 mr-1" />
+                      <Badge variant="secondary">{savedWriteContent.length}</Badge>
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
+                  {showSavedWrite && savedWriteContent.length > 0 && (
+                    <div className="mb-4 border rounded-lg p-3 bg-gray-50">
+                      <h4 className="text-sm font-medium mb-2">Saved Copy ({savedWriteContent.length})</h4>
+                      <ScrollArea className="h-[200px]">
+                        <div className="space-y-2">
+                          {savedWriteContent.map(item => (
+                            <div key={item.id} className="relative group p-2 border rounded bg-white hover:border-blue-500 cursor-pointer">
+                              <pre 
+                                className="whitespace-pre-wrap text-xs line-clamp-3"
+                                onClick={() => setWrittenContent(item.content)}
+                              >
+                                {item.content.substring(0, 150)}...
+                              </pre>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {new Date(item.createdAt).toLocaleDateString()}
+                              </div>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+                                onClick={() => deleteSavedItem(item.id, 'write')}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
                   {writtenContent ? (
                     <div className="space-y-4">
                       <div className="bg-gray-50 p-4 rounded-lg border">
                         <pre className="whitespace-pre-wrap text-sm">{writtenContent}</pre>
                       </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => copyToClipboard(writtenContent)}
-                        className="w-full"
-                        data-testid="button-copy-written"
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy Content
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => copyToClipboard(writtenContent)}
+                          className="flex-1"
+                          data-testid="button-copy-written"
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Content
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={saveWriteContent}
+                          className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          data-testid="button-save-write"
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          Save
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center text-gray-500 py-8">

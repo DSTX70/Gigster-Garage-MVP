@@ -5410,7 +5410,7 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   app.get("/api/agency/saved-items", requireAuth, async (req, res) => {
     try {
       const userId = req.session.user!.id;
-      const type = req.query.type as 'marketing' | 'visual' | 'promote' | 'track' | undefined;
+      const type = req.query.type as 'marketing' | 'visual' | 'promote' | 'track' | 'write' | undefined;
       
       let query = `
         SELECT id, user_id, type, content, style, metadata, created_at 
