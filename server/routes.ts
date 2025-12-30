@@ -7089,57 +7089,101 @@ Make it professional, persuasive, and tailored to the client's needs. Use clear 
         });
       }
 
+      // Fetch user profile for context
+      const user = await storage.getUser(req.session.user!.id);
+      const userProfile = {
+        industry: user?.industry || '',
+        businessType: user?.businessType || '',
+        targetMarket: user?.targetMarket || '',
+        companyName: user?.companyName || '',
+        services: user?.services || '',
+        specialty: user?.specialty || '',
+        yearsExperience: user?.yearsExperience || '',
+      };
+
+      // Build industry context string
+      const industryContext = [
+        userProfile.industry && `Industry: ${userProfile.industry}`,
+        userProfile.businessType && `Business Type: ${userProfile.businessType}`,
+        userProfile.targetMarket && `Target Market: ${userProfile.targetMarket}`,
+        userProfile.services && `Services: ${userProfile.services}`,
+        userProfile.specialty && `Specialty: ${userProfile.specialty}`,
+      ].filter(Boolean).join('. ');
+
       let prompt = "";
       let maxTokens = 800;
 
       switch (type) {
         case "project_description":
-          prompt = `Write a professional project description for "${projectTitle}"${clientName ? ` for client ${clientName}` : ''}. 
+          prompt = `Write a concise, professional project description for "${projectTitle}"${clientName ? ` for client ${clientName}` : ''}.
 
-The description should:
-- Be detailed but concise (around 200-400 words)
-- Explain the project objectives clearly
-- Outline the scope of work
-- Use professional business language
-- Be engaging and persuasive
+IMPORTANT REQUIREMENTS:
+- Keep it brief and impactful (150-250 words maximum)
+- Use direct, professional language - no filler or fluff
+- Focus on value proposition and outcomes
+- Write in active voice with confident tone
 
-Context: ${context}`;
-          maxTokens = 600;
+${industryContext ? `PROVIDER CONTEXT (incorporate relevant terminology and expertise):\n${industryContext}` : ''}
+
+${context ? `PROJECT CONTEXT: ${context}` : ''}
+
+Structure:
+1. Opening statement establishing project purpose (1-2 sentences)
+2. Scope overview with key objectives (2-3 sentences)
+3. Expected outcomes and client benefits (1-2 sentences)
+
+Do NOT use buzzwords, excessive adjectives, or verbose language.`;
+          maxTokens = 400;
           break;
 
         case "deliverables":
-          prompt = `Create a comprehensive list of deliverables for project "${projectTitle}".
+          prompt = `Create a focused list of deliverables for project "${projectTitle}".
 
-The deliverables should:
-- Be specific and measurable
-- Include key components and features
-- Be organized in a logical order
-- Use bullet points or numbered list format
-- Cover all major aspects of the project
+IMPORTANT REQUIREMENTS:
+- Maximum 6-8 deliverable items
+- Each item: one clear, specific sentence
+- Use action-oriented language (e.g., "Deliver", "Provide", "Create")
+- Be measurable and concrete - no vague promises
+- Format: bullet points, each starting with action verb
 
-${projectDescription ? `Project context: ${projectDescription}` : ''}
-Context: ${context}`;
-          maxTokens = 500;
+${industryContext ? `PROVIDER CONTEXT (use appropriate industry terminology):\n${industryContext}` : ''}
+
+${projectDescription ? `PROJECT CONTEXT: ${projectDescription}` : ''}
+${context ? `ADDITIONAL CONTEXT: ${context}` : ''}
+
+Example format:
+• Deliver [specific item] meeting [specific criteria]
+• Provide [tangible output] including [key components]
+
+Keep each deliverable to ONE line. No sub-bullets or explanations.`;
+          maxTokens = 350;
           break;
 
         case "terms_conditions":
-          prompt = `Generate professional terms and conditions for project "${projectTitle}".
+          prompt = `Generate concise, professional terms and conditions for project "${projectTitle}".
 
-Include sections for:
-- Payment terms and schedule
-- Project timeline and milestones
-- Scope of work and responsibilities
-- Revision and change request policies
-- Intellectual property rights
-- Cancellation and refund policies
-- Liability and warranty terms
+IMPORTANT REQUIREMENTS:
+- Keep each section brief (2-3 sentences maximum)
+- Use clear, direct language - no legalese jargon
+- Focus on key terms that protect both parties
+- Be specific about expectations and responsibilities
+
+${industryContext ? `PROVIDER CONTEXT (tailor terms to this business type):\n${industryContext}` : ''}
+
+Include these sections BRIEFLY:
+1. Payment Terms (schedule, methods, late fees)
+2. Project Timeline (milestones, delays)
+3. Scope & Changes (change request process)
+4. Revisions (included rounds, additional costs)
+5. Intellectual Property (ownership transfer)
+6. Cancellation (notice period, refund policy)
 
 ${totalBudget ? `Budget: $${totalBudget}` : ''}
 ${timeline ? `Timeline: ${timeline}` : ''}
-Context: ${context}
+${context ? `Context: ${context}` : ''}
 
-Keep it professional but easy to understand.`;
-          maxTokens = 1000;
+Keep the TOTAL output under 400 words. No introductory or closing paragraphs needed.`;
+          maxTokens = 600;
           break;
 
         case "marketing_concept_prompt":
@@ -7269,7 +7313,16 @@ Keep the notes concise but comprehensive, suitable for a professional invoice.`;
         messages: [
           {
             role: "system",
-            content: `You are a professional business consultant helping to write proposal content. Generate clear, professional, and persuasive content that would be appropriate for client-facing business proposals. IMPORTANT: Generate all content in ${targetLanguage}.`
+            content: `You are an expert business consultant writing proposal content. Your style is CONCISE, DIRECT, and PROFESSIONAL.
+
+KEY REQUIREMENTS:
+- Be brief and impactful - every word must earn its place
+- Use active voice and confident language
+- Avoid filler phrases, buzzwords, and verbose explanations
+- Focus on concrete value and outcomes
+- Write like a seasoned professional, not a sales brochure
+
+IMPORTANT: Generate all content in ${targetLanguage}.`
           },
           {
             role: "user",
