@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen, Zap, BookOpen, FileCheck, Presentation, Timer, PenTool, Briefcase, Archive, TrendingUp, Bot } from "lucide-react";
+import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen, Zap, BookOpen, FileCheck, Presentation, Timer, PenTool, Briefcase, Archive, TrendingUp, Bot, Settings } from "lucide-react";
 import { format } from "date-fns";
 import type { Project, Task } from "@shared/schema";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -99,6 +99,18 @@ export default function Home() {
                       <TrendingUp className="h-4 w-4 mr-1" />
                       <span className="hidden sm:inline">{t('analyticsDashboard')}</span>
                       <span className="sm:hidden">{t('analyticsDashboard')}</span>
+                    </Button>
+                  </Link>
+                  <Link href="/admin">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full sm:w-auto bg-[#004C6D] text-white border-[#004C6D] hover:bg-[#0B1D3A]"
+                      data-testid="button-admin-panel"
+                    >
+                      <Settings className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Admin Panel</span>
+                      <span className="sm:hidden">Admin</span>
                     </Button>
                   </Link>
                 </>
