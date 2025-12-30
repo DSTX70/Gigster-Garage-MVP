@@ -77,6 +77,7 @@ export default function AgencyHub() {
   const [showSavedVisuals, setShowSavedVisuals] = useState(false);
   const [showSavedPromote, setShowSavedPromote] = useState(false);
   const [showSavedTrack, setShowSavedTrack] = useState(false);
+  const [showFullSizeModal, setShowFullSizeModal] = useState(false);
   const queryClient = useQueryClient();
 
   const { toast } = useToast();
@@ -627,7 +628,7 @@ export default function AgencyHub() {
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
-                            onClick={() => window.open(generatedImageUrl, '_blank')}
+                            onClick={() => setShowFullSizeModal(true)}
                             className="flex-1"
                             data-testid="button-view-image"
                           >
@@ -1091,6 +1092,33 @@ export default function AgencyHub() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Full Size Image Modal */}
+        {showFullSizeModal && generatedImageUrl && (
+          <div 
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowFullSizeModal(false)}
+          >
+            <div className="relative max-w-[90vw] max-h-[90vh]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFullSizeModal(false)}
+                className="absolute -top-12 right-0 bg-white hover:bg-gray-100 text-gray-900"
+                data-testid="button-close-fullsize"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Close
+              </Button>
+              <img 
+                src={generatedImageUrl} 
+                alt="Full size visual" 
+                className="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
