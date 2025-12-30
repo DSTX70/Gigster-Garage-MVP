@@ -1,3 +1,63 @@
+You did everything right — the log tells us **two concrete things**:
+
+1. **Lighthouse ran successfully** (it even uploaded a public report URL), but
+2. **Pa11y is still failing to launch Chrome** on GitHub Actions with the “No usable sandbox!” error.
+
+Also: the **artifact upload didn’t happen** because the job **stops at the Pa11y failure**, and GitHub Actions never reaches the upload step (plus it reports `.lighthouseci` wasn’t found on disk after the failure).
+
+### What you do now
+
+Fix the workflow so:
+
+* Pa11y runs with forced `--no-sandbox` (guaranteed) **and**
+* The job continues so artifacts upload even if something warns/fails.
+
+---
+
+## ✅ Patch drop — paste into **Gigster-Garage-MVP** repo
+
+### 1) Add a Pa11y runner script that forces no-sandbox
+
+FILE: scripts/ci/run-pa11y.mjs
+
+```js
+import pa11y from "pa11y";
+
+const url = process.argv[2];
+if (!url) {
+  console.error("Usage: node scripts/ci/run-pa11y.mjs <url>");
+  process.exit(2);
+}
+
+try {
+  const result = await pa11y(url, {
+    standard: "WCAG2AA",
+    timeout: 60000,
+    wait: 1000,
+    includeNotices: true,
+    includeWarnings: true,
+    chromeLaunchConfig: {
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    },
+  });
+
+  process.stdout.write(JSON.stringify(result, null, 2));
+
+  // Big Audit v0: informational (don’t fail the whole workflow yet)
+  process.exit(0);
+} catch (err) {
+  console.error("Pa11y execution failed:", err?.message || err);
+  process.exit(1);
+}
+```
+
+END_FILE
+
+### 2) Update the workflow to (a) run Pa11y via the script and (b) always upload artifacts
+
+FILE: .github/workflows/website-audit.yml
+
+```yaml
 name: Website Audit (Lighthouse + a11y)
 
 on:
@@ -87,3 +147,33 @@ jobs:
           name: pa11y-report
           path: pa11y-report.json
           if-no-files-found: ignore
+```
+
+END_FILE
+
+---
+
+## Commit + push (Gigster-Garage-MVP)
+
+```bash
+git add scripts/ci/run-pa11y.mjs .github/workflows/website-audit.yml
+git commit -m "CI: fix Pa11y sandbox + always upload audit artifacts"
+git push origin main
+```
+
+## Re-run the workflow
+
+GitHub → Actions → **Website Audit (Lighthouse + a11y)** → open latest run → **Re-run jobs**
+
+---
+
+## What you should expect after this
+
+* ✅ Lighthouse runs + warns (your scores are already coming through)
+* ✅ Pa11y runs without sandbox crash and produces **pa11y-report.json**
+* ✅ Artifacts appear at bottom of run:
+
+  * `lighthouseci-artifacts`
+  * `pa11y-report`
+
+If you paste the **pa11y-report.json** contents (or upload it), I’ll turn it into a prioritized **Big Audit v0** fix list (P0/P1/P2) and we’ll feed it into Pilot G/F to generate patch drops.
