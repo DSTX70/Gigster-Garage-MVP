@@ -1,0 +1,136 @@
+Great — here’s **C** as a clean patch drop for **Gigster-Garage-MVP**, targeting exactly `client/src/pages/admin.tsx`.
+
+**Repo:** ✅ **Gigster-Garage-MVP**
+**File:** `client/src/pages/admin.tsx`
+
+---
+
+## C) Patch drop — add DreamTeamHub quick link panel to GG Admin
+
+FILE: client/src/pages/admin.tsx
+
+```tsx
+// Add these imports ONLY if they are missing in your file:
+import React from "react";
+
+// --- Insert the following helper + component near the top of the file (below imports) ---
+
+const DTH_LS_KEY = "gg:DreamTeamHubBaseUrl";
+
+function normalizeUrl(u: string) {
+  return (u || "").trim().replace(/\/+$/, "");
+}
+
+function DreamTeamHubPanel() {
+  const [dthBaseUrl, setDthBaseUrl] = React.useState<string>(() => {
+    try {
+      return localStorage.getItem(DTH_LS_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const base = normalizeUrl(dthBaseUrl);
+  const workItemsUrl = base ? `${base}/work-items` : "";
+  const ggConnectorUrl = base ? `${base}/connectors/gigsterGarage` : "";
+
+  function save() {
+    try {
+      localStorage.setItem(DTH_LS_KEY, base);
+    } catch {}
+  }
+
+  return (
+    <div className="mb-4 rounded border p-3">
+      <div className="text-sm font-semibold">DreamTeamHub</div>
+      <div className="text-xs opacity-70">
+        Store the published DTH URL once, then jump to Work Items / GG Connector fast.
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input
+          className="min-w-[320px] rounded border px-2 py-1 text-sm"
+          placeholder="https://your-dth-app.replit.app"
+          value={dthBaseUrl}
+          onChange={(e) => setDthBaseUrl(e.target.value)}
+        />
+        <button
+          type="button"
+          className="rounded border px-3 py-1 text-sm"
+          onClick={save}
+          disabled={!base}
+          title={!base ? "Enter a published DreamTeamHub URL first" : "Save URL to this browser"}
+        >
+          Save
+        </button>
+
+        <a
+          className="rounded border px-3 py-1 text-sm"
+          href={workItemsUrl || "#"}
+          target="_blank"
+          rel="noreferrer"
+          aria-disabled={!workItemsUrl}
+          title={!workItemsUrl ? "Set URL first" : "Open DreamTeamHub Work Items"}
+        >
+          Open Work Items
+        </a>
+
+        <a
+          className="rounded border px-3 py-1 text-sm"
+          href={ggConnectorUrl || "#"}
+          target="_blank"
+          rel="noreferrer"
+          aria-disabled={!ggConnectorUrl}
+          title={!ggConnectorUrl ? "Set URL first" : "Open DTH GG Connector cockpit"}
+        >
+          Open GG Connector
+        </a>
+      </div>
+
+      {base && (
+        <div className="mt-2 text-xs opacity-80">
+          Using: <code>{base}</code>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Now render <DreamTeamHubPanel /> inside your Admin page component ---
+// Find the main return JSX of the Admin page and add the panel near the top,
+// ideally above existing admin cards/sections.
+
+// Example:
+// export default function AdminPage() {
+//   return (
+//     <div className="p-4">
+//       <DreamTeamHubPanel />
+//       ...existing admin content...
+//     </div>
+//   );
+// }
+```
+
+END_FILE
+
+---
+
+## Commit + push (Gigster-Garage-MVP)
+
+```bash
+git add client/src/pages/admin.tsx
+git commit -m "Admin: add DreamTeamHub quick links panel"
+git push origin main
+```
+
+---
+
+## Quick sanity check
+
+* Load `.../admin`
+* Paste your DTH published URL once → Save
+* “Open Work Items” and “Open GG Connector” should open in new tabs.
+
+---
+
+Next up is **A** (hard-gate Step 1.5) if you haven’t committed it yet, then **B** (Last Run Receipt panel).

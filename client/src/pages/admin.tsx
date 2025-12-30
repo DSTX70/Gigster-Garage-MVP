@@ -18,6 +18,95 @@ const GITHUB_WEBSITE_AUDIT_RUNS_MAIN_URL =
 import type { User } from "@shared/schema";
 import { useLocation } from "wouter";
 
+const DTH_LS_KEY = "gg:DreamTeamHubBaseUrl";
+
+function normalizeUrl(u: string) {
+  return (u || "").trim().replace(/\/+$/, "");
+}
+
+function DreamTeamHubPanel() {
+  const [dthBaseUrl, setDthBaseUrl] = useState<string>(() => {
+    try {
+      return localStorage.getItem(DTH_LS_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const base = normalizeUrl(dthBaseUrl);
+  const workItemsUrl = base ? `${base}/work-items` : "";
+  const ggConnectorUrl = base ? `${base}/connectors/gigsterGarage` : "";
+
+  function save() {
+    try {
+      localStorage.setItem(DTH_LS_KEY, base);
+    } catch {}
+  }
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ExternalLink size={20} />
+          DreamTeamHub
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-xs opacity-70 mb-3">
+          Store the published DTH URL once, then jump to Work Items / GG Connector fast.
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            className="min-w-[320px] rounded border px-2 py-1 text-sm"
+            placeholder="https://your-dth-app.replit.app"
+            value={dthBaseUrl}
+            onChange={(e) => setDthBaseUrl(e.target.value)}
+            data-testid="input-dth-url"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={save}
+            disabled={!base}
+            title={!base ? "Enter a published DreamTeamHub URL first" : "Save URL to this browser"}
+            data-testid="button-save-dth-url"
+          >
+            Save
+          </Button>
+          <a
+            href={workItemsUrl || "#"}
+            target="_blank"
+            rel="noreferrer"
+            aria-disabled={!workItemsUrl}
+            title={!workItemsUrl ? "Set URL first" : "Open DreamTeamHub Work Items"}
+            className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium ${!workItemsUrl ? 'opacity-50 pointer-events-none' : ''}`}
+            data-testid="link-dth-work-items"
+          >
+            Open Work Items
+          </a>
+          <a
+            href={ggConnectorUrl || "#"}
+            target="_blank"
+            rel="noreferrer"
+            aria-disabled={!ggConnectorUrl}
+            title={!ggConnectorUrl ? "Set URL first" : "Open DTH GG Connector cockpit"}
+            className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium ${!ggConnectorUrl ? 'opacity-50 pointer-events-none' : ''}`}
+            data-testid="link-dth-gg-connector"
+          >
+            Open GG Connector
+          </a>
+        </div>
+        {base && (
+          <div className="mt-2 text-xs opacity-80">
+            Using: <code>{base}</code>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Admin() {
   const [, navigate] = useLocation();
   const [showAddUser, setShowAddUser] = useState(false);
@@ -163,6 +252,8 @@ export default function Admin() {
             </div>
           </CardContent>
         </Card>
+
+        <DreamTeamHubPanel />
 
         {showAddUser && (
           <Card className="mb-6">
