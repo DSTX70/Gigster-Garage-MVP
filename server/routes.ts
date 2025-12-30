@@ -5435,17 +5435,17 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
   });
 
   // Download a marketing saved item as a .md file (so Filing Cabinet has a real fileUrl)
+  // Note: No user_id check since this is accessed via Filing Cabinet which is shared
   app.get("/api/agency/saved-items/:id/file", requireAuth, async (req, res) => {
     try {
-      const userId = req.session.user!.id;
       const id = req.params.id;
 
       const result = await pool.query(
         `SELECT id, type, content, created_at
          FROM agency_hub_items
-         WHERE id = $1 AND user_id = $2
+         WHERE id = $1
          LIMIT 1`,
-        [id, userId]
+        [id]
       );
 
       if (!result.rows.length) return res.status(404).send("Not found");
