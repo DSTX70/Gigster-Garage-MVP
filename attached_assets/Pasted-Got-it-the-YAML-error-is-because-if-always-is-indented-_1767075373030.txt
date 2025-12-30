@@ -1,0 +1,61 @@
+Got it — the YAML error is because **`if: always()` is indented under the `run:` block** (or otherwise not aligned as a step key). In GitHub Actions YAML, `if:` must be at the **same indentation level as `name:` and `run:`** for that step.
+
+Right now it looks like the `if: always()` ended up inside the previous step’s `run: |` area (or misaligned), which makes the whole file invalid.
+
+Here’s a **clean patch drop** that fixes that whole section by rewriting the steps around line ~56 with correct indentation.
+
+**Repo to paste into:** ✅ **Gigster-Garage-MVP**
+
+---
+
+## Patch drop — fix YAML indentation around Debug + Pa11y steps
+
+FILE: .github/workflows/website-audit.yml
+
+```yaml
+      - name: Lighthouse CI - assert
+        run: |
+          npx -y @lhci/cli assert --config=.lighthouserc.json || true
+
+      - name: Lighthouse CI - upload (temporary public storage)
+        run: |
+          npx -y @lhci/cli upload --config=.lighthouserc.json --target=temporary-public-storage || true
+
+      - name: Debug: list lighthouse output dir
+        if: always()
+        run: |
+          echo "Listing .lighthouseci (if present):"
+          ls -la .lighthouseci || true
+
+      - name: Install Pa11y (direct runner)
+        run: |
+          npm i --no-save pa11y
+
+      - name: Run Pa11y (WCAG2AA) — outputs JSON report
+        env:
+          AUDIT_BASE_URL: ${{ secrets.AUDIT_BASE_URL }}
+        run: |
+          echo "Running Pa11y (direct) against: ${AUDIT_BASE_URL}"
+          node scripts/ci/run-pa11y.mjs "${AUDIT_BASE_URL}" > pa11y-report.json
+          echo "Pa11y report saved to pa11y-report.json"
+```
+
+END_FILE
+
+---
+
+## Commit + push
+
+```bash
+git add .github/workflows/website-audit.yml
+git commit -m "CI: fix website-audit.yml indentation (always() + Pa11y steps)"
+git push origin main
+```
+
+## Then run it
+
+GitHub → Actions → Website Audit → **Run workflow** (branch `main`)
+
+You’ll know YAML is fixed when the workflow graph loads and the job actually starts.
+
+If Pa11y still hits sandbox after this, we’ll handle it next — but first we need the workflow to parse.
