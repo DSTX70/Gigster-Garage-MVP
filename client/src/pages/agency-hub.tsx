@@ -172,11 +172,22 @@ export default function AgencyHub() {
       return response.json();
     },
     onSuccess: (data) => {
+      console.log("Image generation response:", data);
       const imageUrl = data.imageUrl || data.url || data.path || data?.data?.imageUrl || "";
-      setGeneratedImageUrl(imageUrl);
-      toast({ title: t('success'), description: t('createdSuccessfully') });
+      if (imageUrl) {
+        // Add cache-busting parameter to ensure image refreshes
+        const urlWithCacheBust = imageUrl.includes('?') 
+          ? `${imageUrl}&_t=${Date.now()}` 
+          : `${imageUrl}?_t=${Date.now()}`;
+        setGeneratedImageUrl(urlWithCacheBust);
+        toast({ title: t('success'), description: t('createdSuccessfully') });
+      } else {
+        console.error("No image URL in response:", data);
+        toast({ title: t('error'), description: "No image URL returned", variant: "destructive" });
+      }
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Image generation error:", error);
       toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     },
   });
