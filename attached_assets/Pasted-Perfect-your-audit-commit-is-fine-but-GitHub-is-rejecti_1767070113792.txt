@@ -1,0 +1,101 @@
+Perfect — your **audit commit is fine**, but GitHub is rejecting the *push* because **somewhere in those 267 commits you’re pushing, there’s a change to**:
+
+`.github/workflows/auto-project-add.yml`
+
+…and you’re authenticating via an OAuth token/credential that **doesn’t have `workflow` scope**. Even if your latest commit didn’t touch that file, GitHub blocks the entire push because the history being pushed includes workflow changes.
+
+Here are the two clean ways out.
+
+---
+
+## Option A (recommended): push with a PAT that has `workflow` scope
+
+**In the GigsterGarage repo:**
+
+```bash
+# 1) Confirm what Git thinks the remote is
+git remote -v
+```
+
+Create a GitHub PAT with scopes:
+
+* `repo`
+* `workflow`
+
+Then:
+
+```bash
+# 2) Swap origin to use PAT auth (HTTPS)
+git remote set-url origin https://<GITHUB_USERNAME>:<PAT>@github.com/DSTX70/Gigster-Garage-MVP.git
+
+# 3) Push
+git push origin main
+```
+
+After it succeeds, remove the token from the stored remote (recommended):
+
+```bash
+# 4) Remove PAT from remote URL (keeps repo URL clean)
+git remote set-url origin https://github.com/DSTX70/Gigster-Garage-MVP.git
+```
+
+---
+
+## Option B: push everything **except** the blocked workflow change(s)
+
+This is safer if you don’t want to use a PAT right now.
+
+### 1) Identify the workflow commits in your outgoing range
+
+```bash
+git log --name-only --oneline origin/main..HEAD -- .github/workflows/auto-project-add.yml
+```
+
+### 2) Create a “clean” branch that excludes workflow file changes
+
+This method **keeps your local history intact** but creates a branch you can push without workflow updates:
+
+```bash
+# create a new branch from origin/main
+git checkout -b push-no-workflows origin/main
+
+# cherry-pick everything EXCEPT commits that touch the workflow file
+# (we'll do it programmatically with a simple manual loop)
+```
+
+The easiest practical approach is:
+
+1. Use the `git log` output above to get the list of commit SHAs that touch `auto-project-add.yml`.
+2. Cherry-pick all commits **in order**, skipping those SHAs.
+
+If you want the exact commands *without* any manual picking, paste the output of:
+
+```bash
+git rev-list --reverse origin/main..HEAD
+```
+
+…and I’ll return a paste-ready cherry-pick sequence that skips only the blocked workflow commits.
+
+---
+
+## Quick sanity checks (worth doing once)
+
+### Confirm your audit files are in the last commit
+
+```bash
+git show --name-only --oneline HEAD
+```
+
+### Confirm the blocked workflow is indeed in your outgoing range
+
+```bash
+git diff --name-only origin/main..HEAD -- .github/workflows
+```
+
+---
+
+### What I recommend you do next
+
+Use **Option A** (PAT with `repo` + `workflow`). It’s the cleanest because you’re trying to push a large backlog (267 commits) and you *do* want workflows in the repo long-term.
+
+If you paste `git remote -v` output (redact token if present), I’ll tell you exactly which credential path you’re currently using (Replit OAuth helper vs cached credential) and the cleanest way to swap it.
