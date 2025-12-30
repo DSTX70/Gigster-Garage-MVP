@@ -84,6 +84,36 @@ function sanitizeForeignKeys(obj: any, fields: string[]): any {
   return sanitized;
 }
 
+// Helper to get or create a Workspace client for Agency Hub → Filing Cabinet mirroring
+async function getOrCreateWorkspaceClientId(params: {
+  isDemo?: boolean;
+  demoSessionId?: string | null;
+  demoUserId?: string | null;
+}) {
+  const name = params.isDemo ? "Workspace (Demo)" : "Workspace";
+
+  const existing = await pool.query(
+    `SELECT id FROM clients
+     WHERE name = $1
+       AND COALESCE(is_demo,false) = COALESCE($2,false)
+       AND COALESCE(demo_session_id,'') = COALESCE($3,'')
+       AND COALESCE(demo_user_id,'') = COALESCE($4,'')
+     LIMIT 1`,
+    [name, !!params.isDemo, params.demoSessionId || "", params.demoUserId || ""]
+  );
+
+  if (existing.rows.length) return existing.rows[0].id as string;
+
+  const created = await pool.query(
+    `INSERT INTO clients (name, status, is_demo, demo_session_id, demo_user_id)
+     VALUES ($1, 'active', $2, $3, $4)
+     RETURNING id`,
+    [name, !!params.isDemo, params.demoSessionId || null, params.demoUserId || null]
+  );
+
+  return created.rows[0].id as string;
+}
+
 // Error tracking for audit purposes
 const errorTracker = {
   errors: new Map<string, number>(),
@@ -5404,6 +5434,37 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
     }
   });
 
+  // Download a marketing saved item as a .md file (so Filing Cabinet has a real fileUrl)
+  app.get("/api/agency/saved-items/:id/file", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.user!.id;
+      const id = req.params.id;
+
+      const result = await pool.query(
+        `SELECT id, type, content, created_at
+         FROM agency_hub_items
+         WHERE id = $1 AND user_id = $2
+         LIMIT 1`,
+        [id, userId]
+      );
+
+      if (!result.rows.length) return res.status(404).send("Not found");
+
+      const row = result.rows[0];
+      if (row.type !== "marketing") {
+        return res.status(400).send("Only marketing items are downloadable as text.");
+      }
+
+      const filename = `agency-hub-marketing-${row.id}.md`;
+      res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      return res.status(200).send(row.content || "");
+    } catch (e: any) {
+      console.error("Error serving saved-item file:", e);
+      return res.status(500).send("Failed to download item");
+    }
+  });
+
   app.post("/api/agency/saved-items", requireAuth, async (req, res) => {
     try {
       const userId = req.session.user!.id;
@@ -5417,21 +5478,32 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         return res.status(400).json({ error: "Type must be 'marketing' or 'visual'" });
       }
 
-      // Count existing items and delete oldest if over 20
+      // Count existing items and delete oldest if over 20 (also delete mirrored client_document)
       const countResult = await pool.query(
         `SELECT COUNT(*)::int as count FROM agency_hub_items WHERE user_id = $1 AND type = $2`,
         [userId, type]
       );
       
       if (countResult.rows[0].count >= 20) {
-        await pool.query(`
-          DELETE FROM agency_hub_items WHERE id IN (
-            SELECT id FROM agency_hub_items 
-            WHERE user_id = $1 AND type = $2 
-            ORDER BY created_at ASC 
-            LIMIT 1
-          )
-        `, [userId, type]);
+        const oldest = await pool.query(
+          `SELECT id FROM agency_hub_items
+           WHERE user_id = $1 AND type = $2
+           ORDER BY created_at ASC
+           LIMIT 1`,
+          [userId, type]
+        );
+
+        if (oldest.rows.length) {
+          const oldestId = oldest.rows[0].id;
+          await pool.query(`DELETE FROM agency_hub_items WHERE id = $1`, [oldestId]);
+          // Delete mirrored document (if present)
+          await pool.query(
+            `DELETE FROM client_documents
+             WHERE metadata->>'sourceType' = 'agency_hub_item'
+               AND metadata->>'sourceId' = $1`,
+            [String(oldestId)]
+          );
+        }
       }
 
       const result = await pool.query(`
@@ -5440,7 +5512,67 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
         RETURNING *
       `, [userId, type, content, style || null, metadata ? JSON.stringify(metadata) : null]);
 
-      res.status(201).json(result.rows[0]);
+      const saved = result.rows[0];
+
+      // Mirror into Filing Cabinet (client_documents)
+      try {
+        const workspaceClientId = await getOrCreateWorkspaceClientId({
+          isDemo: Boolean((req.session.user as any)?.isDemo),
+          demoSessionId: (req.session.user as any)?.demoSessionId || null,
+          demoUserId: (req.session.user as any)?.demoUserId || null,
+        });
+
+        const tags = ["agency-hub", type];
+        const meta = {
+          sourceType: "agency_hub_item",
+          sourceId: String(saved.id),
+          agencyType: type,
+          prompt: metadata?.prompt,
+          visualStyle: metadata?.visualStyle || style || null,
+          createdAt: saved.created_at,
+        };
+
+        const isMarketing = type === "marketing";
+        const fileUrl = isMarketing
+          ? `/api/agency/saved-items/${saved.id}/file`
+          : String(content); // visual content is already a URL
+        const fileName = isMarketing
+          ? `agency-hub-marketing-${saved.id}.md`
+          : `agency-hub-visual-${saved.id}`;
+
+        const mimeType = isMarketing ? "text/markdown" : null;
+        const description = isMarketing
+          ? String(content).slice(0, 180)
+          : `Agency Hub visual (${style || metadata?.visualStyle || "n/a"})`;
+
+        await pool.query(
+          `INSERT INTO client_documents
+           (client_id, name, description, type, file_url, file_name, file_size, mime_type, status, tags, metadata, uploaded_by_id, is_demo, demo_session_id, demo_user_id)
+           VALUES
+           ($1, $2, $3, 'other', $4, $5, $6, $7, 'active', $8::jsonb, $9::jsonb, $10, $11, $12, $13)`,
+          [
+            workspaceClientId,
+            isMarketing ? `Agency Hub (Marketing) — ${new Date().toISOString().slice(0, 10)}` : `Agency Hub (Visual) — ${new Date().toISOString().slice(0, 10)}`,
+            description,
+            fileUrl,
+            fileName,
+            isMarketing ? Buffer.byteLength(String(content || ""), "utf8") : null,
+            mimeType,
+            JSON.stringify(tags),
+            JSON.stringify(meta),
+            userId,
+            Boolean((req.session.user as any)?.isDemo),
+            (req.session.user as any)?.demoSessionId || null,
+            (req.session.user as any)?.demoUserId || null,
+          ]
+        );
+        console.log(`✅ Agency Hub item mirrored to Filing Cabinet: ${fileName}`);
+      } catch (mirrorErr: any) {
+        console.error("⚠️ Failed to mirror Agency Hub item to Filing Cabinet:", mirrorErr.message);
+        // Don't fail the main save if mirroring fails
+      }
+
+      res.status(201).json(saved);
     } catch (error: any) {
       console.error("Error saving item:", error);
       res.status(500).json({ error: "Failed to save item" });
@@ -5460,6 +5592,14 @@ Return a JSON object with a "suggestions" array containing the field objects.`;
       if (result.rowCount === 0) {
         return res.status(404).json({ error: "Item not found" });
       }
+
+      // Delete mirrored document from Filing Cabinet
+      await pool.query(
+        `DELETE FROM client_documents
+         WHERE metadata->>'sourceType' = 'agency_hub_item'
+           AND metadata->>'sourceId' = $1`,
+        [String(itemId)]
+      );
       
       res.json({ message: "Item deleted successfully" });
     } catch (error: any) {

@@ -1,0 +1,256 @@
+✅ **Repo:** **GigsterGarage**
+
+Right now, Agency Hub items are saved to **Postgres** in `agency_hub_items`. Filing Cabinet shows **Client Documents** from `client_documents`, which require a `fileUrl` + `fileName` and (optionally) a `clientId`.
+
+Since you want “**my workspace**” (no client selection), the clean solution is:
+
+1. Create (or reuse) a single **Workspace** client record
+2. Mirror each Agency Hub save into a **client_documents** row pointing to a real `fileUrl`
+3. For marketing text, expose a small API endpoint that serves the content as a downloadable `.md` file
+4. Keep deletes/cleanup in sync
+
+Below is a **paste-ready patch** for `server/routes.ts` in **GigsterGarage**.
+
+---
+
+# PATCH — GigsterGarage
+
+## 1) Add a helper: getOrCreateWorkspaceClientId
+
+✅ **Repo:** GigsterGarage
+✅ **File:** `server/routes.ts` (near other helpers / top of file)
+
+```ts
+async function getOrCreateWorkspaceClientId(params: {
+  isDemo?: boolean;
+  demoSessionId?: string | null;
+  demoUserId?: string | null;
+}) {
+  const name = params.isDemo ? "Workspace (Demo)" : "Workspace";
+
+  const existing = await pool.query(
+    `SELECT id FROM clients
+     WHERE name = $1
+       AND COALESCE(is_demo,false) = COALESCE($2,false)
+       AND COALESCE(demo_session_id,'') = COALESCE($3,'')
+       AND COALESCE(demo_user_id,'') = COALESCE($4,'')
+     LIMIT 1`,
+    [name, !!params.isDemo, params.demoSessionId || "", params.demoUserId || ""]
+  );
+
+  if (existing.rows.length) return existing.rows[0].id as string;
+
+  const created = await pool.query(
+    `INSERT INTO clients (name, status, is_demo, demo_session_id, demo_user_id)
+     VALUES ($1, 'active', $2, $3, $4)
+     RETURNING id`,
+    [name, !!params.isDemo, params.demoSessionId || null, params.demoUserId || null]
+  );
+
+  return created.rows[0].id as string;
+}
+```
+
+---
+
+## 2) Add a “download marketing content” endpoint (fileUrl target)
+
+✅ **Repo:** GigsterGarage
+✅ **File:** `server/routes.ts`
+
+```ts
+// Download a marketing saved item as a .md file (so Filing Cabinet has a real fileUrl)
+app.get("/api/agency/saved-items/:id/file", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user!.id;
+    const id = req.params.id;
+
+    const result = await pool.query(
+      `SELECT id, type, content, created_at
+       FROM agency_hub_items
+       WHERE id = $1 AND user_id = $2
+       LIMIT 1`,
+      [id, userId]
+    );
+
+    if (!result.rows.length) return res.status(404).send("Not found");
+
+    const row = result.rows[0];
+    if (row.type !== "marketing") {
+      return res.status(400).send("Only marketing items are downloadable as text.");
+    }
+
+    const filename = `agency-hub-marketing-${row.id}.md`;
+    res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    return res.status(200).send(row.content || "");
+  } catch (e: any) {
+    console.error("Error serving saved-item file:", e);
+    return res.status(500).send("Failed to download item");
+  }
+});
+```
+
+---
+
+## 3) Patch POST `/api/agency/saved-items` to also create a Client Document
+
+✅ **Repo:** GigsterGarage
+✅ **File:** `server/routes.ts`
+✅ **Replace** only the “delete oldest if over 20” block (so we can delete the mirrored document too), and add the mirror insert after create.
+
+### Replace this section:
+
+```ts
+if (countResult.rows[0].count >= 20) {
+  await pool.query(`
+    DELETE FROM agency_hub_items WHERE id IN (
+      SELECT id FROM agency_hub_items 
+      WHERE user_id = $1 AND type = $2 
+      ORDER BY created_at ASC 
+      LIMIT 1
+    )
+  `, [userId, type]);
+}
+```
+
+### With this (deletes oldest + deletes its mirrored client_document):
+
+```ts
+if (countResult.rows[0].count >= 20) {
+  const oldest = await pool.query(
+    `SELECT id FROM agency_hub_items
+     WHERE user_id = $1 AND type = $2
+     ORDER BY created_at ASC
+     LIMIT 1`,
+    [userId, type]
+  );
+
+  if (oldest.rows.length) {
+    const oldestId = oldest.rows[0].id;
+
+    await pool.query(`DELETE FROM agency_hub_items WHERE id = $1`, [oldestId]);
+
+    // Delete mirrored document (if present)
+    await pool.query(
+      `DELETE FROM client_documents
+       WHERE metadata->>'sourceType' = 'agency_hub_item'
+         AND metadata->>'sourceId' = $1`,
+      [String(oldestId)]
+    );
+  }
+}
+```
+
+### Then, right after:
+
+```ts
+res.status(201).json(result.rows[0]);
+```
+
+Add this block **before returning** (so it mirrors into Filing Cabinet):
+
+```ts
+const saved = result.rows[0];
+
+// Workspace client grouping (single “Workspace” client)
+const workspaceClientId = await getOrCreateWorkspaceClientId({
+  isDemo: Boolean(req.session.user?.isDemo),
+  demoSessionId: req.session.user?.demoSessionId || null,
+  demoUserId: req.session.user?.demoUserId || null,
+});
+
+const tags = ["agency-hub", type];
+const meta = {
+  sourceType: "agency_hub_item",
+  sourceId: String(saved.id),
+  agencyType: type,
+  prompt: metadata?.prompt,
+  visualStyle: metadata?.visualStyle || style || null,
+  createdAt: saved.created_at,
+};
+
+// Filing Cabinet requires fileUrl + fileName
+const isMarketing = type === "marketing";
+const fileUrl = isMarketing
+  ? `/api/agency/saved-items/${saved.id}/file`
+  : String(content); // visual content is already a URL
+const fileName = isMarketing
+  ? `agency-hub-marketing-${saved.id}.md`
+  : `agency-hub-visual-${saved.id}`;
+
+const mimeType = isMarketing ? "text/markdown" : null;
+const description =
+  isMarketing
+    ? String(content).slice(0, 180)
+    : `Agency Hub visual (${style || metadata?.visualStyle || "n/a"})`;
+
+await pool.query(
+  `INSERT INTO client_documents
+   (client_id, name, description, type, file_url, file_name, file_size, mime_type, status, tags, metadata, uploaded_by_id, is_demo, demo_session_id, demo_user_id)
+   VALUES
+   ($1, $2, $3, 'other', $4, $5, $6, $7, 'active', $8::jsonb, $9::jsonb, $10, $11, $12, $13)
+   RETURNING id`,
+  [
+    workspaceClientId,
+    isMarketing ? `Agency Hub (Marketing) — ${new Date().toISOString().slice(0, 10)}` : `Agency Hub (Visual) — ${new Date().toISOString().slice(0, 10)}`,
+    description,
+    fileUrl,
+    fileName,
+    isMarketing ? Buffer.byteLength(String(content || ""), "utf8") : null,
+    mimeType,
+    JSON.stringify(tags),
+    JSON.stringify(meta),
+    userId,
+    Boolean(req.session.user?.isDemo),
+    req.session.user?.demoSessionId || null,
+    req.session.user?.demoUserId || null,
+  ]
+);
+```
+
+Finally, keep your existing response:
+
+```ts
+res.status(201).json(saved);
+```
+
+---
+
+## 4) Patch DELETE `/api/agency/saved-items/:id` to also delete the mirrored document
+
+✅ **Repo:** GigsterGarage
+✅ **File:** `server/routes.ts`
+Inside your existing delete handler (you said it exists), after deleting from `agency_hub_items`, add:
+
+```ts
+await pool.query(
+  `DELETE FROM client_documents
+   WHERE metadata->>'sourceType' = 'agency_hub_item'
+     AND metadata->>'sourceId' = $1`,
+  [String(req.params.id)]
+);
+```
+
+---
+
+# Result
+
+After this patch:
+
+* Saving a marketing concept creates:
+
+  * `agency_hub_items` row
+  * `client_documents` row with `fileUrl=/api/agency/saved-items/:id/file`
+* Filing Cabinet (`/filing-cabinet`) pulls `/api/client-documents` and will now show them.
+* Visual saves also appear (as a document whose `fileUrl` is the image URL).
+
+---
+
+## One small note
+
+Your Filing Cabinet UI likely expects `fileUrl` to exist and be downloadable. This patch ensures marketing items have a real downloadable URL.
+
+---
+
+If you want, paste your existing **DELETE** handler for `/api/agency/saved-items/:id` and I’ll rewrite that section precisely so you can copy/paste it without hunting where to insert.
