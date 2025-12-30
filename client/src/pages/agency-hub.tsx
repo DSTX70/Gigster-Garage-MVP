@@ -81,11 +81,13 @@ export default function AgencyHub() {
   
   // Fetch saved marketing content
   const { data: savedMarketingContent = [] } = useQuery<SavedItem[]>({
-    queryKey: ['/api/agency/saved-items', 'marketing'],
+    queryKey: ['/api/agency/saved-items', { type: 'marketing' }],
     queryFn: async () => {
-      const response = await fetch('/api/agency/saved-items?type=marketing', {
-        credentials: 'include'
+      const response = await fetch(`/api/agency/saved-items?type=marketing&_ts=${Date.now()}`, {
+        credentials: 'include',
+        cache: 'no-store'
       });
+      if (response.status === 304) return [];
       if (!response.ok) return [];
       const data: SavedItemAPI[] = await response.json();
       return data.map(mapSavedItem);
@@ -94,11 +96,13 @@ export default function AgencyHub() {
   
   // Fetch saved visuals
   const { data: savedVisuals = [] } = useQuery<SavedItem[]>({
-    queryKey: ['/api/agency/saved-items', 'visual'],
+    queryKey: ['/api/agency/saved-items', { type: 'visual' }],
     queryFn: async () => {
-      const response = await fetch('/api/agency/saved-items?type=visual', {
-        credentials: 'include'
+      const response = await fetch(`/api/agency/saved-items?type=visual&_ts=${Date.now()}`, {
+        credentials: 'include',
+        cache: 'no-store'
       });
+      if (response.status === 304) return [];
       if (!response.ok) return [];
       const data: SavedItemAPI[] = await response.json();
       return data.map(mapSavedItem);
@@ -148,18 +152,15 @@ export default function AgencyHub() {
   // Save mutation for marketing content
   const saveMarketingMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await apiRequest('/api/agency/saved-items', {
-        method: 'POST',
-        body: JSON.stringify({
-          type: 'marketing',
-          content,
-          metadata: { prompt: createPrompt }
-        }),
+      const response = await apiRequest('POST', '/api/agency/saved-items', {
+        type: 'marketing',
+        content,
+        metadata: { prompt: createPrompt }
       });
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', 'marketing'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', { type: 'marketing' }] });
       toast({ title: t('success'), description: t('savedSuccessfully') });
     },
     onError: () => {
@@ -170,19 +171,16 @@ export default function AgencyHub() {
   // Save mutation for visuals
   const saveVisualMutation = useMutation({
     mutationFn: async (imageUrl: string) => {
-      const response = await apiRequest('/api/agency/saved-items', {
-        method: 'POST',
-        body: JSON.stringify({
-          type: 'visual',
-          content: imageUrl,
-          style: visualStyle,
-          metadata: { prompt: createPrompt, visualStyle }
-        }),
+      const response = await apiRequest('POST', '/api/agency/saved-items', {
+        type: 'visual',
+        content: imageUrl,
+        style: visualStyle,
+        metadata: { prompt: createPrompt, visualStyle }
       });
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', 'visual'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', { type: 'visual' }] });
       toast({ title: t('success'), description: t('savedSuccessfully') });
     },
     onError: () => {
@@ -193,11 +191,11 @@ export default function AgencyHub() {
   // Delete mutation
   const deleteSavedItemMutation = useMutation({
     mutationFn: async ({ id, type }: { id: string; type: 'marketing' | 'visual' }) => {
-      await apiRequest(`/api/agency/saved-items/${id}`, { method: 'DELETE' });
+      await apiRequest('DELETE', `/api/agency/saved-items/${id}`);
       return { type };
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', variables.type] });
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', { type: variables.type }] });
       toast({ title: t('success'), description: t('deletedSuccessfully') });
     },
     onError: () => {

@@ -1,0 +1,93 @@
+✅ Got it — and thanks for pasting the exact handler. This is now very clear.
+
+**Repo:** **GigsterGarage** (client)
+**File:** `client/src/pages/agency-hub.tsx`
+
+### What’s actually wrong (high confidence)
+
+Your **save mutations** use `apiRequest()` correctly, and the server returns the row (201 JSON). 👍
+
+The **refresh queries** are the problem:
+
+* You invalidate with: `queryKey: ['/api/agency/saved-items', 'marketing']`
+* But your fetch code hits: `fetch('/api/agency/saved-items?type=marketing', ...)`
+
+Those are **two different query keys/URLs**, so invalidation may not refresh the data you think it’s refreshing. Also, your GET fetch uses raw `fetch` and is vulnerable to caching/304 behavior.
+
+### Fix: make query keys match the URL exactly + disable cache for GET
+
+Do this in **GigsterGarage**:
+
+1. Change your invalidations to match the actual query key you use for the GET request.
+2. Update the GET fetch to `cache: 'no-store'` and handle 304 safely.
+
+---
+
+## Patch (GigsterGarage)
+
+### A) Update invalidation keys
+
+Replace:
+
+```ts
+queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', 'marketing'] });
+```
+
+with:
+
+```ts
+queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items?type=marketing'] });
+```
+
+And replace:
+
+```ts
+queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', 'visual'] });
+```
+
+with:
+
+```ts
+queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items?type=visual'] });
+```
+
+### B) Update the saved-items GET fetch (marketing + visual)
+
+Wherever you have:
+
+```ts
+const response = await fetch('/api/agency/saved-items?type=marketing', {
+  credentials: 'include'
+});
+```
+
+Change to:
+
+```ts
+const url = `/api/agency/saved-items?type=marketing&_ts=${Date.now()}`;
+const response = await fetch(url, {
+  credentials: "include",
+  cache: "no-store",
+});
+if (response.status === 304) return []; // keep current state / no change
+if (!response.ok) throw new Error(await response.text());
+return await response.json();
+```
+
+Do the same for `type=visual`.
+
+---
+
+## Why this likely fixes your “Error occurred” toast
+
+Right now the toast is likely coming from the saved-items refresh path throwing (304/empty body, cache quirks, or stale query mismatch). Aligning keys + forcing 200 JSON responses makes the refresh deterministic.
+
+---
+
+## One more thing to confirm (quick)
+
+In your `apiRequest` helper, make sure it sets `credentials: 'include'` (yours does) and handles errors by reading text — you’re good.
+
+---
+
+If you paste the saved-items **useQuery** blocks from `agency-hub.tsx` (the parts that load marketing/visual saved items), I can give you an exact “replace this block” patch so it’s copy/paste clean and consistent with TanStack query keys.
