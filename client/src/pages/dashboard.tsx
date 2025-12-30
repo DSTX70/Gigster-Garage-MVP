@@ -28,6 +28,8 @@ import {
 import { format, isAfter, startOfDay } from "date-fns";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { Settings } from "lucide-react";
 import type { User as UserType, Task } from "@shared/schema";
 
 interface UserWithTasks extends UserType {
@@ -36,6 +38,7 @@ interface UserWithTasks extends UserType {
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
+  const { isAdmin } = useAuth();
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserType[]>({
@@ -290,6 +293,18 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="bg-[#004C6D] text-white border-[#004C6D] hover:bg-[#0B1D3A] hover:border-[#0B1D3A]"
+                onClick={() => navigate("/admin")}
+                data-testid="button-admin-panel"
+              >
+                <Settings className="h-4 w-4 mr-1" />
+                Admin Panel
+              </Button>
+            )}
             <Button 
               variant="outline" 
               size="sm"

@@ -5,6 +5,9 @@
     "wait": 1000,
     "includeNotices": true,
     "includeWarnings": true,
-    "reporter": "cli"
+    "reporter": "cli",
+    "chromeLaunchConfig": {
+      "args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+    }
   }
 }
