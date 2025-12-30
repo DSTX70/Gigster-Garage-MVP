@@ -631,7 +631,7 @@ Fields appear in create/edit forms:
 
 ### AI Proposal Generator
 
-Create professional proposals with AI:
+Create professional proposals with AI that automatically incorporates your business profile:
 
 1. Navigate to **Proposals** page
 2. Click **"Generate with AI"**
@@ -645,21 +645,44 @@ Create professional proposals with AI:
 5. AI creates:
    - Executive summary
    - Scope of work
-   - Deliverables
+   - Deliverables (6-8 focused items)
    - Timeline
    - Pricing breakdown
    - Terms and conditions
 6. **Review and Edit**: Customize AI output
 7. **Save as Draft** or **Send to Client**
 
+### Profile-Aware AI Generation
+
+The AI automatically uses your profile information to create personalized, industry-specific content:
+
+**Profile Fields Used**:
+- **Industry**: Uses relevant terminology and sector-specific language
+- **Business Type**: Tailors content to your business model
+- **Target Market**: Incorporates audience-appropriate messaging
+- **Services**: Highlights your core offerings and expertise
+- **Specialty**: Emphasizes your unique value proposition
+
+**Best Results**: Complete your profile in **Settings → Profile** to ensure AI-generated proposals reflect your expertise and use appropriate industry jargon.
+
 ### AI Content Features
 
 - **Instant Proposal**: Full proposal in seconds
-- **Professional Tone**: Business-appropriate language
-- **Structured Format**: Organized sections
+- **Professional Tone**: Direct, confident business language
+- **Concise Output**: No filler or buzzwords - every word earns its place
+- **Industry Context**: Uses your profile to generate relevant terminology
+- **Structured Format**: Organized sections with clear deliverables
 - **Customizable**: Edit before sending
 - **Templates**: Save AI output as templates
 - **Cost Control**: Usage limits by plan tier
+
+### Content Quality Standards
+
+AI-generated content follows these principles:
+- **Brevity**: Descriptions stay within 150-250 words
+- **Specificity**: Deliverables are measurable and concrete (6-8 items max)
+- **Professionalism**: Active voice, confident tone, no excessive adjectives
+- **Clarity**: Terms and conditions under 400 words, clear language
 
 ### AI Usage Limits
 
