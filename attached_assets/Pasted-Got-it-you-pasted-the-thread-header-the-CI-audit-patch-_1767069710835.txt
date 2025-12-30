@@ -1,0 +1,153 @@
+Got it — you pasted the thread header + the CI audit patch, but the **workflow file needs to be in a proper `FILE:` patch-drop block** (with fences) so it can be applied cleanly.
+
+Below is the **clean, paste-ready patch drop** (and yes: **paste into the *GigsterGarage* repo**).
+
+---
+
+## ✅ Patch drop — paste into **GigsterGarage** repo
+
+FILE: .github/workflows/website-audit.yml
+
+```yaml
+name: Website Audit (Lighthouse + a11y)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+concurrency:
+  group: website-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify AUDIT_BASE_URL secret
+        env:
+          AUDIT_BASE_URL: ${{ secrets.AUDIT_BASE_URL }}
+        run: |
+          if [ -z "${AUDIT_BASE_URL}" ]; then
+            echo "ERROR: Missing GitHub Actions secret AUDIT_BASE_URL"
+            echo "Set it under: Repo Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+          echo "AUDIT_BASE_URL is set: ${AUDIT_BASE_URL}"
+
+      - name: Lighthouse CI (uses .lighthouserc.json for assertions)
+        env:
+          AUDIT_BASE_URL: ${{ secrets.AUDIT_BASE_URL }}
+        run: |
+          echo "Running Lighthouse CI against: ${AUDIT_BASE_URL}"
+          npx -y @lhci/cli autorun \
+            --config=.lighthouserc.json \
+            --collect.url="${AUDIT_BASE_URL}" \
+            --collect.numberOfRuns=3 \
+            --upload.target=temporary-public-storage
+
+      - name: Pa11y CI (WCAG2AA)
+        env:
+          AUDIT_BASE_URL: ${{ secrets.AUDIT_BASE_URL }}
+        run: |
+          echo "Running Pa11y CI against: ${AUDIT_BASE_URL}"
+          npx -y pa11y-ci "${AUDIT_BASE_URL}" --config .pa11yci.json
+
+      - name: Upload Lighthouse artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouseci-artifacts
+          path: .lighthouseci
+          if-no-files-found: ignore
+```
+
+END_FILE
+
+FILE: .lighthouserc.json
+
+```json
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "onlyCategories": ["performance", "accessibility", "best-practices", "seo"]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:accessibility": ["warn", { "minScore": 0.9 }],
+        "categories:best-practices": ["warn", { "minScore": 0.9 }],
+        "categories:seo": ["warn", { "minScore": 0.9 }],
+        "categories:performance": ["warn", { "minScore": 0.7 }]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}
+```
+
+END_FILE
+
+FILE: .pa11yci.json
+
+```json
+{
+  "defaults": {
+    "standard": "WCAG2AA",
+    "timeout": 60000,
+    "wait": 1000,
+    "includeNotices": true,
+    "includeWarnings": true,
+    "reporter": "cli"
+  }
+}
+```
+
+END_FILE
+
+---
+
+## 🔑 Reminder: required GitHub Actions secret
+
+In **GigsterGarage GitHub repo** → Settings → Secrets and variables → Actions → **New repository secret**:
+
+* **Name:** `AUDIT_BASE_URL`
+* **Value:** `https://gigster-garage-pilot-11225--dustinsparks1.replit.app`
+
+---
+
+## 🚧 Unblock push (workflows-scope) — quickest safe commands
+
+### Option A: PAT with `repo` + `workflow` scope
+
+```bash
+git remote set-url origin https://<GITHUB_USERNAME>:<PAT>@github.com/<ORG_OR_USER>/<REPO>.git
+git push origin main
+```
+
+### Option B: push everything *except* workflows (then add later)
+
+```bash
+git restore --staged .github/workflows
+git checkout -- .github/workflows
+git push origin main
+```
+
+If you want, paste the exact failing file path from the error (it’ll name the workflow) and I’ll tell you whether to **revert/split** or **PAT-push** based on what changed.
