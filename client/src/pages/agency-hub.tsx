@@ -18,7 +18,7 @@ import { apiRequest } from "@/lib/queryClient";
 interface SavedItem {
   id: string;
   content: string;
-  type: 'marketing' | 'visual';
+  type: 'marketing' | 'visual' | 'promote' | 'track';
   createdAt: string;
   metadata?: { prompt?: string; visualStyle?: string; };
 }
@@ -26,7 +26,7 @@ interface SavedItem {
 interface SavedItemAPI {
   id: string;
   content: string;
-  type: 'marketing' | 'visual';
+  type: 'marketing' | 'visual' | 'promote' | 'track';
   created_at: string;
   metadata?: { prompt?: string; visualStyle?: string; };
 }
@@ -75,6 +75,8 @@ export default function AgencyHub() {
   // Saved items state - using React Query for persistence
   const [showSavedMarketing, setShowSavedMarketing] = useState(false);
   const [showSavedVisuals, setShowSavedVisuals] = useState(false);
+  const [showSavedPromote, setShowSavedPromote] = useState(false);
+  const [showSavedTrack, setShowSavedTrack] = useState(false);
   const queryClient = useQueryClient();
 
   const { toast } = useToast();
@@ -99,6 +101,36 @@ export default function AgencyHub() {
     queryKey: ['/api/agency/saved-items', { type: 'visual' }],
     queryFn: async () => {
       const response = await fetch(`/api/agency/saved-items?type=visual&_ts=${Date.now()}`, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      if (response.status === 304) return [];
+      if (!response.ok) return [];
+      const data: SavedItemAPI[] = await response.json();
+      return data.map(mapSavedItem);
+    },
+  });
+
+  // Fetch saved promote content
+  const { data: savedPromoteContent = [] } = useQuery<SavedItem[]>({
+    queryKey: ['/api/agency/saved-items', { type: 'promote' }],
+    queryFn: async () => {
+      const response = await fetch(`/api/agency/saved-items?type=promote&_ts=${Date.now()}`, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      if (response.status === 304) return [];
+      if (!response.ok) return [];
+      const data: SavedItemAPI[] = await response.json();
+      return data.map(mapSavedItem);
+    },
+  });
+
+  // Fetch saved track content
+  const { data: savedTrackContent = [] } = useQuery<SavedItem[]>({
+    queryKey: ['/api/agency/saved-items', { type: 'track' }],
+    queryFn: async () => {
+      const response = await fetch(`/api/agency/saved-items?type=track&_ts=${Date.now()}`, {
         credentials: 'include',
         cache: 'no-store'
       });
@@ -187,10 +219,48 @@ export default function AgencyHub() {
       toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
     }
   });
+
+  // Save mutation for promote content
+  const savePromoteMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await apiRequest('POST', '/api/agency/saved-items', {
+        type: 'promote',
+        content,
+        metadata: { prompt: promotePrompt }
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', { type: 'promote' }] });
+      toast({ title: t('success'), description: t('savedSuccessfully') });
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
+    }
+  });
+
+  // Save mutation for track content
+  const saveTrackMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await apiRequest('POST', '/api/agency/saved-items', {
+        type: 'track',
+        content,
+        metadata: { prompt: trackData }
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/agency/saved-items', { type: 'track' }] });
+      toast({ title: t('success'), description: t('savedSuccessfully') });
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('errorOccurred'), variant: "destructive" });
+    }
+  });
   
   // Delete mutation
   const deleteSavedItemMutation = useMutation({
-    mutationFn: async ({ id, type }: { id: string; type: 'marketing' | 'visual' }) => {
+    mutationFn: async ({ id, type }: { id: string; type: 'marketing' | 'visual' | 'promote' | 'track' }) => {
       await apiRequest('DELETE', `/api/agency/saved-items/${id}`);
       return { type };
     },
@@ -214,8 +284,18 @@ export default function AgencyHub() {
     saveVisualMutation.mutate(generatedImageUrl);
   };
 
-  const deleteSavedItem = (id: string, type: 'marketing' | 'visual') => {
+  const deleteSavedItem = (id: string, type: 'marketing' | 'visual' | 'promote' | 'track') => {
     deleteSavedItemMutation.mutate({ id, type });
+  };
+
+  const savePromoteContent = () => {
+    if (!promoteContent) return;
+    savePromoteMutation.mutate(promoteContent);
+  };
+
+  const saveTrackContent = () => {
+    if (!trackInsights) return;
+    saveTrackMutation.mutate(trackInsights);
   };
 
   // AI Write function for generating marketing concept prompts
@@ -789,24 +869,77 @@ export default function AgencyHub() {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Promotion Strategy</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Promotion Strategy</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSavedPromote(!showSavedPromote)}
+                      className="text-gray-500 hover:text-gray-700"
+                      data-testid="button-toggle-saved-promote"
+                    >
+                      <History className="h-4 w-4 mr-1" />
+                      <Badge variant="secondary">{savedPromoteContent.length}</Badge>
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
+                  {showSavedPromote && savedPromoteContent.length > 0 && (
+                    <div className="mb-4 border rounded-lg p-3 bg-gray-50">
+                      <h4 className="text-sm font-medium mb-2">Saved Strategies ({savedPromoteContent.length})</h4>
+                      <ScrollArea className="h-[200px]">
+                        <div className="space-y-2">
+                          {savedPromoteContent.map(item => (
+                            <div key={item.id} className="relative group p-2 border rounded bg-white hover:border-blue-500 cursor-pointer">
+                              <pre 
+                                className="whitespace-pre-wrap text-xs line-clamp-3"
+                                onClick={() => setPromoteContent(item.content)}
+                              >
+                                {item.content.substring(0, 150)}...
+                              </pre>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {new Date(item.createdAt).toLocaleDateString()}
+                              </div>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+                                onClick={() => deleteSavedItem(item.id, 'promote')}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
                   {promoteContent ? (
                     <div className="space-y-4">
                       <div className="bg-gray-50 p-4 rounded-lg border">
                         <pre className="whitespace-pre-wrap text-sm">{promoteContent}</pre>
                       </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => copyToClipboard(promoteContent)}
-                        className="w-full"
-                        data-testid="button-copy-promote"
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy Strategy
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => copyToClipboard(promoteContent)}
+                          className="flex-1"
+                          data-testid="button-copy-promote"
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Strategy
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={savePromoteContent}
+                          className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          data-testid="button-save-promote"
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          Save
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center text-gray-500 py-8">
@@ -864,24 +997,77 @@ export default function AgencyHub() {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Marketing Insights</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Marketing Insights</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSavedTrack(!showSavedTrack)}
+                      className="text-gray-500 hover:text-gray-700"
+                      data-testid="button-toggle-saved-track"
+                    >
+                      <History className="h-4 w-4 mr-1" />
+                      <Badge variant="secondary">{savedTrackContent.length}</Badge>
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
+                  {showSavedTrack && savedTrackContent.length > 0 && (
+                    <div className="mb-4 border rounded-lg p-3 bg-gray-50">
+                      <h4 className="text-sm font-medium mb-2">Saved Insights ({savedTrackContent.length})</h4>
+                      <ScrollArea className="h-[200px]">
+                        <div className="space-y-2">
+                          {savedTrackContent.map(item => (
+                            <div key={item.id} className="relative group p-2 border rounded bg-white hover:border-blue-500 cursor-pointer">
+                              <pre 
+                                className="whitespace-pre-wrap text-xs line-clamp-3"
+                                onClick={() => setTrackInsights(item.content)}
+                              >
+                                {item.content.substring(0, 150)}...
+                              </pre>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {new Date(item.createdAt).toLocaleDateString()}
+                              </div>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+                                onClick={() => deleteSavedItem(item.id, 'track')}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
                   {trackInsights ? (
                     <div className="space-y-4">
                       <div className="bg-gray-50 p-4 rounded-lg border">
                         <pre className="whitespace-pre-wrap text-sm">{trackInsights}</pre>
                       </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => copyToClipboard(trackInsights)}
-                        className="w-full"
-                        data-testid="button-copy-insights"
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy Insights
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => copyToClipboard(trackInsights)}
+                          className="flex-1"
+                          data-testid="button-copy-insights"
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Insights
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={saveTrackContent}
+                          className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          data-testid="button-save-track"
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          Save
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center text-gray-500 py-8">
