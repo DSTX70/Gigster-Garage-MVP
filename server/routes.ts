@@ -26,6 +26,7 @@ import { workflowTemplatesService } from "./workflowTemplatesService";
 import { sendProposalResponseNotification, createProposalRevision, getProposalApprovalStats } from "./proposalWorkflowService";
 import { contractManagementService } from "./contractManagementService";
 import { backupRoutes } from "./backup-routes";
+import { pushAdminDiagEvent } from "./routes_dth_readonly";
 import { aiInsightsService } from "./ai-insights-service";
 import { CollaborationService, collaborationService } from "./collaboration-service";
 import { advancedReportingService } from "./advanced-reporting-service";
@@ -604,6 +605,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch {
       res.status(500).json({ success: false, message: 'Failed to fetch error summary' });
     }
+  });
+
+  app.post("/api/admin/diagnostics", requireAuth, (req, res) => {
+    const body = req.body || {};
+    const events = Array.isArray(body.events) ? body.events : [];
+
+    const now = new Date().toISOString();
+    for (const e of events.slice(0, 100)) {
+      pushAdminDiagEvent({
+        ts: typeof e?.ts === "string" ? e.ts : now,
+        type: String(e?.type || "unknown"),
+        message: e?.message ? String(e.message) : undefined,
+        url: e?.url ? String(e.url) : undefined,
+        method: e?.method ? String(e.method) : undefined,
+        status: typeof e?.status === "number" ? e.status : undefined,
+        detail: e?.detail ?? undefined,
+      });
+    }
+
+    return res.json({ ok: true, received: events.length, stored: Math.min(events.length, 100) });
   });
 
   // Database health endpoint with pool monitoring

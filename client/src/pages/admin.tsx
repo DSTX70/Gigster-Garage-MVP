@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminDiagnosticsCapture } from "@/hooks/useAdminDiagnosticsCapture";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { Plus, Trash2, Users, UserPlus, ArrowLeft, CheckCheck, ExternalLink, Search, FileText } from "lucide-react";
@@ -108,6 +109,7 @@ function DreamTeamHubPanel() {
 }
 
 export default function Admin() {
+  useAdminDiagnosticsCapture();
   const [, navigate] = useLocation();
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({

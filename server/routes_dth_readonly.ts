@@ -102,4 +102,14 @@ export function registerDthReadonlyRoutes(app: Express) {
     const files = await Promise.all(paths.map((p: string) => readOneFile(String(p))));
     res.json({ ok: true, files });
   });
+
+  app.get("/api/dth/diagnostics", (req: any, res: any) => {
+    if (!requireToken(req, res)) return;
+
+    res.json({
+      ok: true,
+      count: diagBuffer.length,
+      events: snapshotDiag(),
+    });
+  });
 }
