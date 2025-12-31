@@ -4,6 +4,28 @@ import { promises as fs } from "node:fs";
 
 type FileResult = { path: string; ok: boolean; content?: string; error?: string };
 
+type GGDiagEvent = {
+  ts: string;
+  type: string;
+  message?: string;
+  url?: string;
+  method?: string;
+  status?: number;
+  detail?: any;
+};
+
+const MAX_DIAG_EVENTS = 80;
+const diagBuffer: GGDiagEvent[] = [];
+
+export function pushAdminDiagEvent(evt: GGDiagEvent) {
+  diagBuffer.push(evt);
+  while (diagBuffer.length > MAX_DIAG_EVENTS) diagBuffer.shift();
+}
+
+function snapshotDiag() {
+  return diagBuffer.slice(-MAX_DIAG_EVENTS);
+}
+
 const MAX_BYTES = 250_000;
 
 const ALLOWED_PREFIXES = ["client/", "server/", "shared/", "docs/"];
