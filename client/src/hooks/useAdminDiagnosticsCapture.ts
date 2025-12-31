@@ -1,7 +1,6 @@
-import { useEffect, useRef } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { useEffect } from "react";
 
-type DiagEvent = {
+type AdminDiagEvent = {
   ts: string;
   type: string;
   message?: string;
@@ -11,66 +10,121 @@ type DiagEvent = {
   detail?: any;
 };
 
-const FLUSH_INTERVAL_MS = 10_000;
-const MAX_BUFFER = 50;
-
-let buffer: DiagEvent[] = [];
-let flushTimer: ReturnType<typeof setInterval> | null = null;
-
-function pushEvent(evt: Omit<DiagEvent, "ts">) {
-  buffer.push({ ts: new Date().toISOString(), ...evt });
-  if (buffer.length > MAX_BUFFER) buffer.shift();
-}
-
-async function flushEvents() {
-  if (buffer.length === 0) return;
-  const toSend = buffer.slice();
-  buffer = [];
-  try {
-    await apiRequest("POST", "/api/admin/diagnostics", { events: toSend });
-  } catch {
-    buffer = toSend.concat(buffer).slice(-MAX_BUFFER);
-  }
-}
-
-function startCapture() {
-  if (flushTimer) return;
-
-  const originalFetch = window.fetch;
-  window.fetch = async function (...args) {
-    const url = typeof args[0] === "string" ? args[0] : (args[0] as Request)?.url || "";
-    const method = (args[1]?.method || "GET").toUpperCase();
-    try {
-      const res = await originalFetch.apply(this, args);
-      if (!res.ok && url.startsWith("/api")) {
-        pushEvent({ type: "api_error", url, method, status: res.status });
-      }
-      return res;
-    } catch (err: any) {
-      pushEvent({ type: "fetch_error", url, method, message: err?.message });
-      throw err;
-    }
-  };
-
-  window.addEventListener("error", (e) => {
-    pushEvent({ type: "js_error", message: e.message, url: e.filename, detail: { line: e.lineno, col: e.colno } });
-  });
-
-  window.addEventListener("unhandledrejection", (e) => {
-    pushEvent({ type: "unhandled_rejection", message: String(e.reason) });
-  });
-
-  flushTimer = setInterval(flushEvents, FLUSH_INTERVAL_MS);
-}
-
 export function useAdminDiagnosticsCapture() {
-  const started = useRef(false);
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    startCapture();
+    const buffer: AdminDiagEvent[] = [];
+    const MAX = 50;
+
+    const push = (e: AdminDiagEvent) => {
+      buffer.push(e);
+      while (buffer.length > MAX) buffer.shift();
+    };
+
+    const origConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      try {
+        push({
+          ts: new Date().toISOString(),
+          type: "console.error",
+          message: args.map(String).join(" "),
+          detail: { args },
+        });
+      } catch {}
+      origConsoleError(...args);
+    };
+
+    const onError = (ev: any) => {
+      try {
+        push({
+          ts: new Date().toISOString(),
+          type: "window.onerror",
+          message: String(ev?.message || "error"),
+          detail: {
+            filename: ev?.filename,
+            lineno: ev?.lineno,
+            colno: ev?.colno,
+          },
+        });
+      } catch {}
+    };
+
+    const onRejection = (ev: PromiseRejectionEvent) => {
+      try {
+        push({
+          ts: new Date().toISOString(),
+          type: "unhandledrejection",
+          message: String((ev as any)?.reason?.message || (ev as any)?.reason || "unhandled rejection"),
+          detail: { reason: (ev as any)?.reason },
+        });
+      } catch {}
+    };
+
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+
+    const origFetch = window.fetch.bind(window);
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : String((input as Request)?.url || input);
+      const method = (init?.method || "GET").toUpperCase();
+      try {
+        const res = await origFetch(input, init);
+        if (!res.ok) {
+          let bodySnippet = "";
+          try {
+            const clone = res.clone();
+            bodySnippet = (await clone.text()).slice(0, 2000);
+          } catch {}
+          push({
+            ts: new Date().toISOString(),
+            type: "fetch.failed",
+            url,
+            method,
+            status: res.status,
+            message: `HTTP ${res.status} ${method} ${url}`,
+            detail: { statusText: res.statusText, bodySnippet },
+          });
+        }
+        return res;
+      } catch (err: any) {
+        push({
+          ts: new Date().toISOString(),
+          type: "fetch.exception",
+          url,
+          method,
+          message: String(err?.message || err || "fetch exception"),
+          detail: { err },
+        });
+        throw err;
+      }
+    };
+
+    const flush = async () => {
+      if (!buffer.length) return;
+      const batch = buffer.splice(0, buffer.length);
+      try {
+        await origFetch("/api/admin/diagnostics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ events: batch }),
+        });
+      } catch {
+        buffer.unshift(...batch);
+        while (buffer.length > MAX) buffer.shift();
+      }
+    };
+
+    const interval = window.setInterval(flush, 5000);
+    const onBeforeUnload = () => void flush();
+    window.addEventListener("beforeunload", onBeforeUnload);
+
     return () => {
-      flushEvents();
+      console.error = origConsoleError;
+      window.fetch = origFetch;
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.clearInterval(interval);
     };
   }, []);
 }
