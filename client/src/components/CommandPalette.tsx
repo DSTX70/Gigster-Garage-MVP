@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -32,6 +32,12 @@ import {
   Bot,
   Briefcase,
   TrendingUp,
+  FileCheck,
+  Presentation,
+  UserPlus,
+  MessageSquare,
+  Activity,
+  Inbox,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,7 +53,7 @@ interface RecentPage {
 }
 
 // Icon mapping for rehydration
-const iconMap: Record<string, React.ReactNode> = {
+const iconMap: Record<string, ReactNode> = {
   Clock: <Clock className="h-4 w-4" />,
   FileText: <FileText className="h-4 w-4" />,
   Users: <Users className="h-4 w-4" />,
@@ -62,6 +68,12 @@ const iconMap: Record<string, React.ReactNode> = {
   Bot: <Bot className="h-4 w-4" />,
   TrendingUp: <TrendingUp className="h-4 w-4" />,
   Settings: <Settings className="h-4 w-4" />,
+  FileCheck: <FileCheck className="h-4 w-4" />,
+  Presentation: <Presentation className="h-4 w-4" />,
+  UserPlus: <UserPlus className="h-4 w-4" />,
+  MessageSquare: <MessageSquare className="h-4 w-4" />,
+  Activity: <Activity className="h-4 w-4" />,
+  Inbox: <Inbox className="h-4 w-4" />,
 };
 
 interface SearchResult {
@@ -227,8 +239,56 @@ export function CommandPalette() {
         .slice(0, 5)
     : [];
 
-  // Quick actions
-  const quickActions = [
+  // Quick actions - Create documents
+  const createActions = [
+    {
+      icon: <FileText className="h-4 w-4" />,
+      label: "Create Invoice",
+      action: () => {
+        savePageVisit("Create Invoice", "/create-invoice", "FileText");
+        navigate("/create-invoice");
+        setOpen(false);
+      },
+      shortcut: "I",
+    },
+    {
+      icon: <FileSignature className="h-4 w-4" />,
+      label: "Create Proposal",
+      action: () => {
+        savePageVisit("Create Proposal", "/create-proposal", "FileSignature");
+        navigate("/create-proposal");
+        setOpen(false);
+      },
+      shortcut: "P",
+    },
+    {
+      icon: <FileCheck className="h-4 w-4" />,
+      label: "Create Contract",
+      action: () => {
+        savePageVisit("Create Contract", "/create-contract", "FileCheck");
+        navigate("/create-contract");
+        setOpen(false);
+      },
+      shortcut: "C",
+    },
+    {
+      icon: <Presentation className="h-4 w-4" />,
+      label: "Create Presentation",
+      action: () => {
+        savePageVisit("Create Presentation", "/create-presentation", "Presentation");
+        navigate("/create-presentation");
+        setOpen(false);
+      },
+    },
+    {
+      icon: <UserPlus className="h-4 w-4" />,
+      label: "New Client",
+      action: () => {
+        savePageVisit("Clients", "/clients", "UserPlus");
+        navigate("/clients");
+        setOpen(false);
+      },
+    },
     {
       icon: <Plus className="h-4 w-4" />,
       label: "Create Task",
@@ -247,24 +307,10 @@ export function CommandPalette() {
         setOpen(false);
       },
     },
-    {
-      icon: <FileText className="h-4 w-4" />,
-      label: "Create Invoice",
-      action: () => {
-        savePageVisit("Create Invoice", "/create-invoice", "FileText");
-        navigate("/create-invoice");
-        setOpen(false);
-      },
-    },
-    {
-      icon: <FileSignature className="h-4 w-4" />,
-      label: "Create Proposal",
-      action: () => {
-        savePageVisit("Create Proposal", "/create-proposal", "FileSignature");
-        navigate("/create-proposal");
-        setOpen(false);
-      },
-    },
+  ];
+
+  // Quick actions - Utilities
+  const quickActions = [
     {
       icon: activeTimer ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />,
       label: activeTimer ? "Stop Timer" : "Start Timer",
@@ -276,6 +322,42 @@ export function CommandPalette() {
         }
       },
       shortcut: "T",
+    },
+    {
+      icon: <Inbox className="h-4 w-4" />,
+      label: "Coach Inbox",
+      action: () => {
+        savePageVisit("Coach Inbox", "/gigster-coach/suggestions", "Inbox");
+        navigate("/gigster-coach/suggestions");
+        setOpen(false);
+      },
+    },
+    {
+      icon: <MessageSquare className="h-4 w-4" />,
+      label: "Open Coach",
+      action: () => {
+        savePageVisit("Gigster Coach", "/gigster-coach", "MessageSquare");
+        navigate("/gigster-coach");
+        setOpen(false);
+      },
+    },
+    {
+      icon: <Activity className="h-4 w-4" />,
+      label: "System Status",
+      action: () => {
+        savePageVisit("System Status", "/system-status", "Activity");
+        navigate("/system-status");
+        setOpen(false);
+      },
+    },
+    {
+      icon: <Settings className="h-4 w-4" />,
+      label: "Settings",
+      action: () => {
+        savePageVisit("Settings", "/settings", "Settings");
+        navigate("/settings");
+        setOpen(false);
+      },
     },
   ];
 
@@ -354,10 +436,10 @@ export function CommandPalette() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
 
-        {/* Quick Actions */}
+        {/* Create Actions */}
         {!search && (
-          <CommandGroup heading="Quick Actions">
-            {quickActions.map((action) => (
+          <CommandGroup heading="Create">
+            {createActions.map((action) => (
               <CommandItem
                 key={action.label}
                 onSelect={action.action}
@@ -373,6 +455,30 @@ export function CommandPalette() {
               </CommandItem>
             ))}
           </CommandGroup>
+        )}
+
+        {/* Quick Actions */}
+        {!search && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Quick Actions">
+              {quickActions.map((action) => (
+                <CommandItem
+                  key={action.label}
+                  onSelect={action.action}
+                  data-testid={`command-${action.label.toLowerCase().replace(/\s+/g, "-")}`}
+                >
+                  {action.icon}
+                  <span>{action.label}</span>
+                  {action.shortcut && (
+                    <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                      {action.shortcut}
+                    </kbd>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
         )}
 
         {/* Recent Pages */}
