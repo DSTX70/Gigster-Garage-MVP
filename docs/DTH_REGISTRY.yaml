@@ -1,6 +1,6 @@
 registry:
   id: "dth_registry_gigster_garage_v1"
-  version: "1.1.0"
+  version: "1.2.0"
   updated_at: "2025-12-31"
   owners: ["OS"]
   applies_to_repos: ["GigsterGarage", "DreamTeamHub", "AgencyHub"]
@@ -22,6 +22,10 @@ operating_model:
     members_core: "Always-on roles needed to deliver the product's promise."
     smes_optional: "Invoked only when triggers indicate their lane is needed."
     councils: "Invoked when risk/conflict/irreversibility requires formal review. Councils adjudicate decisions, not personalities."
+
+  tracks_to_packs:
+    parallax_translate: "surfaces tracks (Literal/Singable/Poetic)"
+    gigster_garage: "surfaces packs (Profile, Proposals, Rate Card, Safety Plan, etc.)"
 
   standard_pod_recipe:
     description: "Stamp across repos"
@@ -245,7 +249,9 @@ agency_hub_parity:
 
 repo_specific_add_ons:
   gigster_garage:
+    # Wave 0 (already approved)
     - add_on_id: "GIGSTER_GARAGE_PLATFORM_INTEL_AND_SCAMSHIELD"
+      wave: 0
       why_it_matters: "Gig work is platform-driven and scam-prone; platform-intel + scamshield makes outputs more actionable and safer."
       triggers:
         phrases_any: ["is this a scam","pay to apply","wire transfer","crypto","remote access","policy","platform rules","what are the requirements"]
@@ -268,6 +274,7 @@ repo_specific_add_ons:
           outputs: ["RateBenchmarkNotesPack"]
 
     - add_on_id: "GIGSTER_GARAGE_GIG_HISTORY_LEDGER"
+      wave: 0
       why_it_matters: "A user-owned gig + earnings log enables personalized pricing, taxes, and 'what gigs work best for me' insights."
       triggers:
         phrases_any: ["track my gigs","log income","how much did I make","expenses","mileage","my best gigs","history"]
@@ -290,7 +297,9 @@ repo_specific_add_ons:
           outputs: ["EarningsInsightsPack"]
           suggested_fields: ["bestGigTypesByNetPerHour","platformPerformanceSummary","seasonalityHints","expenseHotspots","recommendedRateFloors","confidenceNotes"]
 
+    # Wave 1
     - add_on_id: "GIGSTER_GARAGE_PROOF_OF_WORK_BUILDER"
+      wave: 1
       why_it_matters: "Turns user experience into credible proof (mini case studies + portfolio snippets) to increase reply rates."
       triggers:
         phrases_any: ["no replies","no one responds","stand out","no portfolio","proof","case study","credibility"]
@@ -301,6 +310,7 @@ repo_specific_add_ons:
           outputs: ["ProofOfWorkPack","CaseStudyMiniPack","PortfolioSnippetPack"]
 
     - add_on_id: "GIGSTER_GARAGE_OFFER_AND_SCOPE_BUILDER"
+      wave: 1
       why_it_matters: "Converts job posts into tiered offers and scope boundaries to reduce scope creep and improve close rate."
       triggers:
         phrases_any: ["scope this","quote this","what should I include","deliverables","timeline","scope creep"]
@@ -311,6 +321,7 @@ repo_specific_add_ons:
           outputs: ["OfferBuilderPack","ScopeOfWorkLitePack","ScopeCreepGuardrailsPack"]
 
     - add_on_id: "GIGSTER_GARAGE_NEGOTIATION_OBJECTIONS_KIT"
+      wave: 1
       why_it_matters: "Improves conversion by handling common objections with firm-but-kind scripts and boundary language."
       triggers:
         phrases_any: ["too expensive","discount","free sample","can you do it cheaper","negotiate","pushback","objection"]
@@ -321,6 +332,7 @@ repo_specific_add_ons:
           outputs: ["ObjectionHandlingScriptsPack","NegotiationPlaybookPack","DepositAndMilestoneMessagingPack"]
 
     - add_on_id: "GIGSTER_GARAGE_PLATFORM_SUBMISSION_ASSISTANT"
+      wave: 1
       why_it_matters: "Reduces apply friction by formatting proposals/messages for platform submission and running a pre-flight checklist."
       triggers:
         phrases_any: ["apply now","submit","Upwork proposal","Fiverr","LinkedIn message","character limit","format"]
@@ -331,6 +343,7 @@ repo_specific_add_ons:
           outputs: ["SubmissionReadyPack","AttachmentChecklistPack","PlatformFormattingNotesPack"]
 
     - add_on_id: "GIGSTER_GARAGE_AVAILABILITY_SCHEDULER"
+      wave: 1
       why_it_matters: "Prevents overwhelm and increases consistency by turning availability into a weekly plan (apply/work/recovery blocks)."
       triggers:
         phrases_any: ["overwhelmed","time management","schedule","availability","weekly plan","how do I manage"]
@@ -341,6 +354,7 @@ repo_specific_add_ons:
           outputs: ["WeeklySchedulePlanPack","CapacityAndCommitmentsPack","TimeBlockChecklistPack"]
 
     - add_on_id: "GIGSTER_GARAGE_EXPENSE_CAPTURE_DEDUCTIONS"
+      wave: 1
       why_it_matters: "Makes gig finances 'tax-season ready' by building an expense capture habit and clean categorization (education-only)."
       triggers:
         phrases_any: ["expenses","mileage","receipts","deductions","tax time","gas"]
@@ -351,6 +365,7 @@ repo_specific_add_ons:
           outputs: ["ExpenseCaptureRulesPack","ExpenseCategoryMapPack","TaxSeasonPrepPack"]
 
     - add_on_id: "GIGSTER_GARAGE_DISPUTE_REFUND_KIT"
+      wave: 1
       why_it_matters: "Protects earnings and reduces panic during disputes by providing scripts and an evidence checklist."
       triggers:
         phrases_any: ["refund","chargeback","dispute","client unhappy","platform mediation","negative review"]
@@ -360,60 +375,247 @@ repo_specific_add_ons:
           purpose: "Generate dispute scripts, evidence checklist, and resolution options (non-legal; Aegis/Sentinel may be triggered)."
           outputs: ["DisputeResponseScriptsPack","EvidenceChecklistPack","ResolutionOptionsPack"]
 
+    # Wave 2
+    - add_on_id: "GIGSTER_GARAGE_SKILL_GRAPH_NICHE_MATCHER"
+      wave: 2
+      why_it_matters: "Turns broad experience into a focused niche + offer direction using profile + gig history."
+      triggers:
+        phrases_any: ["i don't know my niche","what should i focus on","what gigs fit me","my best gigs","strengths","skills"]
+        structures_any: ["pivot_plan","gig_history_available","profile_optimization"]
+      components:
+        - name: "SkillGraphBuilder"
+          purpose: "Build a structured skill graph from profile + ledger."
+          outputs: ["SkillGraphPack"]
+        - name: "NicheMatchEngine"
+          purpose: "Map skills to niches + recommended offers."
+          outputs: ["NicheMatchPack"]
+        - name: "GapToGoalPlanner"
+          purpose: "Recommend next-best skills to learn (smallest effort, biggest leverage)."
+          outputs: ["GapToGoalPlanPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_CLIENT_FIT_AND_REDFLAGS"
+      wave: 2
+      why_it_matters: "Avoids bad clients early and increases net earnings by filtering time-wasters and risky jobs."
+      triggers:
+        phrases_any: ["is this client worth it","this feels off","demanding","unclear scope","red flags","client fit"]
+        structures_any: ["client_message_pasted","job_post_pasted_or_uploaded","pricing_scoping"]
+      components:
+        - name: "ClientFitScorer"
+          purpose: "Explainable green/yellow/red fit score."
+          outputs: ["ClientFitScorePack"]
+        - name: "RedFlagDetector"
+          purpose: "Detect scam/scope/disrespect patterns and summarize."
+          outputs: ["ClientRedFlagsPack"]
+        - name: "ResponseStrategySelector"
+          purpose: "Choose respond/clarify/counter/decline strategy + scripts."
+          outputs: ["ResponseStrategyPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_PORTFOLIO_ARTIFACT_GENERATOR"
+      wave: 2
+      why_it_matters: "Creates actual portfolio artifacts (templates + sample deliverables) so users can show, not just tell."
+      triggers:
+        phrases_any: ["portfolio pieces","examples","sample deliverable","what should i show","template"]
+        structures_any: ["portfolio_requested","proof_of_work_requested","profile_optimization"]
+      components:
+        - name: "DeliverableTemplateFactory"
+          purpose: "Generate reusable deliverable templates (checklists, SOPs, outlines)."
+          outputs: ["DeliverableTemplatePack"]
+        - name: "SampleDeliverableComposer"
+          purpose: "Compose a taste-test sample deliverable from a job brief."
+          outputs: ["SampleDeliverablePack"]
+        - name: "PortfolioPackagingKit"
+          purpose: "Guide how to present and label artifacts across platforms."
+          outputs: ["PortfolioPackagingPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_RETAINER_AND_UPSELL_ENGINE"
+      wave: 2
+      why_it_matters: "Helps move from one-off gigs to recurring retainers and aligned upsells."
+      triggers:
+        phrases_any: ["recurring","retainer","long-term","upsell","ongoing work","monthly"]
+        structures_any: ["repeat_client_detected","proposal_pack_available","pricing_scoping"]
+      components:
+        - name: "RetainerOfferBuilder"
+          purpose: "Generate 3 retainer options with boundaries and outcomes."
+          outputs: ["RetainerOfferPack"]
+        - name: "UpsellMapper"
+          purpose: "Map add-ons to gig type without feeling salesy."
+          outputs: ["UpsellAddOnPack"]
+        - name: "RenewalAndCheckInScripts"
+          purpose: "Scripts to renew and check-in professionally."
+          outputs: ["RenewalCheckInScriptsPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_REVIEW_RECOVERY_AND_REPUTATION"
+      wave: 2
+      why_it_matters: "Improves long-term conversion by generating review requests and bad-review recovery responses."
+      triggers:
+        phrases_any: ["ask for reviews","review request","bad review","rating dropped","reputation"]
+        structures_any: ["job_completed","dispute_event_reported","platform_selected"]
+      components:
+        - name: "ReviewRequestComposer"
+          purpose: "Generate review request messages timed to context."
+          outputs: ["ReviewRequestPack"]
+        - name: "BadReviewResponseKit"
+          purpose: "Calm, compliant response drafts + what to do next."
+          outputs: ["BadReviewResponsePack"]
+        - name: "ServiceRecoveryPlan"
+          purpose: "Fix-forward plan to repair trust."
+          outputs: ["ServiceRecoveryPlanPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_EARNINGS_FORECAST_AND_GOALS"
+      wave: 2
+      why_it_matters: "Turns goals into realistic weekly targets using history + schedule + rate floors."
+      triggers:
+        phrases_any: ["make x per month","earnings goal","how many gigs","i'm behind","forecast"]
+        structures_any: ["gig_history_available","user_sets_goal","weekly_planning_requested"]
+      components:
+        - name: "EarningsForecaster"
+          purpose: "Forecast earnings and required volume to hit targets."
+          outputs: ["EarningsForecastPack"]
+        - name: "GoalTracker"
+          purpose: "Weekly tracker with leading/lagging indicators."
+          outputs: ["GoalTrackerPack"]
+        - name: "StrategyAdjuster"
+          purpose: "When behind, recommend adjustments (apply more, raise floors, shift gig mix)."
+          outputs: ["StrategyAdjustmentPack"]
+
+    # Wave 3 (user-requested)
+    - add_on_id: "GIGSTER_GARAGE_ONBOARDING_OFFBOARDING_AUTOMATIONS"
+      wave: 3
+      why_it_matters: "Makes every client engagement repeatable with intake, onboarding, and clean handoff/offboarding templates."
+      triggers:
+        phrases_any: ["onboarding","intake form","client intake","handoff","offboarding","handover","kickoff"]
+        structures_any: ["new_client_detected","job_started","job_completed"]
+      components:
+        - name: "ClientIntakeFormBuilder"
+          purpose: "Build simple intake forms and question sets aligned to gig type."
+          outputs: ["ClientIntakeFormPack"]
+        - name: "OnboardingChecklistBuilder"
+          purpose: "Repeatable onboarding checklist (access, expectations, milestones)."
+          outputs: ["ClientOnboardingChecklistPack"]
+        - name: "OffboardingHandoffBuilder"
+          purpose: "Clean handoff packet: what was done, where files are, next steps."
+          outputs: ["OffboardingHandoffPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_COMMUNICATION_STYLE_TRAINER"
+      wave: 3
+      why_it_matters: "Improves outcomes through better tone, boundaries, and practice drills for tough conversations."
+      triggers:
+        phrases_any: ["tone","rewrite","be more firm","set boundaries","say no","practice","drill"]
+        structures_any: ["client_message_pasted","negotiation_objection","dispute_event_reported"]
+      components:
+        - name: "ToneRewriteCoach"
+          purpose: "Rewrite messages in 2-4 tones that match UserProfilePack constraints."
+          outputs: ["ToneRewriteVariantsPack"]
+        - name: "BoundaryScriptTrainer"
+          purpose: "Generate boundary-setting scripts with roleplay prompts."
+          outputs: ["BoundaryScriptsPack"]
+        - name: "ConversationDrills"
+          purpose: "Short drills to practice common scenarios and improve confidence."
+          outputs: ["ConversationDrillsPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_MULTI_PLATFORM_PRESENCE_MANAGER"
+      wave: 3
+      why_it_matters: "Keeps profile and messaging consistent across platforms without drift; VERIFY for platform-specific facts."
+      triggers:
+        phrases_any: ["keep profiles consistent","multiple platforms","upwork and fiverr","linkedin","refresh my bio","same everywhere"]
+        structures_any: ["multiple_platforms_selected","profile_delta_pack_available","platform_selected"]
+      components:
+        - name: "CanonicalProfileCore"
+          purpose: "Generate a single canonical profile core (headline, summary, offers, proof) used everywhere."
+          outputs: ["CanonicalProfileCorePack"]
+        - name: "PlatformAdaptationLayer"
+          purpose: "Adapt canonical core to each platform format; VERIFY if citing platform policy/limits."
+          outputs: ["PlatformProfileVariantsPack","PlatformDiffPack"]
+        - name: "DriftDetector"
+          purpose: "Detect inconsistencies across platform variants and propose a harmonized update plan."
+          outputs: ["PresenceDriftReportPack"]
+
+  recommended_starting_add_on:
+    add_on_id: "GIGSTER_GARAGE_PLATFORM_INTEL_AND_SCAMSHIELD"
+    reason: "Uniquely valuable to Gigster Garage because the domain is platform-constraint heavy, users need fast practical templates, scams/PII risks are common, and pricing guidance benefits most from user history + constraints."
+
 schema_name_index:
   - ApplyRoutineChecklistPack
   - AttachmentChecklistPack
   - AutomationRulesPack
+  - BadReviewResponsePack
+  - BoundaryScriptsPack
+  - CanonicalProfileCorePack
   - CapacityAndCommitmentsPack
   - CaseStudyMiniPack
   - CaseStudyTemplatePack
   - ClaimsList
+  - ClientFitScorePack
+  - ClientIntakeFormPack
+  - ClientOnboardingChecklistPack
+  - ClientRedFlagsPack
   - ContractWatchoutsPack
+  - ConversationDrillsPack
   - DebtPaydownPlanPack
   - DecisionLogPack
+  - DeliverableTemplatePack
   - DepositAndMilestoneMessagingPack
   - DisputeResponseScriptsPack
+  - EarningsForecastPack
   - EarningsInsightsPack
   - EstimatedTaxEducationPack
   - EvidenceChecklistPack
   - ExpenseCaptureRulesPack
   - ExpenseCategoryMapPack
+  - GapToGoalPlanPack
   - GigHistoryLedgerPack
   - GigLogEntry
+  - GoalTrackerPack
   - JobBriefPack
   - MonthlyCashflowPlanPack
   - NegotiationPlaybookPack
+  - NicheMatchPack
   - ObjectionHandlingScriptsPack
   - OfferBuilderPack
   - OfferLadderPack
+  - OffboardingHandoffPack
   - OutreachSequencePack
   - PIIHandlingPlanPack
   - Pivot90DayPlanPack
+  - PlatformDiffPack
   - PlatformFormattingNotesPack
   - PlatformIntelPack
+  - PlatformProfileVariantsPack
   - PlatformSafetyChecklistPack
   - PortfolioOutlinePack
+  - PortfolioPackagingPack
   - PortfolioSnippetPack
   - PreferenceSignals
+  - PresenceDriftReportPack
   - ProfileDeltaPack
   - ProofOfWorkPack
   - ProposalPack
   - RateBenchmarkNotesPack
   - RateCardPack
+  - RenewalCheckInScriptsPack
   - ResolutionOptionsPack
+  - ResponseStrategyPack
+  - RetainerOfferPack
+  - ReviewRequestPack
   - RiskFlagsPack
   - RunReceipt
   - SafeResponseScriptsPack
+  - SampleDeliverablePack
   - ScamRiskAssessmentPack
   - ScamSignalsPack
   - ScopeBoundaryPack
   - ScopeCreepGuardrailsPack
   - ScopeOfWorkLitePack
+  - ServiceRecoveryPlanPack
   - SinkingFundsMapPack
+  - SkillGraphPack
+  - StrategyAdjustmentPack
   - SubmissionReadyPack
   - TaxSeasonPrepPack
   - TimeBlockChecklistPack
+  - ToneRewriteVariantsPack
   - UnverifiableFlags
+  - UpsellAddOnPack
   - UserProfilePack
   - VerifiedClaims
   - WeeklySchedulePlanPack
