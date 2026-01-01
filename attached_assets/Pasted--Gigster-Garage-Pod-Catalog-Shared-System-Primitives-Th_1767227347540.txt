@@ -1,0 +1,1062 @@
+# Gigster Garage Pod Catalog + Shared System Primitives
+
+This canvas captures our full working spec for how Dream Team Pods/Members/SMEs/Councils operate in **Gigster Garage** (and how the same system standardizes across other repos such as **Agency Hub**).
+
+---
+
+## Operating Model
+
+### What a Pod is
+
+A **Pod** is a governed workflow (a production pipeline), not “many bots.”
+
+Each Pod consists of:
+
+* **Roles** (Members/SMEs/Reviewers) with clear **input contracts** and **output contracts**
+* **Routing rules** (how requests map to Pods)
+* **Autonomy + gates (L0–L3)** (what can run without explicit approval)
+* **Adjudication rules** (how conflicts are resolved)
+* **Artifact requirements** (packs + receipts)
+
+### Members vs SMEs vs Councils
+
+* **Members (Core)**: always-on roles needed to deliver the product’s promise.
+* **SMEs (Optional/Targeted)**: invoked only when triggers indicate their lane is needed.
+* **Councils**: invoked when **risk/conflict/irreversibility** requires formal review. Councils adjudicate **decisions**, not personalities. They *can* adjudicate core outputs when thresholds are hit.
+
+### “Tracks → Packs” translation
+
+Parallax Translate surfaces **tracks** (Literal/Singable/Poetic). Gigster Garage surfaces **packs** (Profile, Proposals, Rate Card, Safety Plan, etc.).
+
+---
+
+# Shared System Primitives (used by every Pod)
+
+## A) Learning Artifacts (explicit, portable)
+
+### 1) UserProfilePack
+
+Stable, user-approved preferences and constraints.
+
+**Suggested fields**
+
+* `userId`
+* `preferredName`
+* `timezone`
+* `preferredTone` (e.g., direct/warm/formal)
+* `verbosity` (short/medium/long)
+* `goals[]`
+* `constraints[]` (e.g., “avoid optimization language”, “don’t be salesy”, “no emojis”)
+* `riskTolerance` (low/medium/high)
+* `defaultDeliverableFormats[]` (e.g., packs/checklists/scripts)
+
+### 2) PreferenceSignals
+
+Implicit learning derived from selections/edits/rejections.
+
+**Suggested fields**
+
+* `signalId`
+* `podId`
+* `chosenVariantId`
+* `editDeltasSummary`
+* `rejectionReasons[]` (enum list)
+* `timeToApprovalSec`
+* `shipActionTaken` (boolean)
+* `lastNPatterns` (derived preferences)
+
+### 3) RunReceipt
+
+A traceable receipt of what happened (supports QA, consistency, and evidence-grade posture).
+
+**Suggested fields**
+
+* `runId`
+* `podId`
+* `workType`
+* `inputsSummary`
+* `contextSourcesUsed[]` (explicit prompt, page fields, user profile pack, etc.)
+* `rolesInvoked[]` (core + SMEs)
+* `riskScore` + breakdown
+* `councilInvoked` (yes/no)
+* `outputsProduced[]` (pack names + ids)
+* `decisionLogId`
+* `userApproval` (approved/rejected + notes)
+
+### Constraint-loading rule (global)
+
+Pods load constraints in this priority order:
+
+1. **Page/form fields** (highest trust)
+2. **Explicit user prompt**
+3. **Project canon/policies** (brand lock, repo rules)
+4. **UserProfilePack**
+5. **PreferenceSignals** (style/format tuning only; never override explicit constraints)
+
+---
+
+## B) FactCheck Lane (VERIFY) — standardized
+
+You can implement as either:
+
+* `factCheckSME` role invocation, **or**
+* a dedicated **VERIFY step** embedded in relevant Pods.
+
+### Required outputs
+
+#### 1) ClaimsList
+
+Extract factual claims that should be verified.
+
+**Fields**
+
+* `claimId`
+* `claimText`
+* `claimType` (law/policy, pricing, stats, “latest/current”, medical-ish, platform rules)
+* `timeSensitivity` (low/med/high)
+* `verifyRequired` (bool)
+
+#### 2) VerifiedClaims
+
+Verification outcomes.
+
+**Fields**
+
+* `claimId`
+* `status` (verified / contradicted / uncertain)
+* `supportSummary`
+* `sourceRefs[]` (citations or internal refs)
+* `confidence` (low/med/high)
+* `notes`
+
+#### 3) UnverifiableFlags
+
+Claims that must be reframed as opinion/estimate or explicitly marked unknown.
+
+**Fields**
+
+* `flagId`
+* `claimText`
+* `reason` (no sources, time-sensitive, ambiguous, user-specific unknown)
+* `rewriteGuidance`
+
+### When VERIFY runs (global)
+
+Run VERIFY when any are true:
+
+* outputs include **laws/regulations/taxes/contracts/medical claims**
+* outputs include **prices/platform policies/“latest/current” facts**
+* outputs include **stats/benchmarks** or “X is best”
+* **risk score** hits Council threshold (below)
+
+---
+
+## C) Decision Logging
+
+### DecisionLogPack (required when adjudication occurs)
+
+**Fields**
+
+* `decisionId`
+* `conflictSummary`
+* `options[]`
+* `precedenceApplied[]`
+* `finalChoice`
+* `notes`
+
+---
+
+# Cross-Repo Routing + Escalation Standard
+
+## 1) WorkType classification
+
+Every AI entry point assigns `workType`.
+
+**Portable WorkTypes**
+
+* `PROFILE_OPTIMIZATION`
+* `PROPOSAL_WRITING`
+* `PRICING_SCOPING`
+* `SCAM_SAFETY_CHECK`
+* `CONTRACT_WATCHOUTS`
+* `FINANCE_TAX_PLANNING`
+* `PIVOT_PLAN`
+* `CONTENT_CREATE`
+* `CONTENT_WRITE`
+* `PROMOTION_PLAN`
+* `ANALYTICS_TRACKING`
+
+**Routing hierarchy (global)**
+
+1. If user requests a **ship action** (publish/send/submit/apply/commit), route to the Pod that owns the ship action and raise risk.
+2. Use page context (Create/Write/Promote/Track, GigsterCoach, etc.) to narrow candidates.
+3. Classify by keywords + required outputs.
+
+---
+
+## 2) SME enrollment triggers (trigger phrases → SME)
+
+### sentinelSecuritySME (scams/PII/unsafe behavior)
+
+**Phrase triggers**: SSN, social security, driver’s license, passport, pay to apply, wire transfer, gift cards, crypto, deposit first, share login, password, 2FA, TeamViewer, AnyDesk, remote access.
+**Structural triggers**: uploading IDs/tax docs/bank info; any payment required before job.
+
+### praetorPrivacySME (privacy/data handling)
+
+**Phrase triggers**: store customer data, PII, GDPR, HIPAA, consent, data retention.
+**Structural**: user wants to collect/store client data; analytics/tracking includes personal data.
+
+### aegisLegalIPSME (contracts/IP watchouts; non-lawyer guidance)
+
+**Phrase triggers**: contract, NDA, non-compete, work for hire, ownership, indemnify, legal notice.
+**Structural**: any contract text pasted/uploaded.
+
+### ledgerMoneySME (pricing/margins)
+
+**Phrase triggers**: how much should I charge, rate, pricing, quote, scope creep.
+**Structural**: job requires estimate/tiering.
+
+### tallyTaxSME (tax education)
+
+**Phrase triggers**: 1099, estimated taxes, quarterly, deductions.
+**Structural**: income variability planning.
+
+### accessibilitySME
+
+**Phrase triggers**: reading level, accessible, screen reader, alt text.
+**Structural**: public distribution content.
+
+### localizationSME / terminologySME
+
+**Phrase triggers**: translate, bilingual, Spanish version, terminology.
+**Structural**: multilingual profile/services.
+
+### codaOSSComplianceSME
+
+**Phrase triggers**: open source, GPL, MIT license, dependencies.
+**Structural**: deliverable includes software distribution.
+
+### factCheckSME (VERIFY)
+
+Triggered by VERIFY conditions.
+
+---
+
+## 3) Risk scoring → Council threshold
+
+### Risk dimensions (0–3 each)
+
+* **LEGAL**
+* **MONEY**
+* **SAFETY/SCAM**
+* **PRIVACY**
+* **IRREVERSIBILITY** (publish/send/submit/apply/commit)
+* **UNCERTAINTY** (missing inputs/underdetermined)
+* **RECENCY** (time-sensitive “latest/current” claims)
+
+**Total Risk Score = sum (0–21).**
+
+### Council thresholds
+
+* **0–5:** Core Members only; OS adjudicates.
+* **6–10:** SMEs as needed; VERIFY recommended if factual claims present.
+* **11–14:** Council required **or** dual-SME signoff (e.g., Sentinel + Aegis).
+* **15+:** Council required + VERIFY required + explicit ship gate.
+
+---
+
+## 4) Precedence rules for adjudication
+
+Adjudication resolves **decisions**, not “who wins.”
+
+**Precedence (highest → lowest):**
+
+1. Hard safety/privacy policies (cannot-do)
+2. Repo/brand canon (locked systems/templates/disclaimers)
+3. User explicit constraints
+4. Domain correctness (SME constraints)
+5. Core Member quality preferences (style/persuasion/creativity)
+6. Optional enhancements
+
+---
+
+# Gigster Garage Pod Catalog (one page per Pod)
+
+## POD 01 — Worker Success Pod
+
+**PodId:** `GIG_WORKER_SUCCESS_POD`
+
+**Purpose:** Increase replies/bookings/earnings via profiles, proposals, outreach, and pricing alignment.
+
+### Triggers
+
+* Page context: GigsterCoach, Profile, Apply, Messages, Rates
+* Phrases: “no replies”, “fix my profile”, “better proposals”, “how do I price this”, “scope this job”
+* WorkTypes: `PROFILE_OPTIMIZATION`, `PROPOSAL_WRITING`, `PRICING_SCOPING`
+
+### Steps
+
+1. INTAKE
+2. LOAD CONSTRAINTS (UserProfilePack + PreferenceSignals)
+3. DRAFT (Core)
+4. SME PASSES (conditional)
+5. VERIFY (if rules hit)
+6. ADJUDICATE (DecisionLogPack)
+7. FINALIZE PACKS
+8. SHIP GATE (approval for send/apply/submit)
+9. WRITE RECEIPT (RunReceipt + PreferenceSignals update)
+
+### Core Members
+
+* OS (orchestrator/adjudicator)
+* Prism (positioning)
+* Echo (copy + sequences)
+* Ledger (pricing sanity)
+* Navi (workflow/checklists)
+
+### Optional SMEs
+
+* sentinelSecuritySME, praetorPrivacySME
+* factCheckSME (VERIFY)
+* accessibilitySME
+* localizationSME / terminologySME
+
+### Outputs (Pack schema names)
+
+* `ProfileDeltaPack`
+* `ProposalPack`
+* `OutreachSequencePack`
+* `RateCardPack`
+* `ScopeBoundaryPack`
+* `ApplyRoutineChecklistPack`
+* `DecisionLogPack`
+* `RunReceipt`
+
+---
+
+## POD 02 — Compliance & Safety Pod
+
+**PodId:** `GIG_COMPLIANCE_SAFETY_POD`
+
+**Purpose:** Scam detection, PII boundaries, safe response scripts, and escalation guidance.
+
+### Triggers
+
+* Phrases: “SSN/ID”, “pay to apply”, “wire transfer”, “crypto”, “remote access”, “send login”, “is this a scam”
+* WorkTypes: `SCAM_SAFETY_CHECK`, `CONTRACT_WATCHOUTS` (watchouts only)
+
+### Steps
+
+1. INTAKE
+2. RISK SCORE
+3. DRAFT (Core)
+4. VERIFY (required if any policy/legal/current claims)
+5. ADJUDICATE (OS + Sentinel; Council if threshold)
+6. FINALIZE PACKS
+7. SHIP GATE (approval before sending response)
+8. WRITE RECEIPT
+
+### Core Members
+
+* OS
+* Sentinel (primary)
+* Navi (process + recordkeeping)
+* Aegis (watchouts framing; non-lawyer)
+
+### Optional SMEs
+
+* praetorPrivacySME
+* factCheckSME (VERIFY)
+* ledgerMoneySME
+
+### Outputs
+
+* `ScamRiskAssessmentPack`
+* `PIIHandlingPlanPack`
+* `SafeResponseScriptsPack`
+* `PlatformSafetyChecklistPack`
+* `ContractWatchoutsPack`
+* `ClaimsList` (when VERIFY runs)
+* `VerifiedClaims` (when VERIFY runs)
+* `UnverifiableFlags` (when VERIFY runs)
+* `DecisionLogPack`
+* `RunReceipt`
+
+---
+
+## POD 03 — Finance & Tax Pod
+
+**PodId:** `GIG_FINANCE_TAX_POD`
+
+**Purpose:** Cashflow stability, sinking funds, tax preparedness (education), debt planning.
+
+### Triggers
+
+* Phrases: “1099”, “estimated taxes”, “quarterly”, “deductions”, “budget”, “debt”, “income inconsistent”
+* WorkType: `FINANCE_TAX_PLANNING`
+
+### Steps
+
+1. INTAKE
+2. LOAD CONSTRAINTS
+3. PLAN (Core)
+4. VERIFY (required if citing current thresholds/rates)
+5. ADJUDICATE + DISCLAIMERS
+6. FINALIZE PACKS
+7. SHIP GATE (only if applying/saving)
+8. WRITE RECEIPT
+
+### Core Members
+
+* Harbor (budget/cashflow)
+* Tally (tax education)
+* Relief (debt strategy)
+* Nest (automation)
+* Ledger (sanity)
+* OS (adjudicator)
+
+### Optional SMEs
+
+* factCheckSME (VERIFY)
+
+### Outputs
+
+* `MonthlyCashflowPlanPack`
+* `SinkingFundsMapPack`
+* `DebtPaydownPlanPack`
+* `EstimatedTaxEducationPack`
+* `AutomationRulesPack`
+* `ClaimsList` / `VerifiedClaims` / `UnverifiableFlags` (when VERIFY runs)
+* `DecisionLogPack`
+* `RunReceipt`
+
+---
+
+## POD 04 — Career Pivot Pod
+
+**PodId:** `GIG_CAREER_PIVOT_POD`
+
+**Purpose:** Move from random gigs to a high-value niche with a 30/60/90 plan, portfolio outline, and outreach.
+
+### Triggers
+
+* Phrases: “pivot into…”, “need a niche”, “portfolio”, “case study”, “roadmap”
+* WorkType: `PIVOT_PLAN`
+
+### Steps
+
+1. INTAKE
+2. LOAD CONSTRAINTS
+3. STRATEGY (Core)
+4. SME PASSES (optional)
+5. VERIFY (if market stats/trends claimed)
+6. ADJUDICATE
+7. FINALIZE PACKS
+8. SHIP GATE (publish portfolio actions)
+9. WRITE RECEIPT
+
+### Core Members
+
+* Foundry (strategy)
+* Prism (positioning)
+* Echo (outreach copy)
+* Navi (execution plan)
+* Ledger (offer economics)
+* OS (adjudicator)
+
+### Optional SMEs
+
+* accessibilitySME
+* factCheckSME (VERIFY)
+* localizationSME
+
+### Outputs
+
+* `Pivot90DayPlanPack`
+* `OfferLadderPack`
+* `PortfolioOutlinePack`
+* `CaseStudyTemplatePack`
+* `OutreachSequencePack`
+* `DecisionLogPack`
+* `RunReceipt`
+
+---
+
+# Agency Hub Parity (standardization across repos)
+
+Mirror the same pattern across Agency Hub pages:
+
+* Create → `AGENCY_CREATE_POD`
+* Write → `AGENCY_WRITE_POD`
+* Promote → `AGENCY_PROMOTE_POD`
+* Track → `AGENCY_TRACK_POD`
+
+All inherit:
+
+* risk scoring rubric + council thresholds
+* SME enrollment triggers
+* VERIFY lane rules
+* learning artifacts (UserProfilePack, PreferenceSignals, RunReceipt)
+* precedence rules + DecisionLogPack
+
+---
+
+# Standard Pod Recipe (stamp across repos)
+
+1. INTAKE
+2. LOAD CONSTRAINTS
+3. CORE DRAFT
+4. SME PASSES (triggered)
+5. VERIFY (when rules hit)
+6. ADJUDICATE (OS; Council when thresholds hit)
+7. FINALIZE PACKS
+8. SHIP GATE (explicit user approval for irreversible actions)
+9. WRITE RECEIPT (RunReceipt + update PreferenceSignals)
+
+---
+
+# Registry Definition Pack (YAML) — drop-in canon spec (no code)
+
+> Purpose: A single, consistent registry schema you can place in canon docs and later implement in any repo router.
+
+```yaml
+registry:
+  id: "dth_registry_gigster_garage_v1"
+  version: "1.0.0"
+  updated_at: "2025-12-31"
+  owners:
+    - "OS"
+  applies_to_repos:
+    - "GigsterGarage"
+    - "DreamTeamHub"
+    - "AgencyHub"
+  notes:
+    - "Pods are governed workflows; Members/SMEs/Councils are role contracts with enforced outputs."
+
+shared_system_primitives:
+  context_loading_precedence:
+    - "page_fields"              # highest trust
+    - "explicit_user_prompt"
+    - "project_canon_policies"   # brand lock, repo rules
+    - "user_profile_pack"
+    - "preference_signals"       # style/format tuning only
+
+  learning_artifacts:
+    user_profile_pack:
+      schema_name: "UserProfilePack"
+      purpose: "Stable, user-approved preferences and constraints."
+      fields:
+        required: ["userId", "timezone"]
+        optional:
+          - "preferredName"
+          - "preferredTone"          # direct/warm/formal
+          - "verbosity"              # short/medium/long
+          - "goals"                  # array
+          - "constraints"            # array
+          - "riskTolerance"          # low/medium/high
+          - "defaultDeliverableFormats"
+
+    preference_signals:
+      schema_name: "PreferenceSignals"
+      purpose: "Implicit learning from selections/edits/rejections; never overrides explicit constraints."
+      fields:
+        required: ["signalId", "podId"]
+        optional:
+          - "chosenVariantId"
+          - "editDeltasSummary"
+          - "rejectionReasons"
+          - "timeToApprovalSec"
+          - "shipActionTaken"
+          - "lastNPatterns"
+
+    run_receipt:
+      schema_name: "RunReceipt"
+      purpose: "Traceable receipt of each Pod run; supports QA and evidence-grade posture."
+      fields:
+        required: ["runId", "podId", "workType", "inputsSummary", "rolesInvoked", "outputsProduced"]
+        optional:
+          - "contextSourcesUsed"
+          - "riskScore"
+          - "riskBreakdown"
+          - "councilInvoked"
+          - "decisionLogId"
+          - "userApproval"
+
+  factcheck_lane:
+    mode: "VERIFY"                   # can be implemented as a step or SME
+    run_when_any_true:
+      - "laws_regulations_taxes_contracts_medical_claims"
+      - "prices_platform_policies_latest_current_facts"
+      - "stats_benchmarks_or_superlatives"
+      - "risk_score_at_or_above_council_threshold"
+    outputs:
+      claims_list:
+        schema_name: "ClaimsList"
+        fields: ["claimId", "claimText", "claimType", "timeSensitivity", "verifyRequired"]
+      verified_claims:
+        schema_name: "VerifiedClaims"
+        fields: ["claimId", "status", "supportSummary", "sourceRefs", "confidence", "notes"]
+      unverifiable_flags:
+        schema_name: "UnverifiableFlags"
+        fields: ["flagId", "claimText", "reason", "rewriteGuidance"]
+
+  decision_logging:
+    decision_log_pack:
+      schema_name: "DecisionLogPack"
+      required_when: ["adjudication_occurs", "conflict_detected", "council_invoked"]
+      fields: ["decisionId", "conflictSummary", "options", "precedenceApplied", "finalChoice", "notes"]
+
+  adjudication_precedence_rules:
+    highest_to_lowest:
+      - "hard_safety_and_privacy_policies"      # cannot-do
+      - "repo_brand_canon"                      # templates/disclaimers/locks
+      - "user_explicit_constraints"             # tone/audience/format
+      - "domain_correctness"                    # SME constraints
+      - "core_member_quality_preferences"       # style/persuasion/creativity
+      - "optional_enhancements"                 # nice-to-haves
+
+routing_and_escalation:
+  work_types:
+    - "PROFILE_OPTIMIZATION"
+    - "PROPOSAL_WRITING"
+    - "PRICING_SCOPING"
+    - "SCAM_SAFETY_CHECK"
+    - "CONTRACT_WATCHOUTS"
+    - "FINANCE_TAX_PLANNING"
+    - "PIVOT_PLAN"
+    - "CONTENT_CREATE"
+    - "CONTENT_WRITE"
+    - "PROMOTION_PLAN"
+    - "ANALYTICS_TRACKING"
+
+  routing_hierarchy:
+    - "if_ship_action_requested_then_route_to_owner_pod_and_raise_risk"
+    - "use_page_context_to_narrow_candidate_pods"
+    - "classify_by_keywords_and_required_outputs"
+
+  sme_enrollment_rules:
+    sentinelSecuritySME:
+      enroll_when_any_phrase:
+        - "ssn"
+        - "social security"
+        - "driver's license"
+        - "passport"
+        - "pay to apply"
+        - "wire transfer"
+        - "gift cards"
+        - "crypto"
+        - "deposit first"
+        - "share your login"
+        - "password"
+        - "2fa"
+        - "teamviewer"
+        - "anydesk"
+        - "remote access"
+      enroll_when_any_structure:
+        - "user_uploads_id_or_tax_or_bank_docs"
+        - "payment_required_before_job"
+
+    praetorPrivacySME:
+      enroll_when_any_phrase:
+        - "pii"
+        - "gdpr"
+        - "hipaa"
+        - "consent"
+        - "data retention"
+        - "store customer data"
+      enroll_when_any_structure:
+        - "analytics_or_tracking_includes_personal_data_fields"
+        - "user_requests_data_collection_or_storage"
+
+    aegisLegalIPSME:
+      enroll_when_any_phrase:
+        - "contract"
+        - "nda"
+        - "non-compete"
+        - "work for hire"
+        - "ownership"
+        - "indemnify"
+        - "legal notice"
+      enroll_when_any_structure:
+        - "contract_text_pasted_or_uploaded"
+
+    ledgerMoneySME:
+      enroll_when_any_phrase:
+        - "how much should i charge"
+        - "rate"
+        - "pricing"
+        - "quote"
+        - "scope creep"
+      enroll_when_any_structure:
+        - "estimate_or_tiering_requested"
+
+    tallyTaxSME:
+      enroll_when_any_phrase:
+        - "1099"
+        - "estimated taxes"
+        - "quarterly"
+        - "deductions"
+      enroll_when_any_structure:
+        - "income_variability_planning"
+
+    accessibilitySME:
+      enroll_when_any_phrase:
+        - "reading level"
+        - "accessible"
+        - "screen reader"
+        - "alt text"
+      enroll_when_any_structure:
+        - "public_distribution_content"
+
+    localizationSME:
+      enroll_when_any_phrase:
+        - "translate"
+        - "bilingual"
+        - "spanish version"
+        - "multilingual"
+      enroll_when_any_structure:
+        - "multilingual_profile_or_services"
+
+    terminologySME:
+      enroll_when_any_phrase:
+        - "terminology"
+        - "industry terms"
+        - "glossary"
+
+    codaOSSComplianceSME:
+      enroll_when_any_phrase:
+        - "open source"
+        - "gpl"
+        - "mit license"
+        - "dependencies"
+      enroll_when_any_structure:
+        - "software_distribution_deliverable"
+
+    factCheckSME:
+      enroll_when: "shared_system_primitives.factcheck_lane.run_when_any_true"
+
+  risk_scoring:
+    dimensions:
+      LEGAL: {min: 0, max: 3}
+      MONEY: {min: 0, max: 3}
+      SAFETY_SCAM: {min: 0, max: 3}
+      PRIVACY: {min: 0, max: 3}
+      IRREVERSIBILITY: {min: 0, max: 3}
+      UNCERTAINTY: {min: 0, max: 3}
+      RECENCY: {min: 0, max: 3}
+    total_range: {min: 0, max: 21}
+
+  council_thresholds:
+    low:
+      score_range: [0, 5]
+      rule: "core_members_only; os_adjudicates"
+    medium:
+      score_range: [6, 10]
+      rule: "targeted_smes; verify_if_factual_claims"
+    high:
+      score_range: [11, 14]
+      rule: "council_required_or_dual_sme_signoff"
+    critical:
+      score_range: [15, 21]
+      rule: "council_required + verify_required + explicit_ship_gate"
+
+pods:
+  - podId: "GIG_WORKER_SUCCESS_POD"
+    purpose: "Increase replies/bookings/earnings via profiles, proposals, outreach, and pricing alignment."
+    workTypes: ["PROFILE_OPTIMIZATION", "PROPOSAL_WRITING", "PRICING_SCOPING"]
+    triggers:
+      page_context_any: ["GigsterCoach", "Profile", "Apply", "Messages", "Rates"]
+      phrases_any: ["no replies", "fix my profile", "better proposals", "price this", "scope this job"]
+    steps:
+      - "INTAKE"
+      - "LOAD_CONSTRAINTS"
+      - "CORE_DRAFT"
+      - "SME_PASSES"
+      - "VERIFY"
+      - "ADJUDICATE"
+      - "FINALIZE_PACKS"
+      - "SHIP_GATE"
+      - "WRITE_RECEIPT"
+    coreRoles: ["OS", "Prism", "Echo", "Ledger", "Navi"]
+    optionalSMEs: ["sentinelSecuritySME", "praetorPrivacySME", "factCheckSME", "accessibilitySME", "localizationSME", "terminologySME"]
+    outputs:
+      - "ProfileDeltaPack"
+      - "ProposalPack"
+      - "OutreachSequencePack"
+      - "RateCardPack"
+      - "ScopeBoundaryPack"
+      - "ApplyRoutineChecklistPack"
+      - "DecisionLogPack"
+      - "RunReceipt"
+
+  - podId: "GIG_COMPLIANCE_SAFETY_POD"
+    purpose: "Scam detection, PII boundaries, safe response scripts, and escalation guidance."
+    workTypes: ["SCAM_SAFETY_CHECK", "CONTRACT_WATCHOUTS"]
+    triggers:
+      phrases_any: ["ssn", "id", "pay to apply", "wire transfer", "crypto", "remote access", "send login", "is this a scam"]
+    steps:
+      - "INTAKE"
+      - "RISK_SCORE"
+      - "CORE_DRAFT"
+      - "VERIFY"
+      - "ADJUDICATE"
+      - "FINALIZE_PACKS"
+      - "SHIP_GATE"
+      - "WRITE_RECEIPT"
+    coreRoles: ["OS", "Sentinel", "Navi", "Aegis"]
+    optionalSMEs: ["praetorPrivacySME", "factCheckSME", "ledgerMoneySME"]
+    outputs:
+      - "ScamRiskAssessmentPack"
+      - "PIIHandlingPlanPack"
+      - "SafeResponseScriptsPack"
+      - "PlatformSafetyChecklistPack"
+      - "ContractWatchoutsPack"
+      - "ClaimsList"
+      - "VerifiedClaims"
+      - "UnverifiableFlags"
+      - "DecisionLogPack"
+      - "RunReceipt"
+
+  - podId: "GIG_FINANCE_TAX_POD"
+    purpose: "Cashflow stability, sinking funds, tax preparedness (education), debt planning."
+    workTypes: ["FINANCE_TAX_PLANNING"]
+    triggers:
+      phrases_any: ["1099", "estimated taxes", "quarterly", "deductions", "budget", "debt", "income inconsistent"]
+    steps:
+      - "INTAKE"
+      - "LOAD_CONSTRAINTS"
+      - "CORE_PLAN"
+      - "VERIFY"
+      - "ADJUDICATE"
+      - "FINALIZE_PACKS"
+      - "SHIP_GATE"
+      - "WRITE_RECEIPT"
+    coreRoles: ["Harbor", "Tally", "Relief", "Nest", "Ledger", "OS"]
+    optionalSMEs: ["factCheckSME"]
+    outputs:
+      - "MonthlyCashflowPlanPack"
+      - "SinkingFundsMapPack"
+      - "DebtPaydownPlanPack"
+      - "EstimatedTaxEducationPack"
+      - "AutomationRulesPack"
+      - "ClaimsList"
+      - "VerifiedClaims"
+      - "UnverifiableFlags"
+      - "DecisionLogPack"
+      - "RunReceipt"
+
+  - podId: "GIG_CAREER_PIVOT_POD"
+    purpose: "Move from random gigs to a high-value niche with a 30/60/90 plan, portfolio outline, and outreach."
+    workTypes: ["PIVOT_PLAN"]
+    triggers:
+      phrases_any: ["pivot", "need a niche", "portfolio", "case study", "roadmap"]
+    steps:
+      - "INTAKE"
+      - "LOAD_CONSTRAINTS"
+      - "CORE_STRATEGY"
+      - "SME_PASSES"
+      - "VERIFY"
+      - "ADJUDICATE"
+      - "FINALIZE_PACKS"
+      - "SHIP_GATE"
+      - "WRITE_RECEIPT"
+    coreRoles: ["Foundry", "Prism", "Echo", "Navi", "Ledger", "OS"]
+    optionalSMEs: ["accessibilitySME", "factCheckSME", "localizationSME"]
+    outputs:
+      - "Pivot90DayPlanPack"
+      - "OfferLadderPack"
+      - "PortfolioOutlinePack"
+      - "CaseStudyTemplatePack"
+      - "OutreachSequencePack"
+      - "DecisionLogPack"
+      - "RunReceipt"
+
+repo_specific_add_ons:
+  gigster_garage:
+    - add_on_id: "GIGSTER_GARAGE_PLATFORM_INTEL_AND_SCAMSHIELD"
+      why_it_matters: "Gig work is platform-driven and scam-prone; platform-intel + scamshield makes outputs more actionable and safer."
+      triggers:
+        phrases_any: ["is this a scam", "pay to apply", "wire transfer", "crypto", "remote access", "policy", "platform rules", "what are the requirements"]
+        structures_any: ["job_post_pasted_or_uploaded", "sensitive_data_detected", "platform_selected"]
+      components:
+        - name: "PlatformIntelPack"
+          purpose: "Normalized platform-specific constraints/playbooks (VERIFY-gated; time-sensitive)."
+          outputs: ["PlatformIntelPack"]
+        - name: "JobPostNormalizer"
+          purpose: "Normalize messy job posts into a structured brief for routing + scoping."
+          outputs: ["JobBriefPack", "RiskFlagsPack"]
+        - name: "ScamPatternLibrary"
+          purpose: "Curated, explainable scam indicators feeding Compliance & Safety Pod."
+          outputs: ["ScamSignalsPack"]
+        - name: "RateBenchmarkLens"
+          purpose: "Optional lens comparing user rates to their own history + constraints; VERIFY external benchmark claims."
+          outputs: ["RateBenchmarkNotesPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_GIG_HISTORY_LEDGER"
+      why_it_matters: "A user-owned gig + earnings log enables personalized pricing, taxes, and 'what gigs work best for me' insights."
+      triggers:
+        phrases_any: ["track my gigs", "log income", "how much did I make", "expenses", "mileage", "my best gigs", "history"]
+        structures_any: ["user_opts_in_to_history", "earnings_entry_created", "finance_tax_pod_run"]
+      components:
+        - name: "GigHistoryLedgerPack"
+          purpose: "Normalized store of gigs, hours, earnings, expenses, and outcomes to power other Pods."
+          outputs: ["GigHistoryLedgerPack"]
+        - name: "GigLogEntry"
+          purpose: "Single gig record."
+          outputs: ["GigLogEntry"]
+        - name: "EarningsInsightsLens"
+          purpose: "Transforms history into actionable insights for routing, pricing, and planning."
+          outputs: ["EarningsInsightsPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_PROOF_OF_WORK_BUILDER"
+      why_it_matters: "Turns user experience into credible proof (mini case studies + portfolio snippets) to increase reply rates."
+      triggers:
+        phrases_any: ["no replies", "no one responds", "stand out", "no portfolio", "proof", "case study", "credibility"]
+        structures_any: ["profile_optimization", "proposal_writing", "portfolio_requested"]
+      components:
+        - name: "ProofOfWorkBuilder"
+          purpose: "Generate proof stories with credible framing and optional metric placeholders."
+          outputs: ["ProofOfWorkPack", "CaseStudyMiniPack", "PortfolioSnippetPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_OFFER_AND_SCOPE_BUILDER"
+      why_it_matters: "Converts job posts into tiered offers and scope boundaries to reduce scope creep and improve close rate."
+      triggers:
+        phrases_any: ["scope this", "quote this", "what should I include", "deliverables", "timeline", "scope creep"]
+        structures_any: ["job_post_pasted_or_uploaded", "pricing_scoping", "estimate_requested"]
+      components:
+        - name: "OfferAndScopeBuilder"
+          purpose: "Generate tiered offers, plain-language SOW, and anti-scope-creep guardrails."
+          outputs: ["OfferBuilderPack", "ScopeOfWorkLitePack", "ScopeCreepGuardrailsPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_NEGOTIATION_OBJECTIONS_KIT"
+      why_it_matters: "Improves conversion by handling common objections with firm-but-kind scripts and boundary language."
+      triggers:
+        phrases_any: ["too expensive", "discount", "free sample", "can you do it cheaper", "negotiate", "pushback", "objection"]
+        structures_any: ["proposal_writing", "pricing_scoping", "client_message_pasted"]
+      components:
+        - name: "NegotiationObjectionsKit"
+          purpose: "Generate objection scripts, negotiation playbooks, and milestone/deposit messaging."
+          outputs: ["ObjectionHandlingScriptsPack", "NegotiationPlaybookPack", "DepositAndMilestoneMessagingPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_PLATFORM_SUBMISSION_ASSISTANT"
+      why_it_matters: "Reduces apply friction by formatting proposals/messages for platform submission and running a pre-flight checklist."
+      triggers:
+        phrases_any: ["apply now", "submit", "Upwork proposal", "Fiverr", "LinkedIn message", "character limit", "format"]
+        structures_any: ["ship_action_submit", "platform_selected", "proposal_pack_available"]
+      components:
+        - name: "PlatformSubmissionAssistant"
+          purpose: "Format final text to platform constraints and produce a submission readiness checklist (VERIFY-gated for policy claims)."
+          outputs: ["SubmissionReadyPack", "AttachmentChecklistPack", "PlatformFormattingNotesPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_AVAILABILITY_SCHEDULER"
+      why_it_matters: "Prevents overwhelm and increases consistency by turning availability into a weekly plan (apply/work/recovery blocks)."
+      triggers:
+        phrases_any: ["overwhelmed", "time management", "schedule", "availability", "weekly plan", "how do I manage"]
+        structures_any: ["user_enters_availability", "weekly_planning_requested", "gig_history_available"]
+      components:
+        - name: "AvailabilityScheduler"
+          purpose: "Generate weekly schedule plans and capacity guardrails; optionally use gig history to recommend best gig windows."
+          outputs: ["WeeklySchedulePlanPack", "CapacityAndCommitmentsPack", "TimeBlockChecklistPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_EXPENSE_CAPTURE_DEDUCTIONS"
+      why_it_matters: "Makes gig finances 'tax-season ready' by building an expense capture habit and clean categorization (education-only)."
+      triggers:
+        phrases_any: ["expenses", "mileage", "receipts", "deductions", "tax time", "gas"]
+        structures_any: ["finance_tax_pod_run", "gig_history_available", "expense_entry_created"]
+      components:
+        - name: "ExpenseCaptureAndDeductions"
+          purpose: "Create capture rules, category map, and tax-season prep checklist (VERIFY-gated if citing specific rules)."
+          outputs: ["ExpenseCaptureRulesPack", "ExpenseCategoryMapPack", "TaxSeasonPrepPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_DISPUTE_REFUND_KIT"
+      why_it_matters: "Protects earnings and reduces panic during disputes by providing scripts and an evidence checklist."
+      triggers:
+        phrases_any: ["refund", "chargeback", "dispute", "client unhappy", "platform mediation", "negative review"]
+        structures_any: ["dispute_event_reported", "client_message_pasted", "ship_action_send"]
+      components:
+        - name: "DisputeRefundKit"
+          purpose: "Generate dispute scripts, evidence checklist, and resolution options (non-legal; Aegis/Sentinel may be triggered)."
+          outputs: ["DisputeResponseScriptsPack", "EvidenceChecklistPack", "ResolutionOptionsPack"]
+```
+
+---
+
+# Gigster Garage–specific add-on recommendation (starting point)
+
+If you add **one** Gigster Garage–specific layer before anything else, make it:
+
+**GIGSTER_GARAGE_PLATFORM_INTEL_AND_SCAMSHIELD**
+
+* **PlatformIntelPack** (platform playbooks + constraints; VERIFY-gated)
+* **JobPostNormalizer** (turn messy posts into JobBriefPack + RiskFlagsPack)
+* **ScamPatternLibrary** (feeds Compliance & Safety Pod)
+* **RateBenchmarkLens** (uses user history first; VERIFY any external benchmarks)
+
+This add-on is uniquely valuable to Gigster Garage because:
+
+* the domain is **platform-constraint heavy**
+* users need **fast, practical templates**
+* scams/PII risks are unusually common
+* pricing guidance benefits most from “your history + constraints,” not generic averages
+
+---
+
+# Schema Name Index (Alphabetical)
+
+> Alphabetical list of all schema/pack names referenced in this registry (for cross-repo consistency).
+
+* ApplyRoutineChecklistPack
+* AttachmentChecklistPack
+* AutomationRulesPack
+* CapacityAndCommitmentsPack
+* CaseStudyMiniPack
+* CaseStudyTemplatePack
+* ClaimsList
+* ContractWatchoutsPack
+* DebtPaydownPlanPack
+* DecisionLogPack
+* DepositAndMilestoneMessagingPack
+* DisputeResponseScriptsPack
+* EarningsInsightsPack
+* EstimatedTaxEducationPack
+* EvidenceChecklistPack
+* ExpenseCaptureRulesPack
+* ExpenseCategoryMapPack
+* GigHistoryLedgerPack
+* GigLogEntry
+* JobBriefPack
+* MonthlyCashflowPlanPack
+* NegotiationPlaybookPack
+* ObjectionHandlingScriptsPack
+* OfferBuilderPack
+* OfferLadderPack
+* OutreachSequencePack
+* PIIHandlingPlanPack
+* PlatformFormattingNotesPack
+* PlatformIntelPack
+* PlatformSafetyChecklistPack
+* PortfolioOutlinePack
+* PortfolioSnippetPack
+* PreferenceSignals
+* ProfileDeltaPack
+* ProofOfWorkPack
+* ProposalPack
+* RateBenchmarkNotesPack
+* RateCardPack
+* ResolutionOptionsPack
+* RiskFlagsPack
+* RunReceipt
+* SafeResponseScriptsPack
+* ScamRiskAssessmentPack
+* ScamSignalsPack
+* ScopeBoundaryPack
+* ScopeCreepGuardrailsPack
+* ScopeOfWorkLitePack
+* SinkingFundsMapPack
+* SubmissionReadyPack
+* TaxSeasonPrepPack
+* TimeBlockChecklistPack
+* UnverifiableFlags
+* UserProfilePack
+* VerifiedClaims
+* WeeklySchedulePlanPack
