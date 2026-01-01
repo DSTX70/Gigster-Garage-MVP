@@ -1,6 +1,6 @@
 registry:
   id: "dth_registry_gigster_garage_v1"
-  version: "1.2.0"
+  version: "1.3.0"
   updated_at: "2025-12-31"
   owners: ["OS"]
   applies_to_repos: ["GigsterGarage", "DreamTeamHub", "AgencyHub"]
@@ -530,11 +530,115 @@ repo_specific_add_ons:
           purpose: "Detect inconsistencies across platform variants and propose a harmonized update plan."
           outputs: ["PresenceDriftReportPack"]
 
+    # Wave 4 (major platform leap)
+    - add_on_id: "GIGSTER_GARAGE_GOAL_TO_ACTIONS_PLANNER"
+      wave: 4
+      why_it_matters: "Converts high-level goals into concrete weekly action lists with measurable milestones."
+      triggers:
+        phrases_any: ["i want to make","my goal is","how do i get to","action plan","weekly actions","break it down"]
+        structures_any: ["user_sets_goal","earnings_goal_defined","pivot_plan"]
+      components:
+        - name: "GoalDecomposer"
+          purpose: "Break a goal into milestones, then milestones into weekly actions."
+          outputs: ["GoalDecompositionPack"]
+        - name: "ActionPrioritizer"
+          purpose: "Rank actions by impact and effort; surface quick wins."
+          outputs: ["ActionPriorityPack"]
+        - name: "WeeklyActionListGenerator"
+          purpose: "Generate a concrete weekly action list with time estimates."
+          outputs: ["WeeklyActionListPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_INBOX_TRIAGE_AND_NEXT_ACTION"
+      wave: 4
+      why_it_matters: "Reduces inbox overwhelm by classifying messages and recommending next actions."
+      triggers:
+        phrases_any: ["inbox overload","too many messages","what should i reply to","triage","prioritize messages"]
+        structures_any: ["client_message_pasted","multiple_messages_detected","inbox_review_requested"]
+      components:
+        - name: "InboxTriager"
+          purpose: "Classify messages by urgency, opportunity, and required action type."
+          outputs: ["InboxTriagePack"]
+        - name: "NextActionRecommender"
+          purpose: "Recommend next action for each message (reply/clarify/decline/defer)."
+          outputs: ["NextActionsPack"]
+        - name: "QuickReplyDrafter"
+          purpose: "Draft quick replies for common scenarios."
+          outputs: ["QuickReplyDraftsPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_ONE_CLICK_PACK_COMPOSER"
+      wave: 4
+      why_it_matters: "Enables one-click generation of complete deliverable packs from minimal input."
+      triggers:
+        phrases_any: ["one click","generate everything","full pack","complete package","all at once"]
+        structures_any: ["job_post_pasted_or_uploaded","proposal_requested","quick_apply"]
+      components:
+        - name: "PackComposer"
+          purpose: "Compose a full pack (proposal + scope + pricing + timeline) from a single job brief."
+          outputs: ["ComposedPackBundle"]
+        - name: "VariantGenerator"
+          purpose: "Generate 2-3 variants with different positioning/pricing."
+          outputs: ["PackVariantsPack"]
+        - name: "ReadinessChecker"
+          purpose: "Validate pack completeness and flag missing elements."
+          outputs: ["PackReadinessCheckPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_SHIP_GUARD_AND_COMPLIANCE_GATE"
+      wave: 4
+      why_it_matters: "Prevents costly mistakes by running pre-ship compliance checks before publish/send/submit actions."
+      triggers:
+        phrases_any: ["before i send","check this","is this ready","compliance check","pre-flight"]
+        structures_any: ["ship_action_submit","ship_action_send","proposal_pack_available"]
+      components:
+        - name: "ShipGuard"
+          purpose: "Run pre-ship checklist (tone, completeness, red flags, platform compliance)."
+          outputs: ["ShipGuardReportPack"]
+        - name: "ComplianceGate"
+          purpose: "Verify no policy violations or risky claims; invoke VERIFY if needed."
+          outputs: ["ComplianceGatePack"]
+        - name: "FinalApprovalPrompt"
+          purpose: "Generate a summary for user final approval with risk score."
+          outputs: ["FinalApprovalPromptPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_PERSONAL_PLAYBOOKS_ENGINE"
+      wave: 4
+      why_it_matters: "Captures and reuses user's best practices as personal playbooks for consistent quality."
+      triggers:
+        phrases_any: ["my process","how i do it","save this as a template","personal playbook","my workflow"]
+        structures_any: ["successful_gig_completed","user_saves_template","repeat_pattern_detected"]
+      components:
+        - name: "PlaybookCapturer"
+          purpose: "Extract and save user workflows as reusable playbooks."
+          outputs: ["PersonalPlaybookPack"]
+        - name: "PlaybookApplier"
+          purpose: "Apply a saved playbook to a new gig context."
+          outputs: ["PlaybookApplicationPack"]
+        - name: "PlaybookEvolver"
+          purpose: "Suggest playbook updates based on new learnings."
+          outputs: ["PlaybookEvolutionPack"]
+
+    - add_on_id: "GIGSTER_GARAGE_PORTFOLIO_TO_PIPELINE_LOOP"
+      wave: 4
+      why_it_matters: "Closes the loop from completed work back to portfolio and outreach to generate new leads."
+      triggers:
+        phrases_any: ["turn this into a case study","add to portfolio","get more like this","referral","next client"]
+        structures_any: ["job_completed","successful_outcome","portfolio_update_requested"]
+      components:
+        - name: "WorkToCaseStudy"
+          purpose: "Convert completed work into a portfolio-ready case study."
+          outputs: ["CaseStudyFromWorkPack"]
+        - name: "OutreachFromSuccess"
+          purpose: "Generate outreach messages leveraging recent success."
+          outputs: ["SuccessOutreachPack"]
+        - name: "ReferralRequestComposer"
+          purpose: "Compose referral request messages."
+          outputs: ["ReferralRequestPack"]
+
   recommended_starting_add_on:
     add_on_id: "GIGSTER_GARAGE_PLATFORM_INTEL_AND_SCAMSHIELD"
     reason: "Uniquely valuable to Gigster Garage because the domain is platform-constraint heavy, users need fast practical templates, scams/PII risks are common, and pricing guidance benefits most from user history + constraints."
 
 schema_name_index:
+  - ActionPriorityPack
   - ApplyRoutineChecklistPack
   - AttachmentChecklistPack
   - AutomationRulesPack
@@ -542,6 +646,7 @@ schema_name_index:
   - BoundaryScriptsPack
   - CanonicalProfileCorePack
   - CapacityAndCommitmentsPack
+  - CaseStudyFromWorkPack
   - CaseStudyMiniPack
   - CaseStudyTemplatePack
   - ClaimsList
@@ -549,6 +654,8 @@ schema_name_index:
   - ClientIntakeFormPack
   - ClientOnboardingChecklistPack
   - ClientRedFlagsPack
+  - ComplianceGatePack
+  - ComposedPackBundle
   - ContractWatchoutsPack
   - ConversationDrillsPack
   - DebtPaydownPlanPack
@@ -562,13 +669,17 @@ schema_name_index:
   - EvidenceChecklistPack
   - ExpenseCaptureRulesPack
   - ExpenseCategoryMapPack
+  - FinalApprovalPromptPack
   - GapToGoalPlanPack
   - GigHistoryLedgerPack
   - GigLogEntry
+  - GoalDecompositionPack
   - GoalTrackerPack
+  - InboxTriagePack
   - JobBriefPack
   - MonthlyCashflowPlanPack
   - NegotiationPlaybookPack
+  - NextActionsPack
   - NicheMatchPack
   - ObjectionHandlingScriptsPack
   - OfferBuilderPack
@@ -576,12 +687,17 @@ schema_name_index:
   - OffboardingHandoffPack
   - OutreachSequencePack
   - PIIHandlingPlanPack
+  - PackReadinessCheckPack
+  - PackVariantsPack
+  - PersonalPlaybookPack
   - Pivot90DayPlanPack
   - PlatformDiffPack
   - PlatformFormattingNotesPack
   - PlatformIntelPack
   - PlatformProfileVariantsPack
   - PlatformSafetyChecklistPack
+  - PlaybookApplicationPack
+  - PlaybookEvolutionPack
   - PortfolioOutlinePack
   - PortfolioPackagingPack
   - PortfolioSnippetPack
@@ -590,8 +706,10 @@ schema_name_index:
   - ProfileDeltaPack
   - ProofOfWorkPack
   - ProposalPack
+  - QuickReplyDraftsPack
   - RateBenchmarkNotesPack
   - RateCardPack
+  - ReferralRequestPack
   - RenewalCheckInScriptsPack
   - ResolutionOptionsPack
   - ResponseStrategyPack
@@ -607,10 +725,12 @@ schema_name_index:
   - ScopeCreepGuardrailsPack
   - ScopeOfWorkLitePack
   - ServiceRecoveryPlanPack
+  - ShipGuardReportPack
   - SinkingFundsMapPack
   - SkillGraphPack
   - StrategyAdjustmentPack
   - SubmissionReadyPack
+  - SuccessOutreachPack
   - TaxSeasonPrepPack
   - TimeBlockChecklistPack
   - ToneRewriteVariantsPack
@@ -618,4 +738,5 @@ schema_name_index:
   - UpsellAddOnPack
   - UserProfilePack
   - VerifiedClaims
+  - WeeklyActionListPack
   - WeeklySchedulePlanPack
