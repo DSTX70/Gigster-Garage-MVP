@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AppHeader } from "@/components/app-header";
 import { PaymentTracker } from "@/components/payment-tracker";
-import { ArrowLeft, Download, Send, Edit, FileText } from "lucide-react";
+import { ArrowLeft, Download, Send, Edit, FileText, Eye } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Invoice } from "@shared/schema";
 import { format } from "date-fns";
@@ -113,6 +113,12 @@ export default function InvoiceDetails() {
           </div>
           
           <div className="flex items-center space-x-2">
+            <Link href={`/invoices/${invoice.id}/preview`}>
+              <Button variant="outline" data-testid="button-preview-invoice">
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+            </Link>
             <Button
               variant="outline"
               onClick={() => window.open(`/api/invoices/${invoice.id}/pdf`, '_blank')}

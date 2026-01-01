@@ -100,6 +100,16 @@ export function requestLoggingMiddleware(
     };
 
     console.log(formatLogEntry(entry));
+
+    if (res.statusCode >= 400 && !(req as any)._errorTracked) {
+      (req as any)._errorTracked = true;
+      trackError(
+        reqWithId.requestId,
+        `${req.method} ${req.path} returned ${res.statusCode}`,
+        req.path,
+        res.statusCode
+      );
+    }
   });
 
   next();

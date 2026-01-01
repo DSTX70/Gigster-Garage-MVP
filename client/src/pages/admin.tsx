@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdminDiagnosticsCapture } from "@/hooks/useAdminDiagnosticsCapture";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus, Trash2, Users, UserPlus, ArrowLeft, CheckCheck, ExternalLink, Search, FileText } from "lucide-react";
+import { Plus, Trash2, Users, UserPlus, ArrowLeft, CheckCheck, ExternalLink, Search, FileText, Activity } from "lucide-react";
 
 const GITHUB_WEBSITE_AUDIT_URL =
   "https://github.com/DSTX70/Gigster-Garage-MVP/actions/workflows/website-audit.yml";
@@ -231,6 +231,15 @@ export default function Admin() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-3 flex-wrap">
+              <Button
+                variant="outline"
+                onClick={() => navigate("/admin/diagnostics")}
+                className="inline-flex items-center gap-2"
+                data-testid="link-diagnostics"
+              >
+                <Activity size={16} />
+                System Diagnostics
+              </Button>
               <a
                 href={GITHUB_WEBSITE_AUDIT_URL}
                 target="_blank"

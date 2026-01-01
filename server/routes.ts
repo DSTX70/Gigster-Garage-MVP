@@ -51,6 +51,7 @@ import passport from 'passport';
 import { seedDemoData, clearDemoData } from './demoDataService';
 import { demoSessionService } from './demoSessionService';
 import { aiAssistantService } from './ai-assistant-service';
+import { getRecentErrors, getErrorStats } from './lib/logger';
 import { mountIntegrationRoutes } from './routes/integrations.route.js';
 import opsSocialRoutes from './routes/ops.social.route.js';
 import opsRateLimitsRoutes from './routes/ops.rateLimits.route.js';
@@ -439,6 +440,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       objectStorage: !!process.env.PRIVATE_OBJECT_DIR,
       slack: !!process.env.SLACK_BOT_TOKEN,
       dth: !!process.env.DTH_READONLY_TOKEN,
+    });
+  });
+
+  // GET /api/admin/diagnostics - Admin-only diagnostics endpoint
+  app.get("/api/admin/diagnostics", requireAuth, async (req: any, res) => {
+    const user = req.session.user;
+    if (user.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const uptimeSeconds = Math.floor((Date.now() - serverStartTime) / 1000);
+    
+    let dbConnected = false;
+    try {
+      await storage.getUsers();
+      dbConnected = true;
+    } catch {
+      dbConnected = false;
+    }
+
+    const systemStatus = {
+      database: {
+        configured: !!process.env.DATABASE_URL,
+        connected: dbConnected,
+      },
+      stripe: {
+        configured: !!process.env.STRIPE_SECRET_KEY,
+      },
+      sendgrid: {
+        configured: !!(process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY_2),
+      },
+      twilio: {
+        configured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+      },
+      objectStorage: {
+        configured: !!process.env.PRIVATE_OBJECT_DIR,
+      },
+      openai: {
+        configured: !!(process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY),
+      },
+      slack: {
+        configured: !!process.env.SLACK_BOT_TOKEN,
+      },
+    };
+
+    const recentErrors = getRecentErrors(20);
+    const errorStats = getErrorStats();
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      uptime: uptimeSeconds,
+      nodeVersion: process.version,
+      systemStatus,
+      recentErrors,
+      errorStats,
     });
   });
   

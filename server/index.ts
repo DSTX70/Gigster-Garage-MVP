@@ -7,6 +7,7 @@ import path from "node:path";
 import history from "connect-history-api-fallback";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { requestIdMiddleware, requestLoggingMiddleware, trackError } from "./lib/logger";
 
 const app = express();
 
@@ -24,6 +25,10 @@ app.use((req, _res, next) => {  // why: consistent UTF-8; avoid stray encodings
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// --- Request ID and Logging middleware (Tier 4 Structured Logging) ---
+app.use(requestIdMiddleware);
+app.use(requestLoggingMiddleware);
 
 // --- Mobile user agent detection ---
 function isMobileDevice(userAgent: string): boolean {
@@ -81,8 +86,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     const route = req.route?.path || req.originalUrl || 'unknown';
     const status = err.statusCode || err.status || 500;
     const error = err.message || 'Unknown error';
+    const requestId = req.requestId || `err-${Date.now()}`;
     
-    // Log to our error tracker for audit purposes
+    // Track unhandled errors that may not reach requestLoggingMiddleware
+    // Mark request as error-tracked to avoid double-counting
+    if (!req._errorTracked) {
+      req._errorTracked = true;
+      trackError(requestId, error, route, status);
+    }
+    
+    // Log to legacy error tracker for audit purposes
     if (global.errorTracker) {
       global.errorTracker.logError(route, status, error);
     }

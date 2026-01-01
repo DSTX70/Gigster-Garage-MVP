@@ -16,6 +16,7 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Admin from "@/pages/admin";
+import AdminDiagnostics from "@/pages/admin-diagnostics";
 import Dashboard from "@/pages/dashboard";
 import ProjectDashboard from "@/pages/project-dashboard";
 import Tasks from "@/pages/tasks";
@@ -24,6 +25,7 @@ import CreateProposal from "@/pages/create-proposal";
 import CreateInvoice from "@/pages/create-invoice";
 import Invoices from "@/pages/invoices";
 import InvoiceDetails from "@/pages/invoice-details";
+import InvoicePreview from "@/pages/invoice-preview";
 import EditInvoice from "@/pages/edit-invoice";
 import Payments from "@/pages/payments";
 import CreateContract from "@/pages/create-contract";
@@ -162,6 +164,7 @@ function Router() {
       <Route path="/create-proposal" component={CreateProposal} />
       <Route path="/invoices" component={Invoices} />
       <Route path="/invoices/:id" component={InvoiceDetails} />
+      <Route path="/invoices/:id/preview" component={InvoicePreview} />
       <Route path="/create-invoice" component={CreateInvoice} />
       <Route path="/edit-invoice/:id" component={EditInvoice} />
       <Route path="/payments" component={Payments} />
@@ -197,6 +200,7 @@ function Router() {
       <Route path="/settings/brand" component={BrandSettingsPage} />
       <Route path="/system-status" component={SystemStatusPage} />
       {isAdmin && <Route path="/admin" component={Admin} />}
+      {isAdmin && <Route path="/admin/diagnostics" component={AdminDiagnostics} />}
       {isAdmin && <Route path="/agent-management" component={AgentManagement} />}
       {isAdmin && <Route path="/ops/social-queue" component={SocialQueuePage} />}
       {isAdmin && <Route path="/ops/rate-limits" component={RateLimitsPage} />}
