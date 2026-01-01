@@ -15,10 +15,11 @@ import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Settings, Edit, Trash2, Type, List, Calendar, ToggleLeft, Hash, AlignLeft } from "lucide-react";
+import { Plus, Settings, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { FIELD_TYPE_LABELS, FIELD_TYPE_ICONS, getFieldTypeLabel, getFieldTypeIcon } from "@/lib/fieldTypeLabels";
 import type { CustomFieldDefinition } from "@shared/schema";
 
 const customFieldSchema = z.object({
@@ -33,26 +34,6 @@ const customFieldSchema = z.object({
 });
 
 type CustomFieldFormData = z.infer<typeof customFieldSchema>;
-
-const fieldTypeIcons = {
-  text: Type,
-  textarea: AlignLeft,
-  number: Hash,
-  date: Calendar,
-  boolean: ToggleLeft,
-  select: List,
-  multiselect: List,
-};
-
-const fieldTypeLabels = {
-  text: "Text",
-  textarea: "Textarea",
-  number: "Number",
-  date: "Date",
-  boolean: "Boolean",
-  select: "Single Select",
-  multiselect: "Multi Select",
-};
 
 export default function CustomFields() {
   const [activeTab, setActiveTab] = useState("task");
@@ -193,7 +174,7 @@ export default function CustomFields() {
             </TableRow>
           ) : (
             fields.map((field) => {
-              const Icon = fieldTypeIcons[field.type as keyof typeof fieldTypeIcons];
+              const Icon = getFieldTypeIcon(field.type);
               return (
                 <TableRow key={field.id}>
                   <TableCell>
@@ -205,7 +186,7 @@ export default function CustomFields() {
                   <TableCell>
                     <Badge variant="outline" className="gap-1">
                       <Icon className="w-3 h-3" />
-                      {fieldTypeLabels[field.type as keyof typeof fieldTypeLabels]}
+                      {getFieldTypeLabel(field.type)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -320,7 +301,7 @@ export default function CustomFields() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {Object.entries(fieldTypeLabels).map(([value, label]) => (
+                                {Object.entries(FIELD_TYPE_LABELS).map(([value, label]) => (
                                   <SelectItem key={value} value={value}>
                                     {label}
                                   </SelectItem>

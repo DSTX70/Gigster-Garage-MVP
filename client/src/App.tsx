@@ -67,6 +67,7 @@ import ConnectionsPage from "@/pages/settings/connections";
 import MonitoringDashboard from "@/pages/monitoring/dashboard";
 import GigsterCoachPage from "@/pages/gigster-coach";
 import GigsterCoachSuggestionsPage from "@/pages/gigster-coach-suggestions";
+import SystemStatusPage from "@/pages/system-status";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsGuide } from "@/components/KeyboardShortcutsGuide";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -194,6 +195,7 @@ function Router() {
       <Route path="/pricing" component={PricingTable} />
       <Route path="/settings" component={Settings} />
       <Route path="/settings/brand" component={BrandSettingsPage} />
+      <Route path="/system-status" component={SystemStatusPage} />
       {isAdmin && <Route path="/admin" component={Admin} />}
       {isAdmin && <Route path="/agent-management" component={AgentManagement} />}
       {isAdmin && <Route path="/ops/social-queue" component={SocialQueuePage} />}

@@ -428,6 +428,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // GET /api/system/status - Configuration status for all integrations (no secret values)
+  app.get("/api/system/status", (req, res) => {
+    res.json({
+      database: !!process.env.DATABASE_URL,
+      ai: !!(process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY),
+      email: !!(process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY_2),
+      sms: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+      stripe: !!process.env.STRIPE_SECRET_KEY,
+      objectStorage: !!process.env.PRIVATE_OBJECT_DIR,
+      slack: !!process.env.SLACK_BOT_TOKEN,
+      dth: !!process.env.DTH_READONLY_TOKEN,
+    });
+  });
+  
   // ========== PERMISSION ENFORCEMENT HELPERS ==========
   // NOTE: Two resource models exist in this app:
   // 1. OWNED resources (invoices, tasks, proposals) - have createdById field
