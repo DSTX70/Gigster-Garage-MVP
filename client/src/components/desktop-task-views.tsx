@@ -42,14 +42,11 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
 
   const TaskCard = ({ task, compact = false }: { task: Task; compact?: boolean }) => {
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.completed;
-    const isDueSoon = task.dueDate && new Date(task.dueDate).getTime() - new Date().getTime() < 24 * 60 * 60 * 1000;
+    const isDueSoon = task.dueDate && !isOverdue && new Date(task.dueDate).getTime() - new Date().getTime() < 24 * 60 * 60 * 1000 && !task.completed;
 
     return (
-      <Card className={`hover:shadow-md transition-all ${
-        isOverdue ? "border-l-4 border-l-red-500" :
-        isDueSoon ? "border-l-4 border-l-yellow-500" :
-        task.priority === "high" ? "border-l-4 border-l-red-400" :
-        "border-l-4 border-l-blue-500"
+      <Card className={`hover:shadow-md transition-all border ${
+        isOverdue ? "border-l-4 border-l-red-500" : "border-gray-200"
       } ${compact ? "p-3" : ""}`}>
         <CardContent className={compact ? "p-3" : "p-4"}>
           <div className="space-y-3">
@@ -70,43 +67,50 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
                     {task.description}
                   </h4>
                   {task.parentTaskId && (
-                    <div className="flex items-center mt-1 text-xs text-purple-600">
+                    <div className="flex items-center mt-1 text-xs text-gray-500">
                       <GitBranch className="h-3 w-3 mr-1" />
                       Subtask
                     </div>
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* Metadata */}
+            {/* Metadata - token-based colors */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <Badge className={`${
-                task.priority === "high" ? "bg-red-100 text-red-800" :
-                task.priority === "medium" ? "bg-yellow-100 text-yellow-800" :
-                "bg-green-100 text-green-800"
+                task.priority === "high" ? "bg-red-50 text-red-700 border border-red-200" :
+                task.priority === "medium" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+                "bg-gray-50 text-gray-600 border border-gray-200"
               }`}>
                 {task.priority}
               </Badge>
               
               {(task as any).project && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs border-gray-200 text-gray-600">
                   {(task as any).project.name}
                 </Badge>
               )}
 
               {isOverdue && (
-                <Badge className="bg-red-100 text-red-800">
+                <Badge className="bg-red-50 text-red-700 border border-red-200">
                   <AlertCircle className="h-3 w-3 mr-1" />
                   Overdue
                 </Badge>
               )}
 
+              {isDueSoon && !isOverdue && (
+                <span className="flex items-center text-amber-600">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Due soon
+                </span>
+              )}
+
               {task.completed && (
-                <Badge className="bg-green-100 text-green-800">
+                <Badge className="bg-[#0B1D3A] text-white">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Done
                 </Badge>
@@ -290,11 +294,9 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
                         <div className="w-64 flex-shrink-0 pr-4">
                           <div className="flex items-center space-x-2">
                             <div className={`w-3 h-3 rounded-full ${
-                              task.completed ? 'bg-green-500' :
+                              task.completed ? 'bg-[#0B1D3A]' :
                               isOverdue ? 'bg-red-500' :
-                              task.priority === 'high' ? 'bg-orange-500' :
-                              task.priority === 'medium' ? 'bg-yellow-500' :
-                              'bg-blue-500'
+                              'bg-[#2EC5C2]'
                             }`} />
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium text-gray-900 truncate">
@@ -302,14 +304,14 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
                               </div>
                               <div className="flex items-center space-x-2 text-xs text-gray-500">
                                 <Badge className={`text-xs ${
-                                  task.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-green-100 text-green-800'
+                                  task.priority === 'high' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                  task.priority === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                  'bg-gray-50 text-gray-600 border border-gray-200'
                                 }`}>
                                   {task.priority}
                                 </Badge>
                                 {(task as any).project && (
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs border-gray-200 text-gray-600">
                                     {(task as any).project.name}
                                   </Badge>
                                 )}
@@ -322,11 +324,9 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
                         <div className="flex-1 relative h-6">
                           <div 
                             className={`absolute h-4 rounded ${
-                              task.completed ? 'bg-green-500' :
+                              task.completed ? 'bg-[#0B1D3A]' :
                               isOverdue ? 'bg-red-500' :
-                              task.priority === 'high' ? 'bg-orange-500' :
-                              task.priority === 'medium' ? 'bg-yellow-500' :
-                              'bg-blue-500'
+                              'bg-[#2EC5C2]'
                             } hover:shadow-md transition-all cursor-pointer`}
                             style={{
                               left: `${position}%`,
@@ -370,16 +370,27 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
 
   return (
     <Tabs value={activeView} onValueChange={(value) => setActiveView(value as any)} className="w-full">
-      <div className="flex justify-between items-center mb-6">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="columns">Column View</TabsTrigger>
-          <TabsTrigger value="kanban">Kanban Board</TabsTrigger>
-          <TabsTrigger value="gantt">Timeline</TabsTrigger>
+      <div className="flex items-center mb-4">
+        <TabsList className="h-9 bg-gray-100 p-1 rounded-lg">
+          <TabsTrigger 
+            value="columns" 
+            className="h-7 px-3 text-xs font-medium rounded-md data-[state=active]:bg-[#0B1D3A] data-[state=active]:text-white"
+          >
+            Columns
+          </TabsTrigger>
+          <TabsTrigger 
+            value="kanban" 
+            className="h-7 px-3 text-xs font-medium rounded-md data-[state=active]:bg-[#0B1D3A] data-[state=active]:text-white"
+          >
+            Kanban
+          </TabsTrigger>
+          <TabsTrigger 
+            value="gantt" 
+            className="h-7 px-3 text-xs font-medium rounded-md data-[state=active]:bg-[#0B1D3A] data-[state=active]:text-white"
+          >
+            Timeline
+          </TabsTrigger>
         </TabsList>
-        
-        <div className="text-sm text-gray-600">
-          {tasks.length} tasks • {tasks.filter(t => t.completed).length} completed
-        </div>
       </div>
 
       <TabsContent value="columns">
