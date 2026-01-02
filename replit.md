@@ -14,7 +14,16 @@ Preferred communication style: Simple, everyday language.
 
 ### UI/UX Decisions
 
-The application incorporates the Garage Navy branding with #004C6D and #0B1D3A as primary colors, applied consistently across components and pages. It features an enhanced invoice builder with auto-fill, a redesigned Workflow Automation page, and integrated Garage Assistant UI. Project dashboards include Kanban boards and Gantt chart timeline views, adapting to screen sizes. Recent enhancements include a global Command Palette (Cmd+K/Ctrl+K) for quick search and actions, a centralized Settings/Preferences page, a keyboard shortcuts guide (?), a floating Quick Action Button (FAB), an Offline Mode Indicator, and a reusable Empty States Component.
+The application incorporates the Lume + Nova branding system with a carefully structured accent hierarchy:
+- **Mint (#2EC5C2)**: Primary actions, progress bars, completed states
+- **Navy (#0B1D3A)**: Selected/active states in filter pills, toggles, and navigation
+- **Amber (#FFB52E)**: Reserved exclusively for Due Soon warnings
+- **Red**: Overdue items only (thick 4px left borders + red text/icons)
+- **Neutral grays**: Medium priority, on-hold status, non-urgent controls
+
+Card emphasis follows Nova principles: only Overdue items use thick borders; all other cards use subtle 1px gray borders. Controls are quieter with shrunk segmented controls (h-9/h-7 with text-xs), neutral backgrounds, and tighter spacing.
+
+The application features an enhanced invoice builder with auto-fill, a redesigned Workflow Automation page, and integrated Garage Assistant UI. Project dashboards include Kanban boards and Gantt chart timeline views, adapting to screen sizes. Recent enhancements include a global Command Palette (Cmd+K/Ctrl+K) for quick search and actions, a centralized Settings/Preferences page, a keyboard shortcuts guide (?), a floating Quick Action Button (FAB), an Offline Mode Indicator, and a reusable Empty States Component.
 
 **Phase 2 Production Features**:
 - **Platform Connections Page** (`/settings/connections`): User-friendly interface for managing social media API credentials (X/Twitter, Instagram, LinkedIn) with save/delete/test functionality, secure credential input, and platform-specific setup instructions.
