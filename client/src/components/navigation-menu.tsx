@@ -46,6 +46,8 @@ import {
   TrendingUp,
   Eye,
   Mail,
+  HelpCircle,
+  Keyboard,
 } from 'lucide-react';
 
 interface NavigationSection {
@@ -126,7 +128,7 @@ const navigationSections: NavigationSection[] = [
     adminOnly: true,
     collapsed: true,
     items: [
-      { id: 'admin', title: 'User Management', icon: Users, path: '/admin', adminOnly: true },
+      { id: 'admin-panel', title: 'Admin Panel', icon: Shield, path: '/admin', adminOnly: true, badge: 'Admin' },
       { id: 'agent-management', title: 'Agent Management', icon: Bot, path: '/agent-management', adminOnly: true },
       { id: 'permissions', title: 'Permissions', icon: Key, path: '/permissions-management', adminOnly: true },
       { id: 'sso', title: 'SSO Management', icon: Shield, path: '/sso-management', adminOnly: true },
@@ -144,7 +146,16 @@ const navigationSections: NavigationSection[] = [
       { id: 'instant-proposal', title: 'Instant Proposal', icon: Zap, path: '/instant-proposal' },
       { id: 'create-presentation', title: 'Create Presentation', icon: Presentation, path: '/create-presentation' },
       { id: 'template-editor', title: 'Template Editor', icon: PenTool, path: '/template-editor' },
+    ],
+  },
+  {
+    id: 'help',
+    title: 'Help',
+    icon: HelpCircle,
+    collapsed: true,
+    items: [
       { id: 'user-manual', title: 'User Manual', icon: FileText, path: '/user-manual' },
+      { id: 'keyboard-shortcuts', title: 'Keyboard Shortcuts', icon: Keyboard, path: '/keyboard-shortcuts' },
     ],
   },
 ];

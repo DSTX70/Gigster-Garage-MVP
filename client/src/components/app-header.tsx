@@ -1,6 +1,14 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook, Key, FileText, Globe } from "lucide-react";
+import { CheckCheck, LogOut, Settings, User, Users, Plus, Mail, Shield, Home, Database, Zap, Bot, Clock, Brain, BarChart3, Webhook, Key, FileText, Globe, HelpCircle, Keyboard, BookOpen } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { NavigationMenu } from "./navigation-menu";
 import { Link } from "wouter";
 import { GigsterLogo } from "./vsuite-logo";
@@ -231,6 +239,41 @@ export function AppHeader() {
               
               {/* Mood Palette Switcher */}
               <MoodPaletteSwitcher size="sm" className="text-white border-white/20 hover:bg-white/10" />
+              
+              {/* Help Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white hover:bg-white/10 relative p-1.5 sm:p-2"
+                    data-testid="button-help"
+                    title="Help"
+                  >
+                    <HelpCircle size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Help & Support</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/user-manual")}
+                    className="cursor-pointer"
+                    data-testid="help-user-manual"
+                  >
+                    <BookOpen size={16} className="mr-2" />
+                    User Manual
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/keyboard-shortcuts")}
+                    className="cursor-pointer"
+                    data-testid="help-keyboard-shortcuts"
+                  >
+                    <Keyboard size={16} className="mr-2" />
+                    Keyboard Shortcuts
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               
               {/* Settings/Language Button */}
               <Button
