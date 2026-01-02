@@ -1,0 +1,532 @@
+Below are **paste-ready Replit directions** for the **Landing/Home “My Dashboard” page** you screenshotted.
+
+⚠️ **Repo/Path note (GigsterGarage):**
+
+* Your “My Dashboard” landing page is **`client/src/pages/home.tsx`**.
+* **`client/src/pages/dashboard.tsx`** is an **Admin Dashboard** (analytics/users/tasks), not the landing page.
+
+Everything below is scoped to **GigsterGarage → `client/`**.
+
+---
+
+# A) Create 3 small components (reduces repeated UI + cleans header/actions)
+
+## 1) NEW FILE: `client/src/components/dashboard/NewMenuButton.tsx`
+
+Create the file and paste:
+
+```tsx
+import * as React from "react";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Plus,
+  CheckSquare,
+  Receipt,
+  FileText,
+  FileSignature,
+  Presentation,
+  Users,
+  Mail,
+} from "lucide-react";
+
+type NewMenuButtonProps = {
+  onNewTask: () => void;
+};
+
+export function NewMenuButton({ onNewTask }: NewMenuButtonProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="sm"
+          className="text-white border-2"
+          style={{
+            background: "var(--gg-teal)",
+            borderColor: "var(--gg-teal)",
+            color: "var(--gg-white)",
+          }}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          + New
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem onClick={onNewTask}>
+          <CheckSquare className="h-4 w-4 mr-2" />
+          New Task
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <Link href="/create-invoice">
+          <DropdownMenuItem>
+            <Receipt className="h-4 w-4 mr-2" />
+            Create Invoice
+          </DropdownMenuItem>
+        </Link>
+
+        <Link href="/create-proposal">
+          <DropdownMenuItem>
+            <FileText className="h-4 w-4 mr-2" />
+            Create Proposal
+          </DropdownMenuItem>
+        </Link>
+
+        <Link href="/create-contract">
+          <DropdownMenuItem>
+            <FileSignature className="h-4 w-4 mr-2" />
+            Create Contract
+          </DropdownMenuItem>
+        </Link>
+
+        <Link href="/create-presentation">
+          <DropdownMenuItem>
+            <Presentation className="h-4 w-4 mr-2" />
+            Create Presentation
+          </DropdownMenuItem>
+        </Link>
+
+        <DropdownMenuSeparator />
+
+        <Link href="/clients">
+          <DropdownMenuItem>
+            <Users className="h-4 w-4 mr-2" />
+            Clients
+          </DropdownMenuItem>
+        </Link>
+
+        <Link href="/messages">
+          <DropdownMenuItem>
+            <Mail className="h-4 w-4 mr-2" />
+            Messages
+          </DropdownMenuItem>
+        </Link>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+```
+
+---
+
+## 2) NEW FILE: `client/src/components/dashboard/ActionCard.tsx`
+
+Create the file and paste:
+
+```tsx
+import * as React from "react";
+import { Link } from "wouter";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+type ActionCardProps = {
+  href: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  borderClassName?: string;   // e.g. "border-l-blue-500"
+  iconWrapClassName?: string; // e.g. "bg-blue-100"
+};
+
+export function ActionCard({
+  href,
+  title,
+  description,
+  icon,
+  borderClassName,
+  iconWrapClassName,
+}: ActionCardProps) {
+  return (
+    <Link href={href}>
+      <Card
+        className={cn(
+          "hover:shadow-lg transition-shadow cursor-pointer",
+          borderClassName ? `border-l-4 ${borderClassName}` : ""
+        )}
+      >
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className={cn("p-2 sm:p-3 rounded-lg", iconWrapClassName ?? "bg-gray-100")}>
+              {icon}
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900">{title}</h3>
+              <p className="text-xs sm:text-sm text-gray-600">{description}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+```
+
+---
+
+## 3) NEW FILE: `client/src/components/dashboard/DashboardActionGrid.tsx`
+
+Create the file and paste:
+
+```tsx
+import { useTranslation } from "@/lib/i18n";
+import { ActionCard } from "@/components/dashboard/ActionCard";
+import {
+  Users,
+  Mail,
+  Receipt,
+  FileText,
+  FileSignature,
+  BarChart3,
+  Zap,
+  FolderOpen,
+  Presentation,
+} from "lucide-react";
+
+export function DashboardActionGrid() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-8 sm:space-y-10">
+      {/* CREATE */}
+      <section>
+        <div className="flex items-end justify-between mb-3">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Create</h2>
+          <p className="text-xs sm:text-sm text-gray-600">Start a new document fast.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <ActionCard
+            href="/create-invoice"
+            title={t("createInvoice")}
+            description={t("createInvoiceDesc")}
+            borderClassName="border-l-green-500"
+            iconWrapClassName="bg-green-100"
+            icon={<Receipt className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />}
+          />
+
+          <ActionCard
+            href="/create-proposal"
+            title={t("createProposal")}
+            description={t("createProposalDesc")}
+            borderClassName="border-l-blue-500"
+            iconWrapClassName="bg-blue-100"
+            icon={<FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />}
+          />
+
+          <ActionCard
+            href="/create-contract"
+            title={t("createContract")}
+            description={t("createContractDesc")}
+            borderClassName="border-l-purple-500"
+            iconWrapClassName="bg-purple-100"
+            icon={<FileSignature className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />}
+          />
+
+          <ActionCard
+            href="/create-presentation"
+            title={t("createPresentation")}
+            description={t("createPresentationDesc")}
+            borderClassName="border-l-amber-500"
+            iconWrapClassName="bg-amber-100"
+            icon={<Presentation className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />}
+          />
+        </div>
+      </section>
+
+      {/* MANAGE */}
+      <section>
+        <div className="flex items-end justify-between mb-3">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Manage</h2>
+          <p className="text-xs sm:text-sm text-gray-600">Keep work organized and moving.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <ActionCard
+            href="/clients"
+            title={t("clientManagement")}
+            description={t("clientManagementDesc")}
+            borderClassName="border-l-indigo-500"
+            iconWrapClassName="bg-indigo-100"
+            icon={<Users className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />}
+          />
+
+          <ActionCard
+            href="/messages"
+            title={t("messages")}
+            description={t("messagesDesc")}
+            borderClassName="border-l-blue-500"
+            iconWrapClassName="bg-blue-100"
+            icon={<Mail className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />}
+          />
+        </div>
+      </section>
+
+      {/* TOOLS */}
+      <section>
+        <div className="flex items-end justify-between mb-3">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Tools</h2>
+          <p className="text-xs sm:text-sm text-gray-600">Run the business side cleanly.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <ActionCard
+            href="/productivity"
+            title={t("productivityTools")}
+            description={t("productivityToolsDesc")}
+            borderClassName="border-l-amber-500"
+            iconWrapClassName="bg-amber-100"
+            icon={<BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />}
+          />
+
+          <ActionCard
+            href="/agency-hub"
+            title={t("agencyHub")}
+            description={t("agencyHubDesc")}
+            borderClassName="border-l-purple-500"
+            iconWrapClassName="bg-purple-100"
+            icon={<Zap className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />}
+          />
+
+          <ActionCard
+            href="/filing-cabinet"
+            title={t("filingCabinet")}
+            description={t("filingCabinetDesc")}
+            borderClassName="border-l-gray-400"
+            iconWrapClassName="bg-gray-100"
+            icon={<FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />}
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+```
+
+---
+
+# B) Update `home.tsx` to match the clean layout
+
+## FILE: `client/src/pages/home.tsx`
+
+### 1) Add imports
+
+Near the top with other imports, add:
+
+```tsx
+import { NewMenuButton } from "@/components/dashboard/NewMenuButton";
+import { DashboardActionGrid } from "@/components/dashboard/DashboardActionGrid";
+```
+
+---
+
+### 2) Replace the messy header button strip with a single “+ New” menu
+
+Find this block (it starts right under `{/* Dashboard Header */}`):
+
+```tsx
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between ...">
+  <h1 ...>{t('myDashboard')}</h1>
+  <div className="flex flex-col sm:flex-row ...">
+    {isAdmin && ( ... Agent Management / Analytics / Admin Panel ... )}
+    <Link href="/user-manual">...</Link>
+    <Button ... onClick={() => setIsNewTaskOpen(true)}>...</Button>
+  </div>
+</div>
+<p ...>{t('welcomeMessage')}</p>
+```
+
+**Replace that entire header area** with this:
+
+```tsx
+<div className="mb-8 lg:mb-12">
+  <div className="flex items-start justify-between gap-4">
+    <div>
+      <h1 className="gg-h1 text-2xl sm:text-3xl font-bold" style={{ color: "var(--text)" }}>
+        {t("myDashboard")}
+      </h1>
+      <p className="text-sm sm:text-base text-gray-600 mt-2">{t("welcomeMessage")}</p>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <NewMenuButton onNewTask={() => setIsNewTaskOpen(true)} />
+    </div>
+  </div>
+</div>
+```
+
+✅ This removes the whole “toolbar strip” (Agent Mgmt / Analytics / Admin / Manual / New Task) and leaves **one clean primary action**.
+
+---
+
+### 3) Remove “Time Tracking Tools” from the KPI row (keep KPIs tight)
+
+Find `{/* Urgent & Overview Section */}`. It currently uses:
+
+```tsx
+<div className="grid ... lg:grid-cols-5 ...">
+```
+
+Change it to:
+
+```tsx
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 lg:mb-12">
+```
+
+Then **delete** the whole “Productivity Tools / Time Tracking Tools” KPI card block inside that KPI grid.
+It’s labeled in your file as:
+
+```tsx
+{/* Productivity Tools */}
+<Tooltip> ... Link href="/productivity" ... </Tooltip>
+```
+
+✅ You’ll still have Productivity Tools under the **Tools** section (DashboardActionGrid), but it won’t masquerade as a KPI.
+
+---
+
+### 4) Replace the entire “Client Management Section” card wall with the grouped grid
+
+Find this entire section:
+
+```tsx
+{/* Client Management Section */}
+<div className="mb-6 sm:mb-8">
+  <div className="grid grid-cols-1 sm:grid-cols-2 ...">
+    ... lots of cards ...
+  </div>
+</div>
+```
+
+Replace that whole block with:
+
+```tsx
+{/* Quick Actions (clean grouped grid) */}
+<div className="mb-8 lg:mb-12">
+  <DashboardActionGrid />
+</div>
+```
+
+✅ This removes repetitive visual blocks and replaces them with a clean “Create / Manage / Tools” layout.
+
+---
+
+### 5) Remove the big dashed “Spark New Task” trigger (keep the modal, trigger from + New)
+
+Find the block:
+
+```tsx
+{/* Modal New Task Section */}
+<div className="mb-6 sm:mb-8">
+  <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+    <DialogTrigger asChild>
+      <Button className="... border-dashed ...">...</Button>
+    </DialogTrigger>
+    <DialogContent>...</DialogContent>
+  </Dialog>
+</div>
+```
+
+**Keep the `Dialog` and the `DialogContent`, but delete the `DialogTrigger` and its dashed Button.**
+
+So it becomes:
+
+```tsx
+<Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    ...
+  </DialogContent>
+</Dialog>
+```
+
+✅ Now the only “create” entry point is **+ New** (and optionally the FAB if you keep it), eliminating duplicate CTAs.
+
+---
+
+# C) Move Admin buttons out of the landing page (so it feels like a product)
+
+## FILE: `client/src/components/navigation-menu.tsx`
+
+Add **Agent Management** into the nav (admin only).
+
+Find the section that contains admin items (you already have `/admin` and `/performance-dashboard` elsewhere). Add this item (recommended under the admin/tools area):
+
+```tsx
+{ id: 'agent-management', title: 'Agent Management', icon: Bot, path: '/agent-management', adminOnly: true },
+```
+
+Where to put it:
+
+* Either in the “Advanced Features” or create a small “Admin” section
+* You already import `Bot` in this file (if not, add it at the top with other lucide imports)
+
+✅ This keeps admin power accessible without cluttering the landing page.
+
+---
+
+# D) Remove the duplicate floating “+” FAB on Home (optional but recommended)
+
+Your screenshots show floating buttons (plus + lightbulb). Those are mounted globally.
+
+## FILE: `client/src/App.tsx`
+
+Currently:
+
+```tsx
+<QuickActionButton />
+<GigsterCoachFloatingButton />
+```
+
+To reduce clutter on the landing page, **hide only the QuickActionButton on “/”**.
+
+1. Add import at top if not present:
+
+```tsx
+import { useLocation } from "wouter";
+```
+
+2. In `function App()` add:
+
+```tsx
+const [location] = useLocation();
+const hideQuickActionOnHome = location === "/";
+```
+
+3. Replace:
+
+```tsx
+<QuickActionButton />
+```
+
+with:
+
+```tsx
+{!hideQuickActionOnHome && <QuickActionButton />}
+```
+
+✅ Keep the Coach floating button if you want, but eliminate duplicate “create” affordances on the landing page.
+
+---
+
+# Target Home layout after these changes
+
+1. **AppHeader** (top bar) stays
+2. Landing header: **Dashboard title + welcome** (left), **+ New** (right)
+3. KPI row: **Overdue / Due Soon / High Priority / Completed** (4 only)
+4. **Quick Actions grouped**: Create / Manage / Tools
+5. Projects + Tasks sections remain as-is
+
+---
+
+If you want, I can also provide a **second paste kit** that cleans the *Tasks Overview* controls (makes Column/Kanban/Timeline toggles smaller + removes duplicate counts) in:
+
+* `client/src/components/desktop-task-views.tsx`
+* `client/src/components/task-filters.tsx`

@@ -212,6 +212,26 @@ function Router() {
   );
 }
 
+function AppContent() {
+  const [location] = useLocation();
+  const hideQuickActionOnHome = location === "/";
+  
+  return (
+    <>
+      <DemoModeStatusBar />
+      <DemoModeBanner />
+      <DemoSessionWarning />
+      <CommandPalette />
+      <KeyboardShortcutsGuide />
+      <OfflineIndicator />
+      {!hideQuickActionOnHome && <QuickActionButton />}
+      <GigsterCoachFloatingButton />
+      <Toaster />
+      <Router />
+    </>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -219,16 +239,7 @@ function App() {
         <DemoModeProvider>
           <MoodPaletteProvider>
             <TooltipProvider>
-              <DemoModeStatusBar />
-              <DemoModeBanner />
-              <DemoSessionWarning />
-              <CommandPalette />
-              <KeyboardShortcutsGuide />
-              <OfflineIndicator />
-              <QuickActionButton />
-              <GigsterCoachFloatingButton />
-              <Toaster />
-              <Router />
+              <AppContent />
             </TooltipProvider>
           </MoodPaletteProvider>
         </DemoModeProvider>

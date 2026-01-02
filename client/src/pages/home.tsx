@@ -9,18 +9,17 @@ import { ReminderSystem } from "@/components/reminder-system";
 import { AssignmentFilter } from "@/components/assignment-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Folder, BarChart3, Calendar, Users, Plus, AlertTriangle, Clock, CheckCircle2, ChevronDown, FileText, Mail, FolderOpen, Zap, BookOpen, FileCheck, Presentation, Timer, PenTool, Briefcase, Archive, TrendingUp, Bot, Settings } from "lucide-react";
-import { format } from "date-fns";
+import { Folder, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
 import type { Project, Task } from "@shared/schema";
-import { StatusBadge } from "@/components/status/StatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { DemoUpgradePrompt } from "@/components/DemoUpgradePrompt";
+import { NewMenuButton } from "@/components/dashboard/NewMenuButton";
+import { DashboardActionGrid } from "@/components/dashboard/DashboardActionGrid";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -72,85 +71,18 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6 sm:py-8 lg:py-12">
         {/* Dashboard Header */}
         <div className="mb-8 lg:mb-12">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
-            <h1 className="gg-h1 text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text)' }}>{t('myDashboard')}</h1>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
-              {isAdmin && (
-                <>
-                  <Link href="/agent-management">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="w-full sm:w-auto bg-purple-600 text-white border-purple-600 hover:bg-purple-700"
-                      data-testid="button-agent-management"
-                    >
-                      <Bot className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">{t('agentManagement')}</span>
-                      <span className="sm:hidden">{t('agentManagement')}</span>
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="w-full sm:w-auto bg-[var(--brand)] text-white border-[var(--brand)] hover:opacity-90"
-                      data-testid="button-analytics-dashboard"
-                    >
-                      <TrendingUp className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">{t('analyticsDashboard')}</span>
-                      <span className="sm:hidden">{t('analyticsDashboard')}</span>
-                    </Button>
-                  </Link>
-                  <Link href="/admin">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="w-full sm:w-auto bg-[#004C6D] text-white border-[#004C6D] hover:bg-[#0B1D3A]"
-                      data-testid="button-admin-panel"
-                    >
-                      <Settings className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Admin Panel</span>
-                      <span className="sm:hidden">Admin</span>
-                    </Button>
-                  </Link>
-                </>
-              )}
-              <Link href="/user-manual">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="w-full sm:w-auto bg-[var(--success)] text-white border-[var(--success)] hover:opacity-90"
-                  data-testid="button-user-manual"
-                >
-                  <BookOpen className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">{t('userManual')}</span>
-                  <span className="sm:hidden">{t('userManual')}</span>
-                </Button>
-              </Link>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="w-full sm:w-auto text-white border-2"
-                style={{
-                  background: 'var(--gg-teal)',
-                  borderColor: 'var(--gg-teal)',
-                  color: 'var(--gg-white)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--grad)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--gg-teal)';
-                }}
-                onClick={() => setIsNewTaskOpen(true)}
-                data-testid="button-new-task-header"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                {copy.tasks.createButton}
-              </Button>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="gg-h1 text-2xl sm:text-3xl font-bold" style={{ color: "var(--text)" }}>
+                {t("myDashboard")}
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-2">{t("welcomeMessage")}</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <NewMenuButton onNewTask={() => setIsNewTaskOpen(true)} />
             </div>
           </div>
-          <p className="text-sm sm:text-base text-gray-600">{t('welcomeMessage')}</p>
         </div>
 
         {/* Demo Mode Upgrade Prompt */}
@@ -158,13 +90,13 @@ export default function Home() {
           <DemoUpgradePrompt context="general" compact={true} />
         </div>
 
-        {/* Urgent & Overview Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8 lg:mb-12">
+        {/* Urgent & Overview Section - 4 KPIs only */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 lg:mb-12">
           {/* Overdue Tasks */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=overdue">
-                <Card className="border-l-4 border-l-red-500 card-elevated card-interactive">
+                <Card className="border-l-4 border-l-red-500 card-elevated card-interactive" data-testid="kpi-overdue">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -186,7 +118,7 @@ export default function Home() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=due-soon">
-                <Card className="border-l-4 border-l-yellow-500 card-elevated card-interactive">
+                <Card className="border-l-4 border-l-yellow-500 card-elevated card-interactive" data-testid="kpi-due-soon">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -208,7 +140,7 @@ export default function Home() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=high-priority">
-                <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow cursor-pointer">
+                <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow cursor-pointer" data-testid="kpi-high-priority">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -230,7 +162,7 @@ export default function Home() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=completed-today">
-                <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow cursor-pointer">
+                <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow cursor-pointer" data-testid="kpi-completed-today">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -247,246 +179,11 @@ export default function Home() {
               <p>{t('completedTodayTooltip')}</p>
             </TooltipContent>
           </Tooltip>
-
-          {/* Productivity Tools */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/productivity">
-                <Card className="border-l-4 border-l-amber-500 hover:shadow-lg transition-all duration-200 cursor-pointer bg-gradient-to-br from-amber-50 to-orange-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium text-amber-600">{t('timeTracking')}</p>
-                        <p className="text-lg font-bold text-amber-800">{t('tools')}</p>
-                      </div>
-                      <BarChart3 className="h-6 w-6 text-amber-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('timeTrackingTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
         </div>
 
-        {/* Client Management Section */}
-        <div className="mb-6 sm:mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href="/clients">
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="bg-purple-100 p-2 sm:p-3 rounded-lg">
-                          <Users className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('clientManagement')}</h3>
-                          <p className="text-xs sm:text-sm text-gray-600">{t('clientManagementDesc')}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t('clientManagementTooltip')}</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href="/messages">
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="bg-blue-100 p-2 sm:p-3 rounded-lg">
-                          <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('messages')}</h3>
-                          <p className="text-xs sm:text-sm text-gray-600">{t('messagesDesc')}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t('messagesTooltip')}</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* Quick Actions - Document Creation */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/create-proposal">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="bg-blue-100 p-2 sm:p-3 rounded-lg">
-                        <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('createProposal')}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{t('createProposalDesc')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('createProposalTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/create-invoice">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="bg-green-100 p-2 sm:p-3 rounded-lg">
-                        <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('createInvoice')}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{t('createInvoiceDesc')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('createInvoiceTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/create-contract">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="bg-purple-100 p-2 sm:p-3 rounded-lg">
-                        <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('createContract')}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{t('createContractDesc')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('createContractTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/create-presentation">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="bg-orange-100 p-2 sm:p-3 rounded-lg">
-                        <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('createPresentation')}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{t('createPresentationDesc')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('createPresentationTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* Secondary Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/productivity">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="bg-amber-100 p-2 sm:p-3 rounded-lg">
-                        <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('productivityTools')}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{t('productivityToolsDesc')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('productivityToolsTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/agency-hub">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-purple-500">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="bg-purple-100 p-2 sm:p-3 rounded-lg">
-                        <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('agencyHub')}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{t('agencyHubDesc')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('agencyHubTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/filing-cabinet">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="bg-gray-100 p-2 sm:p-3 rounded-lg">
-                        <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t('filingCabinet')}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{t('filingCabinetDesc')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('filingCabinetTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
+        {/* Quick Actions (clean grouped grid) */}
+        <div className="mb-8 lg:mb-12">
+          <DashboardActionGrid />
         </div>
 
         {/* Project Folders Section */}
@@ -602,32 +299,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Modal New Task Section */}
-        <div className="mb-6 sm:mb-8">
-          <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="w-full justify-center py-4 sm:py-6 text-left hover:bg-brand-tealTint/10 border-2 border-dashed border-gray-300 hover:border-brand-teal"
-                data-testid="button-new-task-modal"
-              >
-                <div className="flex items-center">
-                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-3 text-brand-teal" />
-                  <span className="text-base sm:text-lg font-medium">{copy.tasks.createButton}</span>
-                </div>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-semibold">
-                  {copy.tasks.createButton}
-                </DialogTitle>
-              </DialogHeader>
-              <TaskForm onSuccess={() => setIsNewTaskOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        </div>
+        {/* New Task Modal (triggered from + New menu) */}
+        <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">
+                {copy.tasks.createButton}
+              </DialogTitle>
+            </DialogHeader>
+            <TaskForm onSuccess={() => setIsNewTaskOpen(false)} />
+          </DialogContent>
+        </Dialog>
 
         {/* Tasks Overview - Desktop optimized views */}
         <div className="hidden lg:block">

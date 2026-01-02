@@ -127,6 +127,7 @@ const navigationSections: NavigationSection[] = [
     collapsed: true,
     items: [
       { id: 'admin', title: 'User Management', icon: Users, path: '/admin', adminOnly: true },
+      { id: 'agent-management', title: 'Agent Management', icon: Bot, path: '/agent-management', adminOnly: true },
       { id: 'permissions', title: 'Permissions', icon: Key, path: '/permissions-management', adminOnly: true },
       { id: 'sso', title: 'SSO Management', icon: Shield, path: '/sso-management', adminOnly: true },
       { id: 'audit', title: 'Audit Logs', icon: Eye, path: '/audit-logging', adminOnly: true },
