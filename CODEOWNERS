@@ -1,0 +1,8 @@
+# Default - all changes require review
+* @your-github-handle
+
+# Route by area (uncomment and customize when ready)
+# /server/  @backend-owners
+# /client/  @frontend-owners
+# /db/      @data-owners
+# /dth/     @dth-pod-leads

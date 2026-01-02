@@ -1,0 +1,141 @@
+Got it — **A is the right move**.
+
+Here’s the clean “Pods can audit + propose changes” setup for **Gigster Garage (GitHub repo = source of truth, Replit = execution lane)**.
+
+## 1) Wire ChatGPT to that GitHub repo (read + cite)
+
+1. In ChatGPT: **Settings → Connected apps → GitHub → Connect**
+2. Authorize and **grant access only to the Gigster Garage repo**
+3. In the chat, explicitly say:
+   **“Use the GitHub connector and treat `<repo>` as canonical.”**
+
+Result: the Pods can **read the current repo state**, reference exact files, and base audits on real code.
+
+## 2) Confirm Replit is pointed at the *same* repo/branch
+
+In Replit:
+
+* Ensure the project was **imported from that GitHub repo**, or is **connected** to it.
+* Make sure your deployment branch is defined (usually `main`), and Replit’s Git panel shows the same remote.
+* Adopt a simple flow:
+
+  * branch: `fix/<topic>`
+  * PR into `main`
+  * deploy from `main` (or your chosen deploy branch)
+
+## 3) Install a “Pod-ready repo surface” (15-minute hygiene pack)
+
+Drop these into the repo so every audit has a consistent home and every PR is structured.
+
+### A) `.github/pull_request_template.md`
+
+```md
+## Summary
+- What changed:
+
+## Why
+- User pain / bug / requirement:
+
+## Screens / Evidence (if UI)
+- Before:
+- After:
+
+## Files touched
+- client:
+- server:
+- db:
+
+## Test plan
+- [ ] Smoke test: login
+- [ ] Navigate to dashboard
+- [ ] Admin-only route gating verified
+- [ ] User Manual route reachable
+- [ ] Regression: core flows still work
+
+## Risk
+- Low / Med / High (why)
+```
+
+### B) `.github/ISSUE_TEMPLATE/audit_request.md`
+
+```md
+---
+name: Pod Audit Request
+about: Request an audit/review from Dream Team Pods
+title: "[AUDIT] <Area>"
+labels: ["audit"]
+---
+
+## Area
+(UI/UX | Security | Performance | Data | Admin | Docs)
+
+## Goal
+What do you want improved?
+
+## Constraints
+No breaking changes / Keep current architecture / etc.
+
+## Acceptance
+What “done” looks like:
+```
+
+### C) `CODEOWNERS` (simple starter)
+
+```txt
+# Default
+* @your-github-handle
+
+# If you have teams later, you can route paths like:
+# /server/  @backend-owners
+# /client/  @frontend-owners
+# /db/      @data-owners
+```
+
+### D) Create a `/dth/` folder for Pod governance
+
+Add:
+
+* `/dth/README.md` (what Pods are, how to request work)
+* `/dth/decisions.md` (decision log)
+* `/dth/audit_runs/` (timestamped audit outputs)
+
+This keeps audits from scattering across issues/chats.
+
+## 4) The “Pods Audit → Patch → Verify” loop (how we’ll run Gigster Garage)
+
+**Step 1: Repo Intake**
+You paste:
+
+> “Run Gigster Garage Repo Intake. Build a repo map (client/server/db), find `/admin` + `/user-manual` routes (or absence), identify nav generation, and list hotspots + top 10 quick wins with file paths.”
+
+**Step 2: Multi-lane audits**
+
+* Lume: UX/nav discoverability + admin/manual entry points
+* Forge/LexiCode: wiring completeness + route/API/data correctness
+* Sentinel: admin gating + authorization boundaries
+* Nova: UI consistency + component cleanup
+
+**Step 3: Output format (what you’ll get every time)**
+
+* Ranked findings
+* Exact file targets
+* Paste-ready patch blocks (or “diff-style” edits)
+* Smoke test checklist
+
+**Step 4: You apply via Replit**
+
+* paste changes → run tests → commit/push → PR
+
+**Step 5: Verify pass**
+
+* Pods re-check the updated repo state and confirm acceptance criteria.
+
+## 5) The only “activation message” you need to paste next
+
+Paste this in the Gigster Garage thread when you’re ready to start:
+
+> **Gigster Garage — GitHub Canonical Activation**
+> Use the GitHub connector. Treat the GitHub repo backing the live Replit deployment as the single source of truth.
+> First task: run **Repo Intake** and locate where `/admin` and `/user-manual` should be linked in the UI, and how admin-only visibility should be enforced in both UI and API. Output a ranked Quick Wins list plus the top 3 paste-ready patches.
+
+When you paste that (and the GitHub connector is connected), I’ll immediately run the **Repo Intake** and we’ll generate the first **top-3 patches** (Admin entry point, Manual entry point, and RBAC enforcement) in the same format you’ve been handing to Replit.
