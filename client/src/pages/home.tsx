@@ -92,18 +92,18 @@ export default function Home() {
 
         {/* Urgent & Overview Section - 4 KPIs only */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 lg:mb-12">
-          {/* Overdue Tasks */}
+          {/* Overdue Tasks - thick red border (urgent) */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=overdue">
-                <Card className="border-l-4 border-l-red-500 card-elevated card-interactive" data-testid="kpi-overdue">
+                <Card className="border-l-4 border-l-red-500 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer" data-testid="kpi-overdue">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-red-600">{t('overdue')}</p>
                         <p className="text-2xl font-bold text-red-700">{overdueTasks.length}</p>
                       </div>
-                      <AlertTriangle className="h-6 w-6 text-red-500" />
+                      <AlertTriangle className="h-5 w-5 text-red-500" />
                     </div>
                   </CardContent>
                 </Card>
@@ -114,18 +114,18 @@ export default function Home() {
             </TooltipContent>
           </Tooltip>
 
-          {/* Due Soon */}
+          {/* Due Soon - amber icon tint only (highlight) */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=due-soon">
-                <Card className="border-l-4 border-l-yellow-500 card-elevated card-interactive" data-testid="kpi-due-soon">
+                <Card className="border border-gray-200 hover:shadow-md transition-shadow cursor-pointer" data-testid="kpi-due-soon">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium text-yellow-600">{t('dueSoon')}</p>
-                        <p className="text-2xl font-bold text-yellow-700">{urgentTasks.length}</p>
+                        <p className="text-xs font-medium text-amber-600">{t('dueSoon')}</p>
+                        <p className="text-2xl font-bold text-gray-900">{urgentTasks.length}</p>
                       </div>
-                      <Clock className="h-6 w-6 text-yellow-500" />
+                      <Clock className="h-5 w-5 text-amber-500" />
                     </div>
                   </CardContent>
                 </Card>
@@ -136,18 +136,18 @@ export default function Home() {
             </TooltipContent>
           </Tooltip>
 
-          {/* High Priority */}
+          {/* High Priority - subtle neutral card */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=high-priority">
-                <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow cursor-pointer" data-testid="kpi-high-priority">
+                <Card className="border border-gray-200 hover:shadow-md transition-shadow cursor-pointer" data-testid="kpi-high-priority">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium text-orange-600">{t('highPriority')}</p>
-                        <p className="text-2xl font-bold text-orange-700">{highPriorityTasks.length}</p>
+                        <p className="text-xs font-medium text-gray-600">{t('highPriority')}</p>
+                        <p className="text-2xl font-bold text-gray-900">{highPriorityTasks.length}</p>
                       </div>
-                      <AlertTriangle className="h-6 w-6 text-orange-500" />
+                      <AlertTriangle className="h-5 w-5 text-gray-400" />
                     </div>
                   </CardContent>
                 </Card>
@@ -158,18 +158,18 @@ export default function Home() {
             </TooltipContent>
           </Tooltip>
 
-          {/* Completed Today */}
+          {/* Completed Today - navy selected state */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/tasks?filter=completed-today">
-                <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow cursor-pointer" data-testid="kpi-completed-today">
+                <Card className="border border-gray-200 hover:shadow-md transition-shadow cursor-pointer" data-testid="kpi-completed-today">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium text-green-600">{t('completedToday')}</p>
-                        <p className="text-2xl font-bold text-green-700">{completedToday.length}</p>
+                        <p className="text-xs font-medium text-gray-600">{t('completedToday')}</p>
+                        <p className="text-2xl font-bold text-[#0B1D3A]">{completedToday.length}</p>
                       </div>
-                      <CheckCircle2 className="h-6 w-6 text-green-500" />
+                      <CheckCircle2 className="h-5 w-5 text-[#2EC5C2]" />
                     </div>
                   </CardContent>
                 </Card>
@@ -211,13 +211,15 @@ export default function Home() {
                 <Tooltip key={project.id}>
                   <TooltipTrigger asChild>
                     <Link href={`/project/${project.id}`}>
-                      <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-blue-500 group">
+                      <Card className={`hover:shadow-md transition-all duration-200 cursor-pointer border group ${
+                        projectOverdue.length > 0 ? "border-l-4 border-l-red-500 border-gray-200" : "border-gray-200"
+                      }`}>
                         <CardHeader className="pb-4">
                           <div className="flex items-start justify-between">
                             <div className="flex items-center">
-                              <Folder className="h-6 w-6 mr-3 text-blue-600 group-hover:text-blue-700" />
+                              <Folder className="h-5 w-5 mr-3 text-gray-500 group-hover:text-[#0B1D3A]" />
                               <div>
-                                <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700">
+                                <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-[#0B1D3A]">
                                   {project.name}
                                 </CardTitle>
                                 {project.description && (
@@ -226,10 +228,10 @@ export default function Home() {
                               </div>
                             </div>
                             <Badge className={
-                              project.status === "active" ? "bg-green-100 text-green-800" :
-                              project.status === "completed" ? "bg-blue-100 text-blue-800" :
-                              project.status === "on-hold" ? "bg-yellow-100 text-yellow-800" :
-                              "bg-red-100 text-red-800"
+                              project.status === "active" ? "bg-[#0B1D3A] text-white" :
+                              project.status === "completed" ? "bg-gray-100 text-gray-700 border border-gray-200" :
+                              project.status === "on-hold" ? "bg-gray-100 text-gray-600 border border-gray-200" :
+                              "bg-red-50 text-red-700 border border-red-200"
                             }>
                               {project.status}
                             </Badge>
@@ -240,23 +242,23 @@ export default function Home() {
                           <div className="space-y-3">
                             {/* Outstanding Tasks */}
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-600">Outstanding Tasks</span>
-                              <Badge variant="secondary">{outstandingTasks.length}</Badge>
+                              <span className="text-sm text-gray-600">Outstanding</span>
+                              <span className="text-sm font-medium text-gray-900">{outstandingTasks.length}</span>
                             </div>
                             
                             {/* Critical Tasks */}
                             {criticalTasks.length > 0 && (
                               <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-orange-600">Critical Priority</span>
-                                <Badge className="bg-orange-100 text-orange-800">{criticalTasks.length}</Badge>
+                                <span className="text-sm text-gray-600">High Priority</span>
+                                <span className="text-sm font-medium text-gray-900">{criticalTasks.length}</span>
                               </div>
                             )}
                             
                             {/* Overdue Tasks */}
                             {projectOverdue.length > 0 && (
                               <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-red-600">Overdue</span>
-                                <Badge className="bg-red-100 text-red-800">{projectOverdue.length}</Badge>
+                                <span className="text-sm text-red-600">Overdue</span>
+                                <span className="text-sm font-medium text-red-700">{projectOverdue.length}</span>
                               </div>
                             )}
                             
@@ -264,13 +266,13 @@ export default function Home() {
                             <div className="pt-2">
                               <div className="flex items-center justify-between text-sm mb-2">
                                 <span className="text-gray-600">Progress</span>
-                                <span className="font-medium">
+                                <span className="font-medium text-gray-900">
                                   {completionPercentage}%
                                 </span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
-                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                  className="bg-[#2EC5C2] h-2 rounded-full transition-all duration-300"
                                   style={{ width: `${completionPercentage}%` }}
                                 />
                               </div>
@@ -285,10 +287,10 @@ export default function Home() {
                       <p className="font-medium">{project.name} - {completionPercentage}% Complete</p>
                       <p>Status: {project.status} • {outstandingTasks.length} tasks remaining</p>
                       {projectOverdue.length > 0 && (
-                        <p className="text-red-600">⚠️ {projectOverdue.length} overdue tasks</p>
+                        <p className="text-red-600">{projectOverdue.length} overdue tasks</p>
                       )}
                       {criticalTasks.length > 0 && (
-                        <p className="text-orange-600">🔥 {criticalTasks.length} high priority tasks</p>
+                        <p className="text-gray-600">{criticalTasks.length} high priority tasks</p>
                       )}
                       <p className="text-xs opacity-75">Click to view project dashboard</p>
                     </div>

@@ -79,11 +79,11 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
               </Button>
             </div>
 
-            {/* Metadata - token-based colors */}
+            {/* Metadata - token-based colors (no amber except Due Soon) */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <Badge className={`${
                 task.priority === "high" ? "bg-red-50 text-red-700 border border-red-200" :
-                task.priority === "medium" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+                task.priority === "medium" ? "bg-gray-100 text-gray-700 border border-gray-200" :
                 "bg-gray-50 text-gray-600 border border-gray-200"
               }`}>
                 {task.priority}
@@ -305,7 +305,7 @@ export function DesktopTaskViews({ tasks, onTaskUpdate }: DesktopTaskViewsProps)
                               <div className="flex items-center space-x-2 text-xs text-gray-500">
                                 <Badge className={`text-xs ${
                                   task.priority === 'high' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                  task.priority === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                  task.priority === 'medium' ? 'bg-gray-100 text-gray-700 border border-gray-200' :
                                   'bg-gray-50 text-gray-600 border border-gray-200'
                                 }`}>
                                   {task.priority}
