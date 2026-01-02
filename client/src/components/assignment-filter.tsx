@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { User } from "lucide-react";
 import type { Task } from "@shared/schema";
 
@@ -24,7 +23,7 @@ export function AssignmentFilter({ selectedAssignee, onAssigneeChange }: Assignm
       .filter(task => task.assignedToId)
       .map(task => task.assignedToId!)
   );
-  
+
   const assignees = (users as any[])
     .filter((user: any) => assigneeIds.has(user.id))
     .sort((a: any, b: any) => a.name.localeCompare(b.name));
@@ -34,13 +33,15 @@ export function AssignmentFilter({ selectedAssignee, onAssigneeChange }: Assignm
   }
 
   return (
-    <div className="flex items-center space-x-2">
-      <Label className="flex items-center text-sm font-medium text-neutral-700">
-        <User size={16} className="mr-1" />
-        Filter by:
-      </Label>
+    <div className="flex items-center gap-2">
+      {/* Icon-only label (cleaner). Text is screen-reader only for accessibility. */}
+      <div className="flex items-center text-neutral-700">
+        <User size={16} className="opacity-70" aria-hidden="true" />
+        <span className="sr-only">Filter by assignee</span>
+      </div>
+
       <Select value={selectedAssignee} onValueChange={onAssigneeChange}>
-        <SelectTrigger className="w-48">
+        <SelectTrigger className="w-48 h-9 text-sm" aria-label="Assignee filter">
           <SelectValue placeholder="All assignees" />
         </SelectTrigger>
         <SelectContent>
